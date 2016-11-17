@@ -1,0 +1,12 @@
+[VOIP]
+line1_proxy_address 10.11.6.1
+line1_displayname 5501
+line1_name 5501
+line1_authname 5501
+line1_password 9ZW80XNEMD
+message_url 6901
+
+[PROG]
+add 3 10
+add 4 14
+

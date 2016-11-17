@@ -1,0 +1,6 @@
+2016-10-28 11:28:17,386 p=13463 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-10-28 11:28:17,418 p=13463 u=administrator |  TASK [setup] *******************************************************************
+2016-10-28 11:28:18,842 p=13463 u=administrator |  fatal: [vbox-srv]: FAILED! => {"changed": false, "failed": true, "module_stderr": "", "module_stdout": "sudo: a password is required\r\n", "msg": "MODULE FAILURE"}
+2016-10-28 11:28:18,848 p=13463 u=administrator |  NO MORE HOSTS LEFT *************************************************************
+2016-10-28 11:28:18,848 p=13463 u=administrator |  PLAY RECAP *********************************************************************
+2016-10-28 11:28:18,848 p=13463 u=administrator |  vbox-srv                   : ok=0    changed=0    unreachable=0    failed=1   

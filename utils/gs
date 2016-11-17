@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Ansible search
+# searches modules on the ansible galaxy
+
+source utils/setup-env
+
+ansible-galaxy search $1 -p $ANSIBLE_ROLES/

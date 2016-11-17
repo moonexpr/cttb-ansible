@@ -1,0 +1,7 @@
+2016-10-28 14:17:07,540 p=20127 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-10-28 14:17:07,568 p=20127 u=administrator |  TASK [setup] *******************************************************************
+2016-10-28 14:17:09,469 p=20127 u=administrator |  ok: [vbox-srv]
+2016-10-28 14:17:09,479 p=20127 u=administrator |  TASK [asterisk : install packages] *********************************************
+2016-10-28 14:17:12,121 p=20127 u=administrator |  ok: [vbox-srv] => (item=[u'asterisk', u'asterisk-core-sounds-en', u'asterisk-core-sounds-en-gsm', u'asterisk-modules', u'asterisk-moh-opsound-gsm', u'asterisk-mp3', u'asterisk-voicemail'])
+2016-10-28 14:17:12,132 p=20127 u=administrator |  PLAY RECAP *********************************************************************
+2016-10-28 14:17:12,132 p=20127 u=administrator |  vbox-srv                   : ok=2    changed=0    unreachable=0    failed=0   

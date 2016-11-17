@@ -1,0 +1,6 @@
+ansible_assets_url: http://theoverseer.cttb/ansible_assets
+deb_mirror: http://theoverseer.cttb
+wpsoffice: yes
+libreoffice: no
+openoffice: no
+firefox: no

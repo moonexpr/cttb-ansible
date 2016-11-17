@@ -1,0 +1,11 @@
+[VOIP]
+line1_proxy_address 10.11.6.1
+line1_displayname 5005
+line1_name 5005
+line1_authname 5005
+line1_password VWHQYKACDB
+message_url 6901
+
+[PROG]
+add 3 10
+add 4 14

@@ -1,0 +1,5 @@
+---
+
+- hosts: vbox-pxe
+  roles:
+    - common

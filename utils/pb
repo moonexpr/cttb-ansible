@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# ansible playbook
+# runs a playbook
+#TODO convert this to python for a lot more control
+
+source utils/setup-env
+
+ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/${1}.yml $2 $3

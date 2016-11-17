@@ -1,0 +1,76 @@
+---
+
+# TODO:
+#   - see https://github.com/ansible/ansible-modules-core/issues/4164
+#     once fixed add creates to the unarchive for wps-fonts to skip
+
+  # removing bunch of sw I don't need
+  - name: remove other apps
+    apt:
+      name: "{{item}}"
+      state: absent
+      purge: yes
+    with_items:
+      - whoopsie
+      - firefox*
+      - deja-dup
+      - gnome-keyring
+      - abiword
+      - gnumeric
+      - update-manager
+      - update-notifier
+      - lubuntu-software-center
+      - update-notifier-common
+      - sylpheed*
+      - cups-browsed
+
+  - name: install additional software
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: yes
+    with_items:
+      - unattended-upgrades
+      - curl
+      - cups-client
+      - ansible
+      - collectd
+      - vim
+      - gimp
+      - dconf-tools
+      - ubuntu-restricted-addons
+      - ubuntu-restricted-extras
+      - vlc
+      - brasero
+      - audacity
+
+  - include: sw-office.yml
+  - include: sw-browser.yml
+
+  - block: # install dropbox
+    - name: add dropbox apt key
+      apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: "1C61A2656FB57B7E4DE0F4C1FC918B335044912E"
+        state: present
+
+    - name: Add dropbox mirror
+      apt_repository:
+        repo: "deb {{deb_mirror}}/dropbox {{ansible_distribution_release}} main"
+        state: present
+
+    - name: install openoffice
+      apt:
+        name: dropbox
+        state: present
+        install_recommends: yes
+  when: dropbox == "yes"
+
+
+  - name: install skype
+    apt:
+      name: skype
+      state: present
+      install_recommends: yes
+  when: skype == "yes"
+

@@ -1,0 +1,37 @@
+2016-11-03 11:22:00,260 p=22372 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-11-03 11:22:00,304 p=22372 u=administrator |  TASK [setup] *******************************************************************
+2016-11-03 11:22:02,166 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:02,174 p=22372 u=administrator |  TASK [common : refresh the mirrors] ********************************************
+2016-11-03 11:22:06,709 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:06,718 p=22372 u=administrator |  TASK [common : install aptitude] ***********************************************
+2016-11-03 11:22:08,357 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:08,366 p=22372 u=administrator |  TASK [common : install apt-add-repository] *************************************
+2016-11-03 11:22:10,062 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:10,070 p=22372 u=administrator |  TASK [common : Set up ansible/cttb-os authorized_key] **************************
+2016-11-03 11:22:11,488 p=22372 u=administrator |  ok: [vbox-srv] => (item=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nTH15aJs0AOVSLaSN6TH+zrdyaRGk6XwrbvLoCiyGOveOt4TcwmOzgyrXg9p1Vy0gcd2pjN+fDbO07ftwPGtuSfbvShvnwYaRPzF1IcBEBMeml/e05Naw8Q0KhZbuGXnCHvEDM2QArw9qD/a77kEV9vxrhJaOUOFkdVx1gsU/dAjQikZzD+Sag7JhtSYIpZupA+YbD1K0dRYUdE9dm3yTUUFmWM3nCCpj8kpU+TWjFeG2M4ilWym7Y81tk3CgI3vzRZRkA395IZlpP1FKNjAlNsit8YuldRvgrYXjPH3TcM1XkLFL4k6EJTjwsM5oWC4o9TriFJRTN75MxGgs72tZcgwlN2W+qkGAGAAYMvSqCBPIXuVCp+3ixuECgnJ3pYq48x8J5DmTn6i93Q9eAv7Xj8B9shts8MlrwGzMBHqjEu/CFfJAHtsLmJ34vvfM0kTFp6Du/K7WnYAuBvB4agMSMBAKy3+9ij5r1+hOxEv7rPkJvlFTECYLvEmNGXOSthuKLEHarlAH21YB1+aP5GwdrypLlYifXYXbQyf/nc/sebyleA3yHs99OLxxW3SCFOqvWxRH7kV/i56Ei8JFxAASauQMy/jXT/FgnIKYae46c7ZJ9jTgfsrhZ1OSQ9oUqzyAS3ugUa5QW3uMEpfnXVxt/EnwnOw== ansible@cttb.us)
+2016-11-03 11:22:11,497 p=22372 u=administrator |  TASK [common : install ntpd] ***************************************************
+2016-11-03 11:22:11,535 p=22372 u=administrator |  skipping: [vbox-srv]
+2016-11-03 11:22:11,545 p=22372 u=administrator |  TASK [common : enable ntp service] *********************************************
+2016-11-03 11:22:11,598 p=22372 u=administrator |  skipping: [vbox-srv]
+2016-11-03 11:22:11,606 p=22372 u=administrator |  TASK [common : ensure ntp is running] ******************************************
+2016-11-03 11:22:11,644 p=22372 u=administrator |  skipping: [vbox-srv]
+2016-11-03 11:22:11,653 p=22372 u=administrator |  TASK [common : remove net udev rule] *******************************************
+2016-11-03 11:22:11,698 p=22372 u=administrator |  skipping: [vbox-srv]
+2016-11-03 11:22:11,706 p=22372 u=administrator |  TASK [common : set hostname] ***************************************************
+2016-11-03 11:22:13,074 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:13,082 p=22372 u=administrator |  TASK [common : fix /etc/hosts] *************************************************
+2016-11-03 11:22:14,388 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:14,396 p=22372 u=administrator |  TASK [common : fix 127.0.1.1] **************************************************
+2016-11-03 11:22:15,613 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:15,621 p=22372 u=administrator |  TASK [common : add ansible repo key] *******************************************
+2016-11-03 11:22:17,073 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:17,081 p=22372 u=administrator |  TASK [common : add ansible repo mirror] ****************************************
+2016-11-03 11:22:21,226 p=22372 u=administrator |  changed: [vbox-srv]
+2016-11-03 11:22:21,234 p=22372 u=administrator |  TASK [common : install basic software] *****************************************
+2016-11-03 11:22:56,843 p=22372 u=administrator |  changed: [vbox-srv] => (item=[u'unattended-upgrades', u'curl', u'ansible', u'collectd', u'vim'])
+2016-11-03 11:22:56,855 p=22372 u=administrator |  TASK [common : vim saner defaults] *********************************************
+2016-11-03 11:22:59,470 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:22:59,477 p=22372 u=administrator |  TASK [common : vim saner defaults for administrator] ***************************
+2016-11-03 11:23:01,960 p=22372 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:23:01,967 p=22372 u=administrator |  PLAY RECAP *********************************************************************
+2016-11-03 11:23:01,967 p=22372 u=administrator |  vbox-srv                   : ok=13   changed=2    unreachable=0    failed=0   

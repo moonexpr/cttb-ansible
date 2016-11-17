@@ -1,0 +1,30 @@
+2016-11-03 10:40:44,117 p=27705 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-11-03 10:40:44,160 p=27705 u=administrator |  TASK [setup] *******************************************************************
+2016-11-03 10:40:46,021 p=27705 u=administrator |  ok: [vbox-srv]
+2016-11-03 10:40:46,033 p=27705 u=administrator |  TASK [common : refresh the mirrors] ********************************************
+2016-11-03 10:40:53,088 p=27705 u=administrator |  ok: [vbox-srv]
+2016-11-03 10:40:53,097 p=27705 u=administrator |  TASK [common : install aptitude] ***********************************************
+2016-11-03 10:41:11,175 p=27705 u=administrator |  changed: [vbox-srv]
+2016-11-03 10:41:11,183 p=27705 u=administrator |  TASK [common : install apt-add-repository] *************************************
+2016-11-03 10:41:15,958 p=27705 u=administrator |  changed: [vbox-srv]
+2016-11-03 10:41:15,968 p=27705 u=administrator |  TASK [common : Set up cttbos authorized_key] ***********************************
+2016-11-03 10:41:17,387 p=27705 u=administrator |  ok: [vbox-srv] => (item=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nTH15aJs0AOVSLaSN6TH+zrdyaRGk6XwrbvLoCiyGOveOt4TcwmOzgyrXg9p1Vy0gcd2pjN+fDbO07ftwPGtuSfbvShvnwYaRPzF1IcBEBMeml/e05Naw8Q0KhZbuGXnCHvEDM2QArw9qD/a77kEV9vxrhJaOUOFkdVx1gsU/dAjQikZzD+Sag7JhtSYIpZupA+YbD1K0dRYUdE9dm3yTUUFmWM3nCCpj8kpU+TWjFeG2M4ilWym7Y81tk3CgI3vzRZRkA395IZlpP1FKNjAlNsit8YuldRvgrYXjPH3TcM1XkLFL4k6EJTjwsM5oWC4o9TriFJRTN75MxGgs72tZcgwlN2W+qkGAGAAYMvSqCBPIXuVCp+3ixuECgnJ3pYq48x8J5DmTn6i93Q9eAv7Xj8B9shts8MlrwGzMBHqjEu/CFfJAHtsLmJ34vvfM0kTFp6Du/K7WnYAuBvB4agMSMBAKy3+9ij5r1+hOxEv7rPkJvlFTECYLvEmNGXOSthuKLEHarlAH21YB1+aP5GwdrypLlYifXYXbQyf/nc/sebyleA3yHs99OLxxW3SCFOqvWxRH7kV/i56Ei8JFxAASauQMy/jXT/FgnIKYae46c7ZJ9jTgfsrhZ1OSQ9oUqzyAS3ugUa5QW3uMEpfnXVxt/EnwnOw== ansible@cttb.us)
+2016-11-03 10:41:17,397 p=27705 u=administrator |  TASK [common : install ntpd] ***************************************************
+2016-11-03 10:41:22,939 p=27705 u=administrator |  changed: [vbox-srv]
+2016-11-03 10:41:22,948 p=27705 u=administrator |  TASK [common : enable ntp service] *********************************************
+2016-11-03 10:41:24,412 p=27705 u=administrator |  ok: [vbox-srv]
+2016-11-03 10:41:24,420 p=27705 u=administrator |  TASK [common : ensure ntp is running] ******************************************
+2016-11-03 10:41:25,687 p=27705 u=administrator |  ok: [vbox-srv]
+2016-11-03 10:41:25,695 p=27705 u=administrator |  TASK [common : remove net udev rule] *******************************************
+2016-11-03 10:41:25,737 p=27705 u=administrator |  skipping: [vbox-srv]
+2016-11-03 10:41:25,745 p=27705 u=administrator |  TASK [common : set hostname] ***************************************************
+2016-11-03 10:41:27,086 p=27705 u=administrator |  ok: [vbox-srv]
+2016-11-03 10:41:27,094 p=27705 u=administrator |  TASK [common : fix /etc/hosts] *************************************************
+2016-11-03 10:41:28,468 p=27705 u=administrator |  changed: [vbox-srv]
+2016-11-03 10:41:28,476 p=27705 u=administrator |  TASK [common : fix 127.0.1.1] **************************************************
+2016-11-03 10:41:29,721 p=27705 u=administrator |  changed: [vbox-srv]
+2016-11-03 10:41:29,730 p=27705 u=administrator |  TASK [common : vim saner defaults] *********************************************
+2016-11-03 10:41:29,777 p=27705 u=administrator |  fatal: [vbox-srv]: FAILED! => {"failed": true, "msg": "the file_name '/home/administrator/Documents/ansible/new/plays/config/vimrc' does not exist, or is not readable"}
+2016-11-03 10:41:29,783 p=27705 u=administrator |  NO MORE HOSTS LEFT *************************************************************
+2016-11-03 10:41:29,784 p=27705 u=administrator |  PLAY RECAP *********************************************************************
+2016-11-03 10:41:29,784 p=27705 u=administrator |  vbox-srv                   : ok=11   changed=5    unreachable=0    failed=1   

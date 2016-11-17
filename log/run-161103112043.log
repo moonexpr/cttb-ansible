@@ -1,0 +1,8 @@
+2016-11-03 11:20:45,780 p=21572 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-11-03 11:20:45,826 p=21572 u=administrator |  TASK [setup] *******************************************************************
+2016-11-03 11:20:47,700 p=21572 u=administrator |  ok: [vbox-srv]
+2016-11-03 11:20:47,710 p=21572 u=administrator |  TASK [common : refresh the mirrors] ********************************************
+2016-11-03 11:20:50,701 p=21572 u=administrator |  fatal: [vbox-srv]: FAILED! => {"changed": false, "failed": true, "msg": "Could not fetch updated apt files"}
+2016-11-03 11:20:50,707 p=21572 u=administrator |  NO MORE HOSTS LEFT *************************************************************
+2016-11-03 11:20:50,707 p=21572 u=administrator |  PLAY RECAP *********************************************************************
+2016-11-03 11:20:50,707 p=21572 u=administrator |  vbox-srv                   : ok=1    changed=0    unreachable=0    failed=1   

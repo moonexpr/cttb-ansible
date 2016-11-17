@@ -1,0 +1,132 @@
+---
+#
+#  ############### LANGUAGE STUFF ####################
+#  Xenial defaults to fcitx
+#  install packages required by sogoupinyin
+#
+#  FCITX default options for users are set in the relevant skel files
+#  these are copied over by the look&feel tasks
+
+  # installing hant, which is traditional, but still can type simplified (hans)
+  - name: install language packages for en,zh,vi,zhuyin
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: no
+    with_items:
+      - gimp-help-en
+      - hunspell-en-au
+      - hunspell-en-ca
+      - hunspell-en-gb
+      - hunspell-en-za
+      - hyphen-en-gb
+      - hyphen-en-us
+      - mythes-en-au
+      - mythes-en-us
+      - hunspell-vi
+      - language-pack-gnome-vi
+      - language-pack-vi
+      - language-pack-gnome-zh-hant
+      - language-pack-zh-hant
+
+  - name: check if open office is installed
+    command: dpkg -l libreoffice-common
+    register: libreoffice_installed
+    ignore_errors: yes
+
+  - name: install libreoffice language support
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: no
+    with_items:
+      - libreoffice-help-en-gb
+      - libreoffice-help-en-us
+      - libreoffice-l10n-en-gb
+      - libreoffice-l10n-en-za
+      - libreoffice-help-vi
+      - libreoffice-l10n-vi
+      - libreoffice-help-zh-cn
+      - libreoffice-help-zh-tw
+      - libreoffice-l10n-zh-cn
+      - libreoffice-l10n-zh-tw
+      - openoffice.org-hyphenation
+    when: libreoffice_installed == 1
+    tags:
+      - libreoffice
+
+  - name: install base fcitx packages
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: yes
+    with_items:
+      - fcitx
+      #- fcitx-config-gtk2
+      - fcitx-data
+      #- fcitx-frontend-gtk2
+      - fcitx-frontend-qt4
+      - fcitx-frontend-qt5
+      - fcitx-libs
+      - fcitx-libs-qt
+      - fcitx-module-kimpanel
+      - fcitx-pinyin
+      - fcitx-table-cangjie
+      #- fcitx-ui-classic
+      - fcitx-ui-qimpanel
+      - fcitx-unikey
+      - fonts-arphic-ukai
+      - fonts-arphic-uming
+      - fonts-noto-cjk
+      - im-config
+      - libfcitx-qt0
+      - libopencc1
+      - libqt4-dbus
+      - libqt4-declarative
+      - libqt4-network
+      - libqt4-script
+      - libqt4-sql
+      - libqt4-sql-mysql
+      - libqt4-xml
+      - libqt4-xmlpatterns
+      - libqtcore4
+      - libqtdbus4
+      - libqtgui4
+      - oxideqt-codecs-extra
+      - qdbus
+      - qt5-qmake
+      - qt-at-spi
+      - qtbase5-dev
+      - qtbase5-dev-tools
+      - qtbase5-private-dev
+      - qtchooser
+      - qtcore4-l10n
+      - qtdeclarative5-qtquick2-plugin
+      - qtscript5-dev
+      - qttools5-dev
+      - qttools5-dev-tools
+      - qttranslations5-l10n
+      - qtwayland5
+
+  - name: set fcitx as default input method
+    command: im-config -n fcitx
+    ignore_errors: yes
+
+#  - name: install sogoupinyin
+#    apt:
+#      deb: "{{ansible_assets_url}}/sogou-{{ansible_architecture}}.deb"
+#  - name: remove sogoupingyin installed mirror
+#    file:
+#      path: /etc/apt/sources.list.d/sogoupinyin.list
+#      state: absent
+#
+  # disabled. Most ppl just want the vietnamese keyboard which is built-in
+  #- name: install fcitx vietnamese/unikey support
+  #  apt:
+  #    name: fcitx-unikey
+  #    state: present
+
+  - name: install fcitx taiwanese/chewing support
+    apt:
+      name: fcitx-chewing
+      state: present

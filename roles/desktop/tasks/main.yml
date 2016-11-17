@@ -1,0 +1,44 @@
+---
+
+  #when installing mini stuff ends up there and network manager refuses to touch it
+  - name: fix network interfaces
+    copy:
+      content: |
+        auto lo
+        iface lo inet loopback
+      dest: /etc/network/interfaces
+      mode: 644
+      owner: root
+      group: root
+
+  # install all lubuntu core packages
+  - include: lubuntu.yml
+    tags:
+      - lubuntu
+
+  # customize the desktop based on cttb/dvgs/dvbs etc
+  - include: lookandfeel.yml
+    tags:
+      - lookandfeel
+
+  # install languages support
+  - include: lang.yml
+    tags:
+      lang
+
+  #- include: sw.yml
+  #  tags:
+  #    - sw_install
+
+
+  # upgrade to latest for release
+  - name: update system
+    apt:
+      upgrade: full
+      update_cache: yes
+      cache_valid_time: 3600
+      autoremove: yes
+    tags:
+      - os_upgrade
+
+  # - include: fix-xorg-intel.yml

@@ -1,0 +1,15 @@
+;========== LIP-68XX configuration information SIP4B(v1.0) ==========
+
+[VOIP]
+line1_proxy_address 10.11.6.1
+line1_displayname 4219
+line1_name 4219
+line1_authname 4219
+line1_password 40J3DTBO51
+message_url 6901
+
+[PROG]
+add 3 10
+add 4 14
+
+;====================================================================

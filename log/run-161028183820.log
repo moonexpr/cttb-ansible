@@ -1,0 +1,6 @@
+2016-10-28 18:38:20,423 p=25010 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/asterisk.yml
+2016-10-28 18:38:20,439 p=25010 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/tftp.yml
+2016-10-28 18:38:20,456 p=25010 u=administrator |  playbook: /home/administrator/Documents/ansible/new/plays/asterix.yml
+2016-10-28 18:38:20,457 p=25010 u=administrator |    play #1 (vbox-srv): vbox-srv	TAGS: []
+2016-10-28 18:38:20,494 p=25010 u=administrator |        TASK TAGS: [cfg, pkg]
+

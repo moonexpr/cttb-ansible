@@ -1,0 +1,76 @@
+---
+
+  - name: install libreoffice
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: yes
+    with_items:
+      - libreoffice-writer
+      - libreoffice-calc
+      - libreoffice-gtk
+    when: libreoffice == "yes"
+    tags:
+      - libreoffice
+  # since it's installed by default it matters if we said no to it. It will also conflict with openoffice
+  - name: uninstall libreoffice
+    apt:
+      name: libreoffice*
+      state: absent
+      purge: yes
+    when: libreoffice == "no"
+
+  - block:
+
+    - name: add openoffice apt key
+      apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: "0x90127F5B"
+        state: present
+
+    - name: Add openoffice mirror
+      apt_repository:
+        repo: "deb {{deb_mirror}}/openoffice testing main"
+        state: present
+
+    - name: install openoffice
+      apt:
+        name: "{{item}}"
+        state: present
+        install_recommends: yes
+      with_items:
+        - openoffice-brand-pt-br
+        - openoffice-brand-writer
+        - openoffice-brand-calc
+        - openoffice-brand-impress
+        - openoffice-brand-base
+        - openoffice-brand-draw
+        - openoffice-brand-math
+        - openoffice-pyuno
+        - openoffice-ooofonts
+        - openoffice-ooolinguistic
+        - openoffice-debian-menus
+
+    when: openoffice == "yes"
+
+  - block:
+
+    - name: install kingsoft wps
+      apt:
+        deb: "{{ansible_assets_url}}/wps-{{ansible_architecture}}.deb"
+
+    - name: install kingsoft fonts
+      unarchive:
+        remote_src: yes
+        src: "{{ansible_assets_url}}/wps-office-fonts.tar.gz"
+        dest: /usr/share/fonts
+        owner: root
+        group: root
+      register: font_install
+
+    - name: regen font cache
+      command: fc-cache -fv
+      when: font_install|changed
+
+    when: wpsoffice == "yes"
+

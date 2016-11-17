@@ -1,0 +1,21 @@
+;========== LIP-68XX configuration information SIP4B(v1.0) ==========
+
+[VOIP]
+; Lines configurations for this phone
+line1_proxy_address 10.11.6.1
+line1_displayname 4999
+line1_name 4999
+line1_authname 4999
+line1_password meh0meh1
+message_url 6901
+
+[PROG]
+add 3 10
+add 4 14
+message_url 6901
+
+[PROG]
+add 3 10
+add 4 14
+
+;====================================================================

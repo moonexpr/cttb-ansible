@@ -1,0 +1,10 @@
+[VOIP]
+line1_displayname 5000 
+line1_name 5000
+line1_authname 5000
+line1_password A1KXM0WWZW
+message_url 6901
+
+[PROG]
+add 3 10
+add 4 14

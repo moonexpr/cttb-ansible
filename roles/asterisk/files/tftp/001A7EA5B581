@@ -1,0 +1,22 @@
+;========== LIP-68XX configuration information SIP4B(v1.0) ==========
+
+[VOIP]
+line1_proxy_address 10.11.6.1
+line1_displayname 4201
+line1_name 4201
+line1_authname 4201
+line1_password QFE4RTHWJG
+
+line2_proxy_address 10.11.6.1
+line2_displayname 4501
+line2_name 4501
+line2_authname 4501
+line2_password ADAS67987S
+
+message_url 6901
+
+[PROG]
+add 3 10
+add 4 14
+
+;====================================================================

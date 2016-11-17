@@ -1,0 +1,13 @@
+2016-11-06 17:10:04,063 p=25751 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/desktop/tasks/lubuntu.yml
+2016-11-06 17:10:04,080 p=25751 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/desktop/tasks/lookandfeel.yml
+2016-11-06 17:10:04,104 p=25751 u=administrator |  ERROR! 'tag' is not a valid attribute for a Task
+
+The error appears to have been in '/home/administrator/Documents/ansible/new/roles/desktop/tasks/main.yml': line 25, column 5, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+  # upgrade to latest for release
+  - name: update system
+    ^ here
+

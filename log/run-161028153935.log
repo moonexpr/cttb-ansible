@@ -1,0 +1,23 @@
+2016-10-28 15:39:37,624 p=7397 u=administrator |  ERROR! Syntax Error while loading YAML.
+
+
+The error appears to have been in '/home/administrator/Documents/ansible/new/roles/asterisk/tasks/main.yml': line 5, column 26, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+  apt:
+    name:               {{item}}
+                         ^ here
+We could be wrong, but this one looks like it might be an issue with
+missing quotes.  Always quote template expression brackets when they
+start a value. For instance:
+
+    with_items:
+      - {{ foo }}
+
+Should be written as:
+
+    with_items:
+      - "{{ foo }}"
+

@@ -1,0 +1,41 @@
+---
+
+  # sort out the browser situation, firefox is a resource hog so we want some form of chrome
+  - block:
+    - name: add chrome apt key
+      apt_key:
+        url: https://dl-ssl.google.com/linux/linux_signing_key.pub
+        state: present
+    - name: Add chrome mirror
+      apt_repository:
+        repo: "deb [arch=amd64] {{deb_mirror}}/chrome stable main"
+        state: present
+    - name: install chrome
+      apt:
+        name: google-chrome-stable
+        state: present
+    # remove dup apt mirror file created by the install process (the pkg adds its own)
+    - name: remove original chrome repository
+      file:
+        path: /etc/apt/sources.list.d/google-chrome.list
+        state: absent
+  when: ansible_architecture == "amd64" or ansible_architecture == "x86_64"
+  # unfortunately chrome is only 64bit so on 32bit we use chromium
+  - name: install chromium
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: yes
+    with_items:
+      - chromium-browser
+      - chromium-browser-l10n
+      - chromium-codecs-ffmpeg-extra
+  when: ansible_architecture != "amd64" and ansible_architecture != "x86_64"
+
+  # for the people who don't know better or are too stubborn to shange install firefox
+  - name: install firefox
+    apt:
+      name: firefox
+      state: present
+      install_recommends: yes
+  when: firefox == "yes"

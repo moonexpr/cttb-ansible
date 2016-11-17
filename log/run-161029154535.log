@@ -1,0 +1,21 @@
+2016-10-29 15:45:36,222 p=25860 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/asterisk.yml
+2016-10-29 15:45:36,238 p=25860 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/tftp.yml
+2016-10-29 15:45:36,273 p=25860 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-10-29 15:45:36,329 p=25860 u=administrator |  TASK [setup] *******************************************************************
+2016-10-29 15:45:38,221 p=25860 u=administrator |  ok: [vbox-srv]
+2016-10-29 15:45:38,234 p=25860 u=administrator |  TASK [asterisk : copy etc configs] *********************************************
+2016-10-29 15:45:38,904 p=25860 u=administrator |  changed: [vbox-srv]
+2016-10-29 15:45:38,912 p=25860 u=administrator |  TASK [asterisk : fix permissions /etc/asterisk] ********************************
+2016-10-29 15:45:40,321 p=25860 u=administrator |  changed: [vbox-srv]
+2016-10-29 15:45:40,329 p=25860 u=administrator |  TASK [asterisk : copy drbu sound prompts] **************************************
+2016-10-29 15:45:44,786 p=25860 u=administrator |  ok: [vbox-srv]
+2016-10-29 15:45:44,794 p=25860 u=administrator |  TASK [asterisk : configure tftp] ***********************************************
+2016-10-29 15:45:47,252 p=25860 u=administrator |  ok: [vbox-srv]
+2016-10-29 15:45:47,259 p=25860 u=administrator |  TASK [asterisk : copy tftpboot files] ******************************************
+2016-10-29 15:45:47,758 p=25860 u=administrator |  changed: [vbox-srv]
+2016-10-29 15:45:47,767 p=25860 u=administrator |  TASK [asterisk : fix permissions on tftpboot files] ****************************
+2016-10-29 15:45:49,000 p=25860 u=administrator |  changed: [vbox-srv]
+2016-10-29 15:45:49,007 p=25860 u=administrator |  RUNNING HANDLER [asterisk : restart asterisk] **********************************
+2016-10-29 15:45:50,477 p=25860 u=administrator |  changed: [vbox-srv]
+2016-10-29 15:45:50,484 p=25860 u=administrator |  PLAY RECAP *********************************************************************
+2016-10-29 15:45:50,484 p=25860 u=administrator |  vbox-srv                   : ok=8    changed=5    unreachable=0    failed=0   

@@ -1,0 +1,11 @@
+[VOIP]
+line1_proxy_address 10.11.6.1
+line1_displayname 5012
+line1_name 5012
+line1_authname 5012
+line1_password L2MEE2PFE9
+message_url 6901
+
+[PROG]
+add 3 10
+add 4 14

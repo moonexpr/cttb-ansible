@@ -1,0 +1,17 @@
+2016-10-28 16:03:37,757 p=22996 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-10-28 16:03:37,798 p=22996 u=administrator |  TASK [setup] *******************************************************************
+2016-10-28 16:03:39,721 p=22996 u=administrator |  ok: [vbox-srv]
+2016-10-28 16:03:39,731 p=22996 u=administrator |  TASK [asterisk : install packages] *********************************************
+2016-10-28 16:03:42,302 p=22996 u=administrator |  ok: [vbox-srv] => (item=[u'asterisk', u'asterisk-core-sounds-en', u'asterisk-core-sounds-en-gsm', u'asterisk-modules', u'asterisk-moh-opsound-gsm', u'asterisk-mp3', u'asterisk-voicemail', u'tftpd-hpa'])
+2016-10-28 16:03:42,317 p=22996 u=administrator |  TASK [asterisk : copy etc configs] *********************************************
+2016-10-28 16:04:44,762 p=22996 u=administrator |  ok: [vbox-srv]
+2016-10-28 16:04:44,770 p=22996 u=administrator |  TASK [asterisk : copy drbu sound prompts] **************************************
+2016-10-28 16:04:49,043 p=22996 u=administrator |  ok: [vbox-srv]
+2016-10-28 16:04:49,051 p=22996 u=administrator |  TASK [asterisk : configure tftp] ***********************************************
+2016-10-28 16:04:51,526 p=22996 u=administrator |  ok: [vbox-srv]
+2016-10-28 16:04:51,534 p=22996 u=administrator |  TASK [asterisk : copy tftpboot files] ******************************************
+2016-10-28 16:08:10,307 p=22996 u=administrator |  changed: [vbox-srv]
+2016-10-28 16:08:10,316 p=22996 u=administrator |  TASK [asterisk : copy tftp configs] ********************************************
+2016-10-28 16:11:29,118 p=22996 u=administrator |  changed: [vbox-srv]
+2016-10-28 16:11:29,129 p=22996 u=administrator |  PLAY RECAP *********************************************************************
+2016-10-28 16:11:29,129 p=22996 u=administrator |  vbox-srv                   : ok=7    changed=2    unreachable=0    failed=0   

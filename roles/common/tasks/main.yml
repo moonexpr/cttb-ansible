@@ -1,0 +1,142 @@
+---
+# TODO:
+#   -ansible repo only specifies amd64 because I forgot to mirror both. Remove to be just deb
+
+  - name: custom apt sources.list
+    template:
+      src: sources.list.j2
+      dest: /etc/apt/sources.list
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: Add canonical third-party mirror
+    apt_repository:
+      repo: "deb {{deb_mirror}}/canonical {{ansible_distribution_release}} partner"
+      state: present
+
+  - name: refresh the mirrors
+    apt:
+      update_cache: yes
+
+  # aptitude is not shipped with 16.04 but ansible needs it to do the upgrade
+  - name: install aptitude
+    apt:
+      name: aptitude
+      state: present
+
+  # in case for whatever reason this is missing, it's useful to add ppas to test stuff
+  - name: install apt-add-repository
+    apt:
+      name: software-properties-common
+      state: present
+
+  # setup durign preseed stage, but just in case, make sure it's there
+  - name: Set up ansible/cttb-os authorized_key
+    authorized_key:
+      user: administrator
+      key: "{{item}}"
+    with_file:
+      - ssh_keys/ansible.pub
+
+  # NOTE: no longer relevant on 16.04. They moved to systemd which inlcudes
+  # timesyncd that takes care of NTP
+  # and also the udev rule doesn't seem to be created anymore
+
+  - block:
+    - name: install ntpd
+      apt: 
+        name: ntp
+        state: present
+
+    - name: enable ntp service
+      service:
+        name: ntp
+        enabled: yes
+
+    - name: ensure ntp is running
+      service:
+        name: ntp
+        state: started
+
+    # fix persistent udev rules
+    - name: remove net udev rule
+      file:
+        src: /dev/null
+        dest: /etc/udev/rules.d/70-persistent-net.rules
+        state: link
+        force: yes
+    when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'trusty'
+
+  # set hostname
+  - name: set hostname
+    hostname:
+      name: "{{inventory_hostname}}"
+
+  - name: fix /etc/hosts
+    replace:
+      dest: /etc/hosts
+      regexp: "computer"
+      replace: "{{inventory_hostname}}"
+      backup: no
+
+  - name: fix 127.0.1.1
+    replace:
+      dest: /etc/hosts
+      regexp: "127.0.1.1"
+      replace: "127.0.0.1"
+      backup: no
+
+  - name: add ansible repo key
+    apt_key:
+      keyserver: keyserver.ubuntu.com
+      id: 7BB9C367
+      state: present
+
+  - name: add ansible repo mirror
+    apt_repository:
+      repo: "deb http://theoverseer.cttb/ansible xenial main"
+      state: present
+
+  - name: install basic software
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: no
+    with_items:                                                                                     
+      - ansible
+      - byobu
+      - collectd
+      - curl
+      - iperf
+      - git
+      - obnam
+      - traceroute
+      - unattended-upgrades
+      - vim
+      - whois
+
+  - name: enable unattended upgrades
+    copy:
+      src: config/unattended-upgrades
+      dest: /etc/apt/apt.conf.d/20auto-upgrades
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: vim saner defaults
+    copy:
+      src: config/vimrc
+      dest: /etc/skel/.vimrc
+      mode: 0644
+      owner: root
+      group: root
+
+  # administrator account has already been created so the above won't take effect
+  - name: vim saner defaults for administrator
+    copy:
+      src: config/vimrc
+      dest: /home/administrator/.vimrc
+      mode: 0644
+      owner: administrator
+      group: administrator

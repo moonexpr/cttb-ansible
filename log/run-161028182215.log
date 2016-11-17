@@ -1,0 +1,15 @@
+2016-10-28 18:22:15,757 p=14361 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/asterisk.yml
+2016-10-28 18:22:15,771 p=14361 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/tftp.yml
+2016-10-28 18:22:15,810 p=14361 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-10-28 18:22:15,868 p=14361 u=administrator |  TASK [setup] *******************************************************************
+2016-10-28 18:22:17,779 p=14361 u=administrator |  ok: [vbox-srv]
+2016-10-28 18:22:17,791 p=14361 u=administrator |  TASK [asterisk : install asterisk packages] ************************************
+2016-10-28 18:22:20,482 p=14361 u=administrator |  ok: [vbox-srv] => (item=[u'asterisk', u'asterisk-core-sounds-en', u'asterisk-core-sounds-en-gsm', u'asterisk-modules', u'asterisk-moh-opsound-gsm', u'asterisk-mp3', u'asterisk-voicemail'])
+2016-10-28 18:22:20,500 p=14361 u=administrator |  TASK [asterisk : copy etc configs] *********************************************
+2016-10-28 18:22:21,123 p=14361 u=administrator |  changed: [vbox-srv]
+2016-10-28 18:22:21,131 p=14361 u=administrator |  TASK [asterisk : fix permissions /etc/asterisk] ********************************
+2016-10-28 18:22:22,485 p=14361 u=administrator |  fatal: [vbox-srv]: FAILED! => {"changed": false, "details": "'-'", "failed": true, "gid": 999, "group": "administrator", "mode": "0775", "msg": "mode must be in octal or symbolic form", "owner": "root", "path": "/etc/asterisk/", "size": 4096, "state": "directory", "uid": 0}
+2016-10-28 18:22:22,491 p=14361 u=administrator |  NO MORE HOSTS LEFT *************************************************************
+2016-10-28 18:22:22,492 p=14361 u=administrator |  RUNNING HANDLER [asterisk : restart asterisk] **********************************
+2016-10-28 18:22:22,492 p=14361 u=administrator |  PLAY RECAP *********************************************************************
+2016-10-28 18:22:22,492 p=14361 u=administrator |  vbox-srv                   : ok=3    changed=1    unreachable=0    failed=1   

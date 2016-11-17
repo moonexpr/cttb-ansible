@@ -1,0 +1,56 @@
+2016-11-06 17:24:49,085 p=3404 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/desktop/tasks/lubuntu.yml
+2016-11-06 17:24:49,100 p=3404 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/desktop/tasks/lookandfeel.yml
+2016-11-06 17:24:49,146 p=3404 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-11-06 17:24:49,233 p=3404 u=administrator |  TASK [setup] *******************************************************************
+2016-11-06 17:24:51,169 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:24:51,178 p=3404 u=administrator |  TASK [common : refresh the mirrors] ********************************************
+2016-11-06 17:24:53,803 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:24:53,812 p=3404 u=administrator |  TASK [common : install aptitude] ***********************************************
+2016-11-06 17:24:55,480 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:24:55,488 p=3404 u=administrator |  TASK [common : install apt-add-repository] *************************************
+2016-11-06 17:24:57,198 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:24:57,206 p=3404 u=administrator |  TASK [common : Set up ansible/cttb-os authorized_key] **************************
+2016-11-06 17:24:58,663 p=3404 u=administrator |  ok: [vbox-srv] => (item=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nTH15aJs0AOVSLaSN6TH+zrdyaRGk6XwrbvLoCiyGOveOt4TcwmOzgyrXg9p1Vy0gcd2pjN+fDbO07ftwPGtuSfbvShvnwYaRPzF1IcBEBMeml/e05Naw8Q0KhZbuGXnCHvEDM2QArw9qD/a77kEV9vxrhJaOUOFkdVx1gsU/dAjQikZzD+Sag7JhtSYIpZupA+YbD1K0dRYUdE9dm3yTUUFmWM3nCCpj8kpU+TWjFeG2M4ilWym7Y81tk3CgI3vzRZRkA395IZlpP1FKNjAlNsit8YuldRvgrYXjPH3TcM1XkLFL4k6EJTjwsM5oWC4o9TriFJRTN75MxGgs72tZcgwlN2W+qkGAGAAYMvSqCBPIXuVCp+3ixuECgnJ3pYq48x8J5DmTn6i93Q9eAv7Xj8B9shts8MlrwGzMBHqjEu/CFfJAHtsLmJ34vvfM0kTFp6Du/K7WnYAuBvB4agMSMBAKy3+9ij5r1+hOxEv7rPkJvlFTECYLvEmNGXOSthuKLEHarlAH21YB1+aP5GwdrypLlYifXYXbQyf/nc/sebyleA3yHs99OLxxW3SCFOqvWxRH7kV/i56Ei8JFxAASauQMy/jXT/FgnIKYae46c7ZJ9jTgfsrhZ1OSQ9oUqzyAS3ugUa5QW3uMEpfnXVxt/EnwnOw== ansible@cttb.us)
+2016-11-06 17:24:58,673 p=3404 u=administrator |  TASK [common : install ntpd] ***************************************************
+2016-11-06 17:24:58,715 p=3404 u=administrator |  skipping: [vbox-srv]
+2016-11-06 17:24:58,723 p=3404 u=administrator |  TASK [common : enable ntp service] *********************************************
+2016-11-06 17:24:58,766 p=3404 u=administrator |  skipping: [vbox-srv]
+2016-11-06 17:24:58,774 p=3404 u=administrator |  TASK [common : ensure ntp is running] ******************************************
+2016-11-06 17:24:58,812 p=3404 u=administrator |  skipping: [vbox-srv]
+2016-11-06 17:24:58,820 p=3404 u=administrator |  TASK [common : remove net udev rule] *******************************************
+2016-11-06 17:24:58,859 p=3404 u=administrator |  skipping: [vbox-srv]
+2016-11-06 17:24:58,868 p=3404 u=administrator |  TASK [common : set hostname] ***************************************************
+2016-11-06 17:25:00,226 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:00,235 p=3404 u=administrator |  TASK [common : fix /etc/hosts] *************************************************
+2016-11-06 17:25:01,582 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:01,590 p=3404 u=administrator |  TASK [common : fix 127.0.1.1] **************************************************
+2016-11-06 17:25:02,863 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:02,872 p=3404 u=administrator |  TASK [common : add ansible repo key] *******************************************
+2016-11-06 17:25:04,360 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:04,367 p=3404 u=administrator |  TASK [common : add ansible repo mirror] ****************************************
+2016-11-06 17:25:05,882 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:05,892 p=3404 u=administrator |  TASK [common : install basic software] *****************************************
+2016-11-06 17:25:07,631 p=3404 u=administrator |  ok: [vbox-srv] => (item=[u'ansible', u'byobu', u'collectd', u'curl', u'iperf', u'git', u'obnam', u'traceroute', u'unattended-upgrades', u'vim', u'whois'])
+2016-11-06 17:25:07,641 p=3404 u=administrator |  TASK [common : vim saner defaults] *********************************************
+2016-11-06 17:25:10,285 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:10,293 p=3404 u=administrator |  TASK [common : vim saner defaults for administrator] ***************************
+2016-11-06 17:25:12,740 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:12,749 p=3404 u=administrator |  TASK [desktop : fix network interfaces] ****************************************
+2016-11-06 17:25:15,183 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:15,194 p=3404 u=administrator |  TASK [desktop : install lubuntu] ***********************************************
+2016-11-06 17:25:17,006 p=3404 u=administrator |  ok: [vbox-srv] => (item=[u'lubuntu-core', u'desktop-file-utils', u'dmz-cursor-theme', u'evince', u'file-roller', u'galculator', u'indicator-application', u'indicator-application-gtk2', u'leafpad', u'light-locker', u'light-locker-settings', u'lightdm-gtk-greeter-settings', u'lubuntu-default-session', u'lxappearance', u'lxappearance-obconf', u'lxinput', u'lxlauncher', u'lxpanel-indicator-applet-plugin', u'lxrandr', u'lxsession-default-apps', u'lxsession-logout', u'lxshortcut', u'lxtask', u'lxterminal', u'obconf', u'pm-utils', u'scrot', u'simple-scan', u'xdg-user-dirs', u'xfce4-power-manager', u'xz-utils'])
+2016-11-06 17:25:17,018 p=3404 u=administrator |  TASK [desktop : configure lightdm] *********************************************
+2016-11-06 17:25:21,314 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:21,323 p=3404 u=administrator |  TASK [desktop : configure pcmanfm main] ****************************************
+2016-11-06 17:25:23,790 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:23,799 p=3404 u=administrator |  TASK [desktop : setup default account files] ***********************************
+2016-11-06 17:25:30,011 p=3404 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:25:30,020 p=3404 u=administrator |  TASK [desktop : copy lightdm avatar image] *************************************
+2016-11-06 17:25:33,197 p=3404 u=administrator |  changed: [vbox-srv]
+2016-11-06 17:25:33,206 p=3404 u=administrator |  TASK [desktop : deploy image background] ***************************************
+2016-11-06 17:25:36,207 p=3404 u=administrator |  changed: [vbox-srv]
+2016-11-06 17:25:36,216 p=3404 u=administrator |  TASK [desktop : add noobslab mirror key] ***************************************
+2016-11-06 17:25:38,431 p=3404 u=administrator |  fatal: [vbox-srv]: FAILED! => {"changed": false, "cmd": "apt-key adv --keyserver keyserver.ubuntu.com --recv 20817229", "failed": true, "msg": "gpg: requesting key 20817229 from hkp server keyserver.ubuntu.com\ngpg: no valid OpenPGP data found.\ngpg: Total number processed: 0\ngpg: keyserver communications error: key not found\ngpg: keyserver communications error: bad public key\ngpg: keyserver receive failed: bad public key", "rc": 2, "stderr": "gpg: requesting key 20817229 from hkp server keyserver.ubuntu.com\ngpg: no valid OpenPGP data found.\ngpg: Total number processed: 0\ngpg: keyserver communications error: key not found\ngpg: keyserver communications error: bad public key\ngpg: keyserver receive failed: bad public key\n", "stdout": "Executing: /tmp/tmp.Deb2Tgs8tg/gpg.1.sh --keyserver\nkeyserver.ubuntu.com\n--recv\n20817229\ngpgkeys: key 20817229 not found on keyserver\n", "stdout_lines": ["Executing: /tmp/tmp.Deb2Tgs8tg/gpg.1.sh --keyserver", "keyserver.ubuntu.com", "--recv", "20817229", "gpgkeys: key 20817229 not found on keyserver"]}
+2016-11-06 17:25:38,437 p=3404 u=administrator |  NO MORE HOSTS LEFT *************************************************************
+2016-11-06 17:25:38,437 p=3404 u=administrator |  PLAY RECAP *********************************************************************
+2016-11-06 17:25:38,437 p=3404 u=administrator |  vbox-srv                   : ok=20   changed=2    unreachable=0    failed=1   

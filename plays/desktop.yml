@@ -1,0 +1,6 @@
+---
+
+- hosts: vbox-srv
+  roles:
+    - common
+    - desktop

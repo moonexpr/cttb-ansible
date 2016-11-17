@@ -1,0 +1,77 @@
+2016-11-15 14:42:25,074 p=31549 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-11-15 14:42:25,127 p=31549 u=administrator |  TASK [setup] *******************************************************************
+2016-11-15 14:42:25,128 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:25 -0800 (0:00:00.059)       0:00:00.059 ****** 
+2016-11-15 14:42:27,006 p=31549 u=administrator |  ok: [vbox-srv]
+2016-11-15 14:42:27,012 p=31549 u=administrator |  TASK [common : custom apt sources.list] ****************************************
+2016-11-15 14:42:27,013 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:27 -0800 (0:00:01.884)       0:00:01.944 ****** 
+2016-11-15 14:42:30,244 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:42:30,249 p=31549 u=administrator |  TASK [common : refresh the mirrors] ********************************************
+2016-11-15 14:42:30,249 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:30 -0800 (0:00:03.236)       0:00:05.181 ****** 
+2016-11-15 14:42:37,810 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:42:37,813 p=31549 u=administrator |  TASK [common : install aptitude] ***********************************************
+2016-11-15 14:42:37,814 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:37 -0800 (0:00:07.564)       0:00:12.745 ****** 
+2016-11-15 14:42:51,392 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:42:51,395 p=31549 u=administrator |  TASK [common : install apt-add-repository] *************************************
+2016-11-15 14:42:51,395 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:51 -0800 (0:00:13.581)       0:00:26.327 ****** 
+2016-11-15 14:42:56,138 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:42:56,144 p=31549 u=administrator |  TASK [common : Set up ansible/cttb-os authorized_key] **************************
+2016-11-15 14:42:56,144 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:56 -0800 (0:00:04.748)       0:00:31.076 ****** 
+2016-11-15 14:42:57,570 p=31549 u=administrator |  ok: [vbox-srv] => (item=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nTH15aJs0AOVSLaSN6TH+zrdyaRGk6XwrbvLoCiyGOveOt4TcwmOzgyrXg9p1Vy0gcd2pjN+fDbO07ftwPGtuSfbvShvnwYaRPzF1IcBEBMeml/e05Naw8Q0KhZbuGXnCHvEDM2QArw9qD/a77kEV9vxrhJaOUOFkdVx1gsU/dAjQikZzD+Sag7JhtSYIpZupA+YbD1K0dRYUdE9dm3yTUUFmWM3nCCpj8kpU+TWjFeG2M4ilWym7Y81tk3CgI3vzRZRkA395IZlpP1FKNjAlNsit8YuldRvgrYXjPH3TcM1XkLFL4k6EJTjwsM5oWC4o9TriFJRTN75MxGgs72tZcgwlN2W+qkGAGAAYMvSqCBPIXuVCp+3ixuECgnJ3pYq48x8J5DmTn6i93Q9eAv7Xj8B9shts8MlrwGzMBHqjEu/CFfJAHtsLmJ34vvfM0kTFp6Du/K7WnYAuBvB4agMSMBAKy3+9ij5r1+hOxEv7rPkJvlFTECYLvEmNGXOSthuKLEHarlAH21YB1+aP5GwdrypLlYifXYXbQyf/nc/sebyleA3yHs99OLxxW3SCFOqvWxRH7kV/i56Ei8JFxAASauQMy/jXT/FgnIKYae46c7ZJ9jTgfsrhZ1OSQ9oUqzyAS3ugUa5QW3uMEpfnXVxt/EnwnOw== ansible@cttb.us)
+2016-11-15 14:42:57,574 p=31549 u=administrator |  TASK [common : install ntpd] ***************************************************
+2016-11-15 14:42:57,575 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:57 -0800 (0:00:01.430)       0:00:32.506 ****** 
+2016-11-15 14:42:57,597 p=31549 u=administrator |  skipping: [vbox-srv]
+2016-11-15 14:42:57,603 p=31549 u=administrator |  TASK [common : enable ntp service] *********************************************
+2016-11-15 14:42:57,603 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:57 -0800 (0:00:00.028)       0:00:32.535 ****** 
+2016-11-15 14:42:57,632 p=31549 u=administrator |  skipping: [vbox-srv]
+2016-11-15 14:42:57,636 p=31549 u=administrator |  TASK [common : ensure ntp is running] ******************************************
+2016-11-15 14:42:57,636 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:57 -0800 (0:00:00.033)       0:00:32.568 ****** 
+2016-11-15 14:42:57,663 p=31549 u=administrator |  skipping: [vbox-srv]
+2016-11-15 14:42:57,668 p=31549 u=administrator |  TASK [common : remove net udev rule] *******************************************
+2016-11-15 14:42:57,668 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:57 -0800 (0:00:00.032)       0:00:32.600 ****** 
+2016-11-15 14:42:57,695 p=31549 u=administrator |  skipping: [vbox-srv]
+2016-11-15 14:42:57,699 p=31549 u=administrator |  TASK [common : set hostname] ***************************************************
+2016-11-15 14:42:57,699 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:57 -0800 (0:00:00.030)       0:00:32.631 ****** 
+2016-11-15 14:42:59,405 p=31549 u=administrator |  ok: [vbox-srv]
+2016-11-15 14:42:59,409 p=31549 u=administrator |  TASK [common : fix /etc/hosts] *************************************************
+2016-11-15 14:42:59,410 p=31549 u=administrator |  Tuesday 15 November 2016  14:42:59 -0800 (0:00:01.710)       0:00:34.341 ****** 
+2016-11-15 14:43:00,763 p=31549 u=administrator |  ok: [vbox-srv]
+2016-11-15 14:43:00,767 p=31549 u=administrator |  TASK [common : fix 127.0.1.1] **************************************************
+2016-11-15 14:43:00,767 p=31549 u=administrator |  Tuesday 15 November 2016  14:43:00 -0800 (0:00:01.357)       0:00:35.699 ****** 
+2016-11-15 14:43:01,987 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:43:01,990 p=31549 u=administrator |  TASK [common : add ansible repo key] *******************************************
+2016-11-15 14:43:01,990 p=31549 u=administrator |  Tuesday 15 November 2016  14:43:01 -0800 (0:00:01.223)       0:00:36.922 ****** 
+2016-11-15 14:43:04,307 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:43:04,310 p=31549 u=administrator |  TASK [common : add ansible repo mirror] ****************************************
+2016-11-15 14:43:04,310 p=31549 u=administrator |  Tuesday 15 November 2016  14:43:04 -0800 (0:00:02.319)       0:00:39.241 ****** 
+2016-11-15 14:43:12,253 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:43:12,256 p=31549 u=administrator |  TASK [common : install basic software] *****************************************
+2016-11-15 14:43:12,257 p=31549 u=administrator |  Tuesday 15 November 2016  14:43:12 -0800 (0:00:07.946)       0:00:47.188 ****** 
+2016-11-15 14:43:58,221 p=31549 u=administrator |  changed: [vbox-srv] => (item=[u'ansible', u'byobu', u'collectd', u'curl', u'iperf', u'git', u'obnam', u'traceroute', u'unattended-upgrades', u'vim', u'whois'])
+2016-11-15 14:43:58,224 p=31549 u=administrator |  TASK [common : vim saner defaults] *********************************************
+2016-11-15 14:43:58,224 p=31549 u=administrator |  Tuesday 15 November 2016  14:43:58 -0800 (0:00:45.967)       0:01:33.156 ****** 
+2016-11-15 14:44:01,223 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:44:01,228 p=31549 u=administrator |  TASK [common : vim saner defaults for administrator] ***************************
+2016-11-15 14:44:01,230 p=31549 u=administrator |  Tuesday 15 November 2016  14:44:01 -0800 (0:00:03.005)       0:01:36.161 ****** 
+2016-11-15 14:44:04,229 p=31549 u=administrator |  changed: [vbox-srv]
+2016-11-15 14:44:04,231 p=31549 u=administrator |  PLAY RECAP *********************************************************************
+2016-11-15 14:44:04,231 p=31549 u=administrator |  vbox-srv                   : ok=14   changed=10   unreachable=0    failed=0   
+2016-11-15 14:44:04,231 p=31549 u=administrator |  Tuesday 15 November 2016  14:44:04 -0800 (0:00:03.001)       0:01:39.163 ****** 
+2016-11-15 14:44:04,231 p=31549 u=administrator |  =============================================================================== 
+2016-11-15 14:44:04,231 p=31549 u=administrator |  common : install basic software ---------------------------------------- 45.97s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  common : install aptitude ---------------------------------------------- 13.58s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  common : add ansible repo mirror ---------------------------------------- 7.95s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  common : refresh the mirrors -------------------------------------------- 7.56s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  common : install apt-add-repository ------------------------------------- 4.75s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  common : custom apt sources.list ---------------------------------------- 3.24s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  common : vim saner defaults --------------------------------------------- 3.01s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  common : vim saner defaults for administrator --------------------------- 3.00s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  common : add ansible repo key ------------------------------------------- 2.32s
+2016-11-15 14:44:04,232 p=31549 u=administrator |  setup ------------------------------------------------------------------- 1.89s
+2016-11-15 14:44:04,233 p=31549 u=administrator |  common : set hostname --------------------------------------------------- 1.71s
+2016-11-15 14:44:04,233 p=31549 u=administrator |  common : Set up ansible/cttb-os authorized_key -------------------------- 1.43s
+2016-11-15 14:44:04,233 p=31549 u=administrator |  common : fix /etc/hosts ------------------------------------------------- 1.36s
+2016-11-15 14:44:04,233 p=31549 u=administrator |  common : fix 127.0.1.1 -------------------------------------------------- 1.22s
+2016-11-15 14:44:04,233 p=31549 u=administrator |  common : enable ntp service --------------------------------------------- 0.03s
+2016-11-15 14:44:04,233 p=31549 u=administrator |  common : ensure ntp is running ------------------------------------------ 0.03s
+2016-11-15 14:44:04,233 p=31549 u=administrator |  common : remove net udev rule ------------------------------------------- 0.03s
+2016-11-15 14:44:04,233 p=31549 u=administrator |  common : install ntpd --------------------------------------------------- 0.03s

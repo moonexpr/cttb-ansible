@@ -1,0 +1,23 @@
+2016-10-28 16:45:13,447 p=18944 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/asterisk.yml
+2016-10-28 16:45:13,456 p=18944 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/tftp.yml
+2016-10-28 16:45:13,460 p=18944 u=administrator |  ERROR! no action detected in task. This often indicates a misspelled module name, or incorrect module path.
+
+The error appears to have been in '/home/administrator/Documents/ansible/new/roles/asterisk/tasks/tftp.yml': line 22, column 3, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+
+- name: copy tftpboot files
+  ^ here
+
+
+The error appears to have been in '/home/administrator/Documents/ansible/new/roles/asterisk/tasks/tftp.yml': line 22, column 3, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+
+- name: copy tftpboot files
+  ^ here
+

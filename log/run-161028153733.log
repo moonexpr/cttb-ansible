@@ -1,0 +1,21 @@
+2016-10-28 15:37:35,591 p=6085 u=administrator |  ERROR! this task 'service' has extra params, which is only allowed in the following modules: command, shell, script, include, include_vars, add_host, group_by, set_fact, raw, meta
+
+The error appears to have been in '/home/administrator/Documents/ansible/new/roles/asterisk/handlers/main.yml': line 3, column 3, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+
+- name: reload asterisk
+  ^ here
+
+
+The error appears to have been in '/home/administrator/Documents/ansible/new/roles/asterisk/handlers/main.yml': line 3, column 3, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+
+- name: reload asterisk
+  ^ here
+

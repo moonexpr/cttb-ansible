@@ -1,0 +1,50 @@
+2016-11-07 11:27:30,613 p=30156 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-11-07 11:27:30,659 p=30156 u=administrator |  TASK [setup] *******************************************************************
+2016-11-07 11:27:30,659 p=30156 u=administrator |  Monday 07 November 2016  11:27:30 -0800 (0:00:00.049)       0:00:00.049 ******* 
+2016-11-07 11:27:32,393 p=30156 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:27:32,396 p=30156 u=administrator |  TASK [common : refresh the mirrors] ********************************************
+2016-11-07 11:27:32,397 p=30156 u=administrator |  Monday 07 November 2016  11:27:32 -0800 (0:00:01.737)       0:00:01.786 ******* 
+2016-11-07 11:27:35,221 p=30156 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:27:35,226 p=30156 u=administrator |  TASK [common : install aptitude] ***********************************************
+2016-11-07 11:27:35,226 p=30156 u=administrator |  Monday 07 November 2016  11:27:35 -0800 (0:00:02.829)       0:00:04.615 ******* 
+2016-11-07 11:27:36,939 p=30156 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:27:36,942 p=30156 u=administrator |  TASK [common : install apt-add-repository] *************************************
+2016-11-07 11:27:36,942 p=30156 u=administrator |  Monday 07 November 2016  11:27:36 -0800 (0:00:01.716)       0:00:06.332 ******* 
+2016-11-07 11:27:38,625 p=30156 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:27:38,630 p=30156 u=administrator |  TASK [common : Set up ansible/cttb-os authorized_key] **************************
+2016-11-07 11:27:38,630 p=30156 u=administrator |  Monday 07 November 2016  11:27:38 -0800 (0:00:01.687)       0:00:08.020 ******* 
+2016-11-07 11:27:40,116 p=30156 u=administrator |  ok: [vbox-srv] => (item=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nTH15aJs0AOVSLaSN6TH+zrdyaRGk6XwrbvLoCiyGOveOt4TcwmOzgyrXg9p1Vy0gcd2pjN+fDbO07ftwPGtuSfbvShvnwYaRPzF1IcBEBMeml/e05Naw8Q0KhZbuGXnCHvEDM2QArw9qD/a77kEV9vxrhJaOUOFkdVx1gsU/dAjQikZzD+Sag7JhtSYIpZupA+YbD1K0dRYUdE9dm3yTUUFmWM3nCCpj8kpU+TWjFeG2M4ilWym7Y81tk3CgI3vzRZRkA395IZlpP1FKNjAlNsit8YuldRvgrYXjPH3TcM1XkLFL4k6EJTjwsM5oWC4o9TriFJRTN75MxGgs72tZcgwlN2W+qkGAGAAYMvSqCBPIXuVCp+3ixuECgnJ3pYq48x8J5DmTn6i93Q9eAv7Xj8B9shts8MlrwGzMBHqjEu/CFfJAHtsLmJ34vvfM0kTFp6Du/K7WnYAuBvB4agMSMBAKy3+9ij5r1+hOxEv7rPkJvlFTECYLvEmNGXOSthuKLEHarlAH21YB1+aP5GwdrypLlYifXYXbQyf/nc/sebyleA3yHs99OLxxW3SCFOqvWxRH7kV/i56Ei8JFxAASauQMy/jXT/FgnIKYae46c7ZJ9jTgfsrhZ1OSQ9oUqzyAS3ugUa5QW3uMEpfnXVxt/EnwnOw== ansible@cttb.us)
+2016-11-07 11:27:40,120 p=30156 u=administrator |  TASK [common : install ntpd] ***************************************************
+2016-11-07 11:27:40,121 p=30156 u=administrator |  Monday 07 November 2016  11:27:40 -0800 (0:00:01.490)       0:00:09.510 ******* 
+2016-11-07 11:27:40,146 p=30156 u=administrator |  skipping: [vbox-srv]
+2016-11-07 11:27:40,149 p=30156 u=administrator |  TASK [common : enable ntp service] *********************************************
+2016-11-07 11:27:40,149 p=30156 u=administrator |  Monday 07 November 2016  11:27:40 -0800 (0:00:00.027)       0:00:09.538 ******* 
+2016-11-07 11:27:40,177 p=30156 u=administrator |  skipping: [vbox-srv]
+2016-11-07 11:27:40,182 p=30156 u=administrator |  TASK [common : ensure ntp is running] ******************************************
+2016-11-07 11:27:40,182 p=30156 u=administrator |  Monday 07 November 2016  11:27:40 -0800 (0:00:00.033)       0:00:09.572 ******* 
+2016-11-07 11:27:40,209 p=30156 u=administrator |  skipping: [vbox-srv]
+2016-11-07 11:27:40,213 p=30156 u=administrator |  TASK [common : remove net udev rule] *******************************************
+2016-11-07 11:27:40,214 p=30156 u=administrator |  Monday 07 November 2016  11:27:40 -0800 (0:00:00.031)       0:00:09.603 ******* 
+2016-11-07 11:27:40,242 p=30156 u=administrator |  skipping: [vbox-srv]
+2016-11-07 11:27:40,247 p=30156 u=administrator |  TASK [common : set hostname] ***************************************************
+2016-11-07 11:27:40,247 p=30156 u=administrator |  Monday 07 November 2016  11:27:40 -0800 (0:00:00.033)       0:00:09.636 ******* 
+2016-11-07 11:27:41,992 p=30156 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:27:41,996 p=30156 u=administrator |  TASK [common : fix /etc/hosts] *************************************************
+2016-11-07 11:27:41,996 p=30156 u=administrator |  Monday 07 November 2016  11:27:41 -0800 (0:00:01.748)       0:00:11.385 ******* 
+2016-11-07 11:27:43,349 p=30156 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:27:43,351 p=30156 u=administrator |  TASK [common : fix 127.0.1.1] **************************************************
+2016-11-07 11:27:43,352 p=30156 u=administrator |  Monday 07 November 2016  11:27:43 -0800 (0:00:01.355)       0:00:12.741 ******* 
+2016-11-07 11:27:44,602 p=30156 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:27:44,605 p=30156 u=administrator |  TASK [common : add ansible repo key] *******************************************
+2016-11-07 11:27:44,605 p=30156 u=administrator |  Monday 07 November 2016  11:27:44 -0800 (0:00:01.253)       0:00:13.995 ******* 
+2016-11-07 11:27:46,081 p=30156 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:27:46,085 p=30156 u=administrator |  TASK [common : add ansible repo mirror] ****************************************
+2016-11-07 11:27:46,085 p=30156 u=administrator |  Monday 07 November 2016  11:27:46 -0800 (0:00:01.479)       0:00:15.475 ******* 
+2016-11-07 11:27:47,585 p=30156 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:27:47,588 p=30156 u=administrator |  TASK [common : install basic software] *****************************************
+2016-11-07 11:27:47,588 p=30156 u=administrator |  Monday 07 November 2016  11:27:47 -0800 (0:00:01.502)       0:00:16.978 ******* 
+2016-11-07 11:27:49,320 p=30156 u=administrator |  ok: [vbox-srv] => (item=[u'ansible', u'byobu', u'collectd', u'curl', u'iperf', u'git', u'obnam', u'traceroute', u'unattended-upgrades', u'vim', u'whois'])
+2016-11-07 11:27:49,325 p=30156 u=administrator |  TASK [common : vim saner defaults] *********************************************
+2016-11-07 11:27:49,325 p=30156 u=administrator |  Monday 07 November 2016  11:27:49 -0800 (0:00:01.737)       0:00:18.715 ******* 
+2016-11-07 11:27:51,876 p=30156 u=administrator |   [ERROR]: User interrupted execution
+

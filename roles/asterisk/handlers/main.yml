@@ -1,0 +1,16 @@
+---
+
+- name: reload asterisk
+  service:
+    name:   asterisk
+    state:  reloaded
+
+- name: restart asterisk
+  service:
+    name:   asterisk
+    state:  restarted
+
+- name: restart tftp-hpa
+  service:
+    name:   tftp-hpa
+    state:  restarted

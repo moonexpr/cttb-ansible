@@ -1,0 +1,24 @@
+2016-11-06 17:50:02,604 p=20251 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/desktop/tasks/lubuntu.yml
+2016-11-06 17:50:02,619 p=20251 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/desktop/tasks/lookandfeel.yml
+2016-11-06 17:50:02,666 p=20251 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-11-06 17:50:02,738 p=20251 u=administrator |  TASK [setup] *******************************************************************
+2016-11-06 17:50:04,682 p=20251 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:50:04,692 p=20251 u=administrator |  TASK [desktop : setup default account files] ***********************************
+2016-11-06 17:50:11,162 p=20251 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:50:11,171 p=20251 u=administrator |  TASK [desktop : copy lightdm avatar image] *************************************
+2016-11-06 17:50:13,666 p=20251 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:50:13,675 p=20251 u=administrator |  TASK [desktop : deploy image background] ***************************************
+2016-11-06 17:50:16,199 p=20251 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:50:16,209 p=20251 u=administrator |  TASK [desktop : add noobslab mirror key] ***************************************
+2016-11-06 17:50:17,707 p=20251 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:50:17,716 p=20251 u=administrator |  TASK [desktop : Add noobslab icon repository] **********************************
+2016-11-06 17:50:19,213 p=20251 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:50:19,222 p=20251 u=administrator |  TASK [desktop : Add noobslab theme repository] *********************************
+2016-11-06 17:50:20,633 p=20251 u=administrator |  ok: [vbox-srv]
+2016-11-06 17:50:20,642 p=20251 u=administrator |  TASK [desktop : install noobs icons] *******************************************
+2016-11-06 17:50:22,625 p=20251 u=administrator |  ok: [vbox-srv] => (item=[u'super-flat-remix-icons', u'vertex-icons', u'arc-icons'])
+2016-11-06 17:50:22,644 p=20251 u=administrator |  TASK [desktop : install windos10 icons] ****************************************
+2016-11-06 17:50:24,199 p=20251 u=administrator |  fatal: [vbox-srv]: FAILED! => {"failed": true, "msg": "file or module does not exist: /home/administrator/Documents/ansible/new/plays/http:/theoverseer.cttb/ansible_assets/windos10-icons-custom.tar.gz"}
+2016-11-06 17:50:24,206 p=20251 u=administrator |  NO MORE HOSTS LEFT *************************************************************
+2016-11-06 17:50:24,206 p=20251 u=administrator |  PLAY RECAP *********************************************************************
+2016-11-06 17:50:24,206 p=20251 u=administrator |  vbox-srv                   : ok=8    changed=0    unreachable=0    failed=1   

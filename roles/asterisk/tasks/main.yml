@@ -1,0 +1,4 @@
+---
+
+- include: asterisk.yml
+- include: tftp.yml

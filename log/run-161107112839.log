@@ -1,0 +1,147 @@
+2016-11-07 11:28:41,960 p=31131 u=administrator |  PLAY [vbox-srv] ****************************************************************
+2016-11-07 11:28:42,010 p=31131 u=administrator |  TASK [setup] *******************************************************************
+2016-11-07 11:28:42,011 p=31131 u=administrator |  Monday 07 November 2016  11:28:42 -0800 (0:00:00.053)       0:00:00.053 ******* 
+2016-11-07 11:28:43,758 p=31131 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:28:43,762 p=31131 u=administrator |  TASK [common : refresh the mirrors] ********************************************
+2016-11-07 11:28:43,762 p=31131 u=administrator |  Monday 07 November 2016  11:28:43 -0800 (0:00:01.750)       0:00:01.804 ******* 
+2016-11-07 11:28:51,049 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:28:51,054 p=31131 u=administrator |  TASK [common : install aptitude] ***********************************************
+2016-11-07 11:28:51,054 p=31131 u=administrator |  Monday 07 November 2016  11:28:51 -0800 (0:00:07.291)       0:00:09.096 ******* 
+2016-11-07 11:29:05,078 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:29:05,080 p=31131 u=administrator |  TASK [common : install apt-add-repository] *************************************
+2016-11-07 11:29:05,080 p=31131 u=administrator |  Monday 07 November 2016  11:29:05 -0800 (0:00:14.026)       0:00:23.123 ******* 
+2016-11-07 11:29:10,018 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:29:10,023 p=31131 u=administrator |  TASK [common : Set up ansible/cttb-os authorized_key] **************************
+2016-11-07 11:29:10,023 p=31131 u=administrator |  Monday 07 November 2016  11:29:10 -0800 (0:00:04.942)       0:00:28.065 ******* 
+2016-11-07 11:29:11,471 p=31131 u=administrator |  ok: [vbox-srv] => (item=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nTH15aJs0AOVSLaSN6TH+zrdyaRGk6XwrbvLoCiyGOveOt4TcwmOzgyrXg9p1Vy0gcd2pjN+fDbO07ftwPGtuSfbvShvnwYaRPzF1IcBEBMeml/e05Naw8Q0KhZbuGXnCHvEDM2QArw9qD/a77kEV9vxrhJaOUOFkdVx1gsU/dAjQikZzD+Sag7JhtSYIpZupA+YbD1K0dRYUdE9dm3yTUUFmWM3nCCpj8kpU+TWjFeG2M4ilWym7Y81tk3CgI3vzRZRkA395IZlpP1FKNjAlNsit8YuldRvgrYXjPH3TcM1XkLFL4k6EJTjwsM5oWC4o9TriFJRTN75MxGgs72tZcgwlN2W+qkGAGAAYMvSqCBPIXuVCp+3ixuECgnJ3pYq48x8J5DmTn6i93Q9eAv7Xj8B9shts8MlrwGzMBHqjEu/CFfJAHtsLmJ34vvfM0kTFp6Du/K7WnYAuBvB4agMSMBAKy3+9ij5r1+hOxEv7rPkJvlFTECYLvEmNGXOSthuKLEHarlAH21YB1+aP5GwdrypLlYifXYXbQyf/nc/sebyleA3yHs99OLxxW3SCFOqvWxRH7kV/i56Ei8JFxAASauQMy/jXT/FgnIKYae46c7ZJ9jTgfsrhZ1OSQ9oUqzyAS3ugUa5QW3uMEpfnXVxt/EnwnOw== ansible@cttb.us)
+2016-11-07 11:29:11,484 p=31131 u=administrator |  TASK [common : install ntpd] ***************************************************
+2016-11-07 11:29:11,485 p=31131 u=administrator |  Monday 07 November 2016  11:29:11 -0800 (0:00:01.461)       0:00:29.527 ******* 
+2016-11-07 11:29:11,512 p=31131 u=administrator |  skipping: [vbox-srv]
+2016-11-07 11:29:11,517 p=31131 u=administrator |  TASK [common : enable ntp service] *********************************************
+2016-11-07 11:29:11,518 p=31131 u=administrator |  Monday 07 November 2016  11:29:11 -0800 (0:00:00.032)       0:00:29.560 ******* 
+2016-11-07 11:29:11,546 p=31131 u=administrator |  skipping: [vbox-srv]
+2016-11-07 11:29:11,550 p=31131 u=administrator |  TASK [common : ensure ntp is running] ******************************************
+2016-11-07 11:29:11,550 p=31131 u=administrator |  Monday 07 November 2016  11:29:11 -0800 (0:00:00.032)       0:00:29.593 ******* 
+2016-11-07 11:29:11,575 p=31131 u=administrator |  skipping: [vbox-srv]
+2016-11-07 11:29:11,579 p=31131 u=administrator |  TASK [common : remove net udev rule] *******************************************
+2016-11-07 11:29:11,579 p=31131 u=administrator |  Monday 07 November 2016  11:29:11 -0800 (0:00:00.028)       0:00:29.621 ******* 
+2016-11-07 11:29:11,607 p=31131 u=administrator |  skipping: [vbox-srv]
+2016-11-07 11:29:11,611 p=31131 u=administrator |  TASK [common : set hostname] ***************************************************
+2016-11-07 11:29:11,612 p=31131 u=administrator |  Monday 07 November 2016  11:29:11 -0800 (0:00:00.032)       0:00:29.654 ******* 
+2016-11-07 11:29:13,340 p=31131 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:29:13,345 p=31131 u=administrator |  TASK [common : fix /etc/hosts] *************************************************
+2016-11-07 11:29:13,345 p=31131 u=administrator |  Monday 07 November 2016  11:29:13 -0800 (0:00:01.733)       0:00:31.387 ******* 
+2016-11-07 11:29:14,743 p=31131 u=administrator |  ok: [vbox-srv]
+2016-11-07 11:29:14,746 p=31131 u=administrator |  TASK [common : fix 127.0.1.1] **************************************************
+2016-11-07 11:29:14,746 p=31131 u=administrator |  Monday 07 November 2016  11:29:14 -0800 (0:00:01.401)       0:00:32.789 ******* 
+2016-11-07 11:29:15,995 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:29:15,997 p=31131 u=administrator |  TASK [common : add ansible repo key] *******************************************
+2016-11-07 11:29:15,997 p=31131 u=administrator |  Monday 07 November 2016  11:29:15 -0800 (0:00:01.250)       0:00:34.040 ******* 
+2016-11-07 11:29:18,304 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:29:18,307 p=31131 u=administrator |  TASK [common : add ansible repo mirror] ****************************************
+2016-11-07 11:29:18,307 p=31131 u=administrator |  Monday 07 November 2016  11:29:18 -0800 (0:00:02.310)       0:00:36.350 ******* 
+2016-11-07 11:29:35,089 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:29:35,092 p=31131 u=administrator |  TASK [common : install basic software] *****************************************
+2016-11-07 11:29:35,092 p=31131 u=administrator |  Monday 07 November 2016  11:29:35 -0800 (0:00:16.784)       0:00:53.135 ******* 
+2016-11-07 11:30:32,822 p=31131 u=administrator |  changed: [vbox-srv] => (item=[u'ansible', u'byobu', u'collectd', u'curl', u'iperf', u'git', u'obnam', u'traceroute', u'unattended-upgrades', u'vim', u'whois'])
+2016-11-07 11:30:32,825 p=31131 u=administrator |  TASK [common : vim saner defaults] *********************************************
+2016-11-07 11:30:32,826 p=31131 u=administrator |  Monday 07 November 2016  11:30:32 -0800 (0:00:57.733)       0:01:50.868 ******* 
+2016-11-07 11:30:36,125 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:30:36,129 p=31131 u=administrator |  TASK [common : vim saner defaults for administrator] ***************************
+2016-11-07 11:30:36,129 p=31131 u=administrator |  Monday 07 November 2016  11:30:36 -0800 (0:00:03.303)       0:01:54.171 ******* 
+2016-11-07 11:30:39,109 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:30:39,112 p=31131 u=administrator |  TASK [desktop : fix network interfaces] ****************************************
+2016-11-07 11:30:39,113 p=31131 u=administrator |  Monday 07 November 2016  11:30:39 -0800 (0:00:02.983)       0:01:57.155 ******* 
+2016-11-07 11:30:42,108 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:30:42,112 p=31131 u=administrator |  TASK [desktop : install lubuntu] ***********************************************
+2016-11-07 11:30:42,113 p=31131 u=administrator |  Monday 07 November 2016  11:30:42 -0800 (0:00:03.000)       0:02:00.155 ******* 
+2016-11-07 11:34:42,824 p=31131 u=administrator |  changed: [vbox-srv] => (item=[u'lubuntu-core', u'desktop-file-utils', u'dmz-cursor-theme', u'evince', u'file-roller', u'galculator', u'indicator-application', u'indicator-application-gtk2', u'leafpad', u'light-locker', u'light-locker-settings', u'lightdm-gtk-greeter-settings', u'lubuntu-default-session', u'lxappearance', u'lxappearance-obconf', u'lxinput', u'lxlauncher', u'lxpanel-indicator-applet-plugin', u'lxrandr', u'lxsession-default-apps', u'lxsession-logout', u'lxshortcut', u'lxtask', u'lxterminal', u'obconf', u'pm-utils', u'scrot', u'simple-scan', u'xdg-user-dirs', u'xfce4-power-manager', u'xz-utils', u'policykit-1', u'policykit-1-gnome', u'libpolkit-agent-1-0', u'libpolkit-gobject-1-0', u'libpolkit-backend-1-0', u'libpolkit-qt-1-1', u'libpolkit-qt5-1-1', u'network-manager', u'network-manager-gnome', u'system-tools-backends', u'gnome-system-tools'])
+2016-11-07 11:34:42,832 p=31131 u=administrator |  TASK [desktop : setup default account files] ***********************************
+2016-11-07 11:34:42,832 p=31131 u=administrator |  Monday 07 November 2016  11:34:42 -0800 (0:04:00.719)       0:06:00.874 ******* 
+2016-11-07 11:35:00,636 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:35:00,642 p=31131 u=administrator |  TASK [desktop : configure lightdm] *********************************************
+2016-11-07 11:35:00,642 p=31131 u=administrator |  Monday 07 November 2016  11:35:00 -0800 (0:00:17.809)       0:06:18.684 ******* 
+2016-11-07 11:35:06,206 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:35:06,210 p=31131 u=administrator |  TASK [desktop : copy lightdm avatar image] *************************************
+2016-11-07 11:35:06,210 p=31131 u=administrator |  Monday 07 November 2016  11:35:06 -0800 (0:00:05.568)       0:06:24.253 ******* 
+2016-11-07 11:35:09,294 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:35:09,299 p=31131 u=administrator |  TASK [desktop : deploy image background] ***************************************
+2016-11-07 11:35:09,299 p=31131 u=administrator |  Monday 07 November 2016  11:35:09 -0800 (0:00:03.088)       0:06:27.342 ******* 
+2016-11-07 11:35:12,302 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:35:12,306 p=31131 u=administrator |  TASK [desktop : add noobslab mirror key] ***************************************
+2016-11-07 11:35:12,307 p=31131 u=administrator |  Monday 07 November 2016  11:35:12 -0800 (0:00:03.007)       0:06:30.349 ******* 
+2016-11-07 11:35:14,469 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:35:14,474 p=31131 u=administrator |  TASK [desktop : Add noobslab icon repository] **********************************
+2016-11-07 11:35:14,474 p=31131 u=administrator |  Monday 07 November 2016  11:35:14 -0800 (0:00:02.167)       0:06:32.516 ******* 
+2016-11-07 11:35:20,168 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:35:20,173 p=31131 u=administrator |  TASK [desktop : Add noobslab theme repository] *********************************
+2016-11-07 11:35:20,173 p=31131 u=administrator |  Monday 07 November 2016  11:35:20 -0800 (0:00:05.699)       0:06:38.216 ******* 
+2016-11-07 11:35:24,772 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:35:24,775 p=31131 u=administrator |  TASK [desktop : install noobs icons] *******************************************
+2016-11-07 11:35:24,775 p=31131 u=administrator |  Monday 07 November 2016  11:35:24 -0800 (0:00:04.602)       0:06:42.818 ******* 
+2016-11-07 11:36:01,404 p=31131 u=administrator |  changed: [vbox-srv] => (item=[u'super-flat-remix-icons', u'vertex-icons', u'arc-icons'])
+2016-11-07 11:36:01,409 p=31131 u=administrator |  TASK [desktop : install windos10 icons] ****************************************
+2016-11-07 11:36:01,409 p=31131 u=administrator |  Monday 07 November 2016  11:36:01 -0800 (0:00:36.633)       0:07:19.452 ******* 
+2016-11-07 11:36:07,999 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:36:08,003 p=31131 u=administrator |  TASK [desktop : install noobslab windos10-theme] *******************************
+2016-11-07 11:36:08,004 p=31131 u=administrator |  Monday 07 November 2016  11:36:08 -0800 (0:00:06.594)       0:07:26.046 ******* 
+2016-11-07 11:36:15,860 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:36:15,864 p=31131 u=administrator |  TASK [desktop : configure openbox] *********************************************
+2016-11-07 11:36:15,864 p=31131 u=administrator |  Monday 07 November 2016  11:36:15 -0800 (0:00:07.860)       0:07:33.906 ******* 
+2016-11-07 11:36:18,930 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:36:18,933 p=31131 u=administrator |  TASK [desktop : configure lxpanel] *********************************************
+2016-11-07 11:36:18,934 p=31131 u=administrator |  Monday 07 November 2016  11:36:18 -0800 (0:00:03.069)       0:07:36.976 ******* 
+2016-11-07 11:36:21,974 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:36:21,980 p=31131 u=administrator |  TASK [desktop : configure lxsession] *******************************************
+2016-11-07 11:36:21,980 p=31131 u=administrator |  Monday 07 November 2016  11:36:21 -0800 (0:00:03.046)       0:07:40.022 ******* 
+2016-11-07 11:36:25,029 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:36:25,035 p=31131 u=administrator |  TASK [desktop : configure pcmanfm] *********************************************
+2016-11-07 11:36:25,035 p=31131 u=administrator |  Monday 07 November 2016  11:36:25 -0800 (0:00:03.055)       0:07:43.078 ******* 
+2016-11-07 11:36:28,015 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:36:28,018 p=31131 u=administrator |  TASK [desktop : install language packages for en,zh,vi,zhuyin] *****************
+2016-11-07 11:36:28,018 p=31131 u=administrator |  Monday 07 November 2016  11:36:28 -0800 (0:00:02.982)       0:07:46.060 ******* 
+2016-11-07 11:37:10,662 p=31131 u=administrator |  changed: [vbox-srv] => (item=[u'gimp-help-en', u'hunspell-en-au', u'hunspell-en-ca', u'hunspell-en-gb', u'hunspell-en-za', u'hyphen-en-gb', u'hyphen-en-us', u'mythes-en-au', u'mythes-en-us', u'hunspell-vi', u'language-pack-gnome-vi', u'language-pack-vi', u'language-pack-gnome-zh-hant', u'language-pack-zh-hant'])
+2016-11-07 11:37:10,665 p=31131 u=administrator |  TASK [desktop : check if open office is installed] *****************************
+2016-11-07 11:37:10,665 p=31131 u=administrator |  Monday 07 November 2016  11:37:10 -0800 (0:00:42.647)       0:08:28.708 ******* 
+2016-11-07 11:37:12,052 p=31131 u=administrator |  fatal: [vbox-srv]: FAILED! => {"changed": true, "cmd": ["dpkg", "-l", "libreoffice-common"], "delta": "0:00:00.021224", "end": "2016-11-07 11:37:12.030718", "failed": true, "rc": 1, "start": "2016-11-07 11:37:12.009494", "stderr": "dpkg-query: no packages found matching libreoffice-common", "stdout": "", "stdout_lines": [], "warnings": []}
+2016-11-07 11:37:12,052 p=31131 u=administrator |  ...ignoring
+2016-11-07 11:37:12,057 p=31131 u=administrator |  TASK [desktop : install libreoffice language support] **************************
+2016-11-07 11:37:12,057 p=31131 u=administrator |  Monday 07 November 2016  11:37:12 -0800 (0:00:01.391)       0:08:30.099 ******* 
+2016-11-07 11:37:12,108 p=31131 u=administrator |  skipping: [vbox-srv] => (item=[]) 
+2016-11-07 11:37:12,113 p=31131 u=administrator |  TASK [desktop : install base fcitx packages] ***********************************
+2016-11-07 11:37:12,114 p=31131 u=administrator |  Monday 07 November 2016  11:37:12 -0800 (0:00:00.056)       0:08:30.156 ******* 
+2016-11-07 11:37:20,689 p=31131 u=administrator |  changed: [vbox-srv] => (item=[u'fcitx-frontend-gtk3', u'fcitx-frontend-qt4', u'fcitx-libs', u'fcitx-libs-qt', u'fcitx-module-kimpanel', u'libfcitx-qt0', u'libopencc1', u'libqt4-dbus', u'libqt4-declarative', u'libqt4-network', u'libqt4-script', u'libqt4-sql', u'libqt4-sql-mysql', u'libqt4-xml', u'libqt4-xmlpatterns', u'libqtcore4', u'libqtdbus4', u'libqtgui4', u'qdbus', u'qt-at-spi', u'qtchooser', u'qtcore4-l10n'])
+2016-11-07 11:37:20,694 p=31131 u=administrator |  TASK [desktop : set fcitx as default input method] *****************************
+2016-11-07 11:37:20,694 p=31131 u=administrator |  Monday 07 November 2016  11:37:20 -0800 (0:00:08.580)       0:08:38.737 ******* 
+2016-11-07 11:37:21,962 p=31131 u=administrator |  fatal: [vbox-srv]: FAILED! => {"changed": false, "cmd": "im-config -n fcitx", "failed": true, "msg": "[Errno 2] No such file or directory", "rc": 2}
+2016-11-07 11:37:21,962 p=31131 u=administrator |  ...ignoring
+2016-11-07 11:37:21,968 p=31131 u=administrator |  TASK [desktop : install fcitx taiwanese/chewing support] ***********************
+2016-11-07 11:37:21,968 p=31131 u=administrator |  Monday 07 November 2016  11:37:21 -0800 (0:00:01.273)       0:08:40.010 ******* 
+2016-11-07 11:37:42,337 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:37:42,342 p=31131 u=administrator |  TASK [desktop : update system] *************************************************
+2016-11-07 11:37:42,342 p=31131 u=administrator |  Monday 07 November 2016  11:37:42 -0800 (0:00:20.373)       0:09:00.384 ******* 
+2016-11-07 11:38:45,744 p=31131 u=administrator |  changed: [vbox-srv]
+2016-11-07 11:38:45,747 p=31131 u=administrator |  PLAY RECAP *********************************************************************
+2016-11-07 11:38:45,747 p=31131 u=administrator |  vbox-srv                   : ok=35   changed=29   unreachable=0    failed=0   
+2016-11-07 11:38:45,747 p=31131 u=administrator |  Monday 07 November 2016  11:38:45 -0800 (0:01:03.405)       0:10:03.790 ******* 
+2016-11-07 11:38:45,747 p=31131 u=administrator |  =============================================================================== 
+2016-11-07 11:38:45,748 p=31131 u=administrator |  desktop : install lubuntu --------------------------------------------- 240.72s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  desktop : update system ------------------------------------------------ 63.41s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  common : install basic software ---------------------------------------- 57.73s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  desktop : install language packages for en,zh,vi,zhuyin ---------------- 42.65s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  desktop : install noobs icons ------------------------------------------ 36.63s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  desktop : install fcitx taiwanese/chewing support ---------------------- 20.37s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  desktop : setup default account files ---------------------------------- 17.81s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  common : add ansible repo mirror --------------------------------------- 16.78s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  common : install aptitude ---------------------------------------------- 14.03s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  desktop : install base fcitx packages ----------------------------------- 8.58s
+2016-11-07 11:38:45,748 p=31131 u=administrator |  desktop : install noobslab windos10-theme ------------------------------- 7.86s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  common : refresh the mirrors -------------------------------------------- 7.29s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  desktop : install windos10 icons ---------------------------------------- 6.59s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  desktop : Add noobslab icon repository ---------------------------------- 5.70s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  desktop : configure lightdm --------------------------------------------- 5.57s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  common : install apt-add-repository ------------------------------------- 4.94s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  desktop : Add noobslab theme repository --------------------------------- 4.60s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  common : vim saner defaults --------------------------------------------- 3.30s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  desktop : copy lightdm avatar image ------------------------------------- 3.09s
+2016-11-07 11:38:45,749 p=31131 u=administrator |  desktop : configure openbox --------------------------------------------- 3.07s

@@ -1,0 +1,198 @@
+# This is the default ansible 'hosts' file.
+#
+# It should live in /etc/ansible/hosts
+#
+#   - Comments begin with the '#' character
+#   - Blank lines are ignored
+#   - Groups of hosts are delimited by [header] elements
+#   - You can enter hostnames or ip addresses
+#   - A hostname/ip can be a member of multiple groups
+
+# Global vars
+* ansible_ssh_user=administrator
+
+# TESTLAB
+testlab1
+asus-test
+vbox-srv
+vbox-desktop
+vbox-pxe
+dininghall
+matt-desktop
+dmtsung-toshiba # -w for wireless, no time to port all the changes, so changed pwd to dvbstsung to admin account
+
+# CTTB infra
+cf14new ansible_ssh_host=10.11.26.246 ansible_ssh_user=root
+unbound-adult ansible_ssh_host=10.11.31.131
+unbound-igdvs ansible_ssh_host=10.11.11.140
+backup ansible_ssh_host=10.11.14.129
+asterix 
+
+# pi infra
+dvgs-cslab-cups ansible_ssh_host=10.11.26.254
+picam-ao-1 ansible_ssh_host=10.11.26.211
+
+# People on linux
+donnafarmer-latitude-e5510 ansible_ssh_host=10.11.29.185
+donnafarmer-eepc ansible_ssh_host=10.11.11.252
+dmchih-desktop-drbu ansible_ssh_host=10.11.23.136
+jgh-drbu-student ansible_ssh_host=10.11.23.155
+loading-dock ansible_ssh_host=10.11.23.165
+ws-frank ansible_ssh_host=10.11.30.97
+dvbs-rm1-downstairs
+rui-desktop
+rui-test-box
+wei-desktop
+dm-yan-latitude
+dvbs-women-office
+dmtsung-desktop
+dmyong-eepc
+dmqi-desktop
+aaron-laptop
+ao-laptop
+musicroom-desktop
+
+# DVGS
+dvgs-main-office
+
+# dvgs art lab
+dvgs-art-studio-pc1 ansible_ssh_host=10.11.9.95
+dvgs-art-studio-pc2 ansible_ssh_host=10.11.9.35
+
+# dvgs computer lab
+dvgs-cs-lab-pc1
+dvgs-cs-lab-pc2
+dvgs-cs-lab-pc3
+dvgs-cs-lab-pc4
+dvgs-cs-lab-pc5
+dvgs-cs-lab-pc6
+dvgs-cs-lab-pc7
+dvgs-cs-lab-pc8
+dvgs-cs-lab-pc9
+dvgs-cs-lab-pc10
+
+# dvgs dorm
+dvgs-dorm-pc1
+dvgs-dorm-pc2
+dvgs-dorm-pc3
+dvgs-dorm-pc4
+dvgs-dorm-pc5
+dvgs-dorm-pc6
+dvgs-dorm-pc7
+dvgs-dorm-pc8
+dvgs-dorm-pc9
+dvgs-dorm-pc10
+dvgs-dorm-pc11
+dvgs-dorm-pc12
+dvgs-dorm-pc13
+dvgs-dorm-pc14
+
+#dvgs laptops
+
+dvgs-laptop-2e
+dvgs-laptop-5e
+
+## for teachers only
+dvgs-teacher-laptop-3e
+dvgs-teacher-laptop-1e
+dvgs-teacher-laptop-2e
+
+## disabled/not used atm
+#dvgs-lenovo-laptop-1 ansible_ssh_host=10.11.9.82
+#dvgs-vostro-laptop-3 ansible_ssh_host=10.11.9.83
+#dvgs-vostro-laptop-4 ansible_ssh_host=10.11.9.84
+#dvgs-vostro-laptop-6 ansible_ssh_host=10.11.9.86
+#dvgs-vostro-laptop-7 ansible_ssh_host=10.11.9.87
+
+# koha kiosk library
+koha-kiosk1 ansible_ssh_host=10.11.17.1
+koha-kiosk2 ansible_ssh_host=10.11.17.2
+
+# DRBU Computer Lab
+drbu-cs-lab-pc1
+drbu-cs-lab-pc2
+drbu-cs-lab-pc3
+drbu-cs-lab-pc4
+drbu-cs-lab-pc5
+drbu-cs-lab-pc6
+
+drbu-cdorm-lab-pc1
+drbu-cdorm-lab-pc2
+drbu-cdorm-lab-pc3
+drbu-cdorm-lab-pc4
+drbu-cdorm-office-pc1
+
+drbu-admin-office
+
+[pis]
+pi1
+pi2
+pi3
+
+[dvgs-laptops]
+dvgs-laptop-2e
+dvgs-laptop-5e
+dvgs-teacher-laptop-3e
+dvgs-teacher-laptop-1e
+dvgs-teacher-laptop-2e
+
+[dvgs-koha]
+koha-kiosk1
+koha-kiosk2
+
+[dvgs-dorm]
+dvgs-dorm-pc1
+dvgs-dorm-pc2
+dvgs-dorm-pc3
+dvgs-dorm-pc4
+dvgs-dorm-pc5
+dvgs-dorm-pc6
+dvgs-dorm-pc7
+dvgs-dorm-pc8
+dvgs-dorm-pc9
+dvgs-dorm-pc10
+dvgs-dorm-pc11
+dvgs-dorm-pc12
+dvgs-dorm-pc13
+dvgs-dorm-pc14
+
+[dvgs-cs-lab]
+dvgs-cs-lab-pc1
+dvgs-cs-lab-pc2
+dvgs-cs-lab-pc3
+dvgs-cs-lab-pc4
+dvgs-cs-lab-pc5
+dvgs-cs-lab-pc6
+dvgs-cs-lab-pc7
+dvgs-cs-lab-pc8
+dvgs-cs-lab-pc9
+dvgs-cs-lab-pc10
+
+[dvgs-art-studio]
+dvgs-art-studio-pc1 
+dvgs-art-studio-pc2 
+
+[dvgs:children]
+dvgs-laptops
+dvgs-koha
+dvgs-cs-lab
+dvgs-art-studio
+
+[drbu-cs-lab]
+drbu-cs-lab-pc1
+drbu-cs-lab-pc2
+drbu-cs-lab-pc3
+drbu-cs-lab-pc4
+drbu-cs-lab-pc5
+drbu-cs-lab-pc6
+
+[drbu-cdorm-lab]
+drbu-cdorm-lab-pc1
+drbu-cdorm-lab-pc2
+drbu-cdorm-lab-pc3
+drbu-cdorm-lab-pc4
+drbu-cdorm-office-pc1
+
+[drbu-cs-lab-guest]
+drbu-cs-lab-pc1
+drbu-cs-lab-pc2

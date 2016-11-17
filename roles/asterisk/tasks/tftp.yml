@@ -1,0 +1,44 @@
+---
+
+- name: install tftp packages
+  apt:
+    name:               "{{item}}"
+    state:              present
+    update_cache:       yes
+    install_recommends: no
+    cache_valid_time:   3600
+  with_items:
+    - tftpd-hpa
+  tags:
+    - pkg
+
+- name: configure tftp
+  copy:
+    src:    tftp-default.cfg
+    dest:   /etc/default/tftpd-hpa
+    owner:  root
+    group:  root
+    mode:   0640
+  tags:
+    - cfg
+  notify:
+    - restart tftp-hpa
+
+- name: copy tftpboot files
+  synchronize:
+    src:      tftp/
+    dest:     /var/lib/tftpboot/
+    delete:   yes
+    checksum: yes
+  tags:
+    - cfg
+
+- name: fix permissions on tftpboot files
+  file:
+    path:     /var/lib/tftpboot/
+    owner:    tftp
+    group:    tftp
+    mode:     u=rwX,g=rX,o=
+    recurse:  True
+  tags:
+    - cfg

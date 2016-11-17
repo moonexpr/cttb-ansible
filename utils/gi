@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# ansible-galaxy install
+# Installs ansible modules from galaxy
+
+source utils/setup-env
+
+ansible-galaxy install $1 -p $ANSIBLE_ROLES/
