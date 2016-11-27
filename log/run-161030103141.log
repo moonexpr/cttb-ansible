@@ -1,8 +1,0 @@
-2016-10-30 10:31:42,279 p=5090 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/asterisk.yml
-2016-10-30 10:31:42,295 p=5090 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/asterisk/tasks/tftp.yml
-2016-10-30 10:31:42,330 p=5090 u=administrator |  PLAY [vbox-srv] ****************************************************************
-2016-10-30 10:31:42,384 p=5090 u=administrator |  TASK [setup] *******************************************************************
-2016-10-30 10:31:43,836 p=5090 u=administrator |  fatal: [vbox-srv]: FAILED! => {"changed": false, "failed": true, "module_stderr": "", "module_stdout": "sudo: a password is required\r\n", "msg": "MODULE FAILURE"}
-2016-10-30 10:31:43,842 p=5090 u=administrator |  NO MORE HOSTS LEFT *************************************************************
-2016-10-30 10:31:43,842 p=5090 u=administrator |  PLAY RECAP *********************************************************************
-2016-10-30 10:31:43,843 p=5090 u=administrator |  vbox-srv                   : ok=0    changed=0    unreachable=0    failed=1   

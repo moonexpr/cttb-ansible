@@ -1,8 +1,0 @@
-2016-10-28 11:30:33,780 p=14896 u=administrator |  PLAY [vbox-srv] ****************************************************************
-2016-10-28 11:30:33,809 p=14896 u=administrator |  TASK [setup] *******************************************************************
-2016-10-28 11:30:35,711 p=14896 u=administrator |  ok: [vbox-srv]
-2016-10-28 11:30:35,720 p=14896 u=administrator |  TASK [asterisk : install packages] *********************************************
-2016-10-28 11:30:37,552 p=14896 u=administrator |  failed: [vbox-srv] (item=[u'asterisk', u'asterisk-core-sounds-en', u'asterisk-core-sounds-en-gsm', u'asterisk-modules', u'asterisk-moh-opsound-gsm', u'asterisk-mp3', u'asterisk-voicemail']) => {"failed": true, "item": ["asterisk", "asterisk-core-sounds-en", "asterisk-core-sounds-en-gsm", "asterisk-modules", "asterisk-moh-opsound-gsm", "asterisk-mp3", "asterisk-voicemail"], "msg": "Failed to lock apt for exclusive operation"}
-2016-10-28 11:30:37,564 p=14896 u=administrator |  NO MORE HOSTS LEFT *************************************************************
-2016-10-28 11:30:37,565 p=14896 u=administrator |  PLAY RECAP *********************************************************************
-2016-10-28 11:30:37,565 p=14896 u=administrator |  vbox-srv                   : ok=1    changed=0    unreachable=0    failed=1   

@@ -1,6 +1,0 @@
-2016-11-06 17:48:54,728 p=19433 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/desktop/tasks/lubuntu.yml
-2016-11-06 17:48:54,743 p=19433 u=administrator |  statically included: /home/administrator/Documents/ansible/new/roles/desktop/tasks/lookandfeel.yml
-2016-11-06 17:48:54,774 p=19433 u=administrator |  playbook: /home/administrator/Documents/ansible/new/plays/base.yml
-2016-11-06 17:48:54,774 p=19433 u=administrator |    play #1 (vbox-srv): vbox-srv	TAGS: []
-2016-11-06 17:48:54,824 p=19433 u=administrator |        TASK TAGS: [lookandfeel, lubuntu, os_upgrade]
-

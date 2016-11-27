@@ -1,0 +1,4 @@
+# installed by ansible
+# DO NOT EDIT BY HAND, IT WILL BE OVERWRITTEN
+
+/nfs/home    /etc/auto.nfs

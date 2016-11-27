@@ -1,0 +1,5 @@
+---
+
+- hosts: unbound
+  roles:
+    - {role: unbound}

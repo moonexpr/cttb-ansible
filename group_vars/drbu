@@ -1,0 +1,8 @@
+---
+
+# desktop configuration
+lightdm_hide_users: true
+
+# look and feel
+pic_avatar: avatar-drbu.jpg
+pic_bg: bg-drbu.png

@@ -1,0 +1,90 @@
+---
+
+  - name: debconf ldap-auth-config/ldapns/ldap_version
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/ldapns/ldap_version
+      value: "{{ldap_version}}"
+      vtype: select
+
+  - name: debconf ldap-auth-config/ldapns/ldap-server
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/ldapns/ldap-server
+      value: ldap://{{ldap_server}}
+      vtype: string
+
+  - name: debconf ldap-auth-config/ldapns/base-dn
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/ldapns/base-dn
+      value: dc={{ldap_dc}}
+      vtype: string
+
+  - name: debconf ldap-auth-config/pam_password
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/pam_password
+      value: md5
+      vtype: select
+
+  - name: debconf ldap-auth-config/dblogin
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/dblogin
+      value: false
+      vtype: boolean
+
+  - name: debconf ldap-auth-config/dbrootlogin
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/dbrootlogin
+      value: false
+      vtype: boolean
+
+  - name: debconf libpam-runtime/profiles multiselect
+    debconf:
+      name: libpam-runtime
+      question: libpam-runtime/profiles
+      value: unix, ldap, systemd
+      vtype: multiselect
+
+  - name: install ldap/nss/pam pkgs
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: yes  
+    with_items:
+      - libpam-runtime
+      - libnss-ldap
+      - ldap-auth-config
+
+  - name: configure ldap for nss
+    command: auth-client-config -t nss -p lac_ldap
+
+  - name: setup ldap authentication
+    command: pam-auth-update
+    environment:
+      DEBIAN_FRONTEND: noninteractive
+
+  - name: enable start_tls
+    lineinfile:
+      dest: /etc/ldap.conf
+      regexp: "^#ssl start_tls"
+      line: "ssl start_tls"
+
+  - name: enable tls_checkpeer
+    lineinfile:
+      dest: /etc/ldap.conf
+      regexp: "^#tls_checkpeer yes"
+      line: "tls_checkpeer yes"
+
+  - name: enable tls_checkpeer
+    lineinfile:
+      dest: /etc/ldap.conf
+      regexp: "^#tls_cacertfile /etc/ssl/ca.cert"
+      line: "tls_cacertfile /etc/ldap/cttb-cacert.pem"
+
+  - name: remember to copy the cacert file!
+    debug:
+      msg: You still need to copy the cacert file manually

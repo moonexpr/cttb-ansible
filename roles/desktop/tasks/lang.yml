@@ -24,12 +24,8 @@
       - mythes-en-au
       - mythes-en-us
       - hunspell-vi
-      - language-pack-gnome-vi
-      - language-pack-vi
-      - language-pack-gnome-zh-hant
-      - language-pack-zh-hant
 
-  - name: check if open office is installed
+  - name: check if libre office is installed
     command: dpkg -l libreoffice-common
     register: libreoffice_installed
     ignore_errors: yes
@@ -44,12 +40,6 @@
       - libreoffice-help-en-us
       - libreoffice-l10n-en-gb
       - libreoffice-l10n-en-za
-      - libreoffice-help-vi
-      - libreoffice-l10n-vi
-      - libreoffice-help-zh-cn
-      - libreoffice-help-zh-tw
-      - libreoffice-l10n-zh-cn
-      - libreoffice-l10n-zh-tw
       - openoffice.org-hyphenation
     when: libreoffice_installed == 1
     tags:
@@ -62,64 +52,40 @@
       install_recommends: yes
     with_items:
       - fcitx
-      #- fcitx-config-gtk2
+      - fcitx-bin
+      - fcitx-config-common
+      - fcitx-config-gtk2
       - fcitx-data
-      #- fcitx-frontend-gtk2
+      - fcitx-frontend-gtk2
+      - fcitx-frontend-gtk3
       - fcitx-frontend-qt4
-      - fcitx-frontend-qt5
       - fcitx-libs
       - fcitx-libs-qt
+      - fcitx-module-dbus
       - fcitx-module-kimpanel
-      - fcitx-pinyin
+      - fcitx-module-x11
+      - fcitx-modules
+      # - fcitx-pinyin # we use sogou which seems to work without qimpanel
+      - fcitx-table
       - fcitx-table-cangjie
-      #- fcitx-ui-classic
-      - fcitx-ui-qimpanel
-      - fcitx-unikey
+      - fcitx-ui-classic
       - fonts-arphic-ukai
       - fonts-arphic-uming
       - fonts-noto-cjk
       - im-config
-      - libfcitx-qt0
-      - libopencc1
-      - libqt4-dbus
-      - libqt4-declarative
-      - libqt4-network
-      - libqt4-script
-      - libqt4-sql
-      - libqt4-sql-mysql
-      - libqt4-xml
-      - libqt4-xmlpatterns
-      - libqtcore4
-      - libqtdbus4
-      - libqtgui4
-      - oxideqt-codecs-extra
-      - qdbus
-      - qt5-qmake
-      - qt-at-spi
-      - qtbase5-dev
-      - qtbase5-dev-tools
-      - qtbase5-private-dev
-      - qtchooser
-      - qtcore4-l10n
-      - qtdeclarative5-qtquick2-plugin
-      - qtscript5-dev
-      - qttools5-dev
-      - qttools5-dev-tools
-      - qttranslations5-l10n
-      - qtwayland5
 
   - name: set fcitx as default input method
     command: im-config -n fcitx
     ignore_errors: yes
 
-#  - name: install sogoupinyin
-#    apt:
-#      deb: "{{ansible_assets_url}}/sogou-{{ansible_architecture}}.deb"
-#  - name: remove sogoupingyin installed mirror
-#    file:
-#      path: /etc/apt/sources.list.d/sogoupinyin.list
-#      state: absent
-#
+  - name: install sogoupinyin
+    apt:
+      deb: "{{ansible_assets_url}}/sogou-{{ansible_architecture}}.deb"
+  - name: remove sogoupingyin installed mirror
+    file:
+      path: /etc/apt/sources.list.d/sogoupinyin.list
+      state: absent
+
   # disabled. Most ppl just want the vietnamese keyboard which is built-in
   #- name: install fcitx vietnamese/unikey support
   #  apt:

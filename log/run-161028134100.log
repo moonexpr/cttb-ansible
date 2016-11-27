@@ -1,6 +1,0 @@
-2016-10-28 13:41:02,888 p=29986 u=administrator |  PLAY [vbox-srv] ****************************************************************
-2016-10-28 13:41:02,921 p=29986 u=administrator |  TASK [setup] *******************************************************************
-2016-10-28 13:41:06,048 p=29986 u=administrator |  fatal: [vbox-srv]: FAILED! => {"failed": true, "msg": "Incorrect sudo password"}
-2016-10-28 13:41:06,054 p=29986 u=administrator |  NO MORE HOSTS LEFT *************************************************************
-2016-10-28 13:41:06,055 p=29986 u=administrator |  PLAY RECAP *********************************************************************
-2016-10-28 13:41:06,055 p=29986 u=administrator |  vbox-srv                   : ok=0    changed=0    unreachable=0    failed=1   

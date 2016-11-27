@@ -1,3 +1,19 @@
+---
+
+# lightdm configuration
+lightdm_hide_users: false
+
+# sw install
+wpsoffice: true
+libreoffice: false
+openoffice: false
+firefox: false
+chrome: true
+dropbox: false
+skype: false
+
+# look and feel
+desktop_shortcuts: false
 desktop_theme: Lubuntu-default
 icons_theme: windos10-icons
 pic_avatar: avatar-cttb.png

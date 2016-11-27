@@ -1,5 +1,10 @@
 ---
 
+#  - name: debug variables
+#    debug: var=hostvars[inventory_hostname] verbosity=4
+#    tags:
+#      - debug
+
   #when installing mini stuff ends up there and network manager refuses to touch it
   - name: fix network interfaces
     copy:
@@ -21,15 +26,14 @@
     tags:
       - lookandfeel
 
+  - include: sw.yml
+    tags:
+      - sw_install
+
   # install languages support
   - include: lang.yml
     tags:
       lang
-
-  #- include: sw.yml
-  #  tags:
-  #    - sw_install
-
 
   # upgrade to latest for release
   - name: update system

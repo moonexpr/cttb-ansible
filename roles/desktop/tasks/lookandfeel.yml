@@ -1,21 +1,51 @@
 ---
 # Customize look and feel
 
-# TODO:
-#   - convert all config files to template and replace vars accordingly
-
   - name: setup default account files
     copy:
       src: config/etc-skel/
       dest: /etc/skel/
 
+  - block: # when icons on the desktop are defined
+
+    - name: create Desktop in skel
+      file:
+        path: /etc/skel/Desktop
+        state: directory
+        mode: 0755
+    
+    - name: add desktop shortcuts
+      copy:
+        src: "desktop-shortcuts/{{item}}.desktop"
+        dest: /etc/skel/Desktop/
+        mode: 0644
+        owner: root
+        group: root
+      with_items: "{{desktop_shortcuts}}"
+
+    when: desktop_shortcuts
+    tags:
+      - shortcuts
+
   - name: configure lightdm
-    copy:
-      src: config/lightdm/
-      dest: /etc/lightdm/
+    template:
+      src: lightdm.j2
+      dest: /etc/lightdm/lightdm.conf
       mode: 0644
       owner: root
       group: root
+    tags:
+      - lightdm
+
+  - name: configure lightdm gtk greeter
+    template:
+      src: lightdm-gtk-greeter.j2
+      dest: /etc/lightdm/lightdm-gtk-greeter.conf
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - lightdm
 
   - name: copy lightdm avatar image
     copy:
@@ -24,6 +54,8 @@
       mode: 0644
       owner: root
       group: root
+    tags:
+      - lightdm
 
   - name: deploy image background
     copy:
@@ -32,6 +64,16 @@
       mode: 0644
       owner: root
       group: root
+
+  - name: copy koha icon
+    copy:
+      src: pics/koha.gif
+      dest: /usr/share/icons/koha.gif
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - icons
 
   - name: add noobslab mirror key
     apt_key:

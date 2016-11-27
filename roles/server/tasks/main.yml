@@ -1,0 +1,22 @@
+---
+
+  - name: configure dns resolution
+    copy:
+      src: resolv.conf
+      dest: /etc/resolv.conf
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: remove some basic packages
+    apt:
+      name: "{{item}}"
+      state: absent
+      purge: yes
+    with_items:
+      - resolvconf
+      - open-iscsi
+      - lxc*
+      - lxd-client
+      - dnsmasq-base
+      - libiscsi2

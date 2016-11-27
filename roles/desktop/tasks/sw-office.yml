@@ -1,5 +1,16 @@
 ---
 
+  # if we install anything more powerful get rid of abiword/gnumeric
+  - name: remove default office suite
+    apt:
+      name: "{{item}}"
+      state: absent
+      purge: yes
+    with_items:
+      - abiword
+      - gnumeric
+    when: libreoffice == true or openoffice == true or wpsoffice == true
+
   - name: install libreoffice
     apt:
       name: "{{item}}"
@@ -9,7 +20,7 @@
       - libreoffice-writer
       - libreoffice-calc
       - libreoffice-gtk
-    when: libreoffice == "yes"
+    when: libreoffice == true
     tags:
       - libreoffice
   # since it's installed by default it matters if we said no to it. It will also conflict with openoffice
@@ -18,7 +29,7 @@
       name: libreoffice*
       state: absent
       purge: yes
-    when: libreoffice == "no"
+    when: libreoffice == false
 
   - block:
 
@@ -39,7 +50,7 @@
         state: present
         install_recommends: yes
       with_items:
-        - openoffice-brand-pt-br
+        - openoffice-brand-en-us
         - openoffice-brand-writer
         - openoffice-brand-calc
         - openoffice-brand-impress
@@ -51,7 +62,7 @@
         - openoffice-ooolinguistic
         - openoffice-debian-menus
 
-    when: openoffice == "yes"
+    when: openoffice == true and libreoffice == false #they conflict so cannot be installed together
 
   - block:
 
@@ -72,5 +83,5 @@
       command: fc-cache -fv
       when: font_install|changed
 
-    when: wpsoffice == "yes"
+    when: wpsoffice == true
 

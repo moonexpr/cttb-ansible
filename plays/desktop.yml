@@ -1,6 +1,6 @@
 ---
 
-- hosts: vbox-srv
+- hosts: vbox-pxe
+  gather_facts: False
   roles:
-    - common
     - desktop

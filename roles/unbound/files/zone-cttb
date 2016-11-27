@@ -1,0 +1,13 @@
+# handling stuff that's not a straight mapping in dnsmasq
+
+local-data: "dnsmasq.cttb. IN A 10.11.15.97"
+local-data-ptr: "10.11.15.97  dnsmasq.cttb."
+
+local-data: "log-srv.cttb. IN A 10.11.22.247"
+local-data-ptr: "10.11.22.247  log-srv.cttb."
+
+#koha stuff
+local-data: "library.igdvs.cttb. IN A 10.11.30.200"
+local-data-ptr: "10.11.30.200  library.igdvs.cttb."
+local-data: "library-intra.igdvs.cttb. IN A 10.11.30.200"
+local-data-ptr: "10.11.30.200  library-intra.igdvs.cttb."

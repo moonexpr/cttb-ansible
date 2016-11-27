@@ -1,0 +1,5 @@
+---
+
+ldap_dc: cttb
+ldap_server: ldap-srv.cttb
+ldap_version: 3

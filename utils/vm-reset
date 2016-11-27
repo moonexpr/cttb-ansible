@@ -3,8 +3,8 @@
 # script to reset virtualbox machines while testing
 # default to Spike's vbox-srv machine
 
-VBOX_UUID="5185dfdc-6b0f-46b7-b3b9-f95b54b29a47"
-SNAP_UUID="e8e13064-54d1-4a66-8468-fdfadfd5c195"
+VBOX_UUID="5185dfdc-6b0f-46b7-b3b9-f95b54b29a47" # Ubuntu Srv
+SNAP_UUID="e8e13064-54d1-4a66-8468-fdfadfd5c195" # Fresh Install
 
 vboxmanage controlvm $VBOX_UUID poweroff
 sleep 1

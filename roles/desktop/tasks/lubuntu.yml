@@ -1,31 +1,37 @@
 ---
-# Dekstop window manager installation and configuration
-
-# TODO:
-#   - convert all configs to templates (need to select diff theme, icons etc
-#   - convert the rest of the files over, only done common (make windows the default)
 
   - name: install lubuntu
     apt:
       name: "{{item}}"
       state: present
-      install_recommends: yes
+      install_recommends: no
       update_cache: yes
       cache_valid_time: 3600
     with_items:
-      - lubuntu-core
+      - alsa-utils
+      - alsamixergui
       - desktop-file-utils
       - dmz-cursor-theme
       - evince
       - file-roller
       - galculator
+      - gnome-system-tools
       - indicator-application
       - indicator-application-gtk2
       - leafpad
+      - libpolkit-agent-1-0
+      - libpolkit-backend-1-0
+      - libpolkit-gobject-1-0
+      - libpolkit-qt-1-1
+      - libpolkit-qt5-1-1
+      - lightdm-gtk-greeter-settings
       - light-locker
       - light-locker-settings
-      - lightdm-gtk-greeter-settings
+      - lubuntu-artwork
+      - lubuntu-core
       - lubuntu-default-session
+      - lubuntu-default-settings
+      - lubuntu-lxpanel-icons
       - lxappearance
       - lxappearance-obconf
       - lxinput
@@ -37,21 +43,17 @@
       - lxshortcut
       - lxtask
       - lxterminal
+      - network-manager
+      - network-manager-gnome
       - obconf
+      - plymouth-theme-lubuntu-logo
+      - plymouth-theme-lubuntu-text
       - pm-utils
+      - policykit-1
+      - policykit-1-gnome
       - scrot
       - simple-scan
+      - system-tools-backends
       - xdg-user-dirs
       - xfce4-power-manager
       - xz-utils
-      - policykit-1
-      - policykit-1-gnome
-      - libpolkit-agent-1-0
-      - libpolkit-gobject-1-0
-      - libpolkit-backend-1-0
-      - libpolkit-qt-1-1
-      - libpolkit-qt5-1-1
-      - network-manager
-      - network-manager-gnome
-      - system-tools-backends
-      - gnome-system-tools

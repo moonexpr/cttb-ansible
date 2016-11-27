@@ -1,4 +1,0 @@
-2016-10-11 17:17:54,699 p=31250 u=administrator |  - downloading role 'debops', owned by debops
-2016-10-11 17:17:55,334 p=31250 u=administrator |  - downloading role from https://github.com/debops/ansible-debops/archive/v0.2.2.tar.gz
-2016-10-11 17:17:57,328 p=31250 u=administrator |  - extracting debops.debops to {ANSIBLE_BASE}/roles/external/debops.debops
-2016-10-11 17:17:57,332 p=31250 u=administrator |  - debops.debops was installed successfully

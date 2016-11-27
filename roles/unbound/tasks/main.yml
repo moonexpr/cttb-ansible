@@ -1,0 +1,146 @@
+---
+
+  # setup unbound
+  - name: install unbound
+    apt:
+      name: unbound
+      state: present
+
+  - name: install unbound python support
+    apt:
+      name: python-unbound
+      state: present
+
+  # setup logfile unbound
+  - name: setup unbound log dir
+    file:
+      path: /var/log/unbound/
+      state: directory
+      owner: unbound
+      group: adm
+      mode: 0775
+
+  - name: setup unbound.log
+    copy:
+      content: ''
+      dest: /var/log/unbound/unbound.log
+      owner: unbound
+      group: adm
+      mode: 0660
+      force: no
+
+  - name: deploy unbound /etc/default/ settings
+    copy:
+      src: etc-default
+      dest: /etc/default/unbound
+      mode: 0640
+      owner: root
+      group: root
+      force: yes
+    notify:
+    - restart unbound
+
+  - name: deploy unbound config
+    copy:
+      src: unbound.conf
+      dest: /etc/unbound/unbound.conf.d/unbound.conf
+      mode: 0640
+      owner: root
+      group: unbound
+      force: yes
+    notify:
+    - restart unbound
+
+  - name: setup unbound blacklist dir
+    file:
+      path: /etc/unbound/unbound.conf.d/blocked-sites/
+      state: directory
+      owner: root
+      group: unbound
+      mode: 0750
+
+  - name: deploy blacklists
+    copy:
+      src: blocked-sites/{{item}}
+      dest: /etc/unbound/unbound.conf.d/blocked-sites/
+      mode: 0640
+      owner: root
+      group: unbound
+      force: yes
+    with_items: "{{ ub_blocked_sites | union(ub_blocked_sites_extra)}}"
+    notify:
+    - restart unbound
+
+  - name: deploy cttb local zone
+    copy:
+      src: zone-cttb
+      dest: /etc/unbound/unbound.conf.d/cttb
+      mode: 0640
+      owner: root
+      group: unbound
+      force: yes
+    notify:
+    - restart unbound
+
+    #  - name: disable dnssec
+    #command: creates="/etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf.disabled" mv /etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf /etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf.disabled
+    #notify:
+      #- restart unbound
+
+  - name: setup root hints
+    copy:
+      src: named.cache
+      dest: /etc/unbound/named.cache
+      mode: 0640
+      owner: root
+      group: unbound
+      force: yes
+    notify:
+    - restart unbound
+
+  - name: deploy resgen.py
+    copy:
+      src: resgen-{{ub_class}}.py
+      dest: /etc/unbound/resgen.py
+      mode: 0640
+      owner: root
+      group: unbound
+      force: yes
+    notify:
+    - restart unbound
+
+  # setup logrotate unbound. Run it manually at midnight instead than as part
+  # of logrotate with cron.daily. This helps DM Gong with other work on log
+  # correlation
+  - name: make sure old logrotate is gone
+    file:
+      path: /etc/logrotate.d/unbound
+      state: absent
+
+  - name: logrotate unbound config
+    copy:
+      src: logrotate-unbound
+      dest: /etc/unbound/logrotate.conf
+      mode: 0640
+      owner: root
+      group: root
+      force: yes
+
+  - name: rotate logs at midnight
+    copy:
+      src: unbound-crond
+      dest: /etc/cron.d/unbound-log
+      mode: 0750
+      owner: root
+      group: root
+      force: yes
+
+  - name: enable unbound service
+    service:
+      name: unbound
+      enabled: yes
+
+  - name: ensure unbound is running
+    service:
+      name: unbound
+      state: started

@@ -17,40 +17,39 @@ asus-test
 vbox-srv
 vbox-desktop
 vbox-pxe
-dininghall
-matt-desktop
-dmtsung-toshiba # -w for wireless, no time to port all the changes, so changed pwd to dvbstsung to admin account
 
 # CTTB infra
-cf14new ansible_ssh_host=10.11.26.246 ansible_ssh_user=root
-unbound-adult ansible_ssh_host=10.11.31.131
-unbound-igdvs ansible_ssh_host=10.11.11.140
+unbound-adult
+unbound-igdvs
 backup ansible_ssh_host=10.11.14.129
 asterix 
 
-# pi infra
-dvgs-cslab-cups ansible_ssh_host=10.11.26.254
-picam-ao-1 ansible_ssh_host=10.11.26.211
-
 # People on linux
-donnafarmer-latitude-e5510 ansible_ssh_host=10.11.29.185
-donnafarmer-eepc ansible_ssh_host=10.11.11.252
+aaron-laptop
+ao-laptop
+dininghall
 dmchih-desktop-drbu ansible_ssh_host=10.11.23.136
+dmqi-desktop
+dmtsung-desktop
+dmtsung-toshiba # -w for wireless, no time to port all the changes, so changed pwd to dvbstsung to admin account
+dm-yan-latitude
+dmyong-eepc
+donnafarmer-eepc ansible_ssh_host=10.11.11.252
+donnafarmer-latitude-e5510 ansible_ssh_host=10.11.29.185
+dvbs-rm1-downstairs
+dvbs-women-office
 jgh-drbu-student ansible_ssh_host=10.11.23.155
 loading-dock ansible_ssh_host=10.11.23.165
-ws-frank ansible_ssh_host=10.11.30.97
-dvbs-rm1-downstairs
+matt-desktop
+musicroom-desktop
 rui-desktop
 rui-test-box
 wei-desktop
-dm-yan-latitude
-dvbs-women-office
-dmtsung-desktop
-dmyong-eepc
-dmqi-desktop
-aaron-laptop
-ao-laptop
-musicroom-desktop
+ws-frank ansible_ssh_host=10.11.30.97
+randall-laptop-e
+randall-laptop-w
+tom-desktop-1
+tom-desktop-2
 
 # DVGS
 dvgs-main-office
@@ -124,11 +123,6 @@ drbu-cdorm-office-pc1
 
 drbu-admin-office
 
-[pis]
-pi1
-pi2
-pi3
-
 [dvgs-laptops]
 dvgs-laptop-2e
 dvgs-laptop-5e
@@ -196,3 +190,15 @@ drbu-cdorm-office-pc1
 [drbu-cs-lab-guest]
 drbu-cs-lab-pc1
 drbu-cs-lab-pc2
+
+[drbu:children]
+drbu-cs-lab
+drbu-cs-lab-guest
+drbu-cdorm-lab
+
+[testing]
+vbox-pxe
+
+[unbound]
+unbound-adult
+unbound-igdvs

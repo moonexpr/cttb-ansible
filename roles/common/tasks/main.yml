@@ -1,6 +1,4 @@
 ---
-# TODO:
-#   -ansible repo only specifies amd64 because I forgot to mirror both. Remove to be just deb
 
   - name: custom apt sources.list
     template:
@@ -9,11 +7,6 @@
       mode: 0644
       owner: root
       group: root
-
-  - name: Add canonical third-party mirror
-    apt_repository:
-      repo: "deb {{deb_mirror}}/canonical {{ansible_distribution_release}} partner"
-      state: present
 
   - name: refresh the mirrors
     apt:
@@ -98,19 +91,29 @@
       repo: "deb http://theoverseer.cttb/ansible xenial main"
       state: present
 
+  - name: remove some software
+    apt:
+      name: "{{item}}"
+      state: absent
+    with_items:
+      - popularity-contest
+      - nano
+
   - name: install basic software
     apt:
       name: "{{item}}"
       state: present
-      install_recommends: no
-    with_items:                                                                                     
+      install_recommends: yes
+    with_items:
       - ansible
       - byobu
       - collectd
       - curl
+      - dconf-tools
       - iperf
       - git
       - obnam
+      - tcpdump
       - traceroute
       - unattended-upgrades
       - vim

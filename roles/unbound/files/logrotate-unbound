@@ -1,0 +1,14 @@
+/var/log/unbound/unbound.log
+{
+        rotate 7
+        daily
+        missingok
+        notifempty
+        delaycompress
+        compress
+	      su root unbound
+	      create 660 unbound adm
+        postrotate
+                service unbound restart >/dev/null 2>&1 || true
+        endscript
+}
