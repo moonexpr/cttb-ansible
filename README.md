@@ -7,6 +7,15 @@ Running playbooks or other ansible operations should be carried out with the
 respective scripts in utils/. Do not run this scripts from another path or
 directly call ansible or ansible-playbook.
 
+# Migrations
+If you are migrating a machine to use a new role/setup and need to do some
+cleanup use the playbook to do the job. For example when migrating
+unbound servers to the new unbound role I wanted to use
+/etc/unbound/blocked-sites as a directory but I used to use a file with that
+name as a blacklist. As a result I had to rm that file before the new role
+succeeded. A task like this should be contained in a special playbook that
+installs the new role.
+
 # Git
 - Ignore the log/ directory and the tmp/ dir that should be setup in the ansible directory
 
