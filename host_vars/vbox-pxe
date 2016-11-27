@@ -7,7 +7,5 @@ firefox: true
 dropbox: true
 skype: true
 
-ldap_enabled: true
-autofs_enabled: true
 nfs_homes_host: fileserver.cttb
 nfs_homes_export: /export/cttb

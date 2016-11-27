@@ -3,6 +3,3 @@
 # base
 ansible_assets_url: http://theoverseer.cttb/ansible_assets
 deb_mirror: http://theoverseer.cttb
-
-# ldap variables
-ldap_enabled: false
