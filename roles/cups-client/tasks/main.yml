@@ -1,0 +1,62 @@
+---
+
+  - block: # local cups
+    ### INCOMPLETE ####
+    ### MOST likely manual anyway since most ppl needing local printers have
+    ### weird setups with unknown drivers etc
+
+    - name: dummy cups local
+      debug:
+        msg: doing nothing!
+
+    when: cups_srv is defined and cups_srv == "local"
+
+  - block: # remote cups server
+
+    # since we're installing remote get rid of all the local cups stuff
+    - name: uninstall cupsd & co
+      apt:
+        name: "{{item}}"
+        state: absent
+        purge: yes
+      with_items:
+        - cupsd
+        - cups-browsed
+        - cups-daemon
+        - cups-filters*
+        - cups-server-common
+
+    # setup printer
+    - name: cups client is installed
+      apt:
+        name: cups-client
+        state: present  
+
+    - name: create cups directory
+      file:
+        path: /etc/cups
+        state: directory
+        mode: 0755
+
+    - name: configure cups client
+      copy:
+        content: "ServerName {{cups_srv}}"
+        dest: /etc/cups/client.conf
+        mode: 0644
+        owner: root
+        group: root
+
+    when: cups_srv is defined and cups_srv != "local"
+    tags:
+      - cups
+
+  - name: set default printer
+    copy:
+      content: "Default {{cups_default_queue}}"
+      dest: /etc/cups/lpoptions
+      mode: 0644
+      owner: root
+      group: root
+    when: cups_default_queue is defined
+    tags:
+      - cups
