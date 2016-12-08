@@ -1,0 +1,50 @@
+---
+
+  # xenial has 2.0 and for link balancing we need at least 3.x
+  # I've backported it from yakkety and it's on our new custom repo
+
+  - name: add cttb internal repo
+    apt_repository:
+      repo: 'deb http://theoverseer.cttb/cttb-repo ./'
+      state: present
+      filename: 'cttb-repo'
+
+  - name: install firewall pkgs
+    apt:
+      name: "{{item}}"
+      state: latest
+      install_recommends: yes
+      update_cache: yes
+      allow_unauthenticated: yes
+    with_items:
+      - firehol
+      - firehol-tools
+      - fireqos
+      - ulogd2 # useful to get fw logs and stats
+
+  - name: setup /etc/default/firehol
+    copy:
+      src: etc-default-firehol
+      dst: /etc/default/firehol
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: setup /etc/firehol/firehol.conf
+    copy:
+      src: firehol.conf
+      dst: /etc/firehol/firehol.conf
+      mode: 0644
+      owner: root
+      group: root
+
+
+
+      add these in post-up for the two interfaces to make checks work
+    261  sudo ip route add table main 8.8.4.4 via 10.11.20.1 dev com20
+      262  ./dumpall.sh 
+        263  ping 8.8.4.4
+          264  ip route get 8.8.4.4
+            265  ip -s route get 8.8.4.4
+              266  sudo ip route del table main 8.8.8.8 via 10.11.7.1 dev com7
+
