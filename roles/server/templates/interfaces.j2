@@ -1,0 +1,18 @@
+# Ansible generated, do not edit
+
+auto lo
+iface lo inet loopback
+{% for iface in server_interfaces %}
+{% if iface.auto %}
+
+auto {{iface.name}}
+{% endif %}
+iface {{iface.name}} inet {{iface.inet}}
+{% if iface.inet == "static" %}
+  address {{iface.address}}
+  netmask {{iface.netmask}}
+{% if iface.gateway is defined %}
+  gateway {{iface.gateway}}
+{% endif %}
+{% endif %}
+{% endfor %}

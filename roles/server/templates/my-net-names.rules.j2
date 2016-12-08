@@ -1,0 +1,5 @@
+# Ansible generated, do not edit
+
+{% for iface in server_interfaces %}
+SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="{{iface.mac}}", NAME="{{iface.name}}"
+{% endfor %}
