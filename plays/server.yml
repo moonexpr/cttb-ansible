@@ -1,0 +1,5 @@
+---
+
+- hosts: test-slim1
+  roles:
+    - server

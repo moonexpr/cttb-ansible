@@ -1,0 +1,8 @@
+---
+
+- hosts: sw-221
+  connection: local
+  become: False
+  gather_facts: False
+  roles:
+    - hp-procurve

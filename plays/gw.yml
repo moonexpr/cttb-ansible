@@ -1,0 +1,6 @@
+---
+
+- hosts: test-slim1
+  roles:
+    - {role: server}
+    - {role: firehol, tags: fw}
