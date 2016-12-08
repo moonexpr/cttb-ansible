@@ -6,3 +6,7 @@ lightdm_hide_users: true
 # look and feel
 pic_avatar: avatar-drbu.jpg
 pic_bg: bg-drbu.png
+
+
+nfs_homes_host: nfs-drbu.cttb
+nfs_homes_export: /export/drbu

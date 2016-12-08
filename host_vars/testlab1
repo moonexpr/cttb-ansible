@@ -1,0 +1,7 @@
+---
+
+# special network
+server_interfaces: [
+  {name: lan, mac: '78:ac:c0:b2:89:b0', auto: True, inet: dhcp},
+  {name: tr01, mac: '00:60:6e:42:2a:3e', auto: True, inet: static, address: 192.168.1.1, netmask: 255.255.255.0},
+  {name: tr02, mac: '00:60:6e:42:35:b2', auto: True, inet: static, address: 192.168.2.1, netmask: 255.255.255.0}, ]

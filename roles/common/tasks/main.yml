@@ -107,7 +107,6 @@
     with_items:
       - ansible
       - byobu
-      - collectd
       - curl
       - dconf-tools
       - iperf
@@ -119,6 +118,10 @@
       - vim
       - whois
 
+      # taken out as it was causing problems with autofs. Also we're likely to
+      # just move to influx collector and not use collectd anymore
+      #- collectd
+
   - name: enable unattended upgrades
     copy:
       src: config/unattended-upgrades
@@ -126,6 +129,17 @@
       mode: 0644
       owner: root
       group: root
+
+  - name: disable ipv6 #defaults to yes
+    copy:
+      src: config/disable-ipv6.conf
+      dest: /etc/sysctl.d/60-disable-ipv6.conf
+      mode: 0644
+      owner: root
+      group: root
+    when: disable_ipv6
+    tags:
+      - sysctl
 
   - name: vim saner defaults
     copy:

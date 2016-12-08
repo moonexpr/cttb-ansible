@@ -1,11 +1,23 @@
 ---
 
+# desktop configuration
+lightdm_hide_users: true
+
+# look and feel
+pic_avatar: avatar-drbu.jpg
+pic_bg: bg-drbu.png
+
 # testing desktop role
 wpsoffice: true
-openoffice: true
-firefox: true
-dropbox: true
-skype: true
+openoffice: false
+firefox: false
+dropbox: false
+skype: false
 
+# autofs
 nfs_homes_host: fileserver.cttb
 nfs_homes_export: /export/cttb
+
+# cups
+cups_srv: printer-srv.cttb
+cups_default_queue: 1234_HP_M225dw

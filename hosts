@@ -13,6 +13,9 @@
 
 # TESTLAB
 testlab1
+test-slim1
+test-slim2
+test-slim3
 asus-test
 vbox-srv
 vbox-desktop
@@ -25,7 +28,8 @@ backup ansible_ssh_host=10.11.14.129
 asterix 
 
 # People on linux
-aaron-laptop
+aaron-laptop-e
+aaron-laptop-w
 ao-laptop
 dininghall
 dmchih-desktop-drbu ansible_ssh_host=10.11.23.136
@@ -50,6 +54,59 @@ randall-laptop-e
 randall-laptop-w
 tom-desktop-1
 tom-desktop-2
+aaron-desktop
+
+# Switches
+sw-1234-machine-room      ansible_host=10.11.12.172
+sw-1234-net-room          ansible_host=10.11.12.161
+sw-1234-spike-cub         ansible_host=10.11.12.157
+sw-annex-1                ansible_host=10.11.12.201
+sw-ao-attic               ansible_host=10.11.12.167
+sw-ao-desk                ansible_host=10.11.12.156
+sw-ao-lan-1               ansible_host=10.11.12.158
+sw-ao-lan-2               ansible_host=10.11.12.178
+sw-ao-lan                 ansible_host=10.11.12.173
+sw-bh-north               ansible_host=10.11.12.137
+sw-bh-south               ansible_host=10.11.12.159
+sw-dragon-way             ansible_host=10.11.12.222
+sw-drbu-cdorm             ansible_host=10.11.12.152
+sw-drbu-conf-room         ansible_host=10.11.12.202
+sw-drbu-cs-lab            ansible_host=10.11.12.223
+sw-drbu-downstairs        ansible_host=10.11.12.138
+sw-drbu-lib-down          ansible_host=10.11.12.141
+sw-drbu-lib-up            ansible_host=10.11.12.147
+sw-drbu-upstairs          ansible_host=10.11.12.204
+sw-dvbs-cs-lab            ansible_host=10.11.12.179
+sw-dvbs-juan-office       ansible_host=10.11.12.144
+sw-dvbs-main-office       ansible_host=10.11.12.209
+sw-dvgs-cs-lab            ansible_host=10.11.12.160
+sw-dvgs-dorm-kitchen      ansible_host=10.11.12.148
+sw-dvgs-dorm-phoneroom    ansible_host=10.11.12.134
+sw-dvgs-es-admin-office   ansible_host=10.11.12.206
+sw-dvgs-es-lang-lab       ansible_host=10.11.12.162
+sw-dvgs-furnace           ansible_host=10.11.12.31
+sw-dvgs-library           ansible_host=10.11.12.225
+sw-dvgs-teacher-office    ansible_host=10.11.12.140
+sw-dvgs-upstairs          ansible_host=10.11.12.155
+sw-jgh-north              ansible_host=10.11.12.131
+sw-jgh-south              ansible_host=10.11.12.143
+sw-laundry-entrance       ansible_host=10.11.12.211
+sw-laundry-office         ansible_host=10.11.12.212
+sw-mpoe                   ansible_host=10.11.12.200
+sw-restaurant             ansible_host=10.11.12.169
+sw-scroggs-office         ansible_host=10.11.12.210
+sw-solar                  ansible_host=10.11.12.199
+sw-solarium               ansible_host=10.11.12.150
+sw-tob-center             ansible_host=10.11.12.136
+sw-tob-elevator-east      ansible_host=10.11.12.165
+sw-tob-fiber              ansible_host=10.11.12.203
+sw-tob-financial          ansible_host=10.11.12.154
+sw-tob-phone-room         ansible_host=10.11.12.135
+sw-tob-science-lab        ansible_host=10.11.12.146
+sw-unicorn                ansible_host=10.11.12.151
+
+## spares
+sw-221
 
 # DVGS
 dvgs-main-office

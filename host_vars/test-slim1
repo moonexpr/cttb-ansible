@@ -1,0 +1,13 @@
+---
+
+# special network
+# tr03 -> com20 = 10.11.20.103
+# tr04 => com7 = 10.11.20.104
+server_interfaces: [
+  {name: lan, mac: '00:22:64:b4:76:4a', auto: True, inet: dhcp},
+  {name: com20, mac: '00:60:6e:42:1d:53', auto: True, inet: static, address: 10.11.20.103, netmask: 255.255.255.0},
+  {name: com7, mac: '00:60:6e:42:2d:a9', auto: True, inet: static, address: 10.11.7.242, netmask: 255.255.255.0}, ]
+
+server_rt_tables:
+  - {id: 7, tname: com7}
+  - {id: 20, tname: com20}

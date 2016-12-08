@@ -1,6 +1,5 @@
 ---
 
-- hosts: vbox-pxe
-  gather_facts: False
+- hosts: vbox-srv
   roles:
     - common

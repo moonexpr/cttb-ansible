@@ -1,8 +1,7 @@
 ---
 
 - hosts: vbox-pxe
-  gather_facts: False
   roles:
-    #- desktop
+    - desktop
+    - {role: autofs, tags: autofs}
     - ldap-client
-    - autofs

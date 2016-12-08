@@ -2,7 +2,8 @@
 
 export ANSIBLE_BASE=${HOME}/Documents/ansible/new
 export ANSIBLE_HOSTS="${ANSIBLE_BASE}/hosts"
-export ANSIBLE_LIB="/usr/share/ansible:${ANSIBLE_BASE}/library"
+export ANSIBLE_LIBRARY="/usr/share/ansible:${ANSIBLE_BASE}/library"
+#export ANSIBLE_LIBRARY="/usr/share/ansible"
 export ANSIBLE_ROLES="${ANSIBLE_BASE}/roles"
 export ANSIBLE_PLAYBOOKS="${ANSIBLE_BASE}/plays"
 export ANSIBLE_LOG="${ANSIBLE_BASE}/logs/run-`date +"%y%m%d%H%M%S"`.log"
