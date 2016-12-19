@@ -8,6 +8,16 @@
       owner: root
       group: root
 
+  - name: configure default grub #servers should give output on boot for debugging
+    copy:
+      src: default-grub
+      dest: /etc/default/grub
+      mode: 0644
+      owner: root
+      group: root
+    notify:
+      - update grub
+
   - name: remove some basic packages
     apt:
       name: "{{item}}"
