@@ -37,14 +37,3 @@
       mode: 0644
       owner: root
       group: root
-
-
-
-      add these in post-up for the two interfaces to make checks work
-    261  sudo ip route add table main 8.8.4.4 via 10.11.20.1 dev com20
-      262  ./dumpall.sh 
-        263  ping 8.8.4.4
-          264  ip route get 8.8.4.4
-            265  ip -s route get 8.8.4.4
-              266  sudo ip route del table main 8.8.8.8 via 10.11.7.1 dev com7
-
