@@ -114,9 +114,15 @@
       - obnam
       - tcpdump
       - traceroute
+      - mtr
       - unattended-upgrades
       - vim
       - whois
+      - smartmontools
+      - hddtemp
+      - iotop
+      - fio
+      - util-linux
 
       # taken out as it was causing problems with autofs. Also we're likely to
       # just move to influx collector and not use collectd anymore
