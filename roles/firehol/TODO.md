@@ -1,0 +1,1 @@
+- get ulogd logs rotate by logrotate
