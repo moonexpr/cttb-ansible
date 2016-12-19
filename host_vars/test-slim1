@@ -6,7 +6,13 @@
 server_interfaces: [
   {name: lan, mac: '00:22:64:b4:76:4a', auto: True, inet: dhcp},
   {name: com20, mac: '00:60:6e:42:1d:53', auto: True, inet: static, address: 10.11.20.103, netmask: 255.255.255.0},
-  {name: com7, mac: '00:60:6e:42:2d:a9', auto: True, inet: static, address: 10.11.7.242, netmask: 255.255.255.0}, ]
+  {name: com7, mac: '00:60:6e:42:2d:a9', auto: True, inet: static, address: 10.11.7.242, netmask: 255.255.255.0}]
+
+static_routes:
+  com20: [
+      {table: main, dst: 8.8.4.4, gw: 10.11.20.1, dev: com20}]
+  com7: [
+      {table: main, dst: 8.8.8.8, gw: 10.11.7.1, dev: com7}]
 
 server_rt_tables:
   - {id: 7, tname: com7}

@@ -1,0 +1,9 @@
+---
+
+lightdm_hide_users: false
+
+wpsoffice: true
+firefox: false
+chrome: true
+skype: true
+dropbox: true

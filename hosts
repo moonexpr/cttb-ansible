@@ -55,6 +55,7 @@ randall-laptop-w
 tom-desktop-1
 tom-desktop-2
 aaron-desktop
+sue-desktop
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
@@ -248,10 +249,14 @@ drbu-cdorm-office-pc1
 drbu-cs-lab-pc1
 drbu-cs-lab-pc2
 
+[drbu-staff]
+sue-desktop
+
 [drbu:children]
 drbu-cs-lab
 drbu-cs-lab-guest
 drbu-cdorm-lab
+drbu-staff
 
 [testing]
 vbox-pxe
