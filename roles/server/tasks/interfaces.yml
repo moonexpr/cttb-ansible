@@ -42,7 +42,4 @@
       dest: /etc/iproute2/rt_tables
       regexp: "^{{item.id}} "
       line: "{{item.id}}      {{item.tname}}"
-    with_items: "{{server_rt_tables}}"
-    when: server_rt_tables is defined
-
-
+    with_items: "{{server_rt_tables | default([]) }}"
