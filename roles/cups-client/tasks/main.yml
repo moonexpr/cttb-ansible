@@ -9,7 +9,7 @@
       debug:
         msg: doing nothing!
 
-    when: cups_srv is defined and cups_srv == "local"
+    when: cups_srv is not defined
 
   - block: # remote cups server
 
@@ -45,8 +45,7 @@
         mode: 0644
         owner: root
         group: root
-
-    when: cups_srv is defined and cups_srv != "local"
+    when: cups_srv is defined
     tags:
       - cups
 
