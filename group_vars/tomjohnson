@@ -4,3 +4,5 @@ wpsoffice: false
 openoffice: true
 firefox: true
 chrome: false
+additional_sw:
+  - inkscape

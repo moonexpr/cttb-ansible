@@ -1,0 +1,62 @@
+---
+
+wpsoffice: true
+openoffice: false
+firefox: true
+chrome: true
+dropbox: true
+virtualbox: true
+
+additional_sw:
+  - ansible
+  - byobu
+  - curl
+  - debconf-utils
+  - gimp
+  - git
+  - ipcalc
+  - irssi
+  - keychain
+  - libssl-dev #various things that we compile and need crypto will require these pkgs
+  - libgnutls-dev
+  - nmap
+  - nmap
+  - nvidia-340
+  - nvidia-settings
+  - obnam
+  - python-pip # to install custom python modules, mostly ansible
+  - python-dev #needed by some custom modules for ansible
+  - python-passlib
+  - python-snimpy
+  - python-software-properties
+  - snimpy
+  - snmp
+  - snmp-mibs-downloader
+  - software-properties-common
+  - tftp
+  - tree
+  - vim
+  - virtualbox
+  - virtualbox-guest-additions-iso
+  - virtualbox-guest-utils
+  - virtualbox-guest-x11
+  - vlc
+  - whois
+  - wireshark
+  - dpkg-dev
+  - build-essential
+  - fakeroot
+  - devscripts
+  - quilt
+  - dpatch
+  - fio
+  - iotop
+  - sysbench
+  - tcpxtract
+  - packit
+  - hping3
+  - netsed
+  - ngrep
+  - sipgrep
+  #- mdadm #for whatever reason seems to cause troubles on boot if there's
+  # no raid, but maybe it was smartmontools

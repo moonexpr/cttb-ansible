@@ -28,6 +28,7 @@ backup ansible_ssh_host=10.11.14.129
 asterix 
 
 # People on linux
+spike
 aaron-laptop-e
 aaron-laptop-w
 ao-laptop
@@ -50,8 +51,8 @@ rui-desktop
 rui-test-box
 wei-desktop
 ws-frank ansible_ssh_host=10.11.30.97
-randall-laptop-e
-randall-laptop-w
+tom-lenovo-e
+tom-lenovo-w
 tom-desktop-1
 tom-desktop-2
 aaron-desktop
@@ -264,3 +265,9 @@ vbox-pxe
 [unbound]
 unbound-adult
 unbound-igdvs
+
+[tomjohnson]
+tom-lenovo-e
+tom-lenovo-w
+tom-desktop-1
+tom-desktop-2
