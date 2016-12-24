@@ -1,0 +1,24 @@
+---
+
+- name: install NUT packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - nut-client
+    - nut-server
+    - nut-monitor
+
+- name: Install NUT config files.
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/nut/{{ item }}"
+    owner: root
+    group: nut
+    mode: 0640
+  with_items:
+    - nut.conf
+    - ups.conf
+    - upsd.users
+    - upsmon.conf
+  notify: restart nut
