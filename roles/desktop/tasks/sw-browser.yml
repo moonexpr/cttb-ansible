@@ -14,7 +14,7 @@
       - name: install chrome
         apt:
           name: google-chrome-stable
-          state: present
+          state: latest
       # remove dup apt mirror file created by the install process (the pkg adds its own)
       - name: remove original chrome repository
         file:
@@ -25,7 +25,7 @@
     - name: install chromium
       apt:
         name: "{{item}}"
-        state: present
+        state: latest
         install_recommends: yes
       with_items:
         - chromium-browser
@@ -38,7 +38,7 @@
   - name: install firefox
     apt:
       name: firefox
-      state: present
+      state: latest
       install_recommends: yes
     when: firefox == true
 

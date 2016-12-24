@@ -27,7 +27,7 @@
   - name: install additional software
     apt:
       name: "{{item}}"
-      state: present
+      state: latest
       install_recommends: yes
     with_items:
       - curl
@@ -61,13 +61,13 @@
     - name: install dropbox deps
       apt:
         name: python-gpgme
-        state: present
+        state: latest
         install_recommends: yes
 
     - name: install dropbox
       apt:
         name: dropbox
-        state: present
+        state: latest
         install_recommends: yes
     when: dropbox == true
 
@@ -75,7 +75,7 @@
   - name: install skype
     apt:
       name: skype
-      state: present
+      state: latest
       install_recommends: yes
     when: skype == true
 
