@@ -91,6 +91,12 @@
       repo: "deb http://theoverseer.cttb/ansible xenial main"
       state: present
 
+  # sometimes bootstrapped version is not enough to run the rest of the playbook
+  - name: upgrade ansible to latest
+    apt:
+      name: ansible
+      state: latest
+
   - name: remove some software
     apt:
       name: "{{item}}"
@@ -102,10 +108,9 @@
   - name: install basic software
     apt:
       name: "{{item}}"
-      state: present
+      state: latest
       install_recommends: yes
     with_items:
-      - ansible
       - byobu
       - curl
       - dconf-tools
@@ -124,9 +129,12 @@
       - fio
       - util-linux
 
-      # taken out as it was causing problems with autofs. Also we're likely to
-      # just move to influx collector and not use collectd anymore
-      #- collectd
+  - name: install sw requested for this box
+    apt:
+      name: "{{item}}"
+      state: latest
+      install_recommends: yes
+    with_items: "{{additional_sw | default([])}}"
 
   - name: enable unattended upgrades
     copy:
