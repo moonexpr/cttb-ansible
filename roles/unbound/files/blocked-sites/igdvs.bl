@@ -1,186 +1,86 @@
-local-data: "gmail.com A 127.0.0.1"
-local-data: "mail.google.com A 127.0.0.1"
-local-data: "inbox.google.com A 127.0.0.1"
-local-data: "plus.google.com A 127.0.0.1"
-local-data: "translate.google.com A 127.0.0.1"
-local-data: "hangout.google.com A 127.0.0.1"
-local-zone: "12345proxy.pk" redirect
-local-data: "12345proxy.pk A 127.0.0.1"
-local-zone: "4everproxy.com" redirect
-local-data: "4everproxy.com A 127.0.0.1"
-local-zone: "500px.com" redirect
-local-data: "500px.com A 127.0.0.1"
-local-zone: "anime1.com" redirect
-local-data: "anime1.com A 127.0.0.1"
-local-zone: "aniscartujo.com" redirect
-local-data: "aniscartujo.com A 127.0.0.1"
-local-zone: "anonymizer.com" redirect
-local-data: "anonymizer.com A 127.0.0.1"
-local-zone: "anonymous-proxy-servers.net" redirect
-local-data: "anonymous-proxy-servers.net A 127.0.0.1"
-local-zone: "archive.org" redirect
-local-data: "archive.org A 127.0.0.1"
-local-zone: "artdoxa.com" redirect
-local-data: "artdoxa.com A 127.0.0.1"
-local-zone: "barracuda.com" redirect
-local-data: "barracuda.com A 127.0.0.1"
-local-zone: "best-proxy.com.ca" redirect
-local-data: "best-proxy.com.ca A 127.0.0.1"
-local-zone: "bing.com" redirect
-local-data: "bing.com A 127.0.0.1"
-local-data: "btrll.com A 127.0.0.1"
-local-zone: "bypassthat.com" redirect
-local-data: "bypassthat.com A 127.0.0.1"
-local-zone: "chatterbate.com" redirect
-local-data: "chatterbate.com A 127.0.0.1"
-local-zone: "cruisenude.com" redirect
-local-data: "cruisenude.com A 127.0.0.1"
-local-zone: "cyberghostvpn.com" redirect
-local-data: "cyberghostvpn.com A 127.0.0.1"
-local-zone: "digilet.org" redirect
-local-data: "digilet.org A 127.0.0.1"
-local-zone: "duckduckgo.com" redirect
-local-data: "duckduckgo.com A 127.0.0.1"
-local-data: "facebook.com A 127.0.0.1"
-local-data: "www.facebook.com A 127.0.0.1"
-local-zone: "faceofliberty.com" redirect
-local-data: "faceofliberty.com A 127.0.0.1"
-local-zone: "fastproxy.link" redirect
-local-data: "fastproxy.link A 127.0.0.1"
-local-zone: "filterbypass.me" redirect
-local-data: "filterbypass.me A 127.0.0.1"
-local-zone: "fuckbook.com" redirect
-local-data: "fuckbook.com A 127.0.0.1"
-local-zone: "getfoxyproxy.org" redirect
-local-data: "getfoxyproxy.org A 127.0.0.1"
-local-zone: "hidemyass.com" redirect
-local-data: "hidemyass.com A 127.0.0.1"
-local-zone: "imgur.com" redirect
-local-data: "imgur.com A 127.0.0.1"
-local-zone: "instagram.com" redirect
-local-data: "instagram.com A 127.0.0.1"
-local-zone: "ipredator.se" redirect
-local-data: "ipredator.se A 127.0.0.1"
-local-zone: "ispblocked.com" redirect
-local-data: "ispblocked.com A 127.0.0.1"
-local-zone: "istlsfastyet.com" redirect
-local-data: "istlsfastyet.com A 127.0.0.1"
-local-zone: "ixquick.com" redirect
-local-data: "ixquick.com A 127.0.0.1"
-local-zone: "kproxy.com" redirect
-local-data: "kproxy.com A 127.0.0.1"
-local-zone: "lushstories.com" redirect
-local-data: "lushstories.com A 127.0.0.1"
-local-zone: "meebo.com" redirect
-local-data: "meebo.com A 127.0.0.1"
-local-data: "megaproxy.com A 127.0.0.1"
-local-data: "www.megaproxy.com A 127.0.0.1"
-local-zone: "megaproxy.pl" redirect
-local-data: "megaproxy.pl A 127.0.0.1"
-local-zone: "mitmproxy.org" redirect
-local-data: "mitmproxy.org A 127.0.0.1"
-local-zone: "mousematrix.com" redirect
-local-data: "mousematrix.com A 127.0.0.1"
-local-zone: "myhttpsproxy.com" redirect
-local-data: "myhttpsproxy.com A 127.0.0.1"
-local-zone: "mysslproxy.com" redirect
-local-data: "mysslproxy.com A 127.0.0.1"
-local-zone: "messenger.com" redirect
-local-data: "messenger.com A 127.0.0.1"
-local-zone: "nordvpn.com" redirect
-local-data: "nordvpn.com A 127.0.0.1"
-local-zone: "online-convert.com" redirect
-local-data: "online-convert.com A 127.0.0.1"
-local-zone: "onlinevideoconverter.com" redirect
-local-data: "onlinevideoconverter.com A 127.0.0.1"
-local-zone: "openvpn.net" redirect
-local-data: "openvpn.net A 127.0.0.1"
-local-zone: "outlook.com" redirect
-local-data: "outlook.com A 127.0.0.1"
-local-zone: "pandashield.com" redirect
-local-data: "pandashield.com A 127.0.0.1"
-local-zone: "penthouse.com" redirect
-local-data: "penthouse.com A 127.0.0.1"
-local-zone: "privatelee.com" redirect
-local-data: "privatelee.com A 127.0.0.1"
-local-zone: "proxfree.com" redirect
-local-data: "proxfree.com A 127.0.0.1"
-local-zone: "proximize.me" redirect
-local-data: "proximize.me A 127.0.0.1"
-local-zone: "proxpn.com" redirect
-local-data: "proxpn.com A 127.0.0.1"
-local-zone: "proxyone.net" redirect
-local-data: "proxyone.net A 127.0.0.1"
-local-zone: "proxy-service.de" redirect
-local-data: "proxy-service.de A 127.0.0.1"
-local-zone: "proxysite.com" redirect
-local-data: "proxysite.com A 127.0.0.1"
-local-zone: "proxyssl.com" redirect
-local-data: "proxyssl.com A 127.0.0.1"
-local-zone: "reddit.com" redirect
-local-data: "reddit.com A 127.0.0.1"
-local-zone: "renren.com" redirect
-local-data: "renren.com A 127.0.0.1"
-local-zone: "rrpproxy.net" redirect
-local-data: "rrpproxy.net A 127.0.0.1"
-local-zone: "scribd.com" redirect
-local-data: "scribd.com A 127.0.0.1"
-local-zone: "siteenable.com" redirect
-local-data: "siteenable.com A 127.0.0.1"
-local-zone: "sslproxybrowser.com" redirect
-local-data: "sslproxybrowser.com A 127.0.0.1"
-local-zone: "sslproxyfree.com" redirect
-local-data: "sslproxyfree.com A 127.0.0.1"
-local-zone: "sslproxyunblocker.com" redirect
-local-data: "sslproxyunblocker.com A 127.0.0.1"
-local-zone: "ssltunnel.net" redirect
-local-data: "ssltunnel.net A 127.0.0.1"
-local-zone: "sslunblocker.com" redirect
-local-data: "sslunblocker.com A 127.0.0.1"
-local-zone: "sslunblock.net" redirect
-local-data: "sslunblock.net A 127.0.0.1"
-local-zone: "sslvideoproxy.com" redirect
-local-data: "sslvideoproxy.com A 127.0.0.1"
-local-zone: "stunnel.org" redirect
-local-data: "stunnel.org A 127.0.0.1"
-local-zone: "surfwecan.net" redirect
-local-data: "surfwecan.net A 127.0.0.1"
-local-zone: "thenude.eu" redirect
-local-data: "thenude.eu A 127.0.0.1"
-local-zone: "thepiratebay-proxylist.org" redirect
-local-data: "thepiratebay-proxylist.org A 127.0.0.1"
-local-zone: "theproxy.ca" redirect
-local-data: "theproxy.ca A 127.0.0.1"
-local-zone: "toplessvegasonline.com" redirect
-local-data: "toplessvegasonline.com A 127.0.0.1"
-local-zone: "torrentfreak.com" redirect
-local-data: "torrentfreak.com A 127.0.0.1"
-local-zone: "torrentz.eu" redirect
-local-data: "torrentz.eu A 127.0.0.1"
-local-zone: "torrentz-proxy.com" redirect
-local-data: "torrentz-proxy.com A 127.0.0.1"
-local-data: "twitter.com A 127.0.0.1"
-local-data: "www.twitter.com A 127.0.0.1"
-local-zone: "unblock-proxy.com" redirect
-local-data: "unblock-proxy.com A 127.0.0.1"
-local-zone: "unblockstardoll.com" redirect
-local-data: "unblockstardoll.com A 127.0.0.1"
-local-zone: "unblockvideos.com" redirect
-local-data: "unblockvideos.com A 127.0.0.1"
-local-zone: "videoproxyunblocker.com" redirect
-local-data: "videoproxyunblocker.com A 127.0.0.1"
-local-zone: "vidproxy.com" redirect
-local-data: "vidproxy.com A 127.0.0.1"
-local-zone: "vimeo.com" redirect
-local-data: "vimeo.com A 127.0.0.1"
-local-zone: "vpnbook.com" redirect
-local-data: "vpnbook.com A 127.0.0.1"
-local-zone: "vpndeluxe.com" redirect
-local-data: "vpndeluxe.com A 127.0.0.1"
-local-data: "yahoo.com A 127.0.0.1"
-local-zone: "yande.re" redirect
-local-data: "yande.re A 127.0.0.1"
-local-zone: "yandex.com" redirect
-local-data: "yandex.com A 127.0.0.1"
-local-zone: "zivity.com" redirect
-local-data: "zivity.com A 127.0.0.1"
+local-zone: "12345proxy.pk" static
+local-zone: "4everproxy.com" static
+local-zone: "500px.com" static
+local-zone: "anime1.com" static
+local-zone: "aniscartujo.com" static
+local-zone: "anonymizer.com" static
+local-zone: "anonymous-proxy-servers.net" static
+local-zone: "archive.org" static
+local-zone: "artdoxa.com" static
+local-zone: "barracuda.com" static
+local-zone: "best-proxy.com.ca" static
+local-zone: "bing.com" static
+local-zone: "bypassthat.com" static
+local-zone: "chatterbate.com" static
+local-zone: "cruisenude.com" static
+local-zone: "cyberghostvpn.com" static
+local-zone: "digilet.org" static
+local-zone: "duckduckgo.com" static
+local-zone: "faceofliberty.com" static
+local-zone: "fastproxy.link" static
+local-zone: "filterbypass.me" static
+local-zone: "fuckbook.com" static
+local-zone: "getfoxyproxy.org" static
+local-zone: "hidemyass.com" static
+local-zone: "imgur.com" static
+local-zone: "instagram.com" static
+local-zone: "ipredator.se" static
+local-zone: "ispblocked.com" static
+local-zone: "istlsfastyet.com" static
+local-zone: "ixquick.com" static
+local-zone: "kproxy.com" static
+local-zone: "lushstories.com" static
+local-zone: "meebo.com" static
+local-zone: "megaproxy.pl" static
+local-zone: "mitmproxy.org" static
+local-zone: "mousematrix.com" static
+local-zone: "myhttpsproxy.com" static
+local-zone: "mysslproxy.com" static
+local-zone: "messenger.com" static
+local-zone: "nordvpn.com" static
+local-zone: "online-convert.com" static
+local-zone: "onlinevideoconverter.com" static
+local-zone: "openvpn.net" static
+local-zone: "outlook.com" static
+local-zone: "pandashield.com" static
+local-zone: "penthouse.com" static
+local-zone: "privatelee.com" static
+local-zone: "proxfree.com" static
+local-zone: "proximize.me" static
+local-zone: "proxpn.com" static
+local-zone: "proxyone.net" static
+local-zone: "proxy-service.de" static
+local-zone: "proxysite.com" static
+local-zone: "proxyssl.com" static
+local-zone: "reddit.com" static
+local-zone: "renren.com" static
+local-zone: "rrpproxy.net" static
+local-zone: "scribd.com" static
+local-zone: "siteenable.com" static
+local-zone: "sslproxybrowser.com" static
+local-zone: "sslproxyfree.com" static
+local-zone: "sslproxyunblocker.com" static
+local-zone: "ssltunnel.net" static
+local-zone: "sslunblocker.com" static
+local-zone: "sslunblock.net" static
+local-zone: "sslvideoproxy.com" static
+local-zone: "stunnel.org" static
+local-zone: "surfwecan.net" static
+local-zone: "thenude.eu" static
+local-zone: "thepiratebay-proxylist.org" static
+local-zone: "theproxy.ca" static
+local-zone: "toplessvegasonline.com" static
+local-zone: "torrentfreak.com" static
+local-zone: "torrentz.eu" static
+local-zone: "torrentz-proxy.com" static
+local-zone: "unblock-proxy.com" static
+local-zone: "unblockstardoll.com" static
+local-zone: "unblockvideos.com" static
+local-zone: "videoproxyunblocker.com" static
+local-zone: "vidproxy.com" static
+local-zone: "vimeo.com" static
+local-zone: "vpnbook.com" static
+local-zone: "vpndeluxe.com" static
+local-zone: "yande.re" static
+local-zone: "yandex.com" static
+local-zone: "zivity.com" static

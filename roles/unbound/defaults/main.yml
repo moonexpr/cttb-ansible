@@ -2,4 +2,5 @@
 
 ub_blocked_sites:
   - common.bl
+  - cf.bl
 ub_blocked_sites_extra: []
