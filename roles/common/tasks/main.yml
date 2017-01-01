@@ -8,6 +8,16 @@
       owner: root
       group: root
 
+  - name: add cttb custom ubuntu repo key
+    apt_key:
+      url: "{{deb_mirror}}/cttb-repos/cttb-repo.gpg.key"
+      state: present
+
+  - name: add cttb custom ubuntu repo
+    apt_repository:
+      repo: "deb {{deb_mirror}}/cttb-repos/apt/ubuntu {{ansible_distribution_release}} main"
+      state: present
+
   - name: refresh the mirrors
     apt:
       update_cache: yes
