@@ -72,6 +72,7 @@
       - fonts-arphic-ukai
       - fonts-arphic-uming
       - fonts-noto-cjk
+      - qtdeclarative5-qtquick2-plugin
       - im-config
 
   - name: set fcitx as default input method
