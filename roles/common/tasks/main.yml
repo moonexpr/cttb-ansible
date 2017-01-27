@@ -124,20 +124,23 @@
       - byobu
       - curl
       - dconf-tools
-      - iperf
+      - fio
       - git
+      - hddtemp
+      - htop
+      - iftop
+      - iotop
+      - iperf
+      - mtr
+      - nload
       - obnam
+      - smartmontools
       - tcpdump
       - traceroute
-      - mtr
       - unattended-upgrades
+      - util-linux
       - vim
       - whois
-      - smartmontools
-      - hddtemp
-      - iotop
-      - fio
-      - util-linux
 
   - name: install sw requested for this box
     apt:
