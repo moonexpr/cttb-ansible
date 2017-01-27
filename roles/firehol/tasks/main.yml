@@ -3,12 +3,6 @@
   # xenial has 2.0 and for link balancing we need at least 3.x
   # I've backported it from yakkety and it's on our new custom repo
 
-  - name: add cttb internal repo
-    apt_repository:
-      repo: 'deb http://theoverseer.cttb/cttb-repo ./'
-      state: present
-      filename: 'cttb-repo'
-
   - name: install firewall pkgs
     apt:
       name: "{{item}}"
@@ -25,15 +19,23 @@
   - name: setup /etc/default/firehol
     copy:
       src: etc-default-firehol
-      dst: /etc/default/firehol
-      mode: 0644
+      dest: /etc/default/firehol
+      mode: 0640
       owner: root
       group: root
 
   - name: setup /etc/firehol/firehol.conf
     copy:
       src: firehol.conf
-      dst: /etc/firehol/firehol.conf
-      mode: 0644
+      dest: /etc/firehol/firehol.conf
+      mode: 0640
+      owner: root
+      group: root
+
+  - name: setup /etc/firehol/link-balancer.conf
+    copy:
+      src: link-balancer.conf
+      dest: /etc/firehol/link-balancer.conf
+      mode: 0640
       owner: root
       group: root
