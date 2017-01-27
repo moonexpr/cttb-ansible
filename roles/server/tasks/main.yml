@@ -34,4 +34,4 @@
   - include: interfaces.yml
     when: server_interfaces is defined
     tags:
-      - netwrk
+      - network
