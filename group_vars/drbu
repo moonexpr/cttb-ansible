@@ -7,6 +7,9 @@ lightdm_hide_users: true
 pic_avatar: avatar-drbu.jpg
 pic_bg: bg-drbu.png
 
+# office
+libreoffice: true
 
+# nfs
 nfs_homes_host: nfs-drbu.cttb
 nfs_homes_export: /export/drbu
