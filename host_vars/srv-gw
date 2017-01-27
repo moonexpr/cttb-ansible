@@ -1,0 +1,16 @@
+---
+
+server_interfaces: [
+  {name: lan, mac: '00:25:90:d3:39:18', auto: True, inet: dhcp},
+  {name: com7, mac: '00:25:90:d3:39:19', auto: True, inet: static, address: 10.11.7.111, netmask: 255.255.255.0},
+  {name: com20, mac: '00:25:90:d3:39:1a', auto: True, inet: static, address: 10.11.20.111, netmask: 255.255.255.0}]
+
+static_routes:
+  com7: [
+      {table: main, dst: 8.8.8.8, gw: 10.11.7.1, dev: com7}]
+  com20: [
+      {table: main, dst: 8.8.4.4, gw: 10.11.20.1, dev: com20}]
+
+server_rt_tables:
+  - {id: 7, tname: com7}
+  - {id: 20, tname: com20}
