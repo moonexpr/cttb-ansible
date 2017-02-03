@@ -58,6 +58,8 @@
       owner: root
       group: unbound
       mode: 0750
+    tags:
+      - blacklist
 
   - name: deploy blacklists
     copy:
@@ -70,6 +72,8 @@
     with_items: "{{ ub_blocked_sites | union(ub_blocked_sites_extra)}}"
     notify:
     - restart unbound
+    tags:
+      - blacklist
 
   - name: deploy cttb local zone
     copy:
@@ -108,6 +112,8 @@
       force: yes
     notify:
     - restart unbound
+    tags:
+      - blacklist
 
   # setup logrotate unbound. Run it manually at midnight instead than as part
   # of logrotate with cron.daily. This helps DM Gong with other work on log
