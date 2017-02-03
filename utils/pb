@@ -4,6 +4,16 @@
 # runs a playbook
 #TODO convert this to python for a lot more control
 
+USAGE="Usage: $0 playbook-name [ansible-playbook OPTIONS]"
+
+if [ "$#" == "0" ]; then
+  echo "$USAGE"
+  exit 1
+fi
+
 source utils/setup-env
 
-ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/${1}.yml $2 $3
+PLAY=$1
+shift
+
+ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/${PLAY}.yml $@
