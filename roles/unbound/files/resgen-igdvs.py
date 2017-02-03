@@ -1,7 +1,10 @@
 import re
 
-domain_name = 'sipx.cttbpbx01.net.'
-blocked_domains = ('renren.com.','anime1.com.', 'gmail.com.', 'twitter.com.', 'meebo.com.', 'facebook.com.', 'imgur.com.', 'youtube.com.', 'scribd.com.', 'archive.org.', 'mail.google.com.'+ domain_name, 'mail.google.com.', 'plus.google.com.'+ domain_name, 'plus.google.com.', 'translate.google.com.'+ domain_name, 'translate.google.com.', '4everproxy.com.', '500px.com.', 'aniscartujo.com.', 'anonymizer.com.', 'anonymous-proxy-servers.net.', 'artdoxa.com.', 'barracuda.com.', 'best-proxy.com.ca.', 'bypassthat.com.', 'chatterbate.com.', 'cruisenude.com.', 'cyberghostvpn.com.', 'digilet.org.', 'duckduckgo.com.', 'faceofliberty.com.', 'fastproxy.link.', 'filterbypass.me.', 'fuckbook.com.', 'getfoxyproxy.org.', 'hidemyass.com.', 'instagram.com.', 'ipredator.se.', 'ispblocked.com.', 'istlsfastyet.com.', 'ixquick.com.', 'kproxy.com.', 'lushstories.com.', 'megaproxy.com.', 'megaproxy.pl.', 'mitmproxy.org.', 'mousematrix.com.', 'myhttpsproxy.com.', 'mysslproxy.com.', 'nordvpn.com.', 'online-convert.com.', 'onlinevideoconverter.com.', 'openvpn.net.', 'pandashield.com.', 'proxfree.com.', 'proximize.me.', 'proxpn.com.', 'proxy-service.de.', 'proxyone.net.', 'proxysite.com.', 'proxyssl.com.', 'reddit.com.', 'rrpproxy.net.', 'penthouse.com.', 'siteenable.com.', 'sslproxybrowser.com.', 'sslproxyfree.com.', 'sslproxyunblocker.com.', 'ssltunnel.net.', 'sslunblock.net.', 'sslunblocker.com.', 'sslvideoproxy.com.', 'stunnel.org.', 'surfwecan.net.', 'thenude.eu.', 'thepiratebay-proxylist.org.', 'theproxy.ca.', 'toplessvegasonline.com.', 'torrentfreak.com.', 'torrentz-proxy.com.', 'torrentz.eu.', 'unblock-proxy.com.', 'unblockstardoll.com.', 'unblockvideos.com.', 'videoproxyunblocker.com.', 'vidproxy.com.', 'vpnbook.com.', 'vpndeluxe.com.', 'yande.re.', 'yandex.com.', 'zivity.com.', 'privatelee.com.', '12345proxy.pk.', 'vimeo.com.', 'moatads.com.', 'adnxs.com.', 'pix.btrll.com.')
+# Note: all straight up domain blocking has been moved to unbound blocked-sites
+# list, much faster than using this script. Using this only for stuff that
+# requires regular expressions.
+
+blocked_google = ('mail.google', 'plus.google', 'translate.google', 'inbox.google')
 
 def is_blocked_domain(qdn):
   gotmail = re.compile('mail')
@@ -17,7 +20,7 @@ def is_blocked_domain(qdn):
   gimage = re.compile('encrypted[-]tbn[01234567][.]gstatic[.]com')
   b21 = gimage.search(qdn) <> None
 
-  return qdn.endswith(blocked_domains) or b07 or b08 or b09 or b10 or b21
+  return qdn.startswith(blocked_google) or b07 or b08 or b09 or b10 or b21
 
 # allow the library 17.x machines to access youtube
 def is_17_youtube(qdn, ip):
@@ -51,7 +54,7 @@ def operate(id, event, qstate, qdata):
       return True
     elif is_blocked_domain(qdn):
       msg = DNSMessage(qdn, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA | PKT_AA)
-      msg.answer.append('%s 3600 IN A 127.0.0.2' % qdn)
+      msg.answer.append('%s 3600 IN A 127.0.0.1' % qdn)
       if not msg.set_return_msg(qstate):
         qstate.ext_state[id] = MODULE_ERROR
         return True

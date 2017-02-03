@@ -1,6 +1,7 @@
 local-zone: "12345proxy.pk" static
 local-zone: "4everproxy.com" static
 local-zone: "500px.com" static
+local-zone: "adnxs.com" static
 local-zone: "anime1.com" static
 local-zone: "aniscartujo.com" static
 local-zone: "anonymizer.com" static
@@ -16,12 +17,13 @@ local-zone: "cruisenude.com" static
 local-zone: "cyberghostvpn.com" static
 local-zone: "digilet.org" static
 local-zone: "duckduckgo.com" static
+local-zone: "facebook.com" static
 local-zone: "faceofliberty.com" static
 local-zone: "fastproxy.link" static
 local-zone: "filterbypass.me" static
 local-zone: "fuckbook.com" static
 local-zone: "getfoxyproxy.org" static
-local-zone: "hidemyass.com" static
+local-zone: "gmail.com" static
 local-zone: "imgur.com" static
 local-zone: "instagram.com" static
 local-zone: "ipredator.se" static
@@ -31,12 +33,14 @@ local-zone: "ixquick.com" static
 local-zone: "kproxy.com" static
 local-zone: "lushstories.com" static
 local-zone: "meebo.com" static
+local-zone: "megaproxy.com" static
 local-zone: "megaproxy.pl" static
+local-zone: "messenger.com" static
 local-zone: "mitmproxy.org" static
+local-zone: "moatads.com" static
 local-zone: "mousematrix.com" static
 local-zone: "myhttpsproxy.com" static
 local-zone: "mysslproxy.com" static
-local-zone: "messenger.com" static
 local-zone: "nordvpn.com" static
 local-zone: "online-convert.com" static
 local-zone: "onlinevideoconverter.com" static
@@ -73,6 +77,7 @@ local-zone: "toplessvegasonline.com" static
 local-zone: "torrentfreak.com" static
 local-zone: "torrentz.eu" static
 local-zone: "torrentz-proxy.com" static
+local-zone: "twitter.com" static
 local-zone: "unblock-proxy.com" static
 local-zone: "unblockstardoll.com" static
 local-zone: "unblockvideos.com" static
@@ -83,4 +88,5 @@ local-zone: "vpnbook.com" static
 local-zone: "vpndeluxe.com" static
 local-zone: "yande.re" static
 local-zone: "yandex.com" static
+local-zone: "youtube.com" static
 local-zone: "zivity.com" static
