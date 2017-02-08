@@ -19,6 +19,8 @@
       owner: unbound
       group: adm
       mode: 0775
+    tags:
+      - logging
 
   - name: setup unbound.log
     copy:
@@ -28,6 +30,21 @@
       group: adm
       mode: 0660
       force: no
+    tags:
+      - logging
+
+  - name: setup unbound logging
+    copy:
+      src: rsyslog-30-unbound.conf
+      dest: /etc/rsyslog.d/30-unbound.conf
+      mode: 0644
+      owner: root
+      group: root
+      force: yes
+    notify:
+    - restart rsyslog
+    tags:
+      - logging
 
   - name: deploy unbound /etc/default/ settings
     copy:
@@ -39,6 +56,8 @@
       force: yes
     notify:
     - restart unbound
+    tags:
+      - config
 
   - name: deploy unbound config
     copy:
@@ -50,6 +69,8 @@
       force: yes
     notify:
     - restart unbound
+    tags:
+      - config
 
   - name: setup unbound blacklist dir
     file:
