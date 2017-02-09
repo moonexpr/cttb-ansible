@@ -88,5 +88,4 @@ local-zone: "vpnbook.com" static
 local-zone: "vpndeluxe.com" static
 local-zone: "yande.re" static
 local-zone: "yandex.com" static
-local-zone: "youtube.com" static
 local-zone: "zivity.com" static
