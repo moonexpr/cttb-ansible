@@ -1,5 +1,8 @@
 import re
 
+blocked_domain_strings = ('hoxxproxytest',)
+google_no_sslsearch = ('docs', 'nosslsearch', 'drive', 'accounts', 'mail', 'apis', 'tools', 'hangouts', 'play', 'safebrowsing', 'plus', 'id', 'android', 'fonts', 'mtalk', 'pki', 'calendar', 'maps', 'client', 'chatenabled', 'support', 'news', 'dl', 'notifications', 'gmail-imap', 'picasaweb', 'history', 'inputtools', 'alt', 'security') 
+
 def init(id, cfg): return True
 
 def deinit(id): return True
@@ -19,7 +22,24 @@ def operate(id, event, qstate, qdata):
         src_ip = q.addr
         break
 
-    if qdn.endswith('.google.com.') and re.search('docs.google',qdn) == None and re.search('nosslsearch',qdn) == None and re.search('drive.google',qdn) == None and re.search('accounts.google',qdn) == None and re.search('android',qdn) == None and ((qstate.qinfo.qtype == RR_TYPE_A) or (qstate.qinfo.qtype == RR_TYPE_ANY)):
+    if any(d for d in blocked_domain_strings if d in qdn):
+      msg = DNSMessage(qdn, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA | PKT_AA)
+      if not msg.set_return_msg(qstate):
+        qstate.ext_state[id] = MODULE_ERROR
+        return True
+
+      #we don't need validation, result is valid
+      qstate.return_msg.rep.security = 2
+      qstate.ext_state[id] = MODULE_FINISHED
+      qstate.return_rcode = RCODE_NXDOMAIN
+      return True
+    elif ('.google.' in qdn and
+        not qdn.startswith(google_no_sslsearch) and
+        (
+            (qstate.qinfo.qtype == RR_TYPE_A) or
+            (qstate.qinfo.qtype == RR_TYPE_ANY)
+         )):
+
       #create instance of DNS message (packet) with given parameters
       msg = DNSMessage(qdn, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA | PKT_AA)
       #append RR

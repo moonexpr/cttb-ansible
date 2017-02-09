@@ -5,26 +5,20 @@ import re
 # requires regular expressions.
 
 blocked_google = ('mail.google', 'plus.google', 'translate.google', 'inbox.google')
+blocked_domain_strings = ('yahoo', 'pinterest', 'hoxxproxytest', 'youtube')
 
 def is_blocked_domain(qdn):
-  gotmail = re.compile('mail')
-  isdrba  = re.compile('drba')
-  yahoo = re.compile('yahoo')
-  bing = re.compile ('bing.com')
-  pinterest = re.compile('pinterest')
-  b07 = gotmail.search(qdn) <> None and isdrba.search(qdn) == None
-  b08 = yahoo.search(qdn) <> None
-  b09 = bing.search(qdn) <> None
-  b10 = pinterest.search(qdn) <> None
-
   gimage = re.compile('encrypted[-]tbn[01234567][.]gstatic[.]com')
-  b21 = gimage.search(qdn) <> None
 
-  return qdn.startswith(blocked_google) or b07 or b08 or b09 or b10 or b21
+  return (qdn.startswith(blocked_google) or
+          any(d for d in blocked_domain_strings if d in qdn) or
+          gimage.search(qdn) <> None)
 
 # allow the library 17.x machines to access youtube
 def is_17_youtube(qdn, ip):
-  if (qdn.endswith('youtube.com.') or qdn.endswith('googlevideo.com.')) and ip in ('10.11.17.1','10.11.17.2'):
+  if ((qdn.endswith('youtube.com.') or
+      qdn.endswith('googlevideo.com.')) and
+      ip in ('10.11.17.1','10.11.17.2')):
     return True
   else:
     return False
@@ -54,7 +48,6 @@ def operate(id, event, qstate, qdata):
       return True
     elif is_blocked_domain(qdn):
       msg = DNSMessage(qdn, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA | PKT_AA)
-      msg.answer.append('%s 3600 IN A 127.0.0.1' % qdn)
       if not msg.set_return_msg(qstate):
         qstate.ext_state[id] = MODULE_ERROR
         return True
@@ -62,9 +55,9 @@ def operate(id, event, qstate, qdata):
       #we don't need validation, result is valid
       qstate.return_msg.rep.security = 2
       qstate.ext_state[id] = MODULE_FINISHED
-      qstate.return_rcode = RCODE_NOERROR
+      qstate.return_rcode = RCODE_NXDOMAIN
       return True
-    elif re.search('.google.',qdn) <> None:
+    elif '.google.' in qdn:
       msg = DNSMessage(qdn, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA | PKT_AA)
       msg.answer.append('%s 3600 IN CNAME nosslsearch.google.com.' % qdn)
       msg.answer.append('nosslsearch.google.com. 86400 IN A 216.239.32.20')

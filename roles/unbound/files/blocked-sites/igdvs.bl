@@ -56,6 +56,7 @@ local-zone: "proxyone.net" static
 local-zone: "proxy-service.de" static
 local-zone: "proxysite.com" static
 local-zone: "proxyssl.com" static
+local-zone: "qq.com" static
 local-zone: "reddit.com" static
 local-zone: "renren.com" static
 local-zone: "rrpproxy.net" static
@@ -70,6 +71,8 @@ local-zone: "sslunblock.net" static
 local-zone: "sslvideoproxy.com" static
 local-zone: "stunnel.org" static
 local-zone: "surfwecan.net" static
+local-zone: "taobao.com" static
+local-zone: "taobao.cn" static
 local-zone: "thenude.eu" static
 local-zone: "thepiratebay-proxylist.org" static
 local-zone: "theproxy.ca" static
