@@ -92,7 +92,7 @@
 
   - name: enable centralized logging
     copy:
-      src: config/10-centralized-logging.conf
+      src: conf/10-centralized-logging.conf
       dest: /etc/rsyslog.d/10-centralized-logging.conf
       mode: 0644
       owner: root
@@ -164,7 +164,7 @@
 
   - name: enable unattended upgrades
     copy:
-      src: config/unattended-upgrades
+      src: conf/unattended-upgrades
       dest: /etc/apt/apt.conf.d/20auto-upgrades
       mode: 0644
       owner: root
@@ -172,7 +172,7 @@
 
   - name: disable ipv6 #defaults to yes
     copy:
-      src: config/disable-ipv6.conf
+      src: conf/disable-ipv6.conf
       dest: /etc/sysctl.d/60-disable-ipv6.conf
       mode: 0644
       owner: root
@@ -183,7 +183,7 @@
 
   - name: vim saner defaults
     copy:
-      src: config/vimrc
+      src: conf/vimrc
       dest: /etc/skel/.vimrc
       mode: 0644
       owner: root
@@ -192,7 +192,7 @@
   # administrator account has already been created so the above won't take effect
   - name: vim saner defaults for administrator
     copy:
-      src: config/vimrc
+      src: conf/vimrc
       dest: /home/administrator/.vimrc
       mode: 0644
       owner: administrator
