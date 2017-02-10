@@ -15,7 +15,7 @@ iface {{iface.name}} inet {{iface.inet}}
   gateway {{iface.gateway}}
 {% endif %}
 {% endif %}
-{% if static_routes[iface.name] is defined %}
+{% if static_routes is defined and static_routes[iface.name] is defined %}
   {% for route in static_routes[iface.name] %}
   post-up ip route add table {{route.table}} {{route.dst}} via {{route.gw}} dev {{route.dev}}
   {% endfor %}
