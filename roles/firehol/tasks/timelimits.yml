@@ -1,0 +1,31 @@
+---
+
+  - name: generate script to add/remove ips from sets
+    template:
+      src: timed_internet.j2
+      dest: /etc/firehol/timed_internet.sh
+      owner: root
+      group: root
+      mode: 0750
+
+  - name: add crons turn timed_internet.sh on
+    cron:
+      name: "{{item.0.label}} ON day:{{item.1.days}} time:{{item.1.on_at}}"
+      day: "{{item.1.days}}"
+      hour: "{{item.1.on_at.split(':')[0]}}"
+      minute: "{{item.1.on_at.split(':')[1]|default(0)}}"
+      job: "/etc/firehol/timed_internet.sh {{item.0.label}} on"
+    with_subelements:
+      - "{{timed_internet}}"
+      - periods
+
+  - name: add crons turn timed_internet.sh off
+    cron:
+      name: "{{item.0.label}} OFF day:{{item.1.days}} time:{{item.1.off_at}}"
+      day: "{{item.1.days}}"
+      hour: "{{item.1.off_at.split(':')[0]}}"
+      minute: "{{item.1.off_at.split(':')[1]|default(0)}}"
+      job: "/etc/firehol/timed_internet.sh {{item.0.label}} off"
+    with_subelements:
+      - "{{timed_internet}}"
+      - periods

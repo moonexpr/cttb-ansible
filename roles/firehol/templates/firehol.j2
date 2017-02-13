@@ -38,10 +38,10 @@ world="com7 com20"
 
 # custom ssh alt service
 ssh_alt="2244"
-#server_sshalt_ports="tcp/2244"
-#client_sshalt_ports="default"
+server_sshalt_ports="tcp/2244"
+client_sshalt_ports="default"
 
-# NAT ad redirects 
+# NAT ad redirects
 
 ## this still needs port forwarding on the modem to work
 dnat4 to 10.11.29.154:22 proto tcp dport $ssh_alt # redirect ssh into the city through jumpbox
@@ -49,6 +49,11 @@ dnat4 to 10.11.6.1 proto tcp dport sip # get sip traffic to the asterisk server
 transparent_proxy4 80 8080 "" inface "${home}"
 
 masquerade "${world}"
+
+# ipsets definition
+{% for group in timed_internet %}
+ipset4  create {{group.label}} hash:{{group.type}}
+{% endfor %}
 
 # rules for traffic coming from the lan into the gateway
 interface4 "${home}" cttb
@@ -77,4 +82,6 @@ router4 internet2cttb inface "${world}" outface "${home}"
     server dhcp accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
     server dns accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
 
+    client http reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
+    client all reject src 10.11.13.0/24 # temp registration range should not go online
     client all accept
