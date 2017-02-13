@@ -16,4 +16,4 @@ source utils/setup-env
 PLAY=$1
 shift
 
-ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/${PLAY}.yml $@
+ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/${PLAY}.yml --diff $@
