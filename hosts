@@ -24,8 +24,9 @@ vbox-pxe
 # CTTB infra
 unbound-adult
 unbound-igdvs
-backup ansible_ssh_host=10.11.14.129
 asterix 
+srv-gw ansible_ssh_host=10.11.1.1
+backup
 
 # People on linux
 spike
@@ -260,7 +261,7 @@ drbu-cdorm-lab
 drbu-staff
 
 [testing]
-vbox-pxe
+testlab1
 
 [unbound]
 unbound-adult
