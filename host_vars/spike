@@ -10,51 +10,54 @@ cups_default_queue: 1234_HP_M225dw
 
 additional_sw:
   - ansible
+  - build-essential
   - byobu
   - curl
   - debconf-utils
+  - devscripts
+  - dpatch
+  - dpkg-dev
+  - fakeroot
+  - fio
   - gimp
   - git
+  - hping3
+  - iftop
+  - iotop
   - ipcalc
   - irssi
+  - jq # to manipulate json from the command line https://stedolan.github.io/jq/
   - keychain
-  - libssl-dev #various things that we compile and need crypto will require these pkgs
   - libgnutls-dev
-  - nmap
+  - libssl-dev #various things that we compile and need crypto will require these pkgs
+  - meld # file/dir diff (also see beyond compare, but not available in repo)
+  - netsed
+  - ngrep
+  - nload
   - nmap
   - nvidia-340
   - nvidia-settings
   - obnam
-  - python-pip # to install custom python modules, mostly ansible
+  - packit
   - python-dev #needed by some custom modules for ansible
   - python-passlib
+  - python-pip # to install custom python modules, mostly ansible
   - python-snimpy
   - python-software-properties
+  - quilt
+  - sipgrep
   - snimpy
   - snmp
   - snmp-mibs-downloader
   - software-properties-common
+  - sysbench
+  - tcpxtract
   - tftp
   - tree
   - vim
   - vlc
+  - wakeonlan
   - whois
   - wireshark
-  - dpkg-dev
-  - build-essential
-  - fakeroot
-  - devscripts
-  - quilt
-  - dpatch
-  - fio
-  - iotop
-  - sysbench
-  - tcpxtract
-  - packit
-  - hping3
-  - netsed
-  - ngrep
-  - sipgrep
-  - jq # to manipulate json from the command line https://stedolan.github.io/jq/
   #- mdadm #for whatever reason seems to cause troubles on boot if there's
   # no raid, but maybe it was smartmontools
