@@ -1,0 +1,24 @@
+# IP-Group list
+# Used by the IP-based auth plugin to assign IP addresses to filter groups.
+#
+# Examples:
+# Straight IP matching:
+#192.168.0.1 = filter1
+# Subnet matching:
+#192.168.1.0/255.255.255.0 = filter1
+# Range matching:
+#192.168.1.0-192.168.1.255 = filter1
+
+#F1 adults bypass / all except those below
+
+#F2 adult filtered
+# ip = filter2
+
+#F3 DVBS
+10.11.10.0-10.11.10.255 = filter3
+
+#F4 DVGS
+10.11.9.0-10.11.9.255 = filter4
+
+#F7 limited
+10.11.8.0-10.11.8.255 = filter5

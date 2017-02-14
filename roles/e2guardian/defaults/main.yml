@@ -1,0 +1,15 @@
+---
+
+filter_ip: 127.0.0.1 #need to be replaced or E2G won't be available on the network
+proxy_ip: 127.0.0.1
+groups_number: 1 # by default have only one filter group to send all traffic to
+
+filtering_groups:
+  - name: default
+    num: 1 # must be unique
+    naughtynesslimit: 55 #default to young children
+    bypass: 300 # 0 to disable, other seconds bypass link is valid for
+    disablecontentscan: on # no AV scanning for now
+    deepurlanalysis: on 
+    reportinglevel: 3 # default, html page
+

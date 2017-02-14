@@ -1,0 +1,32 @@
+---
+
+  - name: install e2guardian pkgs
+    apt:
+      name: e2guardian
+      state: latest
+      install_recommends: yes
+      update_cache: yes
+
+  - name: configure e2g global
+    template:
+      src: e2guardian.conf
+      dest: /etc/e2guardian/e2guardian.conf
+      owner: e2guardian
+      group: e2guardian
+      mode: 0640
+
+  - name: configure e2g group
+    template:
+      src: e2guardianfx.conf
+      dest: /etc/e2guardian/e2guardianf{{item.num}}.conf
+      owner: e2guardian
+      group: e2guardian
+      mode: 0640
+    with_items: "{{filtering_groups}}"
+    notify:
+      - restart e2g
+
+    # create dirs for fX
+    # copy configs over
+    # edit those configs to include master in e2g/lists
+
