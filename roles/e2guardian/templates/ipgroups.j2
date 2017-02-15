@@ -1,0 +1,7 @@
+# Assign machines to groups using ips
+
+{% for g in filtering_groups %}
+{% for ip in g.ips %}
+{{ip}} = {{g.name}}
+{% endfor %}
+{% endfor %}

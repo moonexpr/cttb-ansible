@@ -1,0 +1,6 @@
+---
+
+  - name: restart e2g
+    service:
+      name: e2guardian
+      state: restarted

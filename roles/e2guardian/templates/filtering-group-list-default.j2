@@ -1,0 +1,7 @@
+# Include the default list
+.Include</etc/e2guardian/lists/{{item[1]}}>
+
+# Include overrides for this group
+{% if item[1] in item[0].overrides %}
+.Include</etc/e2guardian/f{{item[0].num}}/overrides/{{item[1]}}>
+{% endif %}

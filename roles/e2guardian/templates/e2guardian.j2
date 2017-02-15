@@ -169,8 +169,6 @@ custombannedimagefile = '/usr/share/e2guardian/transparent1x1.gif'
 usecustombannedflash = on
 custombannedflashfile = '/usr/share/e2guardian/blockedflash.swf'
 
-
-
 # Filter groups options
 # filtergroups sets the number of filter groups. A filter group is a set of content
 # filtering options you can apply to a group of users.  The value must be 1 or more.
@@ -182,7 +180,12 @@ custombannedflashfile = '/usr/share/e2guardian/blockedflash.swf'
 filtergroups = {{groups_number}}
 filtergroupslist = '/etc/e2guardian/lists/filtergroupslist'
 
-
+# Lists defaults that we do not want to override
+# Apparently the fX groups do not inherit this so it still needs to be defined
+# there too :(
+{% for l in default_lists %}
+{{l}} = '/etc/e2guardian/lists/{{l}}'
+{% endfor %}
 
 # Authentication files location
 bannediplist = '/etc/e2guardian/lists/bannediplist'
@@ -214,8 +217,6 @@ urlcachenumber = 1000
 # 900 = recommended = 15 mins
 urlcacheage = 1800
 
-
-
 # Cache for content (AV) scan results as 'clean'
 # By default, to save CPU, files scanned and found to be
 # clean are inserted into the clean cache and NOT scanned
@@ -225,8 +226,6 @@ urlcacheage = 1800
 # off = do not cache; always re-scan
 # (on|off) default = on.
 scancleancache = on
-
-
 
 # Smart, Raw and Meta/Title phrase content filtering options
 # Smart is where the multiple spaces and HTML are removed before phrase filtering
@@ -257,8 +256,6 @@ preservecase = 0
 # (and possibly forcequicksearch 1) and non ASCII/UTF-8 phrase lists, and one
 # with preservecase 0 and ASCII/UTF-8 lists.
 
-
-
 # Hex decoding options
 # When a document is scanned it can optionally convert %XX to chars.
 # If you find documents are getting past the phrase filtering due to encoding
@@ -266,8 +263,6 @@ preservecase = 0
 # off = disabled (default)
 # on = enabled
 hexdecodecontent = off
-
-
 
 # Force Quick Search rather than DFA search algorithm
 # The current DFA implementation is not totally 16-bit character compatible
@@ -277,8 +272,6 @@ hexdecodecontent = off
 # off (default) | on (Big5 compatible)
 forcequicksearch = off
 
-
-
 # Reverse lookups for banned site and URLs.
 # If set to on, e2guardian will look up the forward DNS for an IP URL
 # address and search for both in the banned site and URL lists.  This would
@@ -287,8 +280,6 @@ forcequicksearch = off
 # DNS server, leave it off and use the Blanket IP Block option in the
 # bannedsitelist file instead.
 reverseaddresslookups = off
-
-
 
 # Reverse lookups for banned and exception IP lists.
 # If set to on, e2guardian will look up the forward DNS for the IP
@@ -301,7 +292,6 @@ reverseaddresslookups = off
 # leave it off.
 reverseclientiplookups = off
 
-
 # Perform reverse lookups on client IPs for successful requests.
 # If set to on, e2guardian will look up the forward DNS for the IP
 # of the connecting computer, and log host names (where available) rather than
@@ -309,7 +299,6 @@ reverseclientiplookups = off
 # This is not dependent on reverseclientiplookups being enabled; however, if it
 # is, enabling this option does not incur any additional forward DNS requests.
 logclienthostnames = off
-
 
 # Build bannedsitelist and bannedurllist cache files.
 # This will compare the date stamp of the list file with the date stamp of
@@ -350,8 +339,6 @@ prefercachedlists = off
 
 maxcontentfiltersize = 1024
 
-
-
 # Max content ram cache scan size
 # This is only used if you use a content scanner plugin such as AV
 # This is the max size of file that DG will download and cache
@@ -362,8 +349,6 @@ maxcontentfiltersize = 1024
 # This option may be ignored by the configured download manager.
 maxcontentramcachescansize = 2048
 
-
-
 # Max content file cache scan size
 # This is only used if you use a content scanner plugin such as AV
 # This is the max size file that DG will download
@@ -371,7 +356,6 @@ maxcontentramcachescansize = 2048
 # This value must be greater or equal to maxcontentramcachescansize.
 # The size is in Kibibytes - eg 10240 = 10Mb
 maxcontentfilecachescansize = 20000
-
 
 # File cache dir
 # Where DG will download files to be scanned if too large for the
@@ -389,7 +373,6 @@ filecachedir = '/tmp'
 deletedownloadedtempfiles = on
 
 
-
 # Initial Trickle delay
 # This is the number of seconds a browser connection is left waiting
 # before first being sent *something* to keep it alive.  The
@@ -400,14 +383,12 @@ deletedownloadedtempfiles = on
 initialtrickledelay = 20
 
 
-
 # Trickle delay
 # This is the number of seconds a browser connection is left waiting
 # before being sent more *something* to keep it alive.  The
 # *something* depends on the download manager chosen.
 # This may be ignored by the configured download manager.
 trickledelay = 10
-
 
 
 # Download Managers
@@ -583,7 +564,7 @@ preforkchildren = 20
 # sets the maximum number of processes to have doing nothing.
 # When this many are spare it will cull some of them.
 # On large sites you might want to try 64.
-maxsparechildren = 32
+maxsparechildren = 64
 
 
 # sets the maximum age of a child process before it croaks it.

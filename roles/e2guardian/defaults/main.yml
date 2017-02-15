@@ -7,9 +7,39 @@ groups_number: 1 # by default have only one filter group to send all traffic to
 filtering_groups:
   - name: default
     num: 1 # must be unique
-    naughtynesslimit: 55 #default to young children
-    bypass: 300 # 0 to disable, other seconds bypass link is valid for
+    ips: [] # ips or ranges to assign machines to this group. Default group is empty as a catch-all
+    naughtynesslimit: 50 # default of 50 is for young kids
+    bypass: 0 # 0 to disable, or num seconds bypass link is valid for
     disablecontentscan: on # no AV scanning for now
     deepurlanalysis: on 
     reportinglevel: 3 # default, html page
+    overrides: # lists to override per group
+      - exceptionsitelist
+      - weightedphraselist
 
+# lists we want to be able to modify/override
+filtering_groups_lists:
+  - bannedphraselist
+  - bannedregexpurllist
+  - bannedsitelist
+  - bannedurllist
+  - exceptionphraselist
+  - exceptionregexpurllist
+  - exceptionsitelist
+  - exceptionurllist
+  - greysitelist
+  - greyurllist
+  - weightedphraselist
+
+# lists that we don't care to modify and can be always default
+default_lists:
+  - bannedregexpheaderlist
+  - exceptionextensionlist
+  - exceptionmimetypelist
+  - bannedextensionlist
+  - bannedmimetypelist
+  - exceptionfilesitelist
+  - exceptionfileurllist
+  - contentregexplist
+  - urlregexplist
+  - headerregexplist

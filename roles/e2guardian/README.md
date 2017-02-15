@@ -12,25 +12,28 @@ E2Guardian main config files holds some common directive but then real filtering
 is done with per group config _e2guardianfX.conf_ where X is the group number.
 
 # Filtering configuration
-By default the _naughtyuness_ level is set to 50 (small children) and you
-should really tune it for best results.
+Everything is controlled in two places:
+- the filtering_groups variable, defined in the host vars for the gateway
+- the _overrides_ directory under files, used to ban or whitelist phrases,
+  sites, etc. This directory contains directories named after the group name
+  defined in filtering_groups. Names must match for overrides to be loaded
 
-## Assing uses to groups
-Groups are matched by ip in _lists/authplugins/ipgroups_.
+Please note that by default the _naughtyuness_ level is set to 50 (small
+children) and you should really tune it for best results.
+
+## Assing users to groups
+Groups are matched by ip in _lists/authplugins/ipgroups_. This is generated
+from filtering_groups based on the ips field. The field can be any of the
+following:
+- a straight ip, 192.168.0.1
+- a subnet with netmask, 192.168.1.0/255.255.255.0
+- a range, 192.168.1.0-192.168.1.255
+
+Add as many combinations as you'd like, one per line, and they will all be
+assigned to the group they belong to.
 
 All groups share common banned and whitelists in _lists/_ and then override/add
-their own using _lists/fX_.
+their own using _fX lists_.
 
 All definitions are done through the host variable filtering_groups, with
 defaults in the role for the F1 default group E2G ships with.
-
-## Overrides
-Not everythins needs to be overridden so for many settings config files point
-straight to the base file.
-
-Where overrides are needed the directive will point to the _lists/fX_ dir which
-will include the base file plus specifying the overrides
-
-To allow for lists reuse and minimizing config changes we use a _cttb_ directory
-that contains various overrides that can be shared across groups, for example
-dvgs and dvbs can share an _igdvs_ list.

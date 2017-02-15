@@ -1,0 +1,55 @@
+groupname = {{item.name}}
+groupmode = 1 #filtered
+
+# Content filtering files location
+{% for l in filtering_groups_lists %}
+{{l}} = '/etc/e2guardian/f{{item.num}}/{{l}}'
+{% endfor %}
+
+# Lists defaults that we do not want to override
+# Apparently the fX groups do not inherit this so it still needs to be defined
+# there too :(
+{% for l in default_lists %}
+{{l}} = '/etc/e2guardian/lists/{{l}}'
+{% endfor %}
+
+# Downloads management
+#blockdownloads = off
+
+# POST protection (web upload and forms)
+# use 0 for a complete block
+# use higher (e.g. 512 = 512Kbytes) for limiting
+# use -1 for no blocking
+maxuploadsize = -1
+
+naughtynesslimit = {{item.naughtynesslimit}} # weighted phrases threshold
+
+categorydisplaythreshold = 0 #display categories on block page
+
+# Embedded URL weighting
+# When set to something greater than zero, this option causes URLs embedded within a
+# page's HTML (from links, image tags, etc.) to be extracted and checked against the
+# bannedsitelist and bannedurllist. Each link to a banned page causes the amount set
+# here to be added to the page's weighting.
+# The behaviour of this option with regards to multiple occurrences of a site/URL is
+# affected by the weightedphrasemode setting.
+#
+# NB: Currently, this feature uses regular expressions that require the PCRE library.
+# As such, it is only available if you compiled e2guardian with '--enable-pcre=yes'.
+# You can check compile-time options by running 'e2guardian -v'.
+#
+# Set to 0 to disable.
+# Defaults to 0.
+# WARNING: This option is highly CPU intensive!
+embeddedurlweight = 0
+
+bypass = 0
+disablecontentscan = {{item.disablecontentscan}}
+deepurlanalysis = {{item.deepurlanalysis}}
+reportinglevel = {{item.reportinglevel}}
+
+# HTML Template override
+# This option generates a file path of the form:
+# <languagedir>/<language>/<htmltemplate>
+# e.g. /usr/share/e2guardian/languages/ukenglish/custom.html
+#htmltemplate = 'custom.html'
