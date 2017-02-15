@@ -15,7 +15,6 @@ filtering_groups:
     reportinglevel: 3 # default, html page
     overrides: # lists to override per group
       - exceptionsitelist
-      - weightedphraselist
 
 # lists we want to be able to modify/override
 filtering_groups_lists:
@@ -43,3 +42,11 @@ default_lists:
   - contentregexplist
   - urlregexplist
   - headerregexplist
+
+# global lists we want all groups to include
+cttb_global_lists:
+  - bannedphraselist
+  - bannedregexpurllist
+  - bannedsitelist
+  - exceptionregexpurllist
+  - weightedphraselist

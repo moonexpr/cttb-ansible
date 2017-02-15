@@ -7,7 +7,7 @@
       install_recommends: yes
       update_cache: yes
 
-  - name: configure e2g global
+  - name: deploy e2guardian.conf
     template:
       src: e2guardian.j2
       dest: /etc/e2guardian/e2guardian.conf
@@ -17,13 +17,37 @@
     notify:
       - restart e2g
 
-  - name: create e2g ipsgroup to assign machines to groups
+  - name: deploy ipgroups
     template:
       src: ipgroups.j2
       dest: "/etc/e2guardian/lists/authplugins/ipgroups"
       owner: e2guardian
       group: e2guardian
       mode: 0640
+    notify:
+      - restart e2g
+
+  - name: generate all e2guardianfX.conf
+    template:
+      src: e2guardianfx.j2
+      dest: /etc/e2guardian/e2guardianf{{item.num}}.conf
+      owner: e2guardian
+      group: e2guardian
+      mode: 0640
+    with_items: "{{filtering_groups}}"
+    notify:
+      - restart e2g
+
+
+  - name: deploy e2g global cttb lists
+    copy:
+      src: cttb-lists/
+      dest: /etc/e2guardian/lists/cttb
+      owner: e2guardian
+      group: e2guardian
+      mode: 0750
+    tags:
+      - e2g_overrides
     notify:
       - restart e2g
 
@@ -45,19 +69,6 @@
       mode: 0750
     with_items: "{{filtering_groups}}"
 
-  - name: create e2g filtering group lists
-    template:
-      src: filtering-group-list-default.j2
-      dest: "/etc/e2guardian/f{{item[0].num}}/{{item[1]}}"
-      owner: e2guardian
-      group: e2guardian
-      mode: 0640
-    with_nested:
-      - "{{filtering_groups}}"
-      - "{{filtering_groups_lists}}"
-    notify:
-      - restart e2g
-
   - name: deploy e2g filtering group override lists
     copy:
       src: "overrides/{{item.name}}/"
@@ -71,19 +82,19 @@
     notify:
       - restart e2g
 
-  - name: configure e2g group
+  - name: create e2g filtering group lists
     template:
-      src: e2guardianfx.j2
-      dest: /etc/e2guardian/e2guardianf{{item.num}}.conf
+      src: filtering-group-list-default.j2
+      dest: "/etc/e2guardian/f{{item[0].num}}/{{item[1]}}"
       owner: e2guardian
       group: e2guardian
       mode: 0640
-    with_items: "{{filtering_groups}}"
+    with_nested:
+      - "{{filtering_groups}}"
+      - "{{filtering_groups_lists}}"
     notify:
       - restart e2g
 
-
-
       #* add cttb ban words and sites and stuff
       #* add ban words etc for schools / add other groups
-      #* install blacklist and phraselist I downloaded
+      #* install blacklist I downloaded

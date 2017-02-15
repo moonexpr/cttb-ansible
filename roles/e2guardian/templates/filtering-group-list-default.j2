@@ -1,6 +1,11 @@
 # Include the default list
 .Include</etc/e2guardian/lists/{{item[1]}}>
 
+# Include global cttb protection
+{% if item[1] in cttb_global_lists %}
+.Include</etc/e2guardian/lists/cttb/{{item[1]}}>
+{% endif %}
+
 # Include overrides for this group
 {% if item[1] in item[0].overrides %}
 .Include</etc/e2guardian/f{{item[0].num}}/overrides/{{item[1]}}>
