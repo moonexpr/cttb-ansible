@@ -95,6 +95,10 @@
     notify:
       - restart e2g
 
-      #* add cttb ban words and sites and stuff
-      #* add ban words etc for schools / add other groups
-      #* install blacklist I downloaded
+  - name: deploying blacklist files
+    unarchive:
+      remote_src: yes
+      src: "{{ansible_assets_url}}/e2g-blacklist.tar.gz"
+      dest: /etc/e2guardian/lists/
+      owner: e2guardian
+      group: e2guardian
