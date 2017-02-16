@@ -1,0 +1,740 @@
+#Good Phrases (to allow medical, education, news and other good sites)
+.Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_general>
+.Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_news>
+.Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_general_danish>
+.Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_general_dutch>
+.Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_general_malay>
+.Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_general_polish>
+.Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_general_portuguese>
+.Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_general_swedish>
+
+#Pornography
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted>
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_chinese> #ALPHA#
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_danish> #ALPHA#
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_dutch> #BETA#
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_french>
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_german>
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_italian>
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_japanese> #ALPHA#
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_malay> #BETA#
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_norwegian> #BETA#
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_polish>
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_portuguese>
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_russian> #BETA#
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_spanish> #ALPHA#
+.Include</etc/e2guardian/lists/phraselists/pornography/weighted_swedish>
+.Include</etc/e2guardian/lists/phraselists/nudism/weighted>
+
+#Bad Words - swearing
+.Include</etc/e2guardian/lists/phraselists/badwords/weighted_dutch> 
+.Include</etc/e2guardian/lists/phraselists/badwords/weighted_french>
+.Include</etc/e2guardian/lists/phraselists/badwords/weighted_german> #ALPHA#
+.Include</etc/e2guardian/lists/phraselists/badwords/weighted_portuguese> #ALPHA#
+.Include</etc/e2guardian/lists/phraselists/badwords/weighted_spanish> #ALPHA#
+
+#Drugs
+.Include</etc/e2guardian/lists/phraselists/drugadvocacy/weighted>
+.Include</etc/e2guardian/lists/phraselists/illegaldrugs/weighted>
+.Include</etc/e2guardian/lists/phraselists/illegaldrugs/weighted_portuguese>
+.Include</etc/e2guardian/lists/phraselists/legaldrugs/weighted>
+
+#Violence and intolerance
+.Include</etc/e2guardian/lists/phraselists/intolerance/weighted>
+.Include</etc/e2guardian/lists/phraselists/intolerance/weighted_portuguese>
+.Include</etc/e2guardian/lists/phraselists/gore/weighted>
+.Include</etc/e2guardian/lists/phraselists/gore/weighted_portuguese>
+.Include</etc/e2guardian/lists/phraselists/violence/weighted>
+.Include</etc/e2guardian/lists/phraselists/violence/weighted_portuguese>
+.Include</etc/e2guardian/lists/phraselists/weapons/weighted>
+.Include</etc/e2guardian/lists/phraselists/weapons/weighted_portuguese>
+
+#Chat
+.Include</etc/e2guardian/lists/phraselists/chat/weighted>
+.Include</etc/e2guardian/lists/phraselists/chat/weighted_italian>
+
+#Webmail
+#.Include</etc/e2guardian/lists/phraselists/webmail/weighted>
+#Note that if you enable the webmail weighted list you should also disable 
+#the "exception_email" list in the exceptionphraselist file.
+
+#Forums
+#.Include</etc/e2guardian/lists/phraselists/forums/weighted> #BETA#
+
+#Gambling
+.Include</etc/e2guardian/lists/phraselists/gambling/weighted>
+.Include</etc/e2guardian/lists/phraselists/gambling/weighted_portuguese>
+
+#Productivity
+.Include</etc/e2guardian/lists/phraselists/games/weighted> #ALPHA#
+#.Include</etc/e2guardian/lists/phraselists/news/weighted> #ALPHA#
+#.Include</etc/e2guardian/lists/phraselists/personals/weighted>
+#.Include</etc/e2guardian/lists/phraselists/personals/weighted_portuguese>
+#.Include</etc/e2guardian/lists/phraselists/sport/weighted> #ALPHA#
+#.Include</etc/e2guardian/lists/phraselists/travel/weighted>
+#.Include</etc/e2guardian/lists/phraselists/music/weighted>
+
+#System Management and Security
+#.Include</etc/e2guardian/lists/phraselists/domainsforsale/weighted>
+.Include</etc/e2guardian/lists/phraselists/idtheft/weighted>
+.Include</etc/e2guardian/lists/phraselists/malware/weighted> #BETA#
+.Include</etc/e2guardian/lists/phraselists/proxies/weighted>
+#.Include</etc/e2guardian/lists/phraselists/translation/weighted>
+#.Include</etc/e2guardian/lists/phraselists/upstreamfilter/weighted>
+.Include</etc/e2guardian/lists/phraselists/warezhacking/weighted>
+.Include</etc/e2guardian/lists/phraselists/peer2peer/weighted>
+
+#Miscellaneous	
+.Include</etc/e2guardian/lists/phraselists/conspiracy/weighted>
+.Include</etc/e2guardian/lists/phraselists/secretsocieties/weighted>
+
+
+<1298986329><200>
+<2s_2kepbyym><900>
+<50th><-999>
+<51xqddrypty><900>
+<56.com><200>
+<9ctdervtsoa><900>
+<adult>,<webcam><200>
+<amazon><-200>
+<anime>,<image><100>
+<anime>,<images><100>
+<anime>,<imageshack><200>
+<anime>,<photo><100>
+<anime>,<video><100>
+<anonymous>,<surfing><200>
+<aprqhtl7krq><900>
+<art.com>,<sex><200>
+<art model>,<image><100>
+<art model>,<images><100>
+<art model>,<imageshack><200>
+<art model>,<photo><100>
+<art model>,<video><100>
+<ass >,<image><200>
+<ass >,<imageshack><200>
+<ass >,<photo><200>
+<ass >,<video><200>
+<auctions.yahoo.com>,<sex><100>
+<auctions.yahoo.com>,<sexy><100>
+<avast><-100>
+<avg><-100>
+<_b1gkgwjbe8><900>
+<balls >,<image><200>
+<balls >,<imageshack><200>
+<balls >,<photo><200>
+<balls >,<video><200>
+<baps>,<image><200>
+<baps>,<imageshack><200>
+<baps>,<photo><200>
+<baps>,<video><200>
+<barbara>,<sheridan><200>
+<baring>,<image><100>
+<baring>,<images><100>
+<baring>,<imageshack><200>
+<baring>,<photo><100>
+<baring>,<video><100>
+<bazookas>,<image><200>
+<bazookas>,<imageshack><200>
+<bazookas>,<photo><200>
+<bazookas>,<video><200>
+<big girl >,<image><200>
+<big girl >,<imageshack><200>
+<big girl >,<photo><200>
+<big girl >,<video><200>
+<bikini><200>
+<bikini>,<image><100>
+<bikini>,<images><100>
+<bikini>,<imageshack><200>
+<bikini>,<photo><100>
+<bikini>,<video><100>
+<bitch >,<image><200>
+<bitch >,<imageshack><200>
+<bitch >,<photo><200>
+<bitch >,<video><200>
+<blogger>,<content>,<warning><900>
+<blogin.g?blogspoturl><900>
+<blog>,<objectionable><900>
+<body art>,<image><100>
+<body art>,<images><100>
+<body art>,<imageshack><200>
+<body art>,<photo><100>
+<body art>,<video><100>
+<bokong><150>
+<bokung><300>
+<bondage>,<image><400>
+<bondage>,<imageshack><400>
+<bondage>,<photo><400>
+<bondage>,<video><400>
+<boobies >,<image><200>
+<boobies >,<imageshack><200>
+<boobies >,<photo><200>
+<boobies >,<video><200>
+<boob >,<image><200>
+<boob >,<imageshack><200>
+<boob >,<photo><200>
+<boobs>,<imageshack><200>
+<boob >,<video><200>
+<booty >,<image><200>
+<booty >,<imageshack><200>
+<booty >,<photo><200>
+<booty >,<video><200>
+<boules>,<image><200>
+<boules>,<imageshack><200>
+<boules>,<photo><200>
+<boules>,<video><200>
+<bra >,<image><200>
+<bra >,<imageshack><200>
+<braless>,<image><100>
+<braless>,<images><100>
+<braless>,<imageshack><200>
+<braless>,<photo><100>
+<braless>,<video><100>
+<bra >,<photo><200>
+<bra >,<video><200>
+<breast >,<image><200>
+<breast >,<imageshack><200>
+<breast >,<photo><200>
+<breasts>,<imageshack><200>
+<breast >,<video><200>
+<bristols>,<image><200>
+<bristols>,<imageshack><200>
+<bristols>,<photo><200>
+<bristols>,<video><200>
+<bruce>,<lee><200>
+<bublur>,<image><200>
+<bublur>,<imageshack><200>
+<bublur>,<photo><200>
+<bublur>,<video><200>
+<buddhism><-999>
+<buddhist><-500> 
+<buddhist><-999>
+<bugil><300>
+<bypasser><200>
+<caihuirenti><202>
+<celebrity>,<image><100>
+<celebrity>,<images><100>
+<celebrity>,<imageshack><200>
+<celebrity>,<photo><100>
+<celebrity>,<video><100>
+<centerfold>,<image><200>
+<centerfold>,<imageshack><200>
+<centerfold>,<photo><200>
+<centerfold>,<video><200>
+<chest >,<image><200>
+<chest >,<imageshack><200>
+<chest >,<photo><200>
+<chest >,<video><200>
+<chi-chis>,<image><200>
+<chi-chis>,<imageshack><200>
+<chi-chis>,<photo><200>
+<chi-chis>,<video><200>
+<chinatsu>,<izawa><200>
+<chuck>,<norris><200>
+<cleavage>,<image><100>
+<cleavage>,<images><100>
+<cleavage>,<imageshack><200>
+<cleavage>,<photo><100>
+<cleavage>,<video><100>
+<climax>,<image><100>
+<climax>,<images><100>
+<climax>,<imageshack><200>
+<climax>,<photo><100>
+<climax>,<video><100>
+<club1069><200>
+<cock >,<image><200>
+<cock >,<imageshack><200>
+<cock >,<photo><200>
+<cock >,<video><200>
+<cocos>,<image><200>
+<cocos>,<imageshack><200>
+<cocos>,<photo><200>
+<cocos>,<video><200>
+<cooter>,<image><200>
+<cooter>,<imageshack><200>
+<cooter>,<photo><200>
+<cooter>,<video><200>
+<crystal>,<liu><200>
+<cum >,<image><200>
+<cum >,<imageshack><200>
+<cum >,<photo><200>
+<cum >,<video><200>
+<cunt >,<image><200>
+<cunt >,<imageshack><200>
+<cunt >,<photo><200>
+<cunt >,<video><200>
+<dadanrenti><202>
+<dharma><-999>
+<dick >,<image><200>
+<dick >,<imageshack><200>
+<dick >,<photo><200>
+<dick >,<video><200>
+<dictionary><-100>
+<dominatrix>,<image><400>
+<dominatrix>,<imageshack><400>
+<dominatrix>,<photo><400>
+<dominatrix>,<video><400>
+<domingas>,<image><200>
+<domingas>,<imageshack><200>
+<domingas>,<photo><200>
+<domingas>,<video><200>
+<downblouse><100>
+<dragonsdisciple><200>
+<drba><-999>
+<drba><-999>
+<drbachinese><-999>
+<drupal><-999>
+<dvbs><-500>
+<dvgs><-500>
+<edelman>,<gallery><200>
+<edelmangallery><200>
+<edelman>,<witkin><200>
+<ef1-_pw4kjs><900>
+<erotic>,<image><100>
+<erotic>,<images><100>
+<erotic>,<imageshack><200>
+<eroticism>,<imageshack><200>
+<erotic>,<photo><100>
+<erotic>,<video><100>
+<erotis><300>
+<erotyczne><200>
+<erotyczny><200>
+<erotyka><200>
+<exposed>,<image><100>
+<exposed>,<images><100>
+<exposed>,<imageshack><200>
+<exposed>,<photo><100>
+<exposed>,<video><100>
+<extreme>,<sex><1000>
+<f2s1aigsxza><900>
+<ff9f400a9f6><900>
+<flavie>,<flament><200>
+<frv5uxguc78><900>
+<ftwzc_ffvps><900>
+<fuck >,<image><200>
+<fuck >,<imageshack><200>
+<fuck >,<photo><200>
+<fuck >,<video><200>
+<fun bags >,<image><200>
+<funbags >,<image><200>
+<fun bags >,<imageshack><200>
+<funbags >,<imageshack><200>
+<fun bags >,<photo><200>
+<funbags >,<photo><200>
+<fun bags >,<video><200>
+<funbags >,<video><200>
+<g550wjphc1o><900>
+<games.yahoo.com><4000>
+<gazongas>,<image><200>
+<gazongas>,<imageshack><200>
+<gazongas>,<photo><200>
+<gazongas>,<video><200>
+<gebu><150>
+<google><-100>
+<grudis>,<image><200>
+<grudis>,<imageshack><200>
+<grudis>,<photo><200>
+<grudis>,<video><200>
+<heibairenti><202>
+<hooters>,<imageshack><200>
+<hot babe>,<image><100>
+<hot babe>,<images><100>
+<hot babe>,<imageshack><200>
+<hot babe>,<photo><100>
+<hot babes>,<image><100>
+<hot babes>,<images><100>
+<hot babes>,<imageshack><200>
+<hot babes>,<photo><100>
+<hot babes>,<video><100>
+<hot babe>,<video><100>
+<hot chick>,<image><100>
+<hot chick>,<images><100>
+<hot chick>,<imageshack><200>
+<hot chick>,<photo><100>
+<hot chicks>,<image><100>
+<hot chicks>,<images><100>
+<hot chicks>,<imageshack><200>
+<hot chicks>,<photo><100>
+<hot chicks>,<video><100>
+<hot chick>,<video><100>
+<hot girl>,<image><100>
+<hot girl>,<images><100>
+<hot girl>,<imageshack><200>
+<hot girl>,<photo><100>
+<hot girls>,<image><100>
+<hot girls>,<images><100>
+<hot girls>,<imageshack><200>
+<hot girls>,<photo><100>
+<hot girls>,<video><100>
+<hot girl>,<video><100>
+<hotties>,<image><100>
+<hotties>,<images><100>
+<hotties>,<imageshack><200>
+<hotties>,<photo><100>
+<hotties>,<video><100>
+<hot woman>,<image><100>
+<hot woman>,<images><100>
+<hot woman>,<imageshack><200>
+<hot woman>,<photo><100>
+<hot woman>,<video><100>
+<hot women>,<image><100>
+<hot women>,<images><100>
+<hot women>,<imageshack><200>
+<hot women>,<photo><100>
+<hot women>,<video><100>
+<huang>,<yi><200>
+<huang>,<yi><200>
+<hustler>,<image><400>
+<hustler>,<imageshack><400>
+<hustler>,<photo><400>
+<hustler>,<video><400>
+<imageshack><-80>
+<immoral>,<image><400>
+<immoral>,<imageshack><400>
+<immoral>,<photo><400>
+<immoral>,<video><400>
+<intercourse>,<image><100>
+<intercourse>,<images><100>
+<intercourse>,<imageshack><200>
+<intercourse>,<photo><100>
+<intercourse>,<video><100>
+<jackie>,<chan><200>
+<jiggle>,<image><100>
+<jiggle>,<images><100>
+<jiggle>,<imageshack><200>
+<jiggle>,<photo><100>
+<jiggle>,<video><100>
+<jilat><300>
+<joel-peter>,<witkin><200> 
+<joomla><-999>
+<juggs >,<image><200>
+<juggs >,<imageshack><200>
+<juggs >,<photo><200>
+<juggs >,<video><200>
+<jugs >,<image><200>
+<jugs>,<imageshack><200>
+<jugs >,<imageshack><200>
+<jugs >,<photo><200>
+<jugs >,<video><200>
+<kelentit><300>
+<knockers >,<image><200>
+<knockers >,<imageshack><200>
+<knockers >,<photo><200>
+<knockers >,<video><200>
+<knoppix><-100>
+<lingere>,<image><100>
+<lingere>,<images><100>
+<lingere>,<imageshack><200>
+<lingere>,<photo><100>
+<lingere>,<video><100>
+<linux><-100>
+<liu%2byifei><200>
+<liu%2byifei><200>
+<liu>,<yi>,<fei><200>
+<liu>,<yifei><200>
+<liu+yifei><200>
+<liu>,<yifei><200>
+<liu+yifei><200>
+<liu>,<yi>,<fei><200>
+<liu>,<yi fei><200>
+<liu_yi_fei><200>
+<mammaries >,<image><200>
+<mammaries >,<imageshack><200>
+<mammaries >,<photo><200>
+<mammaries >,<video><200>
+<manbyman><200>
+<masturbasi><500>
+<maxim>,<image><400>
+<maxim>,<imageshack><400>
+<maxim>,<photo><400>
+<maxim>,<video><400>
+<mayonaka>,<no>,<doa><200>
+<meinvrenti><202>
+<melons >,<image><200>
+<melons >,<imageshack><200>
+<melons >,<photo><200>
+<melons >,<video><200>
+<mesum><150>
+<mliekarne>,<image><200>
+<mliekarne>,<imageshack><200>
+<mliekarne>,<photo><200>
+<mliekarne>,<video><200>
+<_mqtn2p2ntk><900>
+<msn.com><-1900>
+<mtizmje3nzm><-1000>
+<nafsu><300>
+<naked>,<imageshack><200>
+<news.google.com><-400>
+<nipple >,<image><200>
+<nipple >,<imageshack><200>
+<nipple >,<photo><200>
+<nipples >,<image><200>
+<nipples >,<imageshack><200>
+<nipples >,<photo><200>
+<nipples >,<video><200>
+<nipple >,<video><200>
+<nips >,<image><200>
+<nips >,<imageshack><200>
+<nips >,<photo><200>
+<nips >,<video><200>
+<nude>,<imageshack><200>
+<nudity><100>
+<nytimes><-500>
+<obscene>,<image><400>
+<obscene>,<imageshack><400>
+<obscene>,<photo><400>
+<obscene>,<video><400>
+<opensuse><-100>
+<oumeirenti><202>
+<p34uuszfz2g><200>
+<pantat><300>
+<panties>,<image><100>
+<panties>,<images><100>
+<panties>,<imageshack><200>
+<panties>,<photo><100>
+<panties>,<video><100>
+<papayas>,<image><200>
+<papayas>,<imageshack><200>
+<papayas>,<photo><200>
+<papayas>,<video><200>
+<payudara><300>
+<pbx><-200>
+<pd46n9gbd30><900>
+<penari><150>
+<penis >,<image><200>
+<penis >,<imageshack><200>
+<penisku><500>
+<penis >,<photo><200>
+<penis >,<video><200>
+<pentil><300>
+<photobucket><-820>
+<photobucket>,<myspace><-300>
+#<pic123><-400>
+#<pic12><400>
+<playboy>,<image><200>
+<playboy>,<imageshack><200>
+<playboy>,<photo><200>
+<playboy>,<video><200>
+<porn >,<image><200>
+<porn >,<imageshack><200>
+<pornofilia><500>
+<porn >,<photo><200>
+<porn >,<video><200>
+<proxies><200>
+<proxy><200>
+<punished>,<sex><1000>
+<punished>,<submissive><1000>
+<punished>,<torture><1000>
+<push up bra>,<image><100>
+<push up bra>,<images><100>
+<push up bra>,<imageshack><200>
+<push up bra>,<photo><100>
+<push up bra>,<video><100>
+<pussy >,<image><200>
+<pussy >,<imageshack><200>
+<pussy >,<photo><200>
+<pussy >,<video><200>
+<puting><300>
+<putingnya><300>
+<pwujzi-_es8><900>
+<python><-999>
+<rack >,<image><200>
+<rack >,<imageshack><200>
+<rack >,<photo><200>
+<rack >,<video><200>
+<realm><-999>
+<ren-ti><200>
+<renti>,<sheying><200>
+<rentiwaipai><202>
+<renti>,<xieshen><200>
+<rentixiezhen><200>
+<renti>,<yishu><200>
+<rentiyishu><200>
+<rentsheying><200>
+<ribenrenti><202>
+<rtys><202>
+<samurai>,<captive><200>
+<seduce>,<image><100>
+<seduce>,<images><100>
+<seduce>,<imageshack><200>
+<seduce>,<photo><100>
+<seduce>,<video><100>
+<seductive>,<image><100>
+<seductive>,<images><100>
+<seductive>,<imageshack><200>
+<seductive>,<photo><100>
+<seductive>,<video><100>
+<see through>,<image><100>
+<see through>,<images><100>
+<see through>,<imageshack><200>
+<see through>,<photo><100>
+<see through>,<video><100>
+<see thru>,<image><100>
+<see thru>,<images><100>
+<see thru>,<imageshack><200>
+<see thru>,<photo><100>
+<see thru>,<video><100>
+<seks><200>
+<seksi><300>
+<sex>,<image><100>
+<sex>,<images><100>
+<sex>,<imageshack><200>
+<sex>,<photo><100>
+<sex>,<video><100>
+<sexy>,<image><100>
+<sexy>,<images><100>
+<sexy>,<imageshack><200>
+<sexy>,<photo><100>
+<sexy>,<video><100>
+<shineirenti><202>
+<shit >,<image><200>
+<shit >,<imageshack><200>
+<shit >,<photo><200>
+<shit >,<video><200>
+<single>,<sex>,<education><-1000>
+<single>,<sex>,<school><-1000>
+<siskis>,<image><200>
+<siskis>,<imageshack><200>
+<siskis>,<photo><200>
+<siskis>,<video><200>
+<slideshare><40>
+<slideshare>,<china><-1600>
+<slideshare>,<facebook><-400>
+<slo--mxx-mk><900>
+<slut >,<image><200>
+<slut >,<imageshack><200>
+<slut >,<photo><200>
+<slut >,<video><200>
+<some>,<readers>,<of>,<this>,<blog>,<have>,<contacted>,<google><900>
+<stripping>,<image><100>
+<stripping>,<images><100>
+<stripping>,<imageshack><200>
+<stripping>,<photo><100>
+<stripping>,<video><100>
+<strip tease>,<image><100>
+<striptease>,<image><100>
+<strip tease>,<images><100>
+<striptease>,<images><100>
+<strip tease>,<imageshack><200>
+<striptease>,<imageshack><200>
+<strip tease>,<photo><100>
+<striptease>,<photo><100>
+<strip tease>,<video><100>
+<striptease>,<video><100>
+<submissive>,<punished><1000>
+<submissive>,<sex><1000>
+<submissive>,<torture><1000>
+<sugababes><200>
+<tatas >,<image><200>
+<tatas >,<imageshack><200>
+<tatas >,<photo><200>
+<tatas >,<video><200>
+<telanjang><300>
+#<test123><400>
+#<test1234><-500>
+<tetangas>,<image><200>
+<tetangas>,<imageshack><200>
+<tetangas>,<photo><200>
+<tetangas>,<video><200>
+<tetek><300>
+<text>,<database><-500>
+<the>,<sat><-500>
+<this>,<blog's>,<content>,<is>,<objectionable><900>
+<thong>,<image><100>
+<thong>,<images><100>
+<thong>,<imageshack><200>
+<thong>,<photo><100>
+<thong>,<video><100>
+<tinypic.com><-400>
+<tiql3jbczrc><900>
+<tit >,<image><200>
+<tit >,<imageshack><200>
+<tit >,<photo><200>
+<tits>,<imageshack><200>
+<titties >,<image><200>
+<titties >,<imageshack><200>
+<titties >,<photo><200>
+<titties >,<video><200>
+<titty >,<image><200>
+<titty >,<imageshack><200>
+<titty >,<photo><200>
+<titty >,<video><200>
+<tit >,<video><200>
+<toket><300>
+<topless>,<image><200>
+<topless>,<imageshack><200>
+<topless>,<photo><200>
+<topless>,<video><200>
+<torrent><200>
+<torrential><-200>
+<torture>,<extreme><1000>
+<torture>,<sex><1000>
+<torture>,<tit><1000>
+<traubshow2008><-500>
+<ubuntu><-300>
+<unblocker><200>
+<underage>,<image><100>
+<underage>,<images><100>
+<underage>,<imageshack><200>
+<underage>,<photo><100>
+<underage>,<video><100>
+<underwear>,<image><100>
+<underwear>,<images><100>
+<underwear>,<imageshack><200>
+<underwear>,<photo><100>
+<underwear>,<video><100>
+<undressed>,<image><100>
+<undressed>,<images><100>
+<undressed>,<imageshack><200>
+<undressed>,<photo><100>
+<undressed>,<video><100>
+<vagina>,<image><200>
+<vagina>,<imageshack><200>
+<vagina >,<photo><200>
+<vagina>,<video><200>
+<variable speed><-2000>
+<voip><-999>
+<voyeur>,<image><400>
+<voyeur>,<imageshack><400>
+<voyeur>,<photo><400>
+<voyeur>,<video><400>
+<vyatta><-2000>
+<vyatta><-2000>
+<vyatta><-2000>
+<warez><200>
+<weimeirenti><202>
+<wet tee shirt>,<image><100>
+<wet tee shirt>,<images><100>
+<wet tee shirt>,<imageshack><200>
+<wet tee shirt>,<photo><100>
+<wet tee shirt>,<video><100>
+<wet t-shirt>,<image><100>
+<wet t-shirt>,<images><100>
+<wet t-shirt>,<imageshack><200>
+<wet t-shirt>,<photo><100>
+<wet t-shirt>,<video><100>
+<wikibooks><-200>
+<wikipedia.org><-500>
+<wisdom><-500>
+<wordpress.com><-100>
+<xifangrenti><202>
+<xingweiyishu><202>
+<xinhuanet><200>
+<xqlh8rtf9ve><900>
+<yahoo><-3000>
+<yaoi><200>
+<yaoi><200>
+<yifei>,<liu><200>
+<yituku><200>
+<youtube>,<18++><1000>
+<youtube>,<18禁><1000>
+<youtube><-3499>
+<youtube>,<adult>,<movie><1000>
+<youtube.com><-999>
+<youtube.com>,<adult>,<movie><2000>
+<youtube.com>,<adults>,<movie><2000>
+<youtube.com>,<sex><2000>
+<youtube.com>,<sexy><2000>
+<youtube>,<italian>,<film><1000>
+<youtube>,<italian>,<movie><1000>
+<zhangxiaoyu><202>
+<zhangxiaoyurenti><202>

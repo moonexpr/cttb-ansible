@@ -28,6 +28,7 @@ filtering_groups_lists:
   - exceptionurllist
   - greysitelist
   - greyurllist
+  - urlregexplist
   - weightedphraselist
 
 # lists that we don't care to modify and can be always default
@@ -40,7 +41,6 @@ default_lists:
   - exceptionfilesitelist
   - exceptionfileurllist
   - contentregexplist
-  - urlregexplist
   - headerregexplist
 
 # global lists we want all groups to include
@@ -50,3 +50,4 @@ cttb_global_lists:
   - bannedsitelist
   - exceptionregexpurllist
   - weightedphraselist
+  - urlregexplist

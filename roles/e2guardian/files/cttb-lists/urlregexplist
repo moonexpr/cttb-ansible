@@ -1,0 +1,7 @@
+# Turn on safe/strict mode for all major search engines
+
+"(^http://[0-9a-z]+\.google\.[a-z]+[-/%.0-9a-z]*/search\?)(.*)(&?)(safe=[^&]*)"->"\1\2\3"
+"(^http://[0-9a-z]+\.google\.[a-z]+[-/%.0-9a-z]*/search\?)"->"\1safe=strict&"
+"(http[s]?://[0-9a-z]+.bing\.[a-z]+[-/%.0-9a-z]*/search\?.*)"->"\1&adlt=strict"
+"(^http://[.0-9a-z]+\.yahoo\.[a-z]+[-/%.0-9a-z]*/search)(.*)(&?)(vm=[^&]*)"->"\1\2\3"
+"(^http://[.0-9a-z]+\.yahoo\.[a-z]+[-/%.0-9a-z]*/search+.*\?)"->"\1vm=r&"

@@ -2,6 +2,6 @@
 
 {% for g in filtering_groups %}
 {% for ip in g.ips %}
-{{ip}} = {{g.name}}
+{{ip}} = filter{{g.num}}
 {% endfor %}
 {% endfor %}
