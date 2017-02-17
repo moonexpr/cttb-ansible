@@ -1,5 +1,6 @@
 ---
 
+# Network interfaces
 server_interfaces: [
   {name: lan, mac: '00:25:90:d3:39:18', auto: True, inet: static, address: 10.11.1.1, netmask: 255.255.224.0},
   {name: com7, mac: '00:25:90:d3:39:19', auto: True, inet: static, address: 10.11.7.111, netmask: 255.255.255.0},
@@ -15,6 +16,7 @@ server_rt_tables:
   - {id: 7, tname: com7}
   - {id: 20, tname: com20}
 
+# Internet restrictions based on time handled at firewall level
 timed_internet:
   - label: dvbs
     type: net
@@ -64,3 +66,66 @@ timed_internet:
       - days: "*"
         on_at: "6"
         off_at: "23"
+
+
+# Content filter settings
+filter_ip: 10.11.1.1
+groups_number: 1
+
+filtering_groups:
+  - name: adult # this is default if no other matching
+    num: 1
+    ips: []
+    naughtynesslimit: 175
+    bypass: 300
+    disablecontentscan: on
+    deepurlanalysis: on 
+    reportinglevel: 3
+    overrides:
+      - exceptionsitelist
+  - name: adult_no_bypass 
+    num: 2
+    ips:
+      - 10.11.14.65
+      - 10.11.15.138
+      - 10.11.30.18
+      - 10.11.30.38
+      - 10.11.30.251
+      - 10.11.31.252
+      - 10.11.28.228
+      - 10.11.27.5
+      - 10.11.15.24
+      - 10.11.30.79
+      - 10.11.30.7
+      - 10.11.30.165
+      - 10.11.21.178
+      - 10.11.23.79
+      - 10.11.22.162
+      - 10.11.21.178
+      - 10.11.19.53
+    naughtynesslimit: 175
+    bypass: 0
+    disablecontentscan: on
+    deepurlanalysis: on 
+    reportinglevel: 3
+    overrides:
+      - exceptionsitelist
+  - name: restricted
+    num: 3
+    ips:
+      - 10.11.8.0/24
+    naughtynesslimit: 50
+    bypass: 0
+    disablecontentscan: on
+    deepurlanalysis: on 
+    reportinglevel: 3
+    overrides:
+      - bannedphraselist
+      - bannedregexpurllist
+      - bannedsitelist
+      - exceptionsitelist
+      - greysitelist
+      - weightedphraselist
+
+# squid tuning
+cache_mem: "4096 MB"
