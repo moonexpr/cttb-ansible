@@ -7,6 +7,9 @@ Running playbooks or other ansible operations should be carried out with the
 respective scripts in utils/. Do not run this scripts from another path or
 directly call ansible or ansible-playbook.
 
+*ALWAYS RUN THE SCRIPTS FROM THE ROOT OF THE REPOSITORY* using a relative path
+such as _utils/pb_.
+
 # Migrations
 If you are migrating a machine to use a new role/setup and need to do some
 cleanup use the playbook to do the job. For example when migrating
