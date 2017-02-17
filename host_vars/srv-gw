@@ -85,6 +85,11 @@ filtering_groups:
       - exceptionsitelist
   - name: adult_no_bypass 
     num: 2
+    naughtynesslimit: 175
+    bypass: 0
+    disablecontentscan: on
+    deepurlanalysis: on 
+    reportinglevel: 3
     ips:
       - 10.11.14.65
       - 10.11.15.138
@@ -103,27 +108,40 @@ filtering_groups:
       - 10.11.22.162
       - 10.11.21.178
       - 10.11.19.53
-    naughtynesslimit: 175
-    bypass: 0
-    disablecontentscan: on
-    deepurlanalysis: on 
-    reportinglevel: 3
     overrides:
       - exceptionsitelist
   - name: restricted
     num: 3
-    ips:
-      - 10.11.8.0/24
     naughtynesslimit: 50
     bypass: 0
     disablecontentscan: on
     deepurlanalysis: on 
     reportinglevel: 3
+    ips:
+      - 10.11.8.0/24
     overrides:
       - bannedphraselist
       - bannedregexpurllist
       - bannedsitelist
       - exceptionsitelist
+      - greysitelist
+      - weightedphraselist
+  - name: igdvs
+    num: 4
+    naughtynesslimit: 75
+    bypass: 0
+    disablecontentscan: on
+    deepurlanalysis: on 
+    reportinglevel: 3
+    ips:
+      - 10.11.9.0/24
+      - 10.11.10.0/24
+    overrides:
+      - bannedphraselist
+      - bannedregexpurllist
+      - bannedsitelist
+      - exceptionsitelist
+      - exceptionurllist
       - greysitelist
       - weightedphraselist
 

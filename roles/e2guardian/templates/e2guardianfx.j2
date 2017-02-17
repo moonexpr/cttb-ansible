@@ -3,7 +3,7 @@ groupmode = 1 #filtered
 
 # Content filtering files location
 {% for l in filtering_groups_lists %}
-{{l}} = '/etc/e2guardian/f{{item.num}}/{{l}}'
+{{l}} = '/etc/e2guardian/f{{item.num}}/defaults/{{l}}'
 {% endfor %}
 
 # Lists defaults that we do not want to override
@@ -43,13 +43,10 @@ categorydisplaythreshold = 0 #display categories on block page
 # WARNING: This option is highly CPU intensive!
 embeddedurlweight = 0
 
-bypass = 0
+bypass = {{item.bypass}}
 disablecontentscan = {{item.disablecontentscan}}
 deepurlanalysis = {{item.deepurlanalysis}}
 reportinglevel = {{item.reportinglevel}}
 
-# HTML Template override
-# This option generates a file path of the form:
-# <languagedir>/<language>/<htmltemplate>
-# e.g. /usr/share/e2guardian/languages/ukenglish/custom.html
-#htmltemplate = 'custom.html'
+# /usr/share/e2guardian/languages/ukenglish/custom.html
+htmltemplate = '{% if item.bypass > 0 %}custom-bypass.html{% else %}custom.html{% endif %}'

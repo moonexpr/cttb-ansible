@@ -41,19 +41,19 @@ ssh_alt="2244"
 server_sshalt_ports="tcp/2244"
 client_sshalt_ports="default"
 
-# NAT ad redirects
+# ipsets definition
+ipset4 create no_proxy hash:ip #special ipset to bypass/whitelist the proxy
+{% for group in timed_internet %}
+ipset4 create {{group.label}} hash:{{group.type}}
+{% endfor %}
+
+# NAT and redirects
 
 ## this still needs port forwarding on the modem to work
 dnat4 to 10.11.29.154:22 proto tcp dport $ssh_alt # redirect ssh into the city through jumpbox
 dnat4 to 10.11.6.1 proto tcp dport sip # get sip traffic to the asterisk server
-transparent_proxy4 80 8080 "" inface "${home}"
-
+transparent_proxy4 80 8080 "" inface "${home}" src not ipset:no_proxy
 masquerade "${world}"
-
-# ipsets definition
-{% for group in timed_internet %}
-ipset4  create {{group.label}} hash:{{group.type}}
-{% endfor %}
 
 # rules for traffic coming from the lan into the gateway
 interface4 "${home}" cttb

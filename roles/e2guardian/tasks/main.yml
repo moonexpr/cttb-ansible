@@ -62,6 +62,17 @@
     tags:
       - e2g_overrides
 
+  - name: create e2g filtering group default lists dirs
+    file:
+      path: "/etc/e2guardian/f{{item.num}}/defaults"
+      state: directory
+      owner: e2guardian
+      group: e2guardian
+      mode: 0750
+    with_items: "{{filtering_groups}}"
+    tags:
+      - e2g_overrides
+
   - name: create e2g filtering group override dirs
     file:
       path: /etc/e2guardian/f{{item.num}}/overrides
@@ -89,7 +100,7 @@
   - name: create e2g filtering group lists
     template:
       src: filtering-group-list-default.j2
-      dest: "/etc/e2guardian/f{{item[0].num}}/{{item[1]}}"
+      dest: "/etc/e2guardian/f{{item[0].num}}/defaults/{{item[1]}}"
       owner: e2guardian
       group: e2guardian
       mode: 0640
@@ -98,6 +109,26 @@
       - "{{filtering_groups_lists}}"
     tags:
       - e2g_overrides
+    notify:
+      - restart e2g
+
+  - name: deploy custom.html access denied page
+    template:
+      src: access-denied.j2
+      dest: /usr/share/e2guardian/languages/ukenglish/custom.html
+      owner: root
+      group: root
+      mode: 0644
+    notify:
+      - restart e2g
+
+  - name: deploy custom-bypass.html access denied page
+    template:
+      src: access-denied-bypass.j2
+      dest: /usr/share/e2guardian/languages/ukenglish/custom-bypass.html
+      owner: root
+      group: root
+      mode: 0644
     notify:
       - restart e2g
 
