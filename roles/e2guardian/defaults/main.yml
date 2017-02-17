@@ -49,5 +49,6 @@ cttb_global_lists:
   - bannedregexpurllist
   - bannedsitelist
   - exceptionregexpurllist
-  - weightedphraselist
+  - exceptionsitelist
   - urlregexplist
+  - weightedphraselist

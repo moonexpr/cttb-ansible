@@ -65,6 +65,12 @@ their own using _fX lists_.
 All definitions are done through the host variable filtering_groups, with
 defaults in the role for the F1 default group E2G ships with.
 
+*PLEASE NOTE: by default unmatched clients will be assigned to filtering group
+1.*
+
+In our case adult is the default group for any ip filtered so group order and
+id in the configuration variable is very important.
+
 # Banned and unfiltered groups
 Ips that should be banned from the internet or completely bypass the content
 filter are handled at firewall level as this is much faster than getting them

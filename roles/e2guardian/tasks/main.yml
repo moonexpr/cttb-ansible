@@ -59,6 +59,8 @@
       group: e2guardian
       mode: 0750
     with_items: "{{filtering_groups}}"
+    tags:
+      - e2g_overrides
 
   - name: create e2g filtering group override dirs
     file:
@@ -68,6 +70,8 @@
       group: e2guardian
       mode: 0750
     with_items: "{{filtering_groups}}"
+    tags:
+      - e2g_overrides
 
   - name: deploy e2g filtering group override lists
     copy:
@@ -92,6 +96,8 @@
     with_nested:
       - "{{filtering_groups}}"
       - "{{filtering_groups_lists}}"
+    tags:
+      - e2g_overrides
     notify:
       - restart e2g
 
