@@ -1,0 +1,7 @@
+---
+
+cache_mem: "256 MB"
+maximum_object_size_in_memory: "1 MB"
+memory_cache_mode: always # cache in ram only
+
+
