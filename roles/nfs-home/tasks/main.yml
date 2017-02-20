@@ -1,0 +1,85 @@
+---
+
+  - name: install autofs and nfs
+    apt:
+      name: "{{item}}"
+      state: present
+    with_items:
+      - autofs
+      - nfs-common
+    tags:
+      - autofs
+
+  # do not configure it if no nfs homes/export vars are provided
+  - block:
+    - name: copy autofs.conf
+      copy:
+        src: autofs.conf
+        dest: /etc/autofs.conf
+        owner: root
+        group: root
+        mode: 0640
+        force: yes
+      notify:
+        - restart autofs
+
+    - name: copy auto.master
+      copy:
+        src: auto.master
+        dest: /etc/auto.master
+        owner: root
+        group: root
+        mode: 0640
+        force: yes
+      notify:
+        - restart autofs
+
+    - name: setup auto.nfs
+      template:
+        src: auto.nfs.j2
+        dest: /etc/auto.nfs
+        owner: root
+        group: root
+        mode: 0640
+      notify:
+        - restart autofs
+    when: nfs_homes_host is defined and nfs_homes_export is defined
+    tags:
+      - autofs
+
+  - name: install unburden homedir
+    apt:
+      name: unburden-home-dir
+      state: present
+    tags:
+      - unburden
+
+  - name: deploy /etc/unburden-home-dir
+    copy:
+      src: unburden-home-dir
+      dest: /etc/unburden-home-dir
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - unburden
+
+  - name: deploy /etc/unburden-home-dir.list
+    copy:
+      src: unburden-home-dir.list
+      dest: /etc/unburden-home-dir.list
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - unburden
+
+  - name: deploy /etc/default/unburden-home-dir
+    copy:
+      src: unburden-default
+      dest: /etc/default/unburden-home-dir
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - unburden

@@ -1,0 +1,8 @@
+# ~/.cache is removed and symbolicly linked to /tmp/.unburden-<user1>/cache/.
+# This covers Google Chrome cache, used by most users. At first we tried  "m D
+# .cache cache" to move instead of remove the folder, but the result was that
+# the first time a user logged in after this change, it took minutes with a
+# blank screen to move the files from NFS to the local hard disk, and that
+# confused and irritated the user.
+
+r D .cache cache

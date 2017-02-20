@@ -12,7 +12,7 @@
         auto lo
         iface lo inet loopback
       dest: /etc/network/interfaces
-      mode: 644
+      mode: 0644
       owner: root
       group: root
 
