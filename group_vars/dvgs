@@ -1,8 +1,22 @@
 ---
 
+# nfs homes settings
+nfs_homes_host: nfs-igdvs
+nfs_homes_export: /export/igdvs
+
+# printing settings
+cups_srv: printer-srv
+
 # desktop configuration
 lightdm_hide_users: true
 
 # look and feel
 pic_avatar: avatar-dvgs.png
 pic_bg: bg-dvgs.jpg
+
+# look and feel
+pic_avatar: avatar-dvgs.png
+pic_bg: bg-dvgs.jpg
+
+# office
+openoffice: true
