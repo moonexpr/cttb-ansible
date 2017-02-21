@@ -1,5 +1,5 @@
 ---
 
-- hosts: vbox-srv
+- hosts: drbu-cs-lab-pc1
   roles:
     - common

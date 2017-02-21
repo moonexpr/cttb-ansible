@@ -1,7 +1,8 @@
 ---
 
-- hosts: vbox-pxe
+- hosts: dvgs-cs-lab
   roles:
     - desktop
     - nfs-home
     - ldap-client
+    - cups-client

@@ -1,5 +1,5 @@
 ---
 
-- hosts: test-slim1
+- hosts: testing
   roles:
     - server
