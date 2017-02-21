@@ -1,3 +1,4 @@
+#listcategory: "CTTB Weighted Phrases"
 .Include</etc/e2guardian/lists/phraselists/pornography/weighted_chinese> #ALPHA#
 .Include</etc/e2guardian/lists/phraselists/pornography/weighted_japanese> #ALPHA#
 .Include</etc/e2guardian/lists/phraselists/pornography/weighted_malay> #BETA#

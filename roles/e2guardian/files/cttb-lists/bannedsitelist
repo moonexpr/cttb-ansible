@@ -1,3 +1,4 @@
+#listcategory: "CTTB Ban sites"
 .Include</etc/e2guardian/lists/blacklists/ads/domains>
 .Include</etc/e2guardian/lists/blacklists/adult/domains>
 .Include</etc/e2guardian/lists/blacklists/aggressive/domains>

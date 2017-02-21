@@ -1,3 +1,4 @@
+#listcategory: "CTTB Url Regexs"
 # Turn on safe/strict mode for all major search engines
 
 "(^http://[0-9a-z]+\.google\.[a-z]+[-/%.0-9a-z]*/search\?)(.*)(&?)(safe=[^&]*)"->"\1\2\3"
