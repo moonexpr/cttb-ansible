@@ -76,7 +76,7 @@ filtering_groups:
   - name: adult # this is default if no other matching
     num: 1
     ips: []
-    naughtynesslimit: 175
+    naughtynesslimit: 400
     bypass: 300
     disablecontentscan: on
     deepurlanalysis: on 
