@@ -1,3 +1,4 @@
+#listcategory: "Restricted Weight Phrases"
 #Good Phrases (to allow medical, education, news and other good sites)
 .Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_general>
 .Include</etc/e2guardian/lists/phraselists/goodphrases/weighted_news>

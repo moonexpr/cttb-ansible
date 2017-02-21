@@ -1,3 +1,4 @@
+#listcategory: "Restricted Ban Sites"
 .Include</etc/e2guardian/lists/blacklists/audio-video/domains>
 *ip #block all sites using direct ips
 

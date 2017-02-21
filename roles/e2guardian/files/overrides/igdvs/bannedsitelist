@@ -1,3 +1,4 @@
+#listcategory: "IGDVS Ban Sites"
 *ip
 .Include</etc/dansguardian/blacklists/audio-video/domains>
 .Include</etc/dansguardian/blacklists/beerliquorinfo/domains>

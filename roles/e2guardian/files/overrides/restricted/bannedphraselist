@@ -1,3 +1,4 @@
+#listcategory: "Restricted Ban phrases"
 .Include</etc/e2guardian/lists/phraselists/pornography/banned>
 .Include</etc/e2guardian/lists/phraselists/pornography/banned_portuguese>
 
