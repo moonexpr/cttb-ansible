@@ -9,7 +9,7 @@
       state: latest
       install_recommends: yes
       update_cache: yes
-      allow_unauthenticated: yes
+      #     allow_unauthenticated: yes
     with_items:
       - firehol
       - firehol-tools
@@ -29,6 +29,14 @@
       src: firehol.j2
       dest: /etc/firehol/firehol.conf
       mode: 0640
+      owner: root
+      group: root
+
+  - name: setup ulog2 logrotate
+    copy:
+      src: logrotate-ulog2
+      dest: /etc/logrotate.d/ulogd2
+      mode: 0644
       owner: root
       group: root
 
