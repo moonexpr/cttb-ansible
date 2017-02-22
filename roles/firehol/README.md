@@ -7,6 +7,19 @@ Also to avoid possible problems we don't automatically apply the changes. After
 deploying new firehol configs etc log onto the box and use firehol try to apply
 the changes.
 
+# CF exemptions - bypassing the content filter
+If you need some hosts or networks to bypass the content filter (for example
+servers or needy users), you can do so by simply using the no_proxy file.
+
+Just add an ip per line or a network using CIDR and deploy with ansible.
+Remember that for security reasons we don't restart the firewall automatically
+so you will need to do so yourself.
+
+If you want to make temporary changes you can also add the ip or network
+manually to the right ipset (no_proxy_ip or no_proxy_net) with the ipset
+command line, but bear in mind that those settings will be lost at next reboot
+or firewall restart.
+
 # Time based internet This role supports time based internet limits by
 blacklisting ips that need to be limited by default and whitelisting their
 access only during the designated times. Implementation is in

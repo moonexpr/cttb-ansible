@@ -9,7 +9,6 @@
       state: latest
       install_recommends: yes
       update_cache: yes
-      #     allow_unauthenticated: yes
     with_items:
       - firehol
       - firehol-tools
@@ -31,6 +30,17 @@
       mode: 0640
       owner: root
       group: root
+
+  - name: deploy ipsets files
+    copy:
+      src: ipsets
+      dest: /etc/firehol/
+      owner: root
+      group: root
+      directory_mode: '0750'
+      mode: 0640
+    tags:
+      - ipset
 
   - name: setup ulog2 logrotate
     copy:
