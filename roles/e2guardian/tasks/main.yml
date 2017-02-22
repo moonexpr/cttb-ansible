@@ -45,7 +45,8 @@
       dest: /etc/e2guardian/lists/cttb
       owner: e2guardian
       group: e2guardian
-      mode: 0750
+      directory_mode: '0750'
+      mode: 0640
     tags:
       - e2g_overrides
     notify:
