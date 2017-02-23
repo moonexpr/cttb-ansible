@@ -36,11 +36,6 @@ FIREHOL_LOG_MODE="NFLOG"
 home="lan"
 world="com7 com20"
 
-# custom ssh alt service
-ssh_alt="2244"
-server_sshalt_ports="tcp/2244"
-client_sshalt_ports="default"
-
 # ipsets definition
 
 ## ipsets to whiltelist hosts to bypass the CF
@@ -57,38 +52,36 @@ ipset4 create {{group.label}} hash:{{group.type}}
 # NAT and redirects
 
 ## this still needs port forwarding on the modem to work
-dnat4 to 10.11.29.154:22 proto tcp dport $ssh_alt # redirect ssh into the city through jumpbox
+dnat4 to 10.11.29.154:22 proto tcp dport 2244 # redirect ssh into the city through jumpbox
 dnat4 to 10.11.6.1 proto tcp dport sip # get sip traffic to the asterisk server
 transparent_proxy4 80 8080 "" inface "${home}" src not "ipset:no_proxy_ip ipset:no_proxy_net"
 masquerade "${world}"
 
 # rules for traffic coming from the lan into the gateway
 interface4 "${home}" cttb
-    policy REJECT # nicer on clients that won't have to wait to timeout
-    server dhcp accept
-    server icmp accept
-    server ssh accept
-    server dns accept
-    server httpalt accept # in case we want hosts to do explicit proxying
+  policy REJECT # nicer on clients that won't have to wait to timeout
+  server dhcp accept
+  server icmp accept
+  server ssh accept
+  server dns accept
+  server httpalt accept # in case we want hosts to do explicit proxying
 
-    client icmp accept
-    client dns accept
-    client dhcp accept
-    client http accept
+  client icmp accept
+  client dns accept
+  client dhcp accept
+  client http accept
 
 # rules for traffic coming from the world for the gateway (or hosts behind it)
 interface4 "${world}" internet
-    server sshalt accept #for jumpbox
-    server sip accept # for asterisk
-
     client all accept
 
 # rules for traffic coming from the internet for the lan
 router4 internet2cttb inface "${world}" outface "${home}"
-    protection bad-packets
-    server dhcp accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
-    server dns accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
+  protection bad-packets
+  server dhcp accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
+  server dns accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
+  server ssh accept dst 10.11.29.154 #accept traffic to jumpbox
 
-    client http reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
-    client all reject src 10.11.13.0/24 # temp registration range should not go online
-    client all accept
+  client http reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
+  client all reject src 10.11.13.0/24 # temp registration range should not go online
+  client all accept
