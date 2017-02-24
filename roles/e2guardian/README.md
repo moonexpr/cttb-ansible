@@ -26,6 +26,10 @@ Everything is controlled in 3 places:
 - the global cttb lists in _cttb-lists_ with banned sites, exceptions etc that
   all groups include
 
+This helps a great deal to avoid duplication or missing stuff out, ie blocking
+something in a group but forgetting to block it into another or the same for
+whitelisting.
+
 ## Adding lists
 To add either an override list or a global list you need to do two things:
 - explicitly declare the list to be added in the variable, either
@@ -37,6 +41,17 @@ All the filtering groups share some cttb wide lists. If a new bad site appears
 that makes sense to be banned for everybody, it should end up in these lists
 and not in specific group lists. Likewise if an obviously good site gets
 banned, it makes sense to share the whitelisting with everybody.
+
+### Specific consideration for kids
+If you want to whitelist a site for a kid, it makes sense to put it in CTTB
+list since if it's ok for a kid it's ok for everybody else who may need that
+later (a teacher maybe).
+
+On the other hand exception should be treated carefully as something that may
+be ok to be accessed by an adult should not necessarily be seen by a kid. So
+when for example you whitelist something for adults ask yourself, should a kid
+or a "restricted" group see this? if yes put it in CTTB list, if not, put it in
+the specific group.
 
 ## Removing lists
 Please note that as of this time removing a list from the above two places will

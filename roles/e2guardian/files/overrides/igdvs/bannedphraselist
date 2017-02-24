@@ -2334,22 +2334,6 @@
 <inbrowse.info>
 <inbuy.info>
 <incidence.info>
-.include</etc/dansguardian/cttbbanp>
-.include</etc/dansguardian/phraselists/gambling/banned>
-#.include</etc/dansguardian/phraselists/gambling/banned>
-.include</etc/dansguardian/phraselists/gambling/banned_portuguese>
-#.include</etc/dansguardian/phraselists/gambling/banned_portuguese>
-.include</etc/dansguardian/phraselists/googlesearches/banned>
-#.include</etc/dansguardian/phraselists/googlesearches/banned>
-.include</etc/dansguardian/phraselists/illegaldrugs/banned>
-#.include</etc/dansguardian/phraselists/illegaldrugs/banned>
-.include</etc/dansguardian/phraselists/illegaldrugs/banned_portuguese>
-#.include</etc/dansguardian/phraselists/illegaldrugs/banned_portuguese>
-.include</etc/dansguardian/phraselists/intolerance/banned_portuguese>
-#.include</etc/dansguardian/phraselists/intolerance/banned_portuguese>
-.include</etc/dansguardian/phraselists/pornography/banned>
-.include</etc/dansguardian/phraselists/pornography/banned_portuguese>
-# .include</etc/dansguardian/testphrase>
 <incognitos.biz>
 <incre.info>
 <indianfoods.mobi>

@@ -70,7 +70,6 @@ timed_internet:
 
 # Content filter settings
 filter_ip: 10.11.1.1
-groups_number: 1
 
 filtering_groups:
   - name: adult # this is default if no other matching
