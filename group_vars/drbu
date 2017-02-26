@@ -11,5 +11,5 @@ pic_bg: bg-drbu.png
 libreoffice: true
 
 # nfs
-nfs_homes_host: nfs-drbu.cttb
+nfs_homes_host: nfs-drbu
 nfs_homes_export: /export/drbu
