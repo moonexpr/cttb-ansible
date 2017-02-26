@@ -113,23 +113,19 @@
     notify:
       - restart e2g
 
-  - name: deploy custom.html access denied page
+  # 2 pages with and without bypass
+  - name: deploy custom.html access denied pages
     template:
       src: access-denied.j2
-      dest: /usr/share/e2guardian/languages/ukenglish/custom.html
+      dest: "/usr/share/e2guardian/languages/ukenglish/{{item.fname}}"
       owner: root
       group: root
       mode: 0644
-    notify:
-      - restart e2g
-
-  - name: deploy custom-bypass.html access denied page
-    template:
-      src: access-denied-bypass.j2
-      dest: /usr/share/e2guardian/languages/ukenglish/custom-bypass.html
-      owner: root
-      group: root
-      mode: 0644
+    with_items:
+      - {fname: custom-bypass.html, bypass: True}
+      - {fname: custom.html, bypass: False}
+    tags:
+      - e2g_deniedhtml
     notify:
       - restart e2g
 

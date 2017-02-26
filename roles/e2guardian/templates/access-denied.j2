@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Access denied">
 <meta name="author" content="">
-<title>E2Guardian - Access Denied</title>
+<title>E2Guardian - Harmful Content</title>
 <!-- Bootstrap core CSS -->
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
@@ -47,8 +47,12 @@ body {
 <div class="container">
   <!-- Jumbotron -->
   <div class="jumbotron">
-    <h1><i class="fa fa-cogs green"></i> Access Denied</h1>
+    <h1><i class="fa fa-cogs red"></i> Harmful Content</h1>
     <p class="lead">The automatic system protecting the CTTB network has detected harmful content on the page you were trying to reach.</p>
+{% if item.bypass %}
+    <p>If you believe this is a mistake please use the button below to proceed</p>
+    <a href="-BYPASS-" class="btn btn-success btn-lg text-center">Continue Anyway</a>
+{% endif %}
   </div>
 </div>
 
