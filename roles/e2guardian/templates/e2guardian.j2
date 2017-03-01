@@ -504,7 +504,7 @@ recheckreplacedurls = off
 # if on it adds an X-Forwarded-For: <clientip> to the HTTP request
 # header.  This may help solve some problem sites that need to know the
 # source ip. on | off
-forwardedfor = off
+forwardedfor = on
 
 
 # if on it uses the X-Forwarded-For: <clientip> to determine the client
@@ -548,29 +548,29 @@ maxchildren = 250
 
 # sets the minimum number of processes to spawn to handle the incoming connections.
 # On large sites you might want to try 64.
-minchildren = 64
+minchildren = 20
 
 
 # sets the minimum number of processes to be kept ready to handle connections.
 # On large sites you might want to try 16.
-minsparechildren = 16
+minsparechildren = 10
 
 
 # sets the minimum number of processes to spawn when it runs out
 # On large sites you might want to try 20.
-preforkchildren = 20
+preforkchildren = 5
 
 
 # sets the maximum number of processes to have doing nothing.
 # When this many are spare it will cull some of them.
 # On large sites you might want to try 64.
-maxsparechildren = 64
+maxsparechildren = 30
 
 
 # sets the maximum age of a child process before it croaks it.
 # This is the number of connections they handle before exiting.
 # On large sites you might want to try 10000.
-maxagechildren = 2000
+maxagechildren = 5000
 
 
 # sets the number of child process to kill/fork at each 5 sec interval.
