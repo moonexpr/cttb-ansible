@@ -11,7 +11,7 @@
   - name: add crons turn timed_internet.sh on
     cron:
       name: "{{item.0.label}} ON day:{{item.1.days}} time:{{item.1.on_at}}"
-      day: "{{item.1.days}}"
+      weekday: "{{item.1.days}}"
       hour: "{{item.1.on_at.split(':')[0]}}"
       minute: "{{item.1.on_at.split(':')[1]|default(0)}}"
       job: "/etc/firehol/timed_internet.sh {{item.0.label}} on"
@@ -22,7 +22,7 @@
   - name: add crons turn timed_internet.sh off
     cron:
       name: "{{item.0.label}} OFF day:{{item.1.days}} time:{{item.1.off_at}}"
-      day: "{{item.1.days}}"
+      weekday: "{{item.1.days}}"
       hour: "{{item.1.off_at.split(':')[0]}}"
       minute: "{{item.1.off_at.split(':')[1]|default(0)}}"
       job: "/etc/firehol/timed_internet.sh {{item.0.label}} off"
