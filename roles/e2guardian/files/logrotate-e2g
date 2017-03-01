@@ -1,0 +1,15 @@
+/var/log/e2guardian/access.log {
+    daily
+    rotate 21
+    missingok
+    compress
+    sharedscripts
+    create 640 e2guardian e2guardian
+    prerotate
+        /etc/init.d/e2guardian stop > /dev/null 2>&1 || true
+    endscript
+    postrotate
+        /etc/init.d/e2guardian start > /dev/null 2>&1
+    endscript
+
+}
