@@ -137,6 +137,7 @@
       - byobu
       - curl
       - dconf-tools
+      - ethtool
       - fio
       - git
       - hddtemp
@@ -144,6 +145,7 @@
       - iftop
       - iotop
       - iperf
+      - iptraf
       - mtr
       - nload
       - obnam
