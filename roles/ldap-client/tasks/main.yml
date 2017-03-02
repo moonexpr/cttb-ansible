@@ -85,6 +85,14 @@
       regexp: "^#tls_cacertfile /etc/ssl/ca.cert"
       replace: "tls_cacertfile /etc/ldap/cttb-cacert.pem"
 
+  - name: configure TLS_CACERT
+    replace:
+      dest: /etc/ldap/ldap.conf
+      regexp: "^TLS_CACERT	/etc/ssl/certs/ca-certificates.crt"
+      replace: "TLS_CACERT	/etc/ldap/cttb-cacert.pem"
+    tags:
+      - testca
+
   # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=770135#46
   - name: restart systemd-logind
     service:
