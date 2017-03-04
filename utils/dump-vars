@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# runs an arbitrary command on all hosts/hostgroup specified
+
+#TODO
+# - convert to python for more control
+# - add error control on input parameters
+
+HOSTS=$1
+
+source utils/setup-env
+
+ansible $HOSTS -m setup
