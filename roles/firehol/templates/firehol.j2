@@ -45,8 +45,8 @@ ipset4 create {{group.label}} hash:{{group.type}}
 # NAT and redirects
 
 ## this still needs port forwarding on the modem to work
-dnat4 to 10.11.29.154:22 proto tcp dport 2244 # redirect ssh into the city through jumpbox
-dnat4 to 10.11.6.1 proto tcp dport sip # get sip traffic to the asterisk server
+dnat4 to 10.11.29.154:22 proto tcp dport 2244 inface "${world}" # redirect ssh into the city through jumpbox
+dnat4 to 10.11.6.1:5060 proto "tcp udp" dport 5060 inface "${world}" # get sip traffic to the asterisk server
 transparent_proxy4 80 8080 "" inface "${home}" src not "ipset:no_proxy_ip ipset:no_proxy_net"
 masquerade "${world}"
 
@@ -75,9 +75,8 @@ interface4 "${world}" internet
 # rules for traffic coming from the internet for the lan
 router4 internet2cttb inface "${world}" outface "${home}"
   protection bad-packets
-  server dhcp accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
-  server dns accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
   server ssh accept dst 10.11.29.154 #accept traffic to jumpbox
+  server sip accept dst 10.11.6.1 #traffic for asterisk server
 
   # for timed internet
   client "https httpalt" reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
