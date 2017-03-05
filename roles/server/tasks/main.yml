@@ -15,6 +15,7 @@
       mode: 0644
       owner: root
       group: root
+    when: ansible_virtualization_type != "lxc" and ansible_virtualization_role != "guest"
     notify:
       - update grub
 
@@ -26,7 +27,7 @@
     with_items:
       - resolvconf
       - open-iscsi
-      - lxc*
+      - lxc1
       - lxd-client
       - dnsmasq-base
       - libiscsi2
