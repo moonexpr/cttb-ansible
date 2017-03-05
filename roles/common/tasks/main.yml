@@ -72,9 +72,12 @@
     when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'trusty'
 
   # set hostname
+  # don't do this on lxc containers
+  # https://github.com/ansible/ansible/issues/19814
   - name: set hostname
     hostname:
       name: "{{inventory_hostname}}"
+    when: ansible_virtualization_type != "lxc" and ansible_virtualization_role != "guest"
 
   - name: fix /etc/hosts
     replace:
