@@ -4,3 +4,12 @@
     service:
       name: e2guardian
       state: restarted
+
+  # switch to reloaded for lists, systemctl e2g unit at this time
+  # doesn't support reload even tho e2g does (reloads lists only tho).
+  # Eventually wanna switch to this as it's more graceful and doesn't interrupt
+  # connections just to ban or whitelist a site
+  - name: reload e2g
+    service:
+      name: e2guardian
+      state: reloaded
