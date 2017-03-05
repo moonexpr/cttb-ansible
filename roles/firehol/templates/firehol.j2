@@ -57,14 +57,18 @@ interface4 "${home}" cttb
   server icmp accept
   server ssh accept
   server dns accept
-  server httpalt accept # in case we want hosts to do explicit proxying
+
+  # for timed internet
+  server httpalt reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
+  # because of transparent proxy'ing
+  server httpalt accept 
 
   client icmp accept
   client dns accept
   client dhcp accept
   client http accept
 
-# rules for traffic coming from the world for the gateway (or hosts behind it)
+# rules for traffic coming from the world for the gateway
 interface4 "${world}" internet
     client all accept
 
@@ -75,6 +79,8 @@ router4 internet2cttb inface "${world}" outface "${home}"
   server dns accept src 10.11.20.0/24 dst dnsmasq.cttb # temp for solar field
   server ssh accept dst 10.11.29.154 #accept traffic to jumpbox
 
-  client http reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
+  # for timed internet
+  client "https httpalt" reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
+
   client all reject src 10.11.13.0/24 # temp registration range should not go online
   client all accept
