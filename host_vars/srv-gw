@@ -3,14 +3,14 @@
 # Network interfaces
 server_interfaces: [
   {name: lan, mac: '00:25:90:d3:39:18', auto: True, inet: static, address: 10.11.1.1, netmask: 255.255.0.0},
-  {name: com7, mac: '00:25:90:d3:39:19', auto: True, inet: static, address: 10.11.7.111, netmask: 255.255.255.0},
-  {name: com20, mac: '00:25:90:d3:39:1a', auto: True, inet: static, address: 10.11.20.111, netmask: 255.255.255.0}]
+  {name: com7, mac: '00:25:90:d3:39:19', auto: True, inet: static, address: 172.30.7.2, netmask: 255.255.255.0},
+  {name: com20, mac: '00:25:90:d3:39:1a', auto: True, inet: static, address: 172.30.20.2, netmask: 255.255.255.0}]
 
 static_routes:
   com7: [
-      {table: main, dst: 75.75.75.75, gw: 10.11.7.1, dev: com7}]
+      {table: main, dst: 75.75.75.75, gw: 172.30.7.1, dev: com7}]
   com20: [
-      {table: main, dst: 75.75.76.76, gw: 10.11.20.1, dev: com20}]
+      {table: main, dst: 75.75.76.76, gw: 172.30.20.1, dev: com20}]
 
 server_rt_tables:
   - {id: 7, tname: com7}
