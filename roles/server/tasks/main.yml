@@ -29,7 +29,6 @@
       - open-iscsi
       - lxc1
       - lxd-client
-      - dnsmasq-base
       - libiscsi2
 
   - include: interfaces.yml
