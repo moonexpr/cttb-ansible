@@ -1,0 +1,55 @@
+# Exception file extension list
+# Use as a filter group's "exceptionextensionlist",
+# to override a blanket download block.
+# (blockdownloads = on)
+#
+# DOES NOT override content/virus scanning or site/URL bans. 
+#
+# Default list:
+# Unblock web pages & graphics
+
+# Text/web document types
+
+.asp
+.cgi
+.css
+.htm
+.html
+.js
+.jsp
+.php
+.pl
+.rtx
+.shtml
+.stm
+.txt
+.xml
+.xsl
+
+# Image types
+
+.bmp
+.cod
+.gif
+.ief
+.jpe
+.jpeg
+.jpg
+.jfif
+.tif
+.tiff
+.ras
+.cmx
+.ico
+.pnm
+.pbm
+.pgm
+.ppm
+.rgb
+.xbm
+.xpm
+.xwd
+
+# Compressed file types
+.gz
+.bz2
