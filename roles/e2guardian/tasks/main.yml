@@ -139,11 +139,3 @@
       dest: /etc/e2guardian/lists/
       owner: e2guardian
       group: e2guardian
-
-  - name: setup e2g logrotate
-    copy:
-      src: logrotate-e2g
-      dest: /etc/logrotate.d/e2guardian
-      mode: 0644
-      owner: root
-      group: root
