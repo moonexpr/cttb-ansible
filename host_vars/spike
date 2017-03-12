@@ -7,6 +7,7 @@ chrome: true
 dropbox: true
 cups_srv: printer-srv.cttb
 cups_default_queue: 1234_HP_M225dw
+lxc: true
 
 additional_sw:
   - ansible
