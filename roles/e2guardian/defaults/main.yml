@@ -22,6 +22,7 @@ filtering_groups_lists:
   - bannedregexpurllist
   - bannedsitelist
   - bannedurllist
+  - exceptionextensionlist
   - exceptionphraselist
   - exceptionregexpurllist
   - exceptionsitelist
@@ -34,7 +35,6 @@ filtering_groups_lists:
 # lists that we don't care to modify and can be always default
 default_lists:
   - bannedregexpheaderlist
-  - exceptionextensionlist
   - exceptionmimetypelist
   - bannedextensionlist
   - bannedmimetypelist
