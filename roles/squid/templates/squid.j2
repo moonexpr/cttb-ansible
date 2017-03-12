@@ -57,3 +57,27 @@ maximum_object_size_in_memory {{maximum_object_size_in_memory}}
 memory_cache_mode {{memory_cache_mode}}
 
 shutdown_lifetime 3 seconds
+forwarded_for delete
+
+## Logging
+# IMPORTANT: cache_log cannot be redirected to syslog without modifying the
+# init script but it does old critical information on the status of squid
+# process, including errors. The access_log is only good for caches hits etc,
+# but not for process errors.
+#               >a      Client source IP address
+#               <a      Server IP address of the last server or peer connection
+#               tl      Local time. Optional strftime format argument
+#               tr      Response time (milliseconds)
+#               dt      Total time spent making DNS lookups (milliseconds)
+#               [http::]>rm     Request method from client
+#               [http::]>ru     Request URL from client
+#               [http::]>h      Original received request header.
+#               [http::]>Hs     HTTP status code sent to the client
+#               [http::]mt      MIME content type
+#               [http::]st      Total size of request + reply traffic with client
+#               Ss      Squid request status (TCP_MISS etc)
+#               Sh      Squid hierarchy status (DEFAULT_PARENT etc)
+#               un      A user name. Expands to the first available name
+
+logformat cttb      %>a %{X-Forwarded-For}>h %rm %ru %mt %6tr %6dt %Ss/%03>Hs %<st %[un %Sh/%<a
+access_log syslog:user.info cttb
