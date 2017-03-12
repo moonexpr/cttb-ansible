@@ -1,0 +1,85 @@
+---
+
+  - block: #install virtualbox
+    # Because Vbox ppa doesn't provide the same pkg names as mainstream, we need to
+    # remove those packages and install the one from ppa that has the version
+    # appended to it
+    - name: add virtualbox repo key
+      apt_key:
+        url: https://www.virtualbox.org/download/oracle_vbox_2016.asc
+        state: present
+
+    - name: add ansible repo mirror
+      apt_repository:
+        repo: "deb {{deb_mirror}}/virtualbox xenial contrib"
+        state: present
+
+    - name: remove old virtbualbox pkgs
+      apt:
+        name: "{{item}}"
+        state: absent
+      with_items:
+        - virtualbox
+        - virtualbox-guest-additions-iso
+        - virtualbox-guest-utils
+        - virtualbox-guest-x11
+
+    - name: install virtbualbox 5.1
+      apt:
+        name: virtualbox-5.1
+        state: latest
+
+    # maybe this still manual for now
+    - name: install virtualbox extensions
+      debug:
+        msg: remember to install the vbox extensions if you want USB support and pxe
+    when: virtualbox
+
+  - block: #install LXD
+    - name: add lxd ppa key
+      apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: 7635B973
+        state: present
+
+    - name: add lxd repo mirror
+      apt_repository:
+        repo: "deb http://ppa.launchpad.net/ubuntu-lxc/lxd-stable/ubuntu xenial main contrib"
+        state: present
+
+    - name: install lxd and required pkgs
+      apt:
+        name: "{{item}}"
+        state: latest
+        install_recommends: no
+      with_items:
+        - lxd
+        - bridge-utils
+        - lxd-tools
+        - criu
+
+    - name: create containers
+      become: false
+      lxd_container:
+        name: "{{item.name}}"
+        state: started
+        source:
+          type: image
+          alias: cttb_server #implies local repo
+        profiles: ["default"]
+        devices:
+          eth0:
+            host_name: "{{item.name}}_eth0"
+            type: nic
+            hwaddr: "{{item.mac}}"
+            nictype: bridged
+            parent: lxdbr0
+        ephemeral: false
+        wait_for_ipv4_addresses: true
+        timeout: 600
+      with_items: "{{lxd_containers|default([])}}"
+      tags:
+        containers
+    when: lxc
+    tags:
+      - lxc
