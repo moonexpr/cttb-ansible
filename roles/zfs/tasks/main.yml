@@ -1,0 +1,6 @@
+---
+
+  - name: install zfs
+    apt:
+      name: zfsutils-linux
+      state: present
