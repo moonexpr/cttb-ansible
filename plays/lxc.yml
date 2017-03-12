@@ -1,0 +1,6 @@
+---
+
+- hosts: spike
+  roles:
+    - server
+    - {role: virt, lxc: true, tags: vm}
