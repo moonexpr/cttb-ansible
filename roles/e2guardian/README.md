@@ -35,6 +35,9 @@ To add either an override list or a global list you need to do two things:
 - explicitly declare the list to be added in the variable, either
   filtering_groups in the override section or cttb_global_lists
 - add the file under the corresponding override directory or cttb-lists directory
+- if the list was previously in the default_lists, ie lists that are not
+  overridden, it needs to be removed from there or otherwise it will containue
+  to be ignored.
 
 ## Global lists
 All the filtering groups share some cttb wide lists. If a new bad site appears
