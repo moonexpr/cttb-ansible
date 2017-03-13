@@ -1,0 +1,24 @@
+# Link-balancer helps maintaining multiple uplinks and
+# the relative routing tables
+
+{% for b in server_interfaces|selectattr("balancer", "defined")  %}
+gateway {{b.name}} dev {{b.name}} gw {{b.balancer.gw}} src {{b.address}} check ping {{b.balancer.check_ip}}
+{% endfor %}
+
+{% for table in server_rt_tables %}
+table {{table.tname}}
+    default via {{table.tname}}
+
+{% endfor %}
+table main
+{% for table in server_rt_tables %}
+    default via {{table.tname}} weight {{table.weight}}
+{% endfor %}
+
+policy
+{% for table in server_rt_tables %}
+    connmark 0x{{table.id}} table {{table.tname}}
+{% endfor %}
+{% for table in server_rt_tables %}
+    rules src gw-src-ips {{table.tname}} table {{table.tname}}
+{% endfor %}
