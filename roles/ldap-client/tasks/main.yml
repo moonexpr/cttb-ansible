@@ -93,6 +93,17 @@
     tags:
       - testca
 
+  - name: copy CTTB CA certificate
+    copy:
+      src: cttb-cacert.pem
+      dest: /etc/ldap/cttb-cacert.pem
+      owner: root
+      group: root
+      mode: 0644
+      force: yes
+    tags:
+      - testca
+
   - name: fix to allow local passwd cmd to change LDAP password
     replace:
       dest: /etc/pam.d/common-password
