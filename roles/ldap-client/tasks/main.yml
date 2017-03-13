@@ -93,6 +93,15 @@
     tags:
       - testca
 
+  - name: fix to allow local passwd cmd to change LDAP password
+    replace:
+      dest: /etc/pam.d/common-password
+      # Remove the word "use_authtok" after "pam_ldap.so".
+      regexp: '^(password.*pam_ldap.so) use_authtok'
+      replace: '\1'
+    tags:
+      - fixpassword
+
   # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=770135#46
   - name: restart systemd-logind
     service:
