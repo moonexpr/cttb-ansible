@@ -93,6 +93,16 @@
       replace: "127.0.0.1"
       backup: no
 
+  - name: make ssh use ipv4 only # we disable ipv6 and X11forwarding fails
+    lineinfile:
+      dest: /etc/ssh/sshd_config
+      regexp: '^AddressFamily inet'
+      line: 'AddressFamily inet'
+    tags:
+      disable_ipv6
+    notify:
+      - reload ssh
+
   - name: enable centralized logging
     copy:
       src: conf/10-centralized-logging.conf
@@ -184,7 +194,7 @@
       group: root
     when: disable_ipv6
     tags:
-      - sysctl
+      - disable_ipv6
 
   - name: vim saner defaults
     copy:
