@@ -165,6 +165,7 @@
       - smartmontools
       - tcpdump
       - traceroute
+      - udisks2
       - unattended-upgrades
       - util-linux
       - vim
