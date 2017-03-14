@@ -53,10 +53,11 @@
         state: latest
         install_recommends: no
       with_items:
-        - lxd
+        - bindfs # for mounting guest fs on host
         - bridge-utils
-        - lxd-tools
         - criu
+        - lxd
+        - lxd-tools
 
     - name: create containers
       become: false
@@ -65,7 +66,7 @@
         state: started
         source:
           type: image
-          alias: cttb_server #implies local repo
+          alias: "{{item.image}}" #implies local repo
         profiles: ["default"]
         devices:
           eth0:
@@ -77,7 +78,7 @@
         ephemeral: false
         wait_for_ipv4_addresses: true
         timeout: 600
-      with_items: "{{lxd_containers|default([])}}"
+      with_items: "{{lxc_containers|default([])}}"
       tags:
         containers
     when: lxc

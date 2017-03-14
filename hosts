@@ -21,6 +21,9 @@ vbox-srv
 vbox-desktop
 vbox-pxe
 
+# containers
+lxc-srv1
+
 # CTTB infra
 unbound-adult
 unbound-igdvs
@@ -263,6 +266,10 @@ drbu-staff
 
 [testing]
 testlab1
+lxc-srv1
+
+[lxc]
+lxc-srv1
 
 [unbound]
 unbound-adult
