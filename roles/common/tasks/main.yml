@@ -97,6 +97,8 @@
     lineinfile:
       dest: /etc/ssh/sshd_config
       regexp: '^AddressFamily inet'
+      # Insert the line after "ListenAddress" or "#ListenAddress" lines.
+      insertafter: '^.?ListenAddress'
       line: 'AddressFamily inet'
     tags:
       disable_ipv6
