@@ -1,0 +1,2 @@
+- add support for mirrored slogs
+- figure out a way to make the zpool creation etc idempotent

@@ -1,7 +1,21 @@
 ---
 
 # special network
-server_interfaces: [
-  {name: lan, mac: '78:ac:c0:b2:89:b0', auto: True, inet: dhcp},
-  {name: tr01, mac: '00:60:6e:42:2a:3e', auto: True, inet: static, address: 192.168.1.1, netmask: 255.255.255.0},
-  {name: tr02, mac: '00:60:6e:42:35:b2', auto: True, inet: static, address: 192.168.2.1, netmask: 255.255.255.0}, ]
+#server_interfaces: [
+#  {name: lan, mac: '78:ac:c0:b2:89:b0', auto: True, inet: dhcp},
+#  {name: tr01, mac: '00:60:6e:42:2a:3e', auto: True, inet: static, address: 192.168.1.1, netmask: 255.255.255.0},
+#  {name: tr02, mac: '00:60:6e:42:35:b2', auto: True, inet: static, address: 192.168.2.1, netmask: 255.255.255.0}, ]
+
+lxc: true
+lxc_containers: []
+zfs_pools:
+  - name: tank0
+    pool_options: 'ashift=12'
+    dataset_global_options: 'compression=lz4'
+    level: ''
+    disks:
+      - /dev/disk/by-id/ata-WDC_WD15EARS-00Z5B1_WD-WMAVU1378390
+    slog: '/dev/disk/by-id/nvme-BPX_8B71076C020835003325'
+    datasets:
+      - name: lxd
+        options: ''

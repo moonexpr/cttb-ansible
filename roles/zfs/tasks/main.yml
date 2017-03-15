@@ -4,3 +4,27 @@
     apt:
       name: zfsutils-linux
       state: present
+
+  - block:
+    - name: create zpools
+      command: "zpool create -f -o '{{item.pool_options}}' -O '{{item.dataset_global_options}}' {{item.name}} {{item.level}} {{item.disks|join(' ')}}"
+      with_items: "{{zfs_pools}}"
+      tags:
+        zfs_pool
+
+    - name: add slog to zpool
+      command: "zpool add -f {{item.name}} log {{item.slog}}"
+      with_items: "{{zfs_pools}}"
+      tags:
+        zfs_slog
+
+    - name: create datasets
+      zfs:
+        name: "{{item[0].name}}/{{item[1].name}}"
+        state: present
+      with_subelements:
+        - "{{zfs_pools}}"
+        - datasets
+      tags:
+        zfs_ds
+    when: zfs_pools is defined
