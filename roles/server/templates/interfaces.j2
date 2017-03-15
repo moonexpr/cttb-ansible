@@ -3,8 +3,8 @@
 auto lo
 iface lo inet loopback
 {% for iface in server_interfaces %}
-{% if iface.auto %}
 
+{% if iface.auto %}
 auto {{iface.name}}
 {% endif %}
 iface {{iface.name}} inet {{iface.inet}}
