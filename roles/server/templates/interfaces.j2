@@ -8,6 +8,13 @@ iface lo inet loopback
 auto {{iface.name}}
 {% endif %}
 iface {{iface.name}} inet {{iface.inet}}
+{% if iface.bridge is defined %}
+  bridge-ifaces {{iface.bridge_members|join(' ')}}
+  bridge-ports {{iface.bridge_members|join(' ')}}
+{% for m in iface.bridge_members %}
+  up ifconfig {{m}} up
+{% endfor %}
+{% endif %}
 {% if iface.inet == "static" %}
   address {{iface.address}}
   netmask {{iface.netmask}}
