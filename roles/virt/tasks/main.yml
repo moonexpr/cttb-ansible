@@ -68,13 +68,7 @@
           type: image
           alias: "{{item.image}}" #implies local repo
         profiles: ["default"]
-        devices:
-          eth0:
-            host_name: "{{item.name}}_eth0"
-            type: nic
-            hwaddr: "{{item.mac}}"
-            nictype: bridged
-            parent: lxdbr0
+        devices: "{{item.devices}}"
         ephemeral: false
         wait_for_ipv4_addresses: true
         timeout: 600
