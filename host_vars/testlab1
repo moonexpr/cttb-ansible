@@ -1,13 +1,31 @@
 ---
 
-# special network
-#server_interfaces: [
-#  {name: lan, mac: '78:ac:c0:b2:89:b0', auto: True, inet: dhcp},
-#  {name: tr01, mac: '00:60:6e:42:2a:3e', auto: True, inet: static, address: 192.168.1.1, netmask: 255.255.255.0},
-#  {name: tr02, mac: '00:60:6e:42:35:b2', auto: True, inet: static, address: 192.168.2.1, netmask: 255.255.255.0}, ]
+server_interfaces:
+  - name: eth0
+    id: 1
+    mac: '78:ac:c0:b2:89:b0'
+    auto: false
+    inet: manual
+  - name: lxdbr0
+    id: 2
+    auto: true
+    inet: dhcp
+    bridge: true
+    bridge_members:
+      - eth0
 
 lxc: true
-lxc_containers: []
+lxc_containers:
+  - name: c1
+    image: cttb
+    devices:
+      eth0:
+        host_name: c1_eth0
+        hwaddr: '00:16:3e:49:72:81'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+
 zfs_pools:
   - name: tank0
     pool_options: 'ashift=12'

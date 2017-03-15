@@ -13,7 +13,13 @@ lxc: true
 lxc_containers:
   - name: srv1
     image: cttb1604
-    mac: '00:16:3e:49:72:80'
+    devices:
+      eth0:
+        host_name: srv1_eth0
+        hwaddr: '00:16:3e:49:72:80'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
 
 additional_sw:
   - ansible
