@@ -29,6 +29,7 @@ unbound-adult
 unbound-igdvs
 asterix 
 srv-gw ansible_ssh_host=10.11.1.1
+srv-vm ansible_ssh_host=10.11.1.4
 backup
 
 # People on linux
