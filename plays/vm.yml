@@ -1,0 +1,7 @@
+---
+
+- hosts: srv-vm
+  roles:
+    - server
+    - {role: zfs , tags: zfs}
+    - {role: virt , lxc: true, tags: vm}
