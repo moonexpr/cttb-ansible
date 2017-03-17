@@ -12,6 +12,7 @@ local-zone: "barracuda.com" static
 local-zone: "best-proxy.com.ca" static
 local-zone: "bing.com" static
 local-zone: "bypassthat.com" static
+local-zone: "chat.google.com" static
 local-zone: "chatterbate.com" static
 local-zone: "cruisenude.com" static
 local-zone: "cyberghostvpn.com" static
@@ -30,6 +31,7 @@ local-zone: "ipredator.se" static
 local-zone: "ispblocked.com" static
 local-zone: "istlsfastyet.com" static
 local-zone: "ixquick.com" static
+local-zone: "kissanime.ru" static
 local-zone: "kproxy.com" static
 local-zone: "lushstories.com" static
 local-zone: "meebo.com" static
@@ -71,6 +73,8 @@ local-zone: "sslunblock.net" static
 local-zone: "sslvideoproxy.com" static
 local-zone: "stunnel.org" static
 local-zone: "surfwecan.net" static
+local-zone: "talk.google.com" static
+local-zone: "talkgadget.google.com" static
 local-zone: "taobao.com" static
 local-zone: "taobao.cn" static
 local-zone: "thenude.eu" static
