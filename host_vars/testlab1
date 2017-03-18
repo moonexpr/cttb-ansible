@@ -37,3 +37,19 @@ zfs_pools:
     datasets:
       - name: lxd
         options: ''
+
+nut_mode: nutserver
+
+nut_server_address: testlab1
+
+nut_users:
+  - username: upsmon
+    password: pass
+    role: master
+
+# This is only an example: you must set this to match your hardware.
+nut_ups:
+  - name: eaton5s
+    driver: usbhid-ups
+    port: auto
+    description: "Eaton 5S 1500VA (900W)"
