@@ -150,6 +150,7 @@
       install_recommends: yes
     with_items:
       - byobu
+      - bridge-utils
       - curl
       - dconf-tools
       - ethtool
@@ -215,3 +216,9 @@
       mode: 0644
       owner: administrator
       group: administrator
+
+  - name: dist-upgrade + autoremove purge
+    apt:
+      autoremove: yes
+      purge: yes
+      upgrade: dist
