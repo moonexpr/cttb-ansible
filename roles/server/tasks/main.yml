@@ -19,6 +19,9 @@
     notify:
       - update grub
 
+  # make sure grub is updated no matter what happens next (ie run update-grub from the handler)
+  - meta: flush_handlers 
+
   - name: remove some basic packages
     apt:
       name: "{{item}}"
