@@ -2,12 +2,8 @@
 
 - name: install NUT packages
   package:
-    name: "{{ item }}"
+    name: nut
     state: present
-  with_items:
-    - nut-client
-    - nut-server
-    - nut-monitor
 
 - name: Install NUT config files.
   template:
@@ -19,6 +15,15 @@
   with_items:
     - nut.conf
     - ups.conf
+    - upsd.conf
     - upsd.users
     - upsmon.conf
   notify: restart nut
+
+- name: Install NUT systemd shutdown script
+  copy:
+    src: nutshutdown
+    dest: /lib/systemd/system-shutdown/nutshutdown
+    owner: root
+    group: nut
+    mode: 0750

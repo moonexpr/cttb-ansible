@@ -5,6 +5,4 @@
     state: restarted
   with_items:
     - nut-driver
-    - nut-monitor
     - nut-server
-  when: nut_enable_service
