@@ -1,21 +1,6 @@
 ---
-
 ## README
-# For this to work there must be an 'interfaces' variable defined. This is normally dons in host_vars
-# since this variable is host specific. There are no default in the role for the same reason.
-# Var looks something like this:
-
-  # server_interfaces: [
-  #  {name: lan, mac: '78:ac:c0:b2:89:b0', auto: True, inet: dhcp},
-  #  {name: tr01, mac: '00:60:6e:42:2a:3e', auto: True, inet: dhcp},
-  #  {name: tr02, mac: '00:60:6e:42:35:b2', auto: True, inet: dhcp}, ]
-
-# Note that the variable is a list of dict. this is necessary to preserve
-# orders as dicts are unordered in python
-# If you set inet to static you can provide an ip/netmask/gateway keys to set those up
-# A loopback interface is always defined
-
-
+# For this to work there must be an 'interfaces' variable defined.
 
   - name: assign static interface names
     template:
@@ -34,8 +19,12 @@
       owner: root
       group: adm
       mode: 0640
-    notify:
-      - restart network
+    register: gen_net_interfaces
+
+  - name: RESTART THE NETWORK/BOX YOURSELF
+    debug:
+      msg: interfaces file has been regenerated but networking has not been restarted. Do that yourself as needed.
+    when: gen_net_interfaces.changed
 
   - name: setup rt_tables
     lineinfile:
