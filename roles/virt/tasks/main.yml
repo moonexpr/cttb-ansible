@@ -54,7 +54,6 @@
         install_recommends: no
       with_items:
         - bindfs # for mounting guest fs on host
-        - bridge-utils
         - criu
         - lxd
         - lxd-tools
