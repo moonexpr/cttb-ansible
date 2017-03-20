@@ -23,6 +23,7 @@ vbox-pxe
 
 # containers
 lxc-srv1
+lxc-testlab
 
 # CTTB infra
 unbound-adult
@@ -272,6 +273,7 @@ lxc-srv1
 
 [lxc]
 lxc-srv1
+lxc-testlab
 
 [unbound]
 unbound-adult

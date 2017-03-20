@@ -15,9 +15,19 @@ server_interfaces:
       - eth0
 
 lxc: true
+
+lxc_storage:
+  name: default
+  type: zfs
+  source: tank0/lxd
+
+lxc_images:
+  - alias: cttb-srv-1604
+    source: "{{ansible_assets_url}}/lxc-images/lxc-cttb-srv-1604.tar.gz"
+
 lxc_containers:
   - name: c1
-    image: cttb
+    image: cttb-srv-1604
     devices:
       eth0:
         host_name: c1_eth0
