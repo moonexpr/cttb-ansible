@@ -58,6 +58,37 @@
         - lxd
         - lxd-tools
 
+    - name: create zfs pool for containers
+      command: lxc storage create {{lxc_storage.name}} {{lxc_storage.type}} source={{lxc_storage.source}}
+      when: lxc_storage is defined
+
+    - name: add zfs pool to default profile
+      command: lxc profile device add default root disk path=/ pool={{lxc_storage.name}}
+      when: lxc_storage is defined
+
+    #import linux images. Until I setup a https server with special urls I need to do this in two steps
+    - block:
+      - name: download the lxc image to tmp files
+        get_url:
+          url: "{{item.source}}"
+          dest: /tmp/lxc-{{item.alias}}.tar.gz
+          mode: 0400
+        with_items: "{{lxc_images}}"
+
+      - name: import lxc images from files
+        command: lxc image import /tmp/lxc-{{item.alias}}.tar.gz --alias {{item.alias}}
+        with_items: "{{lxc_images}}"
+
+      - name: delete image tmp files
+        file:
+          path: /tmp/lxc-{{item.alias}}.tar.gz
+          state: absent
+        with_items: "{{lxc_images}}"
+
+      when: lxc_images is defined
+      tags:
+        - lxc_img
+
     - name: create containers
       become: false
       lxd_container:
