@@ -1,0 +1,23 @@
+---
+
+# Network interfaces
+server_interfaces:
+  - name: eth0
+    mac: '00:25:90:4f:98:9c'
+    inet: manual
+    address: 10.11.1.5
+    netmask: 255.255.0.0
+    static_routes: []
+  - name: eth1
+    id: 2
+    mac: '00:25:90:4f:98:9d'
+    inet: manual
+    static_routes: []
+  - name: eth2
+    mac: '00:25:90:4f:98:9e'
+    inet: manual
+    static_routes: []
+  - name: eth3
+    mac: '00:25:90:4f:98:9f'
+    inet: manual
+    static_routes: []
