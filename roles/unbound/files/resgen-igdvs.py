@@ -5,7 +5,7 @@ import re
 # requires regular expressions.
 
 blocked_google = ('mail.google', 'plus.google', 'translate.google', 'inbox.google')
-blocked_domain_strings = ('yahoo', 'pinterest', 'hoxxproxytest', 'youtube')
+blocked_domain_strings = ('yahoo', 'pinterest', 'hoxxproxytest', 'youtube', 'playboy')
 
 def is_blocked_domain(qdn):
   gimage = re.compile('encrypted[-]tbn[01234567][.]gstatic[.]com')
