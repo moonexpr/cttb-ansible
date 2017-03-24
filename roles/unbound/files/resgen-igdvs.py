@@ -4,7 +4,7 @@ import re
 # list, much faster than using this script. Using this only for stuff that
 # requires regular expressions.
 
-blocked_google = ('mail.google', 'plus.google', 'translate.google', 'inbox.google')
+blocked_google = ('mail.google', 'plus.google', 'translate.google', 'inbox.google', 'docs.google')
 blocked_domain_strings = ('yahoo', 'pinterest', 'hoxxproxytest', 'youtube', 'playboy')
 
 def is_blocked_domain(qdn):
