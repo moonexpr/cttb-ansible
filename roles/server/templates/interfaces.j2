@@ -4,10 +4,16 @@ auto lo
 iface lo inet loopback
 {% for iface in server_interfaces %}
 
-{% if iface.auto %}
+{% if iface.auto is defined and iface.auto == True %}
 auto {{iface.name}}
 {% endif %}
 iface {{iface.name}} inet {{iface.inet}}
+{% if iface.bond is defined %}
+  bond-mode {{iface.mode}}
+  bond-miimon {{iface.miimon}}
+  bond-lacp-rate {{iface.lacp_rate}}
+  bond-slaves {{iface.slaves}}
+{% endif %}
 {% if iface.bridge is defined %}
   bridge-ifaces {{iface.bridge_members|join(' ')}}
   bridge-ports {{iface.bridge_members|join(' ')}}
@@ -15,13 +21,16 @@ iface {{iface.name}} inet {{iface.inet}}
   up ifconfig {{m}} up
 {% endfor %}
 {% endif %}
+{% if iface.bond_master is defined %}
+  bond-master {{iface.bond_master}}
+{% endif %}
 {% if iface.inet == "static" %}
   address {{iface.address}}
   netmask {{iface.netmask}}
 {% if iface.gateway is defined %}
   gateway {{iface.gateway}}
 {% endif %}
-{% for route in iface.static_routes %}
+{% for route in iface.static_routes|default([]) %}
     post-up ip route add table {{route.table}} {{route.dst}} via {{route.gw}} dev {{iface.name}}
 {% endfor %}
 {% endif %}

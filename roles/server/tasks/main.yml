@@ -34,6 +34,13 @@
       - lxd-client
       - libiscsi2
 
+  - name: install common server packages
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - lsscsi
+
   - include: interfaces.yml
     when: server_interfaces is defined
     tags:

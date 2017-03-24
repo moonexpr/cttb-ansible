@@ -1,10 +1,5 @@
 ---
 
-  - name: restart network
-    service:
-      name: networking
-      state: restarted
-
   - name: update grub
     command: update-grub
     failed_when: ('error' in grub_update.stderr)

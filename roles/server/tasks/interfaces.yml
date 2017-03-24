@@ -2,6 +2,20 @@
 ## README
 # For this to work there must be an 'interfaces' variable defined.
 
+  - name: install networking packages (bridge and bonding)
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - bridge-utils
+      - ifenslave
+
+  - name: load bonding module at boot
+    lineinfile:
+      dest: /etc/modules
+      line: 'bonding'
+    when: bonding is defined and bonding == True
+
   - name: assign static interface names
     template:
       src: my-net-names.rules.j2
@@ -9,8 +23,7 @@
       owner: root
       group: adm
       mode: 0640
-    notify:
-      - restart network
+    register: assign_ifaces_name
 
   - name: generate new interfaces file
     template:
@@ -24,7 +37,8 @@
   - name: RESTART THE NETWORK/BOX YOURSELF
     debug:
       msg: interfaces file has been regenerated but networking has not been restarted. Do that yourself as needed.
-    when: gen_net_interfaces.changed
+    when: gen_net_interfaces.changed or assign_ifaces_name.changed
+
 
   - name: setup rt_tables
     lineinfile:
