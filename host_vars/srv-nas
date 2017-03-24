@@ -1,23 +1,39 @@
 ---
 
+# Order seems to matter, put bond interface last
+
 # Network interfaces
+bonding: True
 server_interfaces:
   - name: eth0
     mac: '00:25:90:4f:98:9c'
+    auto: True
     inet: manual
-    address: 10.11.1.5
-    netmask: 255.255.0.0
-    static_routes: []
+    bond_master: bond0
   - name: eth1
     id: 2
     mac: '00:25:90:4f:98:9d'
+    auto: True
     inet: manual
-    static_routes: []
+    bond_master: bond0
   - name: eth2
     mac: '00:25:90:4f:98:9e'
+    auto: True
     inet: manual
-    static_routes: []
+    bond_master: bond0
   - name: eth3
     mac: '00:25:90:4f:98:9f'
+    auto: True
     inet: manual
-    static_routes: []
+    bond_master: bond0
+  - name: bond0
+    bond: True
+    auto: True
+    inet: static
+    slaves: "eth0 eth1 eth2 eth3"
+    mode: 4
+    lacp_rate: 1
+    miimon: 100
+    address: 10.11.1.5
+    netmask: 255.255.0.0
+    gateway: 10.11.1.1
