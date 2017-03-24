@@ -67,16 +67,19 @@ interface4 "${home}" cttb
 
   # for timed internet
   server httpalt reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
-  # because of transparent proxy'ing
+  # for transparent proxy'ing
   server httpalt accept 
 
   client icmp accept
   client dns accept
   client dhcp accept
   client http accept
+  client ssh accept
 
 # rules for traffic coming from the world for the gateway
 interface4 "${world}" internet
+    server icmp accept # so that we can test from substation
+
     client all accept
 
 # rules for traffic coming from the internet for the lan
