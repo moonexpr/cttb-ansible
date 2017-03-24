@@ -150,7 +150,6 @@
       install_recommends: yes
     with_items:
       - byobu
-      - bridge-utils
       - curl
       - dconf-tools
       - ethtool
