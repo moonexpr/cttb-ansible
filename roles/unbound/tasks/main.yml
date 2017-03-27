@@ -106,6 +106,8 @@
       force: yes
     notify:
     - restart unbound
+    tags:
+      - cttb_zone
 
     #  - name: disable dnssec
     #command: creates="/etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf.disabled" mv /etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf /etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf.disabled
