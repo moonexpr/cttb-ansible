@@ -14,7 +14,7 @@
 
     - name: add slog to zpool
       command: "zpool add -f {{item.name}} log {{item.slog}}"
-      with_items: "{{zfs_pools}}"
+      with_items: '{{zfs_pools|selectattr("slog", "defined")|list}}'
       tags:
         zfs_slog
 
