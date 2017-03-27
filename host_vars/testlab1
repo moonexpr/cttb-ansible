@@ -21,10 +21,6 @@ lxc_storage:
   type: zfs
   source: tank0/lxd
 
-lxc_images:
-  - alias: cttb-srv-1604
-    source: "{{ansible_assets_url}}/lxc-images/lxc-cttb-srv-1604.tar.gz"
-
 lxc_containers:
   - name: c1
     image: cttb-srv-1604

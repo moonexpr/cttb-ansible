@@ -1,0 +1,3 @@
+lxc_images:
+  - alias: cttb-srv-1604
+    source: "{{ansible_assets_url}}/lxc-images/lxc-cttb-srv-1604-20170327.tar.gz"

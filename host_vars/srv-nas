@@ -5,6 +5,16 @@
 # Network interfaces
 bonding: True
 server_interfaces:
+  - name: bond0
+    bond: True
+    auto: True
+    inet: manual
+    mode: 802.3ad
+    xmit_hash_policy: 'layer2+3'
+    updelay: 300
+    downdelay: 200
+    lacp_rate: 1
+    miimon: 100
   - name: eth0
     mac: '00:25:90:4f:98:9c'
     auto: True
@@ -26,14 +36,47 @@ server_interfaces:
     auto: True
     inet: manual
     bond_master: bond0
-  - name: bond0
-    bond: True
-    auto: True
+  - name: lxdbr0
+    auto: true
+    bridge: true
+    bridge_members:
+      - bond0
     inet: static
-    slaves: "eth0 eth1 eth2 eth3"
-    mode: 4
-    lacp_rate: 1
-    miimon: 100
     address: 10.11.1.5
     netmask: 255.255.0.0
     gateway: 10.11.1.1
+
+zfs_pools:
+  - name: data
+    pool_options: 'ashift=12'
+    dataset_global_options: 'compression=lz4'
+    level: raidz2
+    disks:
+      - /dev/disk/by-id/scsi-35000c500261dc6bf
+      - /dev/disk/by-id/scsi-35000c5002628cbbf
+      - /dev/disk/by-id/scsi-35000c50026248bc7
+      - /dev/disk/by-id/scsi-35000c5002628bfab
+      - /dev/disk/by-id/scsi-35000c5002628bbc7
+      - /dev/disk/by-id/scsi-35000c5002629a74f
+    slog: /dev/disk/by-id/nvme-BPX_C723076C020835020742
+    datasets:
+      - name: lxd
+        options: ''
+
+lxc: true
+
+lxc_storage:
+  name: default
+  type: zfs
+  source: data/lxd
+
+lxc_containers:
+  - name: log
+    image: cttb-srv-1604
+    devices:
+      eth0:
+        host_name: log_eth0
+        hwaddr: '00:16:3e:11:01:20'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
