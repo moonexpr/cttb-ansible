@@ -20,9 +20,12 @@ vbox-srv
 vbox-desktop
 vbox-pxe
 
-# containers
+# LXC
+## testing containers
 lxc-srv1
 lxc-testlab
+## production containers
+lxc-srv-log
 
 # CTTB infra
 unbound-adult
@@ -272,9 +275,16 @@ drbu-staff
 testlab1
 lxc-srv1
 
-[lxc]
+[lxc-containers]
 lxc-srv1
 lxc-testlab
+lxc-srv-log
+
+[lxc-hosts]
+srv-nas
+srv-vm
+testlab1
+spike
 
 [unbound]
 unbound-adult
