@@ -12,7 +12,10 @@ iface {{iface.name}} inet {{iface.inet}}
   bond-mode {{iface.mode}}
   bond-miimon {{iface.miimon}}
   bond-lacp-rate {{iface.lacp_rate}}
-  bond-slaves {{iface.slaves}}
+  bond-updelay {{iface.updelay}}
+  bond-downdelay {{iface.downdelay}}
+  bond-xmit-hash-policy {{iface.xmit_hash_policy}}
+  bond-slaves none # necessary or the bond-master apparently won't work
 {% endif %}
 {% if iface.bridge is defined %}
   bridge-ifaces {{iface.bridge_members|join(' ')}}

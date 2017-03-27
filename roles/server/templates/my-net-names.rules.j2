@@ -1,5 +1,5 @@
 # Ansible generated, do not edit
 
 {% for iface in server_interfaces if iface.mac is defined %}
-SUBSYSTEM=="net", KERNEL=="en*" ACTION=="add", ATTR{address}=="{{iface.mac}}", NAME="{{iface.name}}"
+SUBSYSTEM=="net", KERNEL=="e*" ACTION=="add", ATTR{address}=="{{iface.mac}}", NAME="{{iface.name}}"
 {% endfor %}
