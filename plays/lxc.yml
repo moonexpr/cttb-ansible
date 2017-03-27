@@ -1,6 +1,8 @@
 ---
 
-- hosts: spike
+- hosts: testlab1
   roles:
-    - server
+    - {role: server, tags: server}
+    - {role: zfs, tags: zfs}
+    - {role: ups, tags: ups}
     - {role: virt, lxc: true, tags: vm}
