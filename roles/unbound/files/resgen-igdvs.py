@@ -4,15 +4,27 @@ import re
 # list, much faster than using this script. Using this only for stuff that
 # requires regular expressions.
 
-blocked_google = ('mail.google', 'plus.google', 'translate.google', 'inbox.google', 'docs.google')
+blocked_google = ('mail.google', 'plus.google', 'translate.google', 'inbox.google')
+blocked_dvgs = ('docs.google',)
+blocked_dvbs = ()
 blocked_domain_strings = ('yahoo', 'pinterest', 'hoxxproxytest', 'youtube', 'playboy')
 
-def is_blocked_domain(qdn):
+def is_blocked_domain(qdn, ip):
   gimage = re.compile('encrypted[-]tbn[01234567][.]gstatic[.]com')
 
-  return (qdn.startswith(blocked_google) or
+  blocked_domains = blocked_google
+  if is_dvgs(ip): blocked_domains += blocked_dvgs
+  if is_dvbs(ip): blocked_domains += blocked_dvbs
+
+  return (qdn.startswith(blocked_domains) or
           any(d for d in blocked_domain_strings if d in qdn) or
           gimage.search(qdn) <> None)
+
+def is_dvbs(ip):
+  return ip.startswith('10.11.10')
+
+def is_dvgs(ip):
+  return ip.startswith('10.11.9')
 
 # allow the library 17.x machines to access youtube
 def is_17_youtube(qdn, ip):
@@ -46,7 +58,7 @@ def operate(id, event, qstate, qdata):
     if is_17_youtube(qdn, src_ip):
       qstate.ext_state[id] = MODULE_WAIT_MODULE
       return True
-    elif is_blocked_domain(qdn):
+    elif is_blocked_domain(qdn, src_ip):
       msg = DNSMessage(qdn, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA | PKT_AA)
       if not msg.set_return_msg(qstate):
         qstate.ext_state[id] = MODULE_ERROR
