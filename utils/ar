@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -ex
+
+# generates a playbook from one hostname or hostgroup and apply one role to it
+# and then runs it
+
+
+USAGE="Usage: $0 hostname|hostsgroup role_name [ansible-playbook OPTIONS]"
+
+if [ "$#" == "0" ]; then
+  echo "$USAGE"
+  exit 1
+fi
+
+source utils/setup-env
+
+HOST=$1
+ROLE=$2
+shift
+shift
+
+cat << EOF > ${ANSIBLE_PLAYBOOKS}/autogen.yml
+---
+
+- hosts: $HOST
+  roles:
+      - $ROLE
+EOF
+ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/autogen.yml --diff $@
