@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -ex
-
 # generates a playbook from one hostname or hostgroup and apply one role to it
 # and then runs it
 
@@ -25,6 +23,6 @@ cat << EOF > ${ANSIBLE_PLAYBOOKS}/autogen.yml
 
 - hosts: $HOST
   roles:
-      - $ROLE
+    - $ROLE
 EOF
 ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/autogen.yml --diff $@
