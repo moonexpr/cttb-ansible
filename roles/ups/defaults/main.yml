@@ -4,11 +4,6 @@ nut_mode: standalone
 
 nut_server_address: 127.0.0.1
 
-nut_users:
-  - username: upsmon
-    password: pass
-    role: master
-
 # This is only an example: you must set this to match your hardware.
 nut_ups:
   - name: eaton5s
@@ -17,3 +12,8 @@ nut_ups:
     driver: usbhid-ups
     port: auto
     description: "Eaton 5S 1500VA (900W)"
+    address: 127.0.0.1
+    users:
+      - name: upsmon
+        pass: pass
+        role: master

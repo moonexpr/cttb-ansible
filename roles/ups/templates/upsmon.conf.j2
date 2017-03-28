@@ -83,7 +83,11 @@
 # MONITOR su700@server.example.com 1 upsmon secretpass slave
 # MONITOR myups@localhost 1 upsmon pass master	(or slave)
 
-MONITOR {{ nut_ups[0].name }}@{{ nut_host }} 1 {{ nut_user }} {{ nut_password }} master
+{% for ups in nut_ups %}
+{% for u in ups.users %}
+MONITOR {{ ups.name }}@{{ ups.address }} 1 {{ u.name }} {{ u.pass }} {{ u.role}}
+{% endfor %}
+{% endfor %}
 
 # --------------------------------------------------------------------------
 # MINSUPPLIES <num>

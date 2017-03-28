@@ -6,6 +6,6 @@ maxretry = {{ ups_maxretry|default(3) }}
 {% for ups in nut_ups %}
 [{{ ups.name }}]
     driver = {{ ups.driver }}
-    port   = {{ ups.device }}
+    port   = {{ ups.port }}
     desc   = "{{ ups.description }}"
 {% endfor %}

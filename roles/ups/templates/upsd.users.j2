@@ -1,7 +1,10 @@
 # Network UPS Tools: Example upsd.users
 
-{% for user in nut_users %}
-[{{ user.username }}]
-	password = {{ user.password }}
+
+{% for ups in nut_ups %}
+{% for user in ups.users %}
+[{{ user.name }}]
+	password = {{ user.pass }}
 	upsmon {{user.role}}
+{% endfor %}
 {% endfor %}
