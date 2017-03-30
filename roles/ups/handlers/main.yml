@@ -1,8 +1,10 @@
 ---
-- name: restart nut
+- name: restart nut-server
   service:
-    name: "{{ item }}"
+    name: nut-server
     state: restarted
-  with_items:
-    - nut-driver
-    - nut-server
+
+- name: restart nut-client
+  service:
+    name: nut-client
+    state: restarted

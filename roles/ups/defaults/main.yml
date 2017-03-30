@@ -15,5 +15,6 @@ nut_ups:
     address: 127.0.0.1
     users:
       - name: upsmon
-        pass: pass
+        pass: m0nn34ur
         role: master
+        monitor: true

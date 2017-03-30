@@ -80,3 +80,23 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
+
+nut_mode: netserver
+
+nut_server_address: srv-nas # only accepts ips
+
+nut_ups:
+  - name: eaton5s
+    driver: usbhid-ups
+    port: auto
+    description: "Eaton 5S 1500VA (900W)"
+    address: srv-nas
+    users:
+      - name: upsmon
+        pass: m0n4m1
+        role: master
+        monitor: true
+      - name: upslave
+        pass: m0n1t0r4nz4
+        role: slave
+        monitor: false
