@@ -13,6 +13,14 @@ local-data-ptr: "10.11.22.247  time.cttb."
 local-data: "ntp.cttb. IN A 10.11.22.247"
 local-data-ptr: "10.11.22.247  ntp.cttb."
 
+# Nas
+local-data: "srv-nas.cttb. IN A 10.11.1.5"
+local-data-ptr: "10.11.1.5  srv-nas.cttb."
+
+# VM host
+local-data: "srv-vm.cttb. IN A 10.11.1.3"
+local-data-ptr: "10.11.1.3  srv-vm.cttb."
+
 # Switches. Contains multiple entries (both 10. and 172.30.) for some switches.
 # Contains both name to ip and ip to name mappings.
 local-data-ptr: "10.11.12.30 sw-ao-srvrm.cttb."
