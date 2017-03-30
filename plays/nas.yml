@@ -3,5 +3,6 @@
 - hosts: srv-nas
   roles:
     - {role: server , tags: server}
+    - {role: ups , tags: ups}
     - {role: zfs , tags: zfs}
     - {role: virt , tags: virt}

@@ -3,6 +3,7 @@
 - hosts: srv-gw
   roles:
     - {role: server, tags: server}
+    - {role: ups, tags: ups}
     - {role: firehol, tags: fw}
     - {role: squid, tags: squid}
     - {role: e2guardian, tags: e2g}

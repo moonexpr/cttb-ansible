@@ -1,7 +1,5 @@
 ---
 
-- hosts: vbox-pxe
+- hosts: substation
   roles:
     - desktop
-    - nfs-home
-    - ldap-client
