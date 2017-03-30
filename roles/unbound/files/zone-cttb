@@ -1,5 +1,9 @@
 # handling stuff that's not a straight mapping in dnsmasq
 
+# DNS server itself.
+local-data: "dns1.cttb. IN A 10.11.31.131"
+local-data-ptr: "10.11.31.131  dns1.cttb."
+
 local-data: "dnsmasq.cttb. IN A 10.11.15.97"
 local-data-ptr: "10.11.15.97  dnsmasq.cttb."
 
