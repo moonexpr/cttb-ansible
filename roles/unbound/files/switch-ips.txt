@@ -7,6 +7,7 @@ IP               hostname                 Location
 10.11.12.30      sw-ao-srvrm              AO Server Room
 10.11.12.31      sw-dvgs-furnace          DVGS Furnace
 10.11.12.60      sw-mpoe                  MPOE
+10.11.12.61      sw-tob-west              ToB West
 10.11.12.131     sw-jgh-north             JGH North
 10.11.12.134     sw-dvgs-dorm-phoneroom   DVGS Dorm Phone Room
 10.11.12.135     sw-tob-phone-room        TOB Phone Room
@@ -26,7 +27,7 @@ IP               hostname                 Location
 10.11.12.154     sw-tob-financial         TOB Financial
 10.11.12.155     sw-dvgs-upstairs         DVGS Upstairs
 10.11.12.156     sw-ao-desk               A/O Front Desk
-10.11.12.157     sw-1234-spike-cub        1234 Spike Cube
+10.11.12.157     sw-drbu-cs-lab           DRBU CS Lab
 10.11.12.158     sw-ao-lan-1              A/O LAN 1
 10.11.12.159     sw-bh-south              BH South
 10.11.12.160     sw-dvgs-cs-lab           DVGS CS Lab
@@ -49,5 +50,4 @@ IP               hostname                 Location
 10.11.12.211     sw-laundry-entrance      Laundry Entrance
 10.11.12.212     sw-laundry-office        Laundry Office
 10.11.12.222     sw-dragon-way            Dragon Way
-10.11.12.223     sw-drbu-cs-lab           DRBU CS Lab
 10.11.12.225     sw-dvgs-library          DVGS Library
