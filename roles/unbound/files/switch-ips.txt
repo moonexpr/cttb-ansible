@@ -50,4 +50,4 @@ IP               hostname                 Location
 10.11.12.211     sw-laundry-entrance      Laundry Entrance
 10.11.12.212     sw-laundry-office        Laundry Office
 10.11.12.222     sw-dragon-way            Dragon Way
-10.11.12.225     sw-dvgs-library          DVGS Library
+10.11.12.225     sw-1234-translation      1234 Translation
