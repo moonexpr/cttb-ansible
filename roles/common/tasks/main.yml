@@ -86,13 +86,6 @@
       replace: "{{inventory_hostname}}"
       backup: no
 
-  - name: fix 127.0.1.1
-    replace:
-      dest: /etc/hosts
-      regexp: "127.0.1.1"
-      replace: "127.0.0.1"
-      backup: no
-
   - name: make ssh use ipv4 only # we disable ipv6 and X11forwarding fails
     lineinfile:
       dest: /etc/ssh/sshd_config
