@@ -3,3 +3,4 @@
 virtualbox: false
 kvm: false
 lxc: false
+lxd_ppa: false

@@ -1,14 +1,18 @@
 ---
-- name: add lxd ppa key
-  apt_key:
-    keyserver: keyserver.ubuntu.com
-    id: 7635B973
-    state: present
+- block: #set up more bleeding edge mirror, otherwise stable comes from xenial backports
+  - name: add lxd ppa key
+    apt_key:
+      keyserver: keyserver.ubuntu.com
+      id: 7635B973
+      state: present
 
-- name: add lxd repo mirror
-  apt_repository:
-    repo: "deb http://ppa.launchpad.net/ubuntu-lxc/lxd-stable/ubuntu xenial main contrib"
-    state: present
+  - name: add lxd repo mirror
+    apt_repository:
+      repo: "deb http://ppa.launchpad.net/ubuntu-lxc/lxd-stable/ubuntu xenial main contrib"
+      state: present
+  when: "{{lxd_ppa}}"
+  tags:
+    - lxd_ppa
 
 - name: install lxd and required pkgs
   apt:
