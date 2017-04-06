@@ -53,3 +53,6 @@
 # Compressed file types
 .gz
 .bz2
+
+# Ssl certificates
+.crt
