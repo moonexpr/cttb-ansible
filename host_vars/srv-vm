@@ -69,7 +69,7 @@ lxc_storage:
 
 lxc_containers:
   - name: ldap
-    image: cttb-srv-1604
+    image: cttb-latest
     devices:
       eth0:
         host_name: ldap_eth0

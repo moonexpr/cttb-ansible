@@ -34,6 +34,7 @@
   when: lxc_storage is defined
 
 #import linux images. Until I setup a https server with special urls I need to do this in two steps
+# I use aliases to manage which img is current/latest
 - block:
   - name: download the lxc image to tmp files
     get_url:
@@ -46,6 +47,15 @@
     command: lxc image import /tmp/lxc-{{item.alias}}.tar.gz --alias {{item.alias}}
     with_items: "{{lxc_images}}"
 
+    # TODO this code to manage tags is bad, really need a module for it, but nothing out there, too complex for a playbook
+  - name: remove current 'latest' image alias
+    command: lxc image alias delete cttb-latest
+    ignore_errors: yes
+
+  - name: set latest image alias
+    command: "lxc image alias create cttb-latest {{item.fingerprint}}"
+    with_items: '{{lxc_images|selectattr("latest", "defined")|list}}'
+
   - name: delete image tmp files
     file:
       path: /tmp/lxc-{{item.alias}}.tar.gz
@@ -54,7 +64,7 @@
 
   when: lxc_images is defined
   tags:
-    - lxc_img
+    - lxc_images
 
 - name: create containers
   become: false

@@ -62,6 +62,10 @@ zfs_pools:
     datasets:
       - name: lxd
         options: ''
+        quota: none
+      - name: homes
+        options: ''
+        quota: 2T
 
 lxc: true
 
@@ -72,7 +76,7 @@ lxc_storage:
 
 lxc_containers:
   - name: log
-    image: cttb-srv-1604
+    image: cttb-latest
     devices:
       eth0:
         host_name: log_eth0
