@@ -19,11 +19,15 @@ asus-test
 vbox-srv
 vbox-desktop
 vbox-pxe
+dvgs-dorm ansible_ssh_host=10.11.19.126
 
 # LXC
+
 ## testing containers
 lxc-srv1
+lxc-srv2
 lxc-testlab
+
 ## production containers
 lxc-srv-log
 
@@ -68,6 +72,7 @@ tom-desktop-2
 aaron-desktop
 sue-desktop
 peterson-lenovo
+ao-public-pc
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
@@ -274,6 +279,7 @@ drbu-staff
 [testing]
 testlab1
 lxc-srv1
+lxc-srv2
 
 [lxc-containers]
 lxc-srv1
