@@ -1,0 +1,60 @@
+---
+
+  - name: install debmirror
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - debmirror
+
+  - name: create user to run the mirror
+    user:
+      name: debmirror
+      createhome: no
+      home: /srv/debmirror
+      system: yes
+      comment: "Apt mirror"
+
+  - name: create a dir to hold the mirror
+    file:
+      path: /srv/debmirror
+      state: directory
+      owner: debmirror
+      group: debmirror
+      mode: 0755
+
+  - name: create a dir for mirror gpg keys
+    file:
+      path: /srv/debmirror/gpg
+      state: directory
+      owner: debmirror
+      group: debmirror
+      mode: 0700
+
+  - name: create a dir for sync scripts
+    file:
+      path: /srv/debmirror/scripts
+      state: directory
+      owner: debmirror
+      group: debmirror
+      mode: 0755
+
+  - name: import gpg ubuntu keyring
+    become_user: debmirror
+    command: "gpg --homedir {{dm_gpg_dir}} --no-default-keyring --keyring {{dm_gpg_keyring}} --import {{ubuntu_default_keyring}}"
+
+  - name: import gpg keys to verify packages
+    become_user: debmirror
+    command: "gpg --homedir {{dm_gpg_dir}} --no-default-keyring --keyring {{dm_gpg_keyring}} --keyserver {{dm_keyserver}} --recv-keys {{item.keyid}}"
+    with_items:
+      - "{{debmirrors}}" 
+
+  - name: create debmirror script
+    template:
+      src: debmirror.j2
+      dest: /srv/debmirror/scripts/dm-{{item.name}}.sh
+      owner: debmirror
+      group: debmirror
+      mode: 0750
+    with_items:
+      - "{{debmirrors}}" 

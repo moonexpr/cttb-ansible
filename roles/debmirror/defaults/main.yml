@@ -1,0 +1,19 @@
+---
+
+dm_root: /srv/debmirror
+dm_gpg_dir: /srv/debmirror/gpg
+dm_gpg_keyring: "{{dm_gpg_dir}}/trustedkeys.gpg"
+dm_keyserver: keyserver.ubuntu.com
+ubuntu_default_keyring: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+debmirrors:
+  - name: ubuntu
+    mirror: us.archive.ubuntu.com
+    proto: http
+    keyid: 40976EAF437D05B5
+    arch: amd64
+    sections: "main,restricted,universe,multiverse,main/debian-installer,restricted/debian-installer,universe/debian-installer,multiverse/debian-installer"
+    releases: "xenial,xenial-security,xenial-updates,xenial-backports"
+    src_path: /ubuntu
+    dst_path: /ubuntu
+    source: False
