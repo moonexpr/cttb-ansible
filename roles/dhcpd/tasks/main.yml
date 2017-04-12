@@ -1,0 +1,10 @@
+---
+
+  - name: install isc dhcp server
+    apt:
+      name: "{{item}}"
+      state: present
+    with_items:
+      - isc-dhcp-server
+    tags:
+      - dhcpd
