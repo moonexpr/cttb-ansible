@@ -12,8 +12,10 @@ local-data: "srv-gw.cttb. IN A 10.11.1.1"
 local-data-ptr: "10.11.1.1  srv-gw.cttb."
 
 # Log server.
-local-data: "log-srv.cttb. IN A 10.11.22.247"
-local-data-ptr: "10.11.22.247  log-srv.cttb."
+local-data: "log-srv.cttb. IN A 10.11.1.20"
+local-data: "lxc-srv-log.cttb. IN A 10.11.1.20"
+local-data-ptr: "10.11.1.20  log-srv.cttb."
+local-data-ptr: "10.11.1.20  lxc-srv-log.cttb."
 
 # CTTB NTP server.
 local-data: "time.cttb. IN A 10.11.22.247"
