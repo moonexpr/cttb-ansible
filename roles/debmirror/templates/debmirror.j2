@@ -39,7 +39,7 @@ proto={{item.proto}}
 # Outpath=              # Directory to store the mirror in
 # Make this a full path to where you want to mirror the material.
 #
-outPath={{dm_root}}/{{item.dst_path}}
+outPath={{dm_mirrors_dir}}/{{item.dst_path}}
 
 # The --nosource option only downloads debs and not deb-src's
 # The --progress option shows files as they are downloaded
@@ -47,14 +47,27 @@ outPath={{dm_root}}/{{item.dst_path}}
 # --nocleanup  Do not clean up the local mirror after mirroring is complete. Use this option to keep older repository
 # Start script
 #
-debmirror       -a $arch \
+
+LOG="{{dm_log_dir}}/{{item.name}}.log"
+# Clear log, only keeping current/last run, no history
+echo -n > ${LOG}
+NOW=`date +%Y-%m-%d:%H:%M:%S`
+echo "Debmirror {{item.name}} Started ${NOW}"  >> ${LOG}
+
+debmirror -a $arch \
 {% if not item.source %}
-                --no-source \
+          --no-source \
 {% endif %}
-                -s $section \
-                -h $server \
-                -d $release \
-                -r $inPath \
-                --progress \
-                --method=$proto \
-                $outPath
+{% if item.rsync_options is defined %}
+          --rsync-extra={{item.rsync_options}} \
+{% endif %}
+          -s $section \
+          -h $server \
+          -d $release \
+          -r $inPath \
+          --progress \
+          --method=$proto \
+          $outPath >> ${LOG}
+
+NOW=`date +%Y-%m-%d:%H:%M:%S`
+echo "Debmirror {{item.name}} Completed ${NOW}"  >> ${LOG}

@@ -11,13 +11,21 @@
     user:
       name: debmirror
       createhome: no
-      home: /srv/debmirror
+      home: "{{dm_root}}"
       system: yes
       comment: "Apt mirror"
 
-  - name: create a dir to hold the mirror
+  - name: create home dir for debmirror
     file:
-      path: /srv/debmirror
+      path: "{{dm_root}}"
+      state: directory
+      owner: debmirror
+      group: debmirror
+      mode: 0755
+
+  - name: create dir for mirrors files
+    file:
+      path: "{{dm_mirrors_dir}}"
       state: directory
       owner: debmirror
       group: debmirror
@@ -25,7 +33,7 @@
 
   - name: create a dir for mirror gpg keys
     file:
-      path: /srv/debmirror/gpg
+      path: "{{dm_gpg_dir}}"
       state: directory
       owner: debmirror
       group: debmirror
@@ -33,7 +41,15 @@
 
   - name: create a dir for sync scripts
     file:
-      path: /srv/debmirror/scripts
+      path: "{{dm_scripts_dir}}"
+      state: directory
+      owner: debmirror
+      group: debmirror
+      mode: 0755
+
+  - name: create a dir for logs
+    file:
+      path: "{{dm_log_dir}}"
       state: directory
       owner: debmirror
       group: debmirror
@@ -45,16 +61,44 @@
 
   - name: import gpg keys to verify packages
     become_user: debmirror
-    command: "gpg --homedir {{dm_gpg_dir}} --no-default-keyring --keyring {{dm_gpg_keyring}} --keyserver {{dm_keyserver}} --recv-keys {{item.keyid}}"
+    command: "gpg --homedir {{dm_gpg_dir}} --no-default-keyring --keyring {{dm_gpg_keyring}} --keyserver {{dm_keyserver}} --recv-keys {{item.gpgkeys}}"
     with_items:
       - "{{debmirrors}}" 
+    tags:
+      - dm_gpg_keys
 
   - name: create debmirror script
     template:
       src: debmirror.j2
-      dest: /srv/debmirror/scripts/dm-{{item.name}}.sh
+      dest: "{{dm_scripts_dir}}/dm-{{item.name}}.sh"
       owner: debmirror
       group: debmirror
       mode: 0750
     with_items:
       - "{{debmirrors}}" 
+    tags:
+      - dm_scripts
+
+  - name: create runall script
+    template:
+      src: runall.j2
+      dest: "{{dm_scripts_dir}}/runall.sh"
+      owner: debmirror
+      group: debmirror
+      mode: 0750
+    tags:
+      - dm_scripts
+
+  - name: setup cronjob to update all mirrors
+    cron:
+      name: "Debmirror Runall"
+      minute: 0
+      hour: 1
+      user: debmirror
+      job: "{{dm_scripts_dir}}/runall.sh"
+    tags:
+      - dm_cron
+
+  - include: webserver.yml
+    tags:
+      - dm_webserver

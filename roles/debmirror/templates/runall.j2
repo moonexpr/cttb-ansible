@@ -1,0 +1,17 @@
+#!/bin/bash
+
+LOG="{{dm_log_dir}}/runall.log"
+
+# Clear log, only keeping current/last run, no history
+echo -n > ${LOG}
+
+NOW=`date +%Y-%m-%d:%H:%M:%S`
+echo "Debmirror Runall Started ${NOW}"  >> ${LOG}
+
+{% for dm in debmirrors %}
+{{dm_scripts_dir}}/dm-{{dm.name}}.sh &
+{% endfor %}
+
+wait
+NOW=`date +%Y-%m-%d:%H:%M:%S`
+echo "Debmirror Runall Completed ${NOW}"  >> ${LOG}

@@ -1,0 +1,133 @@
+---
+
+debmirrors:
+  - name: ubuntu
+    mirror: us.archive.ubuntu.com
+    proto: http
+    gpgkeys: "C0B21F32"
+    arch: amd64
+    sections: "main,restricted,universe,multiverse,main/debian-installer,restricted/debian-installer,universe/debian-installer,multiverse/debian-installer"
+    releases: "xenial,xenial-security,xenial-updates,xenial-backports"
+    src_path: /ubuntu
+    dst_path: /ubuntu
+    source: False
+  - name: canonical
+    mirror: archive.canonical.com
+    proto: http
+    gpgkeys: "C0B21F32"
+    arch: amd64
+    sections: "partner"
+    releases: "xenial"
+    src_path: /
+    dst_path: /canonical
+    source: False
+  - name: chrome
+    mirror: dl.google.com
+    proto: http
+    gpgkeys: "7FAC5991 640DB551"
+    arch: amd64
+    sections: "main"
+    releases: "stable"
+    src_path: /linux/chrome/deb
+    dst_path: /chrome
+    source: False
+    rsync_options: none
+  - name: libreoffice
+    mirror: ppa.launchpad.net
+    proto: http
+    gpgkeys: "1378B444"
+    arch: amd64
+    sections: "main"
+    releases: "xenial"
+    src_path: /libreoffice/ppa/ubuntu/
+    dst_path: /libreoffice
+    source: False
+    rsync_options: none
+  - name: "noobslab-icons"
+    mirror: ppa.launchpad.net
+    proto: http
+    gpgkeys: "F59EAE4D"
+    arch: amd64
+    sections: "main"
+    releases: "xenial"
+    src_path: /noobslab/icons/ubuntu/
+    dst_path: "/noobslab-icons"
+    source: False
+    rsync_options: none
+  - name: "noobslab-themes"
+    mirror: ppa.launchpad.net
+    proto: http
+    gpgkeys: "F59EAE4D"
+    arch: amd64
+    sections: "main"
+    releases: "xenial"
+    src_path: /noobslab/themes/ubuntu/
+    dst_path: "/noobslab-themes"
+    source: False
+    rsync_options: none
+  - name: wine
+    mirror: ppa.launchpad.net
+    proto: http
+    gpgkeys: "F9CB8DB0"
+    arch: amd64
+    sections: "main"
+    releases: "xenial"
+    src_path: /ubuntu-wine/ppa/ubuntu
+    dst_path: "/wine"
+    source: False
+    rsync_options: none
+  - name: ansible
+    mirror: ppa.launchpad.net
+    proto: http
+    gpgkeys: "7BB9C367"
+    arch: amd64
+    sections: "main"
+    releases: "xenial"
+    src_path: /ansible/ansible/ubuntu
+    dst_path: "/ansible"
+    source: False
+    rsync_options: none
+  - name: koha
+    mirror: debian.koha-community.org
+    proto: http
+    gpgkeys: "A2E41F10 A99CEB6D"
+    arch: amd64
+    sections: "main"
+    releases: "stable"
+    src_path: /koha
+    dst_path: /koha
+    source: False
+    rsync_options: none
+  - name: vbox
+    mirror: download.virtualbox.org
+    proto: http
+    gpgkeys: "98AB5139"
+    arch: amd64
+    sections: "contrib"
+    releases: "xenial"
+    src_path: /virtualbox/debian
+    dst_path: /vbox
+    source: False
+    rsync_options: none
+  - name: ooffice
+    mirror: downloads.sourceforge.net
+    proto: http
+    gpgkeys: "90127F5B"
+    arch: amd64
+    sections: "main"
+    releases: "testing"
+    src_path: /project/apacheoo-deb/debian
+    dst_path: /ooffice
+    source: False
+    rsync_options: none
+  - name: dropbox
+    mirror: linux.dropbox.com
+    proto: http
+    gpgkeys: "1C61A2656FB57B7E4DE0F4C1FC918B335044912E"
+    arch: amd64
+    sections: "main"
+    releases: "xenial"
+    src_path: /ubuntu
+    dst_path: /dropbox
+    source: False
+    rsync_options: none

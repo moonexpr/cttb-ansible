@@ -1,0 +1,17 @@
+---
+
+# install and configure apache to serve the mirror
+  - name: install apache to serve the mirror
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - apache2
+
+  - name: create symlink to mirrors dir
+    file:
+      src: "{{dm_mirrors_dir}}"
+      dest: "{{ws_mirrors_link}}"
+      owner: root
+      group: root
+      state: link
