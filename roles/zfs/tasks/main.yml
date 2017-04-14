@@ -25,6 +25,15 @@
       with_subelements:
         - "{{zfs_pools}}"
         - datasets
+      ignore_errors: yes
       tags:
         zfs_ds
+
+    - name: set quota
+      command: "zfs set quota={{item[1].quota}} {{item[0].name}}/{{item[1].name}}"
+      with_subelements:
+        - "{{zfs_pools}}"
+        - datasets
+      tags:
+        zfs_ds_quota
     when: zfs_pools is defined
