@@ -101,7 +101,7 @@ debmirrors:
   - name: vbox
     mirror: download.virtualbox.org
     proto: http
-    gpgkeys: "98AB5139"
+    gpgkeys: "98AB5139 2980AECF"
     arch: amd64
     sections: "contrib"
     releases: "xenial"
