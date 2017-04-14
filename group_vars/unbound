@@ -3,8 +3,11 @@
 centralized_logging: true
 
 zone_cttb:
+  - apt: "10.11.1.22"
   - dns1: "10.11.31.131"
   - dnsmasq: "10.11.15.97"
+  - git: "10.11.1.21"
+  - pxe: "10.11.1.23"
   - library.igdvs: "10.11.30.200"
   - library-intra.igdvs: "10.11.30.200"
   - log-srv: "10.11.1.20"
