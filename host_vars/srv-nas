@@ -66,6 +66,9 @@ zfs_pools:
       - name: homes
         options: ''
         quota: 2T
+      - name: logs
+        options: ''
+        quota: 1T
 
 lxc: true
 
@@ -79,8 +82,44 @@ lxc_containers:
     image: cttb-latest
     devices:
       eth0:
-        host_name: log_eth0
+        host_name: log_e0
         hwaddr: '00:16:3e:11:01:20'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: git
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: git_e0
+        hwaddr: '00:16:3e:11:01:21'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: debmirror
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: debm_e0
+        hwaddr: '00:16:3e:11:01:22'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: pxe
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: pxe_e0
+        hwaddr: '00:16:3e:11:01:23'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: metrics
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: metrics_e0
+        hwaddr: '00:16:3e:11:01:24'
         type: nic
         nictype: bridged
         parent: lxdbr0
