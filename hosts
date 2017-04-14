@@ -30,6 +30,10 @@ lxc-testlab
 
 ## production containers
 lxc-srv-log
+lxc-srv-git
+lxc-srv-pxe
+lxc-srv-debmirror
+lxc-srv-metrics
 
 # CTTB infra
 unbound-adult
