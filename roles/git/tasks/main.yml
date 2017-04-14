@@ -1,0 +1,26 @@
+---
+
+  - name: install necessary pkgs for log management
+    apt:
+      name: "{{item}}"
+      state: present
+    with_items:
+      - gitolite3
+      - gitweb
+
+  - name: create user to host gitolite
+    user:
+      name: git
+      createhome: no
+      home: /srv/gitolite
+      system: yes
+      comment: "Gitolite hoster"
+
+  - name: create a dir for the gitolite instance
+    file:
+      path: /srv/gitolite
+      state: directory
+      owner: git
+      group: git
+      mode: 0755
+
