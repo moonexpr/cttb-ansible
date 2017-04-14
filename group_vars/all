@@ -3,3 +3,7 @@
 # base
 ansible_assets_url: http://theoverseer.cttb/ansible_assets
 deb_mirror: http://theoverseer.cttb
+
+dns_domain: cttb
+dns_search: cttb
+dns_srv: "10.11.31.131"

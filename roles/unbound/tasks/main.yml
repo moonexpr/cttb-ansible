@@ -97,8 +97,8 @@
       - blacklist
 
   - name: deploy cttb local zone
-    copy:
-      src: zone-cttb
+    template:
+      src: zone_cttb.j2
       dest: /etc/unbound/unbound.conf.d/cttb
       mode: 0640
       owner: root
@@ -107,7 +107,7 @@
     notify:
     - restart unbound
     tags:
-      - cttb_zone
+      - zone_cttb
 
     #  - name: disable dnssec
     #command: creates="/etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf.disabled" mv /etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf /etc/unbound/unbound.conf.d/root-auto-trust-anchor-file.conf.disabled
