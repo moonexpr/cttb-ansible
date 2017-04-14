@@ -1,0 +1,16 @@
+---
+
+- hosts: lxc-srv-debmirror
+  roles:
+    - debmirror
+  tasks:
+    - name: create symlink for cttb-repos
+      file:
+        src: "/srv/cttb-repos/"
+        dest: "/var/www/html/cttb-repos"
+        owner: root
+        group: root
+        state: link
+      tags:
+        - cttb_repos
+
