@@ -1,0 +1,89 @@
+---
+
+  # add it before installing the pkg since there's an ipv6 bug in it
+  - name: create default tftp config
+    template:
+      src: etc-default-tftpd-hpa.j2
+      dest: /etc/default/tftpd-hpa
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: install syslinux/pxe and tftp
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - tftpd-hpa
+      - syslinux
+
+  - name: create iso dirs
+    file:
+      path: "{{item}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+    with_items:
+      - "{{ni_isos}}"
+      - "{{ni_mnt_iso}}"
+
+  - name: create pxelinux.cfg tftp dir
+    file:
+      path: "{{ni_tftp_dir}}/pxelinux.cfg"
+      state: directory
+      owner: tftp
+      group: tftp
+      mode: 0755
+
+  - name: create dirs for images netboot
+    file:
+      path: "{{ni_tftp_dir}}/{{item.os}}/{{item.name}}-{{item.arch}}"
+      state: directory
+      owner: tftp
+      group: tftp
+      mode: 0755
+    with_items: "{{ni_images}}"
+
+  - name: fetch kernels and initrd
+    get_url:
+      url: "{{ni_assets}}/{{item[0].name}}-{{item[0].arch}}-{{item[1]}}"
+      dest: "{{ni_tftp_dir}}/{{item[0].os}}/{{item[0].name}}-{{item[0].arch}}/{{item[1]}}"
+      owner: tftp
+      group: tftp
+      mode: 0755
+    with_nested:
+      - "{{ni_images}}"
+      - ["linux","initrd.gz"]
+    tags:
+      - ni_fetch_ki
+
+  - name: create pxelinux.0, vesamenu.c32 and memtest86 files
+    copy:
+      src: "{{item}}"
+      dest: "{{ni_tftp_dir}}/{{item}}"
+      owner: tftp
+      group: tftp
+      mode: 0644
+    with_items:
+      - pxelinux.0
+      - vesamenu.c32
+      - memtest86
+
+  - name: create pxe/conf
+    copy:
+      src: "pxe.conf"
+      dest: "{{ni_tftp_dir}}/pxelinux.cfg/pxe.conf"
+      owner: tftp
+      group: tftp
+      mode: 0644
+
+  - name: create pxelinux default config file
+    template:
+      src: pxelinux-cfg-default.j2
+      dest: "{{ni_tftp_dir}}/pxelinux.cfg/default"
+      owner: tftp
+      group: tftp
+      mode: 0644
+
+

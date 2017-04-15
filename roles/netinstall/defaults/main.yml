@@ -1,0 +1,13 @@
+---
+
+ni_isos: /srv/isos
+ni_mnt_iso: "{{ni_isos}}/tmp"
+ni_tftp_dir: "/var/lib/tftpboot"
+ni_assets: "{{ansible_assets_url}}/netinstall"
+ni_server: pxe
+
+ni_images:
+  - name: xenial
+    os: ubuntu
+    type: server
+    arch: amd64
