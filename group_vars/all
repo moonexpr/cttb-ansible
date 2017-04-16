@@ -2,7 +2,9 @@
 
 # base
 ansible_assets_url: http://theoverseer.cttb/ansible_assets
-deb_mirror: http://apt.cttb
+apt_url: http://apt.cttb
+cttb_repo: "{{apt_url}}/cttb-repos"
+deb_mirror: "{{apt_url}}/mirrors"
 
 dns_domain: cttb
 dns_search: cttb
