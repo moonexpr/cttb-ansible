@@ -10,12 +10,12 @@
 
   - name: add cttb custom ubuntu repo key
     apt_key:
-      url: "{{deb_mirror}}/cttb-repos/cttb-repo.gpg.key"
+      url: "{{cttb_repo}}/cttb-repo.gpg.key"
       state: present
 
   - name: add cttb custom ubuntu repo
     apt_repository:
-      repo: "deb {{deb_mirror}}/cttb-repos/apt/ubuntu {{ansible_distribution_release}} main"
+      repo: "deb {{cttb_repo}}/apt/ubuntu {{ansible_distribution_release}} main"
       state: present
 
   - name: refresh the mirrors
@@ -119,7 +119,7 @@
 
   - name: add ansible repo mirror
     apt_repository:
-      repo: "deb http://theoverseer.cttb/ansible xenial main"
+      repo: "deb {{deb_mirror}}/ansible xenial main"
       state: present
 
   # sometimes bootstrapped version is not enough to run the rest of the playbook
