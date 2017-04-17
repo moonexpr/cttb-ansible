@@ -17,7 +17,8 @@ echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nTH15aJs0AOVSLaSN6TH
 chown -R administrator: /home/administrator/.ssh
 
 # get ssh started so I can run ansible
-/usr/sbin/sshd
+mkdir /var/run/sshd
+/usr/sbin/sshd -4 -p22
 
 if [ $TASKSEL != "none" ]
 then
