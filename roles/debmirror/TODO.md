@@ -1,0 +1,1 @@
+- setup the mirrors dir in /var/www instead of inside www/html as per default site (since this isn't html anyway. The default behavior may be best changed in an apache role to be added)
