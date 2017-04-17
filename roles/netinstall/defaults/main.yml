@@ -1,10 +1,5 @@
 ---
 
-#move to global!
-ni_server: http://lxc-srv1
-ni_www: "{{ni_server}}/netinstall"
-ni_preseed: "{{ni_server}}/netinstall/preseed"
-
 ni_root_dir: /srv/netinstall
 ni_tftp_dir: "{{ni_root_dir}}"
 ni_preseed_dir: "{{ni_root_dir}}/preseed"

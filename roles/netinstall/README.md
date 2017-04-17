@@ -2,18 +2,8 @@
 
 This role sets up pxe and tftp to allow for network installs
 
-It assumes that we're install ubuntu only, which is pretty much all we do right
-now. If in the future other distrubutions are needed we'll extend the role.
-
-# Requirements
-For this to work you need to provide the kernel and initrd images at the
-ansible_assets_url/netinstall . This are named after the name of the image and
-arch , ie xenial-amd64-linux and xenial-amd64-initrd.gz
-
-# Manual STEPS
-For the time being populating the "ubuntu" family directory with menus and
-kernels etc is still to be done manually. Equally creating the relevant dirs in
-/srv/isos/ for the nfsroot is still manual
+# ISOS
+If you look at default values, the two isos used as the base for all installations are being fetched from theoverseer, put them there inside ansible_assets/isos. This shuold probably change in the future, maybe move to the fileserver/storage server.
 
 # Booting files
 Stuff like lpxelinux.0 and memtest/memdisk can be found in the following packages:

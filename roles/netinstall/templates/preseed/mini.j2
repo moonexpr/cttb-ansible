@@ -20,9 +20,6 @@ d-i apt-setup/restricted boolean true
 d-i apt-setup/universe boolean true
 d-i apt-setup/security_host string {{apt_url}}
 
-# - atomic: all files in one partition
-# - home:   separate /home partition
-# - multi:  separate /home, /usr, /var, and /tmp partitions
 # d-i partman-auto/choose_recipe select atomic
 # choose our own to avoid huge swaps
 
@@ -67,19 +64,5 @@ d-i pkgsel/language-packs multiselect en
 # unattended-upgrades unattended-upgrades/enable_auto_updates boolean true
 
 #d-i finish-install/reboot_in_progress note
-#ubiquity ubiquity/reboot boolean true
 
-# This first command is run as early as possible, just after
-# preseeding is read.
-#d-i preseed/early_command string anna-install some-udeb
-# This command is run immediately before the partitioner starts. It may be
-# useful to apply dynamic partitioner preseeding that depends on the state
-# of the disks (which may not be visible when preseed/early_command runs).
-#d-i partman/early_command \
-#       string debconf-set partman-auto/disk "$(list-devices disk | head -n1)"
-# This command is run just before the install finishes, but when there is
-# still a usable /target directory. You can chroot to /target and use it
-# directly, or use the apt-install and in-target commands to easily install
-# packages and run commands in the target system.
-#d-i preseed/late_command string apt-install zsh; in-target chsh -s /bin/zsh
-d-i preseed/late_command string wget -O /target/var/tmp/postinst {{ni_preseed}}/postinst.sh; in-target sh /var/tmp/postinst {{item.1.tasksel|default('none')}};
+d-i preseed/late_command string wget -O /target/var/tmp/postinst {{ni_preseed}}/postinst.sh; mount --bind /dev/pts /target/dev/pts; in-target sh /var/tmp/postinst {{item.1.tasksel|default('none')}};
