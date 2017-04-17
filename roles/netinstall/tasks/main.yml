@@ -1,5 +1,13 @@
 ---
 
+  - name: create netinstall root directory
+    file:
+      path: "{{ni_root_dir}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
   # add it before installing the pkg since there's an ipv6 bug in it
   - name: create default tftp config
     template:
@@ -9,81 +17,30 @@
       group: root
       mode: 0755
 
-  - name: install syslinux/pxe and tftp
+  - name: install required packages
     apt:
       name: "{{item}}"
       state: latest
     with_items:
       - tftpd-hpa
-      - syslinux
+      - apache2 # for kernels and initrd over web
+      - p7zip-full #to uncompress the iso, need to move to common role
 
-  - name: create iso dirs
-    file:
-      path: "{{item}}"
-      state: directory
-      owner: root
-      group: root
-      mode: 0755
-    with_items:
-      - "{{ni_isos}}"
-      - "{{ni_mnt_iso}}"
-
-  - name: create pxelinux.cfg tftp dir
-    file:
-      path: "{{ni_tftp_dir}}/pxelinux.cfg"
-      state: directory
-      owner: tftp
-      group: tftp
-      mode: 0755
-
-  - name: create dirs for images netboot
-    file:
-      path: "{{ni_tftp_dir}}/{{item.os}}/{{item.name}}-{{item.arch}}"
-      state: directory
-      owner: tftp
-      group: tftp
-      mode: 0755
-    with_items: "{{ni_images}}"
-
-  - name: fetch kernels and initrd
-    get_url:
-      url: "{{ni_assets}}/{{item[0].name}}-{{item[0].arch}}-{{item[1]}}"
-      dest: "{{ni_tftp_dir}}/{{item[0].os}}/{{item[0].name}}-{{item[0].arch}}/{{item[1]}}"
-      owner: tftp
-      group: tftp
-      mode: 0755
-    with_nested:
-      - "{{ni_images}}"
-      - ["linux","initrd.gz"]
+  - include: pxe.yml
     tags:
-      - ni_fetch_ki
+      - ni_pxe
 
-  - name: create pxelinux.0, vesamenu.c32 and memtest86 files
-    copy:
-      src: "{{item}}"
-      dest: "{{ni_tftp_dir}}/{{item}}"
-      owner: tftp
-      group: tftp
-      mode: 0644
-    with_items:
-      - pxelinux.0
-      - vesamenu.c32
-      - memtest86
+  - include: preseed.yml
+    tags:
+      - ni_preseed
 
-  - name: create pxe/conf
-    copy:
-      src: "pxe.conf"
-      dest: "{{ni_tftp_dir}}/pxelinux.cfg/pxe.conf"
-      owner: tftp
-      group: tftp
-      mode: 0644
+  - include: isos.yml
+    tags:
+      - ni_isos
 
-  - name: create pxelinux default config file
-    template:
-      src: pxelinux-cfg-default.j2
-      dest: "{{ni_tftp_dir}}/pxelinux.cfg/default"
-      owner: tftp
-      group: tftp
-      mode: 0644
-
+  - name: link www path to root dir to serve kernels over http
+    file:
+      src: "{{ni_root_dir}}"
+      dest: "{{ni_www_path}}"
+      state: link
 

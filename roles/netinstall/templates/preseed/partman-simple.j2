@@ -1,0 +1,14 @@
+d-i partman-auto/expert_recipe string		\
+	custom ::				\
+		500 10000 -1 ext4		\
+			$primary{ }		\
+			$bootable{ }		\
+			method{ format }	\
+			format{ }		\
+			use_filesystem{ }	\
+			filesystem{ ext4 }	\
+			mountpoint{ / } .	\
+						\
+		500 900 1000 linux-swap		\
+			method{ swap }		\
+			format{ } .		\

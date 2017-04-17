@@ -1,0 +1,37 @@
+---
+
+  - name: create preseed dir
+    file:
+      path: "{{ni_preseed_dir}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: create preseed os dirs
+    file:
+      path: "{{ni_preseed_dir}}/{{item}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+    with_items: "{{ni_images|map(attribute='os')|list|unique}}"
+
+  - name: install postinst script
+    copy:
+      src: "preseed-postinst.sh"
+      dest: "{{ni_preseed_dir}}/postinst.sh"
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: create preseed files
+    template:
+      src: "preseed/{{item.0.type}}.j2"
+      dest: "{{ni_preseed_dir}}/{{item.0.os}}/{{item.0.type}}-{{item.0.name}}-{{item.0.arch}}-{{item.1.name}}.seed"
+      owner: root
+      group: root
+      mode: 0644
+    with_subelements:
+      - "{{ni_images}}"
+      - preseed

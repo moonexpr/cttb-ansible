@@ -1,0 +1,46 @@
+---
+
+  - name: create pxelinux.cfg tftp dir
+    file:
+      path: "{{ni_tftp_dir}}/pxelinux.cfg"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: copy files for pxebooting
+    copy:
+      src: "pxeboot/"
+      dest: "{{ni_tftp_dir}}/"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: create pxe menu dir
+    file:
+      path: "{{ni_pxe_menu_dir}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: create pxelinux default config file
+    template:
+      src: pxelinux-cfg-default.j2
+      dest: "{{ni_tftp_dir}}/pxelinux.cfg/default"
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - ni_pxe_menu
+
+  - name: create pxe install menu file
+    template:
+      src: pxe-install-menu.j2
+      dest: "{{ni_pxe_menu_dir}}/{{item.os}}-{{item.type}}-{{item.arch}}.menu"
+      owner: root
+      group: root
+      mode: 0644
+    with_items: "{{ni_images}}"
+    tags:
+      - ni_pxe_menu

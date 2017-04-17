@@ -1,0 +1,39 @@
+---
+
+  - name: create iso cache dir
+    file:
+      path: "{{ni_isos_cache_dir}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: fetch isos
+    get_url:
+      url: "{{item.url}}"
+      dest: "{{ni_isos_cache_dir}}/{{item.os}}-{{item.type}}-{{item.name}}-{{item.arch}}.iso"
+      owner: root
+      group: root
+      mode: 0644
+    with_items:
+      - "{{ni_images}}"
+    tags:
+      - ni_get_isos
+
+  - name: uncompress and copy isos to root path
+    command: >
+      /usr/bin/7z x
+      -o{{ni_root_dir}}/{{item.os}}/{{item.type}}-{{item.name}}-{{item.arch}}
+      {{ni_isos_cache_dir}}/{{item.os}}-{{item.type}}-{{item.name}}-{{item.arch}}.iso
+    args:
+      creates: "{{ni_root_dir}}/{{item.os}}/{{item.type}}-{{item.name}}-{{item.arch}}"
+    with_items:
+      - "{{ni_images}}"
+
+  - name: fix permissions on images dirs
+    file:
+      path: "{{ni_root_dir}}/{{item.os}}"
+      recurse: yes
+      mode: 0755
+    with_items:
+      - "{{ni_images}}"

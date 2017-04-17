@@ -2,15 +2,22 @@ DEFAULT vesamenu.c32
 TIMEOUT 100
 ONTIMEOUT BootLocal
 PROMPT 0
-MENU INCLUDE pxelinux.cfg/pxe.conf
+NOESCAPE 1
+ALLOWOPTIONS 1
+PROMPT 0
+menu width 80
+menu rows 14
+MENU TABMSGROW 24
+MENU MARGIN 10
 NOESCAPE 1
 LABEL BootLocal
     localboot 0
     TEXT HELP
     Boot to local hard disk
     ENDTEXT
-MENU BEGIN Ubuntu Desktop
-MENU TITLE Ubuntu Desktop
+{% for m in ni_images %}
+MENU BEGIN {{m.os}} {{m.type}} ({{m.arch}})
+MENU TITLE {{m.os}} {{m.type}} ({{m.arch}})
     LABEL Previous
     MENU LABEL Previous Menu
     TEXT HELP
@@ -18,33 +25,13 @@ MENU TITLE Ubuntu Desktop
     ENDTEXT
     MENU EXIT
     MENU SEPARATOR
-    MENU INCLUDE ubuntu/desktop.menu
+    MENU INCLUDE menu/{{m.os}}-{{m.type}}-{{m.arch}}.menu
 MENU END
-MENU BEGIN Ubuntu Server
-MENU TITLE Ubuntu Server
-    LABEL Previous
-    MENU LABEL Previous Menu
-    TEXT HELP
-    Return to previous menu
-    ENDTEXT
-    MENU EXIT
-    MENU SEPARATOR
-    MENU INCLUDE ubuntu/server.menu
-MENU END
-MENU BEGIN Ubuntu Server Mini
-MENU TITLE Ubuntu Server Mini
-    LABEL Previous
-    MENU LABEL Previous Menu
-    TEXT HELP
-    Return to previous menu
-    ENDTEXT
-    MENU EXIT
-    MENU SEPARATOR
-    MENU INCLUDE ubuntu/mini.menu
-MENU END
+{% endfor %}
 LABEL Memtest
     MENU LABEL Memtest
     KERNEL memtest86
     TEXT HELP
     Test your memory with memtest
     ENDTEXT
+enu color border               30;44      #ffffffff #00000000 std

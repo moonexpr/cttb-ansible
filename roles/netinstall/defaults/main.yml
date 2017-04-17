@@ -1,13 +1,73 @@
 ---
 
-ni_isos: /srv/isos
-ni_mnt_iso: "{{ni_isos}}/tmp"
-ni_tftp_dir: "/var/lib/tftpboot"
-ni_assets: "{{ansible_assets_url}}/netinstall"
-ni_server: pxe
+#move to global!
+ni_server: http://lxc-srv1
+ni_www: "{{ni_server}}/netinstall"
+ni_preseed: "{{ni_server}}/netinstall/preseed"
+
+ni_root_dir: /srv/netinstall
+ni_tftp_dir: "{{ni_root_dir}}"
+ni_preseed_dir: "{{ni_root_dir}}/preseed"
+ni_pxe_menu_dir: "{{ni_root_dir}}/menu"
+ni_isos_cache_dir: "{{ni_root_dir}}"
+ni_www_path: "/var/www/html/netinstall"
 
 ni_images:
   - name: xenial
     os: ubuntu
-    type: server
+    type: mini
     arch: amd64
+    url: "{{ansible_assets_url}}/isos/ubuntu-mini-xenial-amd64.iso"
+    preseed:
+      - name: default
+        description: "Default Installation" 
+        kernel_path: linux
+        initrd_path: initrd.gz
+        partman: simple
+      - name: server
+        description: "Server Installation" 
+        kernel_path: linux
+        initrd_path: initrd.gz
+        tasksel: server
+        partman: simple
+      - name: "srv-raid1"
+        description: "Server raid 1" 
+        kernel_path: linux
+        initrd_path: initrd.gz
+        tasksel: server
+        partman: raid1
+      - name: "srv-raid6"
+        description: "Server Raid 10" 
+        kernel_path: linux
+        initrd_path: initrd.gz
+        tasksel: server
+        partman: raid6
+      - name: desktop
+        description: "Desktop Installation" 
+        kernel_path: linux
+        initrd_path: initrd.gz
+        tasksel: lubuntu-desktop
+        partman: simple
+  - name: xenial
+    os: ubuntu
+    type: mini
+    arch: i386
+    url: "{{ansible_assets_url}}/isos/ubuntu-mini-xenial-i386.iso"
+    preseed:
+      - name: default
+        description: "Default Installation" 
+        kernel_path: linux
+        initrd_path: initrd.gz
+        partman: simple
+      - name: server
+        description: "Server Installation" 
+        kernel_path: linux
+        initrd_path: initrd.gz
+        tasksel: server
+        partman: simple
+      - name: desktop
+        description: "Desktop Installation" 
+        kernel_path: linux
+        initrd_path: initrd.gz
+        tasksel: lubuntu-desktop
+        partman: simple

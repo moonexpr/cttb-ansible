@@ -1,0 +1,8 @@
+{% for m in item.preseed %}
+{% set path = item.os + "/" + item.type + "-" + item.name + "-" + item.arch %}
+LABEL {{loop.index}}
+    MENU LABEL {{m.description}}
+    KERNEL {{ni_www}}/{{path}}/{{m.kernel_path}}
+    INITRD {{ni_www}}/{{path}}/{{m.initrd_path}}
+    APPEND noprompt auto=true priority=critical keyboard-configuration/layoutcode=us console-setup/ask_detect=false ipv6.disable=1 url={{ni_preseed}}/{{path}}-{{m.name}}.seed vga=788
+{% endfor %}

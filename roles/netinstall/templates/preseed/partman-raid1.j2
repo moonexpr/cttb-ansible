@@ -1,0 +1,11 @@
+d-i partman-auto/method string raid
+d-i partman-auto/disk string /dev/sda /dev/sdb
+d-i partman-auto/expert_recipe string multiraid ::                \
+    5000 10000 -1 raid $primary{ } $lvmignore{ } method{ raid } . \
+    500 900 2000  raid $lvmignore{ } method{ raid } .
+
+d-i partman-auto-raid/recipe string     \
+    1 2 0 ext4 /  /dev/sda1#/dev/sdb1 . \
+    1 2 0 swap - /dev/sda5#/dev/sdb5  .
+
+d-i mdadm/boot_degraded boolean true

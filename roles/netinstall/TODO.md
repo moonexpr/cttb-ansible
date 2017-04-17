@@ -2,3 +2,4 @@
 - make isos available as an asset and have ansible mount them and copy all files into place to set up the nfs root
 - generate all the menus inside the invidual families and stuff
 - remove kernels and stuff from assets servers and just copy them from the iso, safer and we need the iso part anyway so less stuff scattered around.
+- cannot boot EFI (which needs all kinds of different files, including vesamenu for example and has also differences for i386 and amd64

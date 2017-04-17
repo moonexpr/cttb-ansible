@@ -1,6 +1,6 @@
 # /etc/default/tftpd-hpa
 
 TFTP_USERNAME="tftp"
-TFTP_DIRECTORY="/var/lib/tftpboot"
+TFTP_DIRECTORY="{{ni_tftp_dir}}"
 TFTP_ADDRESS="{{ansible_default_ipv4.address}}:69"
 TFTP_OPTIONS="-4 -s -vv -l"

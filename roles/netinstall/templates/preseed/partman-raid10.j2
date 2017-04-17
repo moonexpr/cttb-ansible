@@ -1,0 +1,18 @@
+d-i partman-auto/method string raid
+d-i partman-auto/disk string /dev/sda /dev/sdb /dev/sdc /dev/sdd
+d-i partman-auto-raid/recipe string     \
+    10 4 0 ext4 /  /dev/sda1#/dev/sdb1#/dev/sdc1#/dev/sdd1 . \
+    10 4 0 swap - /dev/sda5#/dev/sdb5#/dev/sdc5#/dev/sdd5  .
+d-i partman-auto/expert_recipe string	\
+    multiraid ::                	\
+        5000 10000 -1 raid		\
+	    $bootable { }		\
+	    $primary{ }			\
+	    $lvmignore{ }		\
+	    $format { }			\
+	    use_filesystem { }		\
+	    mountpoint { / }		\
+	    method{ raid } . 		\
+        500 900 2000  raid		\
+	    $lvmignore{ }		\
+	    method{ raid } .
