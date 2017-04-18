@@ -1,6 +1,6 @@
 ---
 
-  - name: install necessary pkgs for log management
+  - name: install necessary pkgs for gitolite and gitweb
     apt:
       name: "{{item}}"
       state: present
@@ -12,15 +12,26 @@
     user:
       name: git
       createhome: no
-      home: /srv/gitolite
+      home: "{{git_root_dir}}"
       system: yes
       comment: "Gitolite hoster"
 
   - name: create a dir for the gitolite instance
     file:
-      path: /srv/gitolite
+      path: "{{git_root_dir}}"
       state: directory
       owner: git
       group: git
       mode: 0755
 
+  - name: copy over admin ssh key
+    copy:
+      src: "{{git_admin_key}}"
+      dest: "{{git_root_dir}}/"
+      owner: git
+      group: git
+      mode: 0640
+
+  - name: configure new ssh key as RW+ admin key
+    become_user: git
+    command: "gitolite setup -pk {{git_root_dir}}/{{git_admin_key}}"

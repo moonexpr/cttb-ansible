@@ -1,0 +1,3 @@
+
+git_root_dir: /srv/gitolite
+git_admin_key: admin.pub
