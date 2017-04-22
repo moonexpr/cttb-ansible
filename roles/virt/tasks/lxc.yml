@@ -14,16 +14,24 @@
   tags:
     - lxd_ppa
 
-- name: install lxd and required pkgs
+- name: install lxd pkgs
+  apt:
+    name: "{{item}}"
+    state: latest
+    default_release: xenial-backports
+    install_recommends: no
+  with_items:
+    - lxd-client
+    - lxd
+    - lxd-tools
+
+- name: install support packages
   apt:
     name: "{{item}}"
     state: latest
     install_recommends: no
   with_items:
     - bindfs # for mounting guest fs on host
-    - criu
-    - lxd
-    - lxd-tools
 
 - name: create zfs pool for containers
   command: lxc storage create {{lxc_storage.name}} {{lxc_storage.type}} source={{lxc_storage.source}}
