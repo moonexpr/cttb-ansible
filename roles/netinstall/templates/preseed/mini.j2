@@ -11,14 +11,15 @@ d-i partman-auto/method string regular
 
 # use local mirror
 d-i mirror/country string manual
-d-i mirror/http/hostname  string {{apt_url}}
+d-i mirror/http/hostname  string {{apt_host}}
 d-i mirror/http/directory string /mirrors/ubuntu/
 d-i apt-setup/use_mirror boolean true
 d-i apt-setup/mirror/error select Change mirror
 d-i apt-setup/multiverse boolean true
 d-i apt-setup/restricted boolean true
 d-i apt-setup/universe boolean true
-d-i apt-setup/security_host string {{apt_url}}
+d-i apt-setup/security_host string {{apt_host}}
+d-i apt-setup/security_path string /mirrors/ubuntu
 
 # d-i partman-auto/choose_recipe select atomic
 # choose our own to avoid huge swaps
@@ -63,6 +64,13 @@ d-i pkgsel/language-packs multiselect en
 # installed by ansible, otherwise ansible fails if unattended is alerady using apt-get
 # unattended-upgrades unattended-upgrades/enable_auto_updates boolean true
 
-#d-i finish-install/reboot_in_progress note
+# Avoid that last message about the install being complete.
+d-i finish-install/reboot_in_progress note
+# This is how to make the installer shutdown when finished, but not 
+# reboot into the installed system.
+d-i debian-installer/exit/halt boolean true
+# This will power off the machine instead of just halting it. 
+#d-i debian-installer/exit/poweroff boolean true
 
-d-i preseed/late_command string wget -O /target/var/tmp/postinst {{ni_preseed}}/postinst.sh; mount --bind /dev/pts /target/dev/pts; in-target sh /var/tmp/postinst {{item.1.tasksel|default('none')}};
+
+d-i preseed/late_command string wget -O /target/var/tmp/postinst {{ni_preseed}}/postinst.sh; mount --bind /dev/pts /target/dev/pts; mkdir /target/run/sshd; in-target sh /var/tmp/postinst {{item.1.tasksel|default('none')}};

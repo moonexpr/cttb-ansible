@@ -6,6 +6,7 @@ ni_preseed_dir: "{{ni_root_dir}}/preseed"
 ni_pxe_menu_dir: "{{ni_root_dir}}/menu"
 ni_isos_cache_dir: "{{ni_root_dir}}"
 ni_www_path: "/var/www/html/netinstall"
+ni_memtest_iso_url: "{{ansible_assets_url}}/isos/memtest86-7.3.iso"
 
 ni_images:
   - name: xenial

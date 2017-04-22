@@ -37,3 +37,13 @@
       mode: 0755
     with_items:
       - "{{ni_images}}"
+
+  - name: fetch memtest iso
+    get_url:
+      url: "{{ni_memtest_iso_url}}"
+      dest: "{{ni_root_dir}}/memtest.iso"
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - ni_memtest

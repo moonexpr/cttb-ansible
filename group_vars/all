@@ -6,6 +6,7 @@ dns_search: cttb
 dns_srv: "10.11.31.131"
 
 # mirros and debian repositories
+apt_host: "apt.{{dns_domain}}"
 apt_url: "http://apt.{{dns_domain}}"
 cttb_repo: "{{apt_url}}/cttb-repos"
 deb_mirror: "{{apt_url}}/mirrors"
