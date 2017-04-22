@@ -1,7 +1,7 @@
 ---
 
 server_interfaces:
-  - name: eth0
+  - name: eno1
     id: 1
     mac: '78:ac:c0:b2:89:b0'
     auto: false
@@ -12,50 +12,50 @@ server_interfaces:
     inet: dhcp
     bridge: true
     bridge_members:
-      - eth0
+      - eno1
+
+zfs_pools:
+  - name: data
+    pool_options: 'ashift=12'
+    dataset_global_options: 'compression=lz4'
+    level: ''
+    disks:
+      - /dev/disk/by-id/ata-WDC_WD15EARS-00Z5B1_WD-WMAVU1378390
+    slog: '/dev/disk/by-id/nvme-BPX_C6EF076C02E135031286'
+    datasets:
+      - name: lxd
+        options: ''
 
 lxc: true
 
 lxc_storage:
   name: default
   type: zfs
-  source: tank0/lxd
+  source: data/lxd
 
 lxc_containers:
-  - name: c1
-    image: cttb-srv-1604
+  - name: tl1
+    image: cttb-latest
     devices:
       eth0:
-        host_name: c1_eth0
+        host_name: tl1_eth0
         hwaddr: '00:16:3e:49:72:81'
         type: nic
         nictype: bridged
         parent: lxdbr0
 
-zfs_pools:
-  - name: tank0
-    pool_options: 'ashift=12'
-    dataset_global_options: 'compression=lz4'
-    level: ''
-    disks:
-      - /dev/disk/by-id/ata-WDC_WD15EARS-00Z5B1_WD-WMAVU1378390
-    slog: '/dev/disk/by-id/nvme-BPX_8B71076C020835003325'
-    datasets:
-      - name: lxd
-        options: ''
-
-nut_mode: nutserver
-
-nut_server_address: testlab1
-
-nut_users:
-  - username: upsmon
-    password: pass
-    role: master
-
-# This is only an example: you must set this to match your hardware.
-nut_ups:
-  - name: eaton5s
-    driver: usbhid-ups
-    port: auto
-    description: "Eaton 5S 1500VA (900W)"
+#nut_mode: nutserver
+#
+#nut_server_address: testlab1
+#
+#nut_users:
+#  - username: upsmon
+#    password: pass
+#    role: master
+#
+## This is only an example: you must set this to match your hardware.
+#nut_ups:
+#  - name: eaton5s
+#    driver: usbhid-ups
+#    port: auto
+#    description: "Eaton 5S 1500VA (900W)"
