@@ -30,7 +30,7 @@
         zfs_ds
 
     - name: set quota
-      command: "zfs set quota={{item[1].quota}} {{item[0].name}}/{{item[1].name}}"
+      command: "zfs set quota={{item[1].quota|default('none')}} {{item[0].name}}/{{item[1].name}}"
       with_subelements:
         - "{{zfs_pools}}"
         - datasets
