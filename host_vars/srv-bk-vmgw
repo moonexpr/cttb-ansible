@@ -1,0 +1,99 @@
+---
+
+# Order seems to matter, put bond interface last
+
+# Network interfaces
+bonding: True
+server_interfaces:
+  - name: bond0
+    bond: True
+    auto: True
+    inet: manual
+    mode: 802.3ad
+    xmit_hash_policy: 'layer2+3'
+    updelay: 300
+    downdelay: 200
+    lacp_rate: 1
+    miimon: 100
+  - name: eth0
+    mac: '0c:c4:7a:0d:28:50'
+    auto: True
+    inet: manual
+    bond_master: bond0
+  - name: eth1
+    id: 2
+    mac: '0c:c4:7a:0d:28:51'
+    auto: True
+    inet: manual
+    bond_master: bond0
+  - name: eth2
+    mac: '0c:c4:7a:0d:28:52'
+    auto: True
+    inet: manual
+  - name: eth3
+    mac: '0c:c4:7a:0d:28:53'
+    auto: True
+    inet: manual
+  - name: lxdbr0
+    auto: true
+    bridge: true
+    bridge_members:
+      - bond0
+    inet: static
+    address: 10.11.1.9
+    netmask: 255.255.0.0
+    gateway: 10.11.1.1
+
+zfs_pools:
+  - name: data
+    pool_options: 'ashift=12'
+    dataset_global_options: 'compression=lz4'
+    level: raidz2
+    disks:
+      - /dev/disk/by-id/wwn-0x5000cca22ccbb939
+      - /dev/disk/by-id/wwn-0x5000cca22ccbbc74
+      - /dev/disk/by-id/wwn-0x5000cca22ccc635a
+      - /dev/disk/by-id/wwn-0x5000cca22cd1769f
+    slog: /dev/disk/by-id/nvme-BPX_8B71076C020835003325
+    datasets:
+      - name: lxd
+        options: ''
+        quota: none
+
+lxc: true
+
+lxc_storage:
+  name: default
+  type: zfs
+  source: data/lxd
+
+#lxc_containers:
+#  - name: bk-e2guardian
+#    image: cttb-latest
+#    devices:
+#      eth0:
+#        host_name: e2g_e0
+#        hwaddr: '00:16:3e:11:XX:XX'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
+
+#nut_mode: netserver
+#
+#nut_server_address: srv-nas # only accepts ips
+#
+#nut_ups:
+#  - name: eaton5s
+#    driver: usbhid-ups
+#    port: auto
+#    description: "Eaton 5S 1500VA (900W)"
+#    address: srv-nas
+#    users:
+#      - name: upsmon
+#        pass: m0n4m1
+#        role: master
+#        monitor: true
+#      - name: upslave
+#        pass: m0n1t0r4nz4
+#        role: slave
+#        monitor: false
