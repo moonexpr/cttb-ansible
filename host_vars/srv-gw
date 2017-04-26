@@ -91,8 +91,27 @@ timed_internet:
       - 10.11.9.0/24
     periods:
       - days: "*"
-        on_at: "6"
-        off_at: "23"
+        on_at: "7"
+        off_at: "22"
+  - label: dvgs_cslab
+    type: ip
+    ips:
+      - 10.11.9.21
+      - 10.11.9.49
+      - 10.11.9.50
+      - 10.11.9.36
+      - 10.11.9.48
+      - 10.11.9.51
+      - 10.11.9.61
+      - 10.11.9.60
+      - 10.11.9.20
+      - 10.11.9.37
+      - 10.11.17.1
+      - 10.11.17.2
+    periods:
+      - days: "1-5"
+        on_at: "8"
+        off_at: "17"
 
 
 # Content filter settings
