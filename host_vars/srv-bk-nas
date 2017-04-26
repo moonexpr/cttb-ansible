@@ -76,7 +76,7 @@ lxc_storage:
   source: data/lxd
 
 lxc_containers:
-  - name: log
+  - name: bk-log
     image: cttb-latest
     devices:
       eth0:
@@ -85,7 +85,7 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
-  - name: git
+  - name: bk-git
     image: cttb-latest
     devices:
       eth0:
@@ -94,7 +94,7 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
-  - name: debmirror
+  - name: bk-debmirror
     image: cttb-latest
     devices:
       eth0:
@@ -103,7 +103,7 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
-  - name: pxe
+  - name: bk-pxe
     image: cttb-latest
     devices:
       eth0:
@@ -112,7 +112,7 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
-  - name: metrics
+  - name: bk-metrics
     image: cttb-latest
     devices:
       eth0:
