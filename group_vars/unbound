@@ -47,6 +47,7 @@ zone_cttb:
   - sw-dvgs-es-admin-office: "10.11.12.206"
   - sw-dvgs-es-lang-lab: "10.11.12.162"
   - sw-dvgs-furnace: "10.11.12.31"
+  - sw-dvgs-library: "10.11.12.33"
   - sw-dvgs-teacher-office: "10.11.12.140"
   - sw-dvgs-upstairs: "10.11.12.155"
   - sw-jgh-north: "10.11.12.131"
