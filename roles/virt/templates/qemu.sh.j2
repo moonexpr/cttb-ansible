@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# Expects a config file named "config" in $NAME subdir
+# It then uses, or create if not present, a $NAME.raw for root device
+
+BASEDIR={{qemu_dir}}
+BRIDGE={{qemu_bridge}}
+QEMU_BIN="/usr/bin/qemu-system-x86_64"
+QEMU_IMG="/usr/bin/qemu-img"
+
+if [ $# -ne 1 ]; then
+    echo $0: usage: qemu.sh instance_name
+    exit 1
+fi
+
+NAME=$1
+CONFIG="${NAME}/config"
+
+if [ ! -f "${CONFIG}" ]; then
+  echo "Config file missing, please create ${CONFIG} and add your VM's settings there"
+  exit -1
+fi
+
+source ${CONFIG}
+SMP=${SMP:-1} #default to one cpu if not set
+MEM=${MEM:-2G} #default to 2GB if not set
+MAC_TMP=`printf '52:54:00:11:%02X:%02X\n' $((RANDOM%256)) $((RANDOM%256))`
+MAC=${MAC:-$MAC_TMP}
+
+
+ROOT_FS=${ROOT_FS:-${NAME}/rootfs.raw}
+ROOT_FS_SIZE=${ROOT_FS_SIZE:-8G}
+
+if [ ! -f "${ROOT_FS}" ]; then
+  echo "Root fs img does not exist, creating it..."
+  $QEMU_IMG create -f raw ${ROOT_FS} ${ROOT_FS_SIZE}
+fi
+
+$QEMU_BIN -enable-kvm \
+  -name $NAME \
+  -machine type=ubuntu,accel=kvm,usb=off \
+  -cpu host \
+  -smp $SMP \
+  -m $MEM \
+  -netdev bridge,br=${BRIDGE},id=qemubr \
+  -device virtio-net-pci,mac=${MAC},netdev=qemubr,id=eth0 \
+  -drive file=${ROOT_FS},format=raw,id=root,if=none \
+  -device virtio-scsi-pci,id=scsi \
+  -device scsi-hd,drive=root \
+  -boot dn \
+  -monitor unix:${NAME}/mon.sock,server,nowait \
+  -pidfile ${NAME}/instance.pid \
+  -daemonize

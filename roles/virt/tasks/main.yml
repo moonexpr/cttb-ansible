@@ -9,3 +9,8 @@
     when: lxc
     tags:
       - lxc
+
+  - include: kvm.yml
+    when: kvm
+    tags:
+      - kvm

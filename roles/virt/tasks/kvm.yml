@@ -1,0 +1,77 @@
+---
+
+  - name: install qemu-kvm packages
+    apt:
+      name: "{{item}}"
+      state: latest
+      install_recommends: no
+    with_items:
+      - ipxe-qemu
+      - qemu-block-extra:amd64
+      - qemu-kvm
+      - qemu-system-common
+      - qemu-system-x86
+      - qemu-utils
+
+  - name: install supporting packages
+    apt:
+      name: "{{item}}"
+      state: latest
+      install_recommends: no
+    with_items:
+      - socat # to send signal to qemu for instance shutdown
+
+  - name: make qemuhelper setuid
+    file:
+      path: /usr/lib/qemu/qemu-bridge-helper
+      mode: 04755
+
+  - name: create dir for qemu bridge config
+    file:
+      path: /etc/qemu
+      state: directory
+      mode: 0755
+
+  - name: create qemu bridge config file
+    copy:
+      content: "allow {{qemu_bridge}}"
+      dest: /etc/qemu/bridge.conf
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: set permissions on homedir for qemu
+    file:
+      path: "{{qemu_dir}}"
+      state: directory
+      mode: 0755
+      owner: qemu
+      group: kvm
+
+  - name: create qemu user
+    user:
+      name: qemu
+      createhome: no
+      comment: "Qemu KVM User"
+      uid: 126
+      group: kvm
+      home: "{{qemu_dir}}"
+      shell: /bin/bash
+
+  - name: create bin dir for qemu scripts
+    file:
+      path: "{{qemu_dir}}/bin"
+      state: directory
+      owner: qemu
+      group: kvm
+      mode: 0755
+
+  - name: deploy qemu start script
+    template:
+      src: qemu.sh.j2
+      dest: "{{qemu_dir}}/bin/qemu.sh"
+      mode: 0755
+      owner: qemu
+      group: kvm
+    tags:
+      - kvm_script
