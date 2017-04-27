@@ -43,6 +43,15 @@
     with_items:
       - lsscsi
 
+  #TODO this should be implemented in the virt role, maybe split host and guest
+  - name: install server packages for qemu guests
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - acpid
+    when: ansible_virtualization_type == "kvm" and ansible_virtualization_role == "guest"
+
   - include: interfaces.yml
     when: server_interfaces is defined
     tags:
