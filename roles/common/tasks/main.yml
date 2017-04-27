@@ -158,6 +158,7 @@
       - nload
       - obnam
       - smartmontools
+      - socat
       - tcpdump
       - traceroute
       - udisks2
