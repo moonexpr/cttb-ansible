@@ -25,6 +25,8 @@ zfs_pools:
     datasets:
       - name: lxd
         options: ''
+      - name: kvm
+        options: ''
 
 lxc: true
 
@@ -43,6 +45,10 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
+
+kvm: true
+qemu_bridge: lxdbr0
+qemu_dir: /data/kvm
 
 #nut_mode: nutserver
 #
