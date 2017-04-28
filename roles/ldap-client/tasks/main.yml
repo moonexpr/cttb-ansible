@@ -118,7 +118,3 @@
     service:
       name: systemd-logind
       state: restarted
-
-  - name: remember to copy the cacert file!
-    debug:
-      msg: You still need to copy the cacert file manually
