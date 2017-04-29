@@ -49,6 +49,23 @@ lxc_containers:
 kvm: true
 qemu_bridge: lxdbr0
 qemu_dir: /data/kvm
+qemu_vms:
+  - name: test
+    smp: 2
+    mem: 4G
+    disks:
+      - id: root
+        file: root.raw
+        index: 1
+        format: raw
+      - id: nfshomes
+        file: /dev/zd0
+        index: 2
+        format: raw
+    ifaces:
+      - id: eth0
+        mac: "52:54:00:2b:60:5b"
+        
 
 #nut_mode: nutserver
 #
