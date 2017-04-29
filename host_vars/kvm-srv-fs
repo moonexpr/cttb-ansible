@@ -1,0 +1,24 @@
+---
+
+# Order seems to matter, put bond interface last
+
+# Network interfaces
+server_interfaces:
+  - name: eth0
+    mac: '52:54:00:11:01:18'
+    auto: True
+    inet: static
+    address: 10.11.1.18
+    netmask: 255.255.0.0
+    gateway: 10.11.1.1
+
+zfs_pools:
+  - name: data
+    pool_options: 'ashift=12'
+    dataset_global_options: 'compression=lz4'
+    level: ''
+    disks:
+      - /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_nfshomes
+    datasets:
+      - name: nfshomes
+        options: ''
