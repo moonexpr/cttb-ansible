@@ -39,6 +39,17 @@
       mode: 0644
       owner: root
       group: root
+ 
+  - name: create qemu user
+    user:
+      name: qemu
+      createhome: no
+      comment: "Qemu KVM User"
+      uid: 126
+      group: kvm
+      groups: disk
+      home: "{{qemu_dir}}"
+      shell: /bin/bash
 
   - name: set permissions on homedir for qemu
     file:
@@ -48,30 +59,50 @@
       owner: qemu
       group: kvm
 
-  - name: create qemu user
-    user:
-      name: qemu
-      createhome: no
-      comment: "Qemu KVM User"
-      uid: 126
-      group: kvm
-      home: "{{qemu_dir}}"
-      shell: /bin/bash
+  # create all the necessary for all defined VMs
+  # NB: fs are not actually created by ansible
+  - block:
 
-  - name: create bin dir for qemu scripts
-    file:
-      path: "{{qemu_dir}}/bin"
-      state: directory
-      owner: qemu
-      group: kvm
-      mode: 0755
+    - name: create dir for VM
+      file:
+        path: "{{qemu_dir}}/{{item.name}}"
+        state: directory
+        owner: qemu
+        group: kvm
+        mode: 0755
+      with_items: "{{qemu_vms}}"
 
-  - name: deploy qemu start script
-    template:
-      src: qemu.sh.j2
-      dest: "{{qemu_dir}}/bin/qemu.sh"
-      mode: 0755
-      owner: qemu
-      group: kvm
-    tags:
-      - kvm_script
+    - name: deploy VM start script
+      template:
+        src: qemu.sh.j2
+        dest: "{{qemu_dir}}/{{item.name}}/start"
+        mode: 0750
+        owner: qemu
+        group: kvm
+      with_items: "{{qemu_vms}}"
+      tags:
+        - kvm_script
+
+    - name: deploy VM reboot script
+      template:
+        src: restart.j2
+        dest: "{{qemu_dir}}/{{item.name}}/restart"
+        mode: 0750
+        owner: qemu
+        group: kvm
+      with_items: "{{qemu_vms}}"
+      tags:
+        - kvm_script
+
+    - name: deploy VM stop script
+      template:
+        src: stop.j2
+        dest: "{{qemu_dir}}/{{item.name}}/stop"
+        mode: 0750
+        owner: qemu
+        group: kvm
+      with_items: "{{qemu_vms}}"
+      tags:
+        - kvm_script
+
+    when: qemu_vms is defined

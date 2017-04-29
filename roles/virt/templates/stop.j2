@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo "system_powerdown" | socat - UNIX-CONNECT:{{item.name}}.sock
