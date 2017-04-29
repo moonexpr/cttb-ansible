@@ -1,8 +1,20 @@
 ---
 
-  - name: install necessary pkgs for log management
+  - name: ensure rsyslog is installed, should be already
     apt:
-      name: "{{item}}"
+      name: rsyslog
       state: present
-    with_items:
-      - rsyslog
+
+  - name: setup logging configuration
+    copy:
+      src: rsyslog.conf
+      dest: /etc/rsyslog.conf
+      mode: 0644
+      owner: root
+      group: root
+      force: yes
+    notify:
+    - restart rsyslog
+    tags:
+      - central_logging_server
+
