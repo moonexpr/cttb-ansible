@@ -20,6 +20,8 @@ vbox-srv
 vbox-desktop
 vbox-pxe
 dvgs-dorm ansible_ssh_host=10.11.19.126
+kvm-testlab1
+kvm-testlab2
 
 # LXC
 

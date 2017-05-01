@@ -36,8 +36,9 @@ lxc_storage:
   source: data/lxd
 
 lxc_containers:
-  - name: tl1
+  - name: testlab1
     image: cttb-latest
+    state: stopped
     devices:
       eth0:
         host_name: tl1_eth0
@@ -50,21 +51,36 @@ kvm: true
 qemu_bridge: lxdbr0
 qemu_dir: /data/kvm
 qemu_vms:
-  - name: test
+  - name: kvm-testlab1
     smp: 2
-    mem: 4G
+    mem: 2G
     disks:
       - id: root
         file: root.raw
         index: 1
         format: raw
-      - id: nfshomes
-        file: /dev/zd0
+      - id: data
+        file: data.raw
         index: 2
         format: raw
     ifaces:
       - id: eth0
         mac: "52:54:00:2b:60:5b"
+  - name: kvm-testlab2
+    smp: 2
+    mem: 2G
+    disks:
+      - id: root
+        file: root.raw
+        index: 1
+        format: raw
+      - id: data
+        file: data.raw
+        index: 2
+        format: raw
+    ifaces:
+      - id: eth0
+        mac: "52:54:00:11:05:12"
         
 
 #nut_mode: nutserver

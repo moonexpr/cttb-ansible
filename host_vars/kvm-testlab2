@@ -1,0 +1,14 @@
+---
+
+# Order seems to matter, put bond interface last
+
+zfs_pools:
+  - name: data
+    pool_options: 'ashift=12'
+    dataset_global_options: 'compression=lz4'
+    level: ''
+    disks:
+      - /dev/sdb
+    datasets:
+      - name: test
+        options: ''
