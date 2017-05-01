@@ -46,6 +46,7 @@ zone_cttb:
   - sw-dvbs-juan-office: "10.11.12.144"
   - sw-dvbs-main-office: "10.11.12.209"
   - sw-dvgs-cs-lab: "10.11.12.160"
+  - sw-dvgs-dorm-basement: "10.11.12.142"
   - sw-dvgs-dorm-kitchen: "10.11.12.148"
   - sw-dvgs-dorm-phoneroom: "10.11.12.134"
   - sw-dvgs-es-admin-office: "10.11.12.206"
