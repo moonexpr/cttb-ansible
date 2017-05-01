@@ -78,7 +78,7 @@
   become: false
   lxd_container:
     name: "{{item.name}}"
-    state: started
+    state: "{{item.state|default('started')}}"
     source:
       type: image
       alias: "{{item.image}}" #implies local repo
