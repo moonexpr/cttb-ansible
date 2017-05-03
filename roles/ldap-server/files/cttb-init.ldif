@@ -1,0 +1,77 @@
+dn: ou=People,dc=cttb
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Groups,dc=cttb
+objectClass: organizationalUnit
+ou: Groups
+
+dn: cn=it,ou=Groups,dc=cttb
+objectClass: posixGroup
+cn: it
+gidNumber: 2001
+
+dn: cn=drbu-students,ou=Groups,dc=cttb
+objectClass: posixGroup
+cn: drbu-students
+gidNumber: 2002
+
+dn: cn=drbu-staff,ou=Groups,dc=cttb
+objectClass: posixGroup
+cn: drbu-staff
+gidNumber: 2003
+
+dn: cn=drbu-guests,ou=Groups,dc=cttb
+objectClass: posixGroup
+cn: drbu-guests
+gidNumber: 2004
+
+dn: cn=dvbs-students,ou=Groups,dc=cttb
+objectClass: posixGroup
+cn: dvbs-students
+gidNumber: 2005
+
+dn: cn=dvgs-students,ou=Groups,dc=cttb
+objectClass: posixGroup
+cn: dvgs-students
+gidNumber: 2006
+
+dn: cn=dvbs-staff,ou=Groups,dc=cttb
+objectClass: posixGroup
+cn: dvbs-staff
+gidNumber: 2007
+
+dn: cn=dvgs-staff,ou=Groups,dc=cttb
+objectClass: posixGroup
+cn: dvgs-staff
+gidNumber: 2008
+
+dn: uid=spike,ou=People,dc=cttb
+objectClass: organizationalPerson
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: spike
+sn: Morelli
+givenName: Spike
+cn: Spike Morelli
+uidNumber: 1501
+gidNumber: 2001
+userPassword: amituofo
+loginShell: /bin/bash
+homeDirectory: /data/nfshomes/spike
+
+dn: uid=ruiliu,ou=People,dc=cttb
+objectClass: organizationalPerson
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: ruiliu
+sn: Liu
+givenName: Rui
+cn: Rui Liu
+uidNumber: 1502
+gidNumber: 2001
+userPassword: amituofo
+loginShell: /bin/bash
+homeDirectory: /data/nfshomes/ruiliu
