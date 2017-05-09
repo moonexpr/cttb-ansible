@@ -8,6 +8,11 @@
       owner: root
       group: root
 
+  - name: remove apt source files pointing to old theoverseer repo
+    shell: /bin/rm -rf /etc/apt/sources.list.d/theoverseer_*
+    tags:
+      - remove_old_repo_files
+
   - name: add cttb custom ubuntu repo key
     apt_key:
       url: "{{cttb_repo}}/cttb-repo.gpg.key"
@@ -215,3 +220,6 @@
       autoremove: yes
       purge: yes
       upgrade: dist
+
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
