@@ -62,6 +62,7 @@ zone_cttb:
   - sw-mpoe: "10.11.12.60"
   - sw-mpoe: "172.30.20.4"
   - sw-mpoe: "172.30.7.4"
+  - sw-precepts-hall: "10.11.12.174"
   - sw-scroggs-office: "10.11.12.210"
   - sw-solar: "10.11.12.199"
   - sw-solarium: "10.11.12.150"
