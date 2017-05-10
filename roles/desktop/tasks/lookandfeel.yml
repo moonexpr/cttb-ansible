@@ -64,6 +64,8 @@
       mode: 0644
       owner: root
       group: root
+    tags:
+      - lightdm
 
   - name: copy koha icon
     copy:
