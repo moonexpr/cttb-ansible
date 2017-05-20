@@ -1,5 +1,11 @@
 ---
 
+  - name: assert the host is in an LDAP-enabled group
+    assert:
+      that: "'ldap-clients' in group_names"
+    tags:
+      - assert_ldap
+
   - name: debconf ldap-auth-config/ldapns/ldap_version
     debconf:
       name: ldap-auth-config
