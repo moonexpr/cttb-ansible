@@ -316,3 +316,8 @@ tom-lenovo-e
 tom-lenovo-w
 tom-desktop-1
 tom-desktop-2
+
+[ldap-clients:children]
+drbu-cs-lab
+drbu-cdorm-lab
+dvgs-koha
