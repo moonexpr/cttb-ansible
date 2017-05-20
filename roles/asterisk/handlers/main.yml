@@ -12,5 +12,5 @@
 
 - name: restart tftp-hpa
   service:
-    name:   tftp-hpa
+    name:   tftpd-hpa
     state:  restarted

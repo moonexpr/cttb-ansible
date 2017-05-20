@@ -22,7 +22,7 @@
   tags:
     - cfg
   notify:
-    - restart tftp-hpa
+    - restart tftpd-hpa
 
 - name: copy tftpboot files
   synchronize:
