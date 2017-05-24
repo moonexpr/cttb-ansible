@@ -7,37 +7,50 @@
       mode: 0644
       owner: root
       group: root
+    tags:
+      - apt
 
   - name: remove apt source files pointing to old theoverseer repo
     shell: /bin/rm -rf /etc/apt/sources.list.d/theoverseer_*
     tags:
       - remove_old_repo_files
+      - apt
 
   - name: add cttb custom ubuntu repo key
     apt_key:
       url: "{{cttb_repo}}/cttb-repo.gpg.key"
       state: present
+    tags:
+      - apt
 
   - name: add cttb custom ubuntu repo
     apt_repository:
       repo: "deb {{cttb_repo}}/apt/ubuntu {{ansible_distribution_release}} main"
       state: present
+    tags:
+      - apt
 
   - name: refresh the mirrors
     apt:
       update_cache: yes
+    tags:
+      - apt
 
   # aptitude is not shipped with 16.04 but ansible needs it to do the upgrade
   - name: install aptitude
     apt:
       name: aptitude
       state: present
+    tags:
+      - apt
 
   # in case for whatever reason this is missing, it's useful to add ppas to test stuff
   - name: install apt-add-repository
     apt:
       name: software-properties-common
       state: present
+    tags:
+      - apt
 
   # setup durign preseed stage, but just in case, make sure it's there
   - name: Set up ansible/cttb-os authorized_key
@@ -121,17 +134,23 @@
       keyserver: keyserver.ubuntu.com
       id: 7BB9C367
       state: present
+    tags:
+      - apt
 
   - name: add ansible repo mirror
     apt_repository:
       repo: "deb {{deb_mirror}}/ansible xenial main"
       state: present
+    tags:
+      - apt
 
   # sometimes bootstrapped version is not enough to run the rest of the playbook
   - name: upgrade ansible to latest
     apt:
       name: ansible
       state: latest
+    tags:
+      - apt
 
   - name: remove some software
     apt:
@@ -215,11 +234,15 @@
       owner: administrator
       group: administrator
 
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
+    tags:
+      - apt
+
   - name: dist-upgrade + autoremove purge
     apt:
       autoremove: yes
       purge: yes
       upgrade: dist
-
-  - name: apt autoremove before a fix is in
-    command: /usr/bin/apt-get autoremove -y
+    tags:
+      - apt
