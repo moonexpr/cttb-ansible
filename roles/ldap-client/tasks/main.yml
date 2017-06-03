@@ -124,3 +124,22 @@
     service:
       name: systemd-logind
       state: restarted
+
+  - name: set up PAM for access control
+    lineinfile:
+      dest: /etc/pam.d/common-account
+      # Add a line to require access control.
+      insertbefore: '^\s*account\s*.*pam_unix.so\s*$'
+      line: "account required                        pam_access.so"
+    tags:
+      - acl
+
+  - name: set up access control
+    template:
+        src:   access.conf.j2
+        dest:  /etc/security/access.conf
+        owner: root
+        group: root
+        mode: 0644
+    tags:
+        - acl

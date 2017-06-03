@@ -4,6 +4,12 @@
 nfs_homes_host: nfs-igdvs
 nfs_homes_export: /export/igdvs
 
+# LDAP groups, used for access control
+ldap_groups:
+  - dvgs-students
+  - dvgs-staff
+ldap_group_acl_string: "{% for item in ldap_groups %}({{item}}) {% endfor %}"
+
 # printing settings
 cups_srv: printer-srv
 
