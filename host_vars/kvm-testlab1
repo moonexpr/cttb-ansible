@@ -12,3 +12,7 @@ zfs_pools:
     datasets:
       - name: test
         options: ''
+
+zfs_backup: true
+zfs_backup_local_dataset: data
+zfs_backup_remote_dataset: root@kvm-testlab2:data
