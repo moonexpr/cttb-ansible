@@ -1,0 +1,68 @@
+---
+
+  - name: get zfs-auto-snapshot.sh from github
+    get_url:
+      url: https://raw.githubusercontent.com/zfsonlinux/zfs-auto-snapshot/master/src/zfs-auto-snapshot.sh
+      dest: /usr/local/bin/zfs-auto-snapshot
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: get syncoid from github
+    get_url:
+      url: https://raw.githubusercontent.com/jimsalterjrs/sanoid/master/syncoid
+      dest: /usr/local/bin/syncoid
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: install support pkgs for syncoid
+    apt:
+      name: "{{item}}"
+      state: present
+    with_items:
+      - pv
+      - lzop
+      - mbuffer
+
+  - name: setup cronjob to take frequent snapshots
+    cron:
+      name: "Zfs Snapshot Frequent"
+      minute: "*/5"
+      user: root
+      job: /usr/local/bin/zfs-auto-snapshot -q -g --label=frequent --keep=24 //
+
+  - name: setup cronjob to take hourly snapshots
+    cron:
+      name: "Zfs Snapshot Hourly"
+      minute: 00
+      hour: "*"
+      user: root
+      job: /usr/local/bin/zfs-auto-snapshot -q -g --label=hourly --keep=24 //
+
+  - name: setup cronjob to take daily snapshots
+    cron:
+      name: "Zfs Snapshot Daily"
+      minute: 59
+      hour: 23
+      weekday: 00
+      user: root
+      job: /usr/local/bin/zfs-auto-snapshot -q -g --label=weekly --keep=4 //
+
+  - name: setup cronjob to take monthly snapshots
+    cron:
+      name: "Zfs Snapshot Monthly"
+      minute: 00
+      hour: 00
+      day: 1
+      user: root
+      job: /usr/local/bin/zfs-auto-snapshot -q -g --label=monthly --keep=4 //
+
+  - name: setup cronjob to sync to backup server
+    cron:
+      name: "Syncoid"
+      minute: "*/30"
+      user: root
+      job: /usr/local/bin/syncoid -r {{zfs_backup_local_dataset}} {{zfs_backup_remote_dataset}}
+    when: zfs_backup_remote_dataset is defined and zfs_backup_local_dataset is defined
+
