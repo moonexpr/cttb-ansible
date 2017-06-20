@@ -1,0 +1,2 @@
+# desktop configuration
+lightdm_hide_users: true
