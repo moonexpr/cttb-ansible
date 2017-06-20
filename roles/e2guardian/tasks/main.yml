@@ -6,6 +6,8 @@
       state: latest
       install_recommends: yes
       update_cache: yes
+    tags:
+      - e2g_install
 
   - name: deploy e2guardian.conf
     template:
@@ -41,6 +43,8 @@
     with_items: "{{filtering_groups}}"
     notify:
       - restart e2g
+    tags:
+      - e2g_fx
 
 
   - name: deploy e2g global cttb lists
