@@ -29,6 +29,18 @@
       tags:
         zfs_ds
 
+    - name: create zvol
+      zfs:
+        name: "{{item[0].name}}/{{item[1].name}}"
+        state: present
+        volsize: "{{item[1].size}}" 
+      with_subelements:
+        - "{{zfs_pools}}"
+        - zvols
+      ignore_errors: yes
+      tags:
+        zfs_vol
+
     - name: set quota
       command: "zfs set quota={{item[1].quota|default('none')}} {{item[0].name}}/{{item[1].name}}"
       with_subelements:
@@ -36,4 +48,8 @@
         - datasets
       tags:
         zfs_ds_quota
+    - include: backups.yml
+      when: zfs_backup is defined
+      tags:
+        - zfs_backup
     when: zfs_pools is defined
