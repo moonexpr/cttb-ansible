@@ -1,0 +1,27 @@
+---
+
+# Content filter settings
+filter_ip: 10.11.5.2
+
+filtering_groups:
+  - name: igdvs
+    num: 1
+    naughtynesslimit: 75
+    bypass: 0
+    disablecontentscan: on
+    deepurlanalysis: on 
+    reportinglevel: 3
+    ips:
+      - 10.11.9.0/24
+      - 10.11.10.0/24
+    overrides:
+      - bannedphraselist
+      - bannedregexpurllist
+      - bannedsitelist
+      - exceptionsitelist
+      - exceptionurllist
+      - greysitelist
+      - weightedphraselist
+
+# squid tuning
+cache_mem: "4096 MB"

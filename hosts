@@ -22,13 +22,14 @@ vbox-pxe
 dvgs-dorm ansible_ssh_host=10.11.19.126
 kvm-testlab1
 kvm-testlab2
+floating ansible_ssh_host=10.11.19.40 #to rebuild any box, temporarily set to it
 
 # LXC
 
 ## testing containers
 lxc-srv1
 lxc-srv2
-lxc-testlab
+lxc-testlab1
 
 ## production containers
 lxc-srv-log
@@ -296,7 +297,7 @@ lxc-srv2
 
 [lxc-containers]
 lxc-srv1
-lxc-testlab
+lxc-testlab1
 lxc-srv-log
 
 [lxc-hosts]
