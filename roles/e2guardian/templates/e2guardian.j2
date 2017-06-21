@@ -1,4 +1,4 @@
-# e2guardian config file for version 3.4.0.3
+# e2guardian config file for version 4.1.1
 
 # Language dir where languages are stored for internationalisation.
 # The HTML template within this dir is only used when reportinglevel
@@ -531,54 +531,6 @@ logconnectionhandlingerrors = on
 # 
 logsslerrors = off
 
-
-# Fork pool options
-
-# If on, this causes DG to write to the log file whenever child processes are
-# created or destroyed (other than by crashes). This information can help in
-# understanding and tuning the following parameters, but is not generally
-# useful in production.
-logchildprocesshandling = on
-
-# sets the maximum number of processes to spawn to handle the incoming
-# connections.
-# We seem to hit a max of about 800
-maxchildren = 1000
-
-
-# sets the minimum number of processes to spawn to handle the incoming connections.
-# On large sites you might want to try 64.
-minchildren = 30
-
-
-# sets the minimum number of processes to be kept ready to handle connections.
-# On large sites you might want to try 16.
-minsparechildren = 20
-
-
-# sets the minimum number of processes to spawn when it runs out
-# On large sites you might want to try 20.
-preforkchildren = 10
-
-
-# sets the maximum number of processes to have doing nothing.
-# When this many are spare it will cull some of them.
-# On large sites you might want to try 64.
-maxsparechildren = 35
-
-
-# sets the maximum age of a child process before it croaks it.
-# This is the number of connections they handle before exiting.
-# On large sites you might want to try 10000.
-maxagechildren = 5000
-
-
-# sets the number of child process to kill/fork at each 5 sec interval.
-# during at gentle restart
-# defaults to preforkchildren
-# gentlechunk=10
-
-
 # Sets the maximum number client IP addresses allowed to connect at once.
 # Use this to set a hard limit on the number of users allowed to concurrently
 # browse the web. Set to 0 for no limit, and to disable the IP cache process.
@@ -611,6 +563,15 @@ ipipcfilename = '/tmp/.e2guardianipipc'
 # 
 # Defines process id directory and filename.
 #pidfilename = '/var/run/e2guardian.pid'
+
+# sets the number of worker threads to use - NEW for v4.0
+#
+# note this replaces all min/max etc children settings in previous versions
+#
+# This figure is the maximum number of concurrent connections.
+# If more connections are made, connections will queue until a worker thread is free.
+# On large site you might want to try 5000 (max value 20000)
+httpworkers = 900
 
 # Disable daemoning
 # If enabled the process will not fork into the background.
@@ -651,42 +612,24 @@ softrestart = off
 # Not used if usesmtp is disabled (filtergroup specific).
 mailer = '/usr/sbin/sendmail -t'
 
+# SSL config
+
 #SSL certificate checking path
 #Path to CA certificates used to validate the certificates of https sites.
 # if left blank openssl default ca certificate bundle will be used
 #Leave as default unless you want to load non-default cert bundle
 #sslcertificatepath = ''
 
-#SSL man in the middle
-#CA certificate path
-#Path to the CA certificate to use as a signing certificate for 
-#generated certificates.
-# default is blank - required if ssl_mitm is enabled.
-#cacertificatepath = '/home/stephen/dginstall/ca.pem'
-
-#CA private key path
-#path to the private key that matches the public key in the CA certificate.
-# default is blank - required if ssl_mitm is enabled.
-#caprivatekeypath = '/home/stephen/dginstall/ca.key'
-
-#Cert private key path
-#The public / private key pair used by all generated certificates
-# default is blank - required if ssl_mitm is enabled.
-#certprivatekeypath = '/home/stephen/dginstall/cert.key'
-
-#Generated cert path
-#The location where generated certificates will be saved for future use.
-#(must be writable by the dg user)
-# default is blank - required if ssl_mitm is enabled.
-#generatedcertpath = '/home/stephen/dginstall/generatedcerts/'
-
-#Warning: if you change the cert start/end time from default on a running 
-#         system you will need to clear the generated certificate 
-#         store and also may get problems on running client browsers
+# SSL MITM
+enablessl = {{enablessl}}
+cacertificatepath = '/etc/e2guardian/ssl/{{fn_rootca_crt}}'
+caprivatekeypath = '/etc/e2guardian/ssl/{{fn_private_root}}'
+certprivatekeypath = '/etc/e2guardian/ssl/{{fn_private_cert}}'
+generatedcertpath = '/etc/e2guardian/ssl/generatedcerts'
 
 #Generated cert start time (in unix time) - optional
-# defaults to 1417872951 = 6th Dec 2014
-# generatedcertstart = 1417872951 
+# defaults to 1417872951 = 1st Jul 2017
+generatedcertstart = {{generatedcertstart}}
 
 #Generated cert end time (in unix time) - optional
 # defaults to generatedcertstart + 10 years
