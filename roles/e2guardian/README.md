@@ -93,3 +93,16 @@ id in the configuration variable is very important.
 Ips that should be banned from the internet or completely bypass the content
 filter are handled at firewall level as this is much faster than getting them
 through E2Guardian. Please see the Firehol role for that.
+
+# HTTPS Filtering and MITM
+In order to enable https filtering you need to do the following:
+- copy the relevant ssl files to /etc/e2guardian/ssl
+- set the relevant variables in the host var:
+  - sslenabled = on
+  - fn_rootca_crt = filename_of_root_ca.crt
+  - fn_private_root = filename_of_ca_private_key.pem
+  - fn_private_cert = filename_of_private_key
+  - generatedcertstart = date_valid_since_for_certs_generated_on_the_fly
+
+with this done you can then turn on mitm individually per group by setting sslmitm = on in the filtering dictionary.
+
