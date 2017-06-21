@@ -50,3 +50,33 @@ reportinglevel = {{item.reportinglevel}}
 
 # /usr/share/e2guardian/languages/ukenglish/custom.html
 htmltemplate = '{% if item.bypass > 0 %}custom-bypass.html{% else %}custom.html{% endif %}'
+
+# SSL settings
+
+# SSL certificate checking
+# Check that ssl certificates for servers on https connections are valid
+# and signed by a ca in the configured path
+sslcertcheck = off
+
+# SSL man in the middle
+# Forge ssl certificates for all non-exception sites, decrypt the data then re encrypt it
+# using a different private key. Used to filter ssl sites
+sslmitm = {{item.sslmitm|default('off')}}
+
+# Limit SSL MITM to sites in greysslsitelist(s)
+# ignored if  sslmitm is off
+# SSL sites not matching greysslsitelist will be treat as if sslmitm is off.
+onlymitmsslgrey = off
+
+# Enable MITM site certificate checking
+# ignored if  sslmitm is off
+# default (recommended) is 'on'
+mitmcheckcert = on
+
+# Do not check ssl certificates for sites listed
+# Can be used to allow sites with self-signed or invalid certificates
+# or to reduced CPU load by not checking certs on heavily used sites (e.g. Google, Bing)
+# Use with caution!
+# Ignored if mitmcheckcert is 'off'
+#nocheckcertsitelist = '/etc/e2guardian/lists/nocheckcertsitelist'
+
