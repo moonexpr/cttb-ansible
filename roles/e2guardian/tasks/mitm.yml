@@ -1,0 +1,17 @@
+---
+
+  - name: create ssl certs dir
+    file:
+      path: "/etc/e2guardian/ssl"
+      state: directory
+      owner: e2guardian
+      group: e2guardian
+      mode: 0750
+
+  - name: create ssl generated certs dir
+    file:
+      path: "/etc/e2guardian/ssl/generatedcerts"
+      state: directory
+      owner: e2guardian
+      group: e2guardian
+      mode: 0750

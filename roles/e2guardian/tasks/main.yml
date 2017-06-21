@@ -145,3 +145,8 @@
       dest: /etc/e2guardian/lists/
       owner: e2guardian
       group: e2guardian
+
+  - include: mitm.yml
+    when: enablessl == on
+    tags:
+      - e2g_mitm
