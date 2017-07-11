@@ -33,7 +33,6 @@ zone_cttb:
   - sw-ao-srvrm: "172.30.20.5"
   - sw-ao-srvrm: "172.30.7.5"
   - sw-bh-north: "10.11.12.137"
-  - sw-bh-south: "10.11.12.159"
   - sw-dragon-way: "10.11.12.222"
   - sw-drbu-1234-tmp: "10.11.12.203"
   - sw-drbu-cdorm: "10.11.12.152"
