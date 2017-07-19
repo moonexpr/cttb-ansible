@@ -68,6 +68,7 @@ zone_cttb:
   - sw-solarium: "10.11.12.150"
   - sw-sub: "172.30.20.3"
   - sw-sub: "172.30.7.3"
+  - sw-tob-biology-lab: "10.11.12.87"
   - sw-tob-center: "10.11.12.136"
   - sw-tob-elevator-east: "10.11.12.165"
   - sw-tob-financial: "10.11.12.154"
