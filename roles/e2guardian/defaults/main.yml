@@ -11,7 +11,7 @@ filtering_groups:
     naughtynesslimit: 50 # default of 50 is for young kids
     bypass: 0 # 0 to disable, or num seconds bypass link is valid for
     disablecontentscan: 'on' # no AV scanning for now
-    deepurlanalysis: 'on' 
+    deepurlanalysis: 'on'
     sslmitm: 'off'
     reportinglevel: 3 # default, html page
     overrides: # lists to override per group
