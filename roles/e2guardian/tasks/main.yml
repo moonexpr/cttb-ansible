@@ -147,6 +147,6 @@
       group: e2guardian
 
   - include: mitm.yml
-    when: enablessl == on
+    when: enablessl == 'on'
     tags:
       - e2g_mitm
