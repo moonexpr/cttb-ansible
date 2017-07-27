@@ -57,3 +57,10 @@
       - xdg-user-dirs
       - xfce4-power-manager
       - xz-utils
+
+    # overrides lubuntu default triggering the LXDE session to be loaded which
+    # in turns make lxde pick up the wrong configs.
+  - name: remove lxde-common
+    apt:
+      name: lxde-common
+      state: absent
