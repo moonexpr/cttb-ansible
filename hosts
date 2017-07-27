@@ -86,6 +86,8 @@ aaron-desktop
 sue-desktop
 peterson-lenovo
 ao-public-pc
+jinsheng-vaio
+jinsheng-desktop
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
