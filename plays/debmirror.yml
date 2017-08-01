@@ -1,6 +1,6 @@
 ---
 
-- hosts: lxc-srv-debmirror
+- hosts: lxc-debmirror
   roles:
     - debmirror
   tasks:
