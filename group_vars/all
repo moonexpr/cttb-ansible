@@ -3,7 +3,7 @@
 # dns settings
 dns_domain: cttb
 dns_search: cttb
-dns_srv: "10.11.31.131"
+dns_srv: "10.11.1.29"
 
 # mirros and debian repositories
 apt_host: "apt.{{dns_domain}}"
