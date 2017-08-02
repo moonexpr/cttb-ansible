@@ -315,11 +315,13 @@ testlab1
 spike
 
 [unbound]
-unbound-adult
-unbound-igdvs
-lxc-testlab1
 lxc-ub-adult
 lxc-ub-igdvs
+
+[cups]
+lxc-cups-cttb
+lxc-cups-dvbs
+lxc-cups-dvgs
 
 [tomjohnson]
 tom-lenovo-e
