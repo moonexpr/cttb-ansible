@@ -159,6 +159,7 @@
     with_items:
       - popularity-contest
       - nano
+      - avahi-daemon
 
   - name: install basic software
     apt:
