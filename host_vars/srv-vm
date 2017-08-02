@@ -95,6 +95,33 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
+  - name: cups-cttb
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: cupsc_eth0
+        hwaddr: '00:16:3e:11:01:36'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: cups-dvbs
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: cupsb_eth0
+        hwaddr: '00:16:3e:11:01:37'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: cups-dvgs
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: cupsg_eth0
+        hwaddr: '00:16:3e:11:01:38'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
 
 nut_mode: netclient
 

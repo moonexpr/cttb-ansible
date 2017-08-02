@@ -1,0 +1,10 @@
+---
+
+cups_printer_list:
+  - name: 1234_HP_M225dw
+    uri: 'hp:/net/HP_LaserJet_Pro_MFP_M225dw?ip=10.11.23.124'
+    driver: 'model'
+    model: 'postscript-hp:0/ppd/hplip/HP/hp-laserjet_pro_mfp_m225_m226-ps.ppd'
+    location: '1234 Office Hallway'
+    info: 'HP M225 Duplex'
+    shared: 'true'
