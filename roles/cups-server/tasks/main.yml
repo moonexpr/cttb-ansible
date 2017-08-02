@@ -1,0 +1,56 @@
+---
+
+  - name: install cups and related pkgs
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: no
+    with_items:
+      - cups
+      - cups-daemon
+      - cups-server-common
+      - cups-bsd
+      - cups-pdf
+      - hplip
+      - hp-ppd
+      - printer-driver-postscript-hp
+
+  - name: add administrator to lp groups
+    user:
+      name: administrator
+      append: yes
+      groups: "lp,lpadmin"
+
+  - name: install cupsd.conf from template
+    template:
+      src: cupsd.j2
+      dest: /etc/cups/cupsd.conf
+      mode: 0640
+      owner: root
+      group: lp
+    notify:
+    - restart cups
+    tags:
+      - cups_cfg
+
+  # Until BUGFIX is released: https://bugs.launchpad.net/ubuntu/+source/cups/+bug/1598300
+  - name: fix cups systemd so it doesn't sleep
+    replace:
+      dest: /lib/systemd/system/cups.service
+      regexp: "^ExecStart=/usr/sbin/cupsd -l"
+      replace: "ExecStart=/usr/sbin/cupsd -f"
+
+  - systemd:
+      name: cups
+      state: started
+
+  - name: Install printers using cups_lpadmin
+    cups_lpadmin:
+      name: "{{item.name}}"
+      uri: "{{item.uri}}"
+      driver: "{{item.driver}}"
+      model: "{{item.model}}"
+      location: "{{item.location}}"
+      info: "{{item.info}}"
+      shared: "{{item.shared}}"
+    with_items: "{{cups_printer_list}}"
