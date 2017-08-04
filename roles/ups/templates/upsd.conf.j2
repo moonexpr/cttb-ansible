@@ -1,5 +1,5 @@
 # Network UPS Tools: example upsd configuration file
 
-{% if nut_mode == "netserver" %}
+{% if nut_mode == "netserver" or nut_mode == "standalone"%}
 LISTEN {{nut_server_address}} 3493
 {% endif %}
