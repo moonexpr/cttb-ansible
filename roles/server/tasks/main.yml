@@ -1,8 +1,8 @@
 ---
 
   - name: configure dns resolution
-    copy:
-      src: resolv.conf
+    template:
+      src: resolv.j2
       dest: /etc/resolv.conf
       mode: 0644
       owner: root
