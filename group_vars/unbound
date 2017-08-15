@@ -4,6 +4,9 @@ centralized_logging: true
 
 zone_cttb:
   - apt: "10.11.1.22"
+  - cups-cttb: "10.11.1.36"
+  - cups-dvbs: "10.11.1.37"
+  - cups-dvgs: "10.11.1.38"
   - dns1: "10.11.31.131"
   - dnsmasq: "10.11.15.97"
   - git: "10.11.1.21"
@@ -16,6 +19,8 @@ zone_cttb:
   - lxc-srv-log: "10.11.1.20"
   - nfs: "10.11.1.18"
   - ntp: "10.11.22.247"
+  - printer-srv: "10.11.1.36"
+  - printer-srv2: "10.11.1.37"
   - pxe: "10.11.1.23"
   - srv-gw: "10.11.1.1"
   - srv-vm: "10.11.1.3"
