@@ -1,0 +1,10 @@
+---
+
+cups_printer_list:
+  - name: DVBS_CSLab_M401n
+    uri: 'hp:/net/HP_LaserJet_400_M401dne?ip=10.11.21.214'
+    driver: 'model'
+    model: 'postscript-hp:0/ppd/hplip/HP/hp-laserjet_400_m401dne-ps.ppd'
+    location: 'DVBS HS CS Lab'
+    info: 'DVBS CS Lab HP M400n'
+    shared: 'true'

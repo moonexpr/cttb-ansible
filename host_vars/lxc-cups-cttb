@@ -8,3 +8,68 @@ cups_printer_list:
     location: '1234 Office Hallway'
     info: 'HP M225 Duplex'
     shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'
+  - name: ArtRoom_Xerox_6180N
+    uri: 'socket://10.11.14.35'
+    driver: 'model'
+    model: 'gutenprint.5.2://xerox-phaser_6180mfp-d/expert'
+    location: 'Art Room'
+    info: 'Xerox Phaser 6180MFP-D'
+    shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'
+  - name: DVS_EnvSciLab_M225dw
+    uri: 'hp:/net/HP_LaserJet_Pro_MFP_M225dw?ip=10.11.40.46'
+    driver: 'model'
+    model: 'postscript-hp:0/ppd/hplip/HP/hp-laserjet_pro_mfp_m225_m226-ps.ppd'
+    location: 'ToB 2nd floor, Environmental Science Lab'
+    info: 'Environmental Science Lab HP M225dw'
+    shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'
+  - name: DRBU_CSLab_M401dne
+    uri: 'hp:/net/HP_LaserJet_400_M401dne?ip=10.11.25.201'
+    driver: 'model'
+    model: 'postscript-hp:0/ppd/hplip/HP/hp-laserjet_400_m401dne-ps.ppd'
+    location: 'DRBU CS Lab'
+    info: 'DRBU CS Lab HP M401dne'
+    shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'
+  - name: DRBU_Cdorm_M401dne
+    uri: 'hp:/net/HP_LaserJet_400_M401dne?ip=10.11.21.126'
+    driver: 'model'
+    model: 'postscript-hp:0/ppd/hplip/HP/hp-laserjet_400_m401dne-ps.ppd'
+    location: 'DRBU Cdorm CS Lab'
+    info: 'DRBU Cdorm CS Lab HP M401dne'
+    shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'
+  - name: DVGS_Xerox_5845
+    uri: 'socket://10.11.28.233'
+    driver: 'ppd'
+    model: '/usr/share/ppd/custom/xrx5845.ppd'
+    location: 'DVGS Main Office'
+    info: 'DVGS Xerox 5845'
+    shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'
+  - name: DVBS_Xerox_7830
+    uri: 'socket://10.11.10.249'
+    driver: 'ppd'
+    model: '/usr/share/ppd/custom/xrx7830.ppd'
+    location: 'DVBS Main Office'
+    info: 'DVBS Xerox 5845'
+    shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'
+  - name: DVGS_ES_AO_M225dw
+    uri: 'hp:/net/HP_LaserJet_Pro_MFP_M225dw?ip=10.11.21.185'
+    driver: 'model'
+    model: 'postscript-hp:0/ppd/hplip/HP/hp-laserjet_pro_mfp_m225_m226-ps.ppd'
+    location: 'DVGS Elementary Admin Office'
+    info: 'DVGS ES AO HP M225dw'
+    shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'

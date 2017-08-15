@@ -11,7 +11,7 @@ ldap_groups:
 ldap_group_acl_string: "{% for item in ldap_groups %}({{item}}) {% endfor %}"
 
 # printing settings
-cups_srv: printer-srv
+cups_srv: cups-dvgs
 
 # desktop configuration
 lightdm_hide_users: false

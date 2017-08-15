@@ -14,6 +14,7 @@
       - hplip
       - hp-ppd
       - printer-driver-postscript-hp
+      - printer-driver-gutenprint
 
   - name: add administrator to lp groups
     user:
@@ -33,6 +34,14 @@
     tags:
       - cups_cfg
 
+  - name: install PPDs
+    copy:
+      src: "ppds/"
+      dest: "/usr/share/ppd/custom/"
+      owner: root
+      group: root
+      mode: 0644
+
   # Until BUGFIX is released: https://bugs.launchpad.net/ubuntu/+source/cups/+bug/1598300
   - name: fix cups systemd so it doesn't sleep
     replace:
@@ -40,9 +49,11 @@
       regexp: "^ExecStart=/usr/sbin/cupsd -l"
       replace: "ExecStart=/usr/sbin/cupsd -f"
 
-  - systemd:
+  - name: reaload cups after the sleep fix
+    systemd:
       name: cups
       state: started
+      daemon_reload: yes
 
   - name: Install printers using cups_lpadmin
     cups_lpadmin:
@@ -53,4 +64,7 @@
       location: "{{item.location}}"
       info: "{{item.info}}"
       shared: "{{item.shared}}"
+      options: "{{item.options|default(omit)}}"
     with_items: "{{cups_printer_list}}"
+    tags:
+      - cups_printers
