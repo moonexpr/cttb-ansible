@@ -60,34 +60,18 @@
     with_file:
       - ssh_keys/ansible.pub
 
-  # NOTE: no longer relevant on 16.04. They moved to systemd which inlcudes
-  # timesyncd that takes care of NTP
-  # and also the udev rule doesn't seem to be created anymore
-
-  - block:
-    - name: install ntpd
-      apt: 
-        name: ntp
-        state: present
-
-    - name: enable ntp service
-      service:
-        name: ntp
-        enabled: yes
-
-    - name: ensure ntp is running
-      service:
-        name: ntp
-        state: started
-
-    # fix persistent udev rules
-    - name: remove net udev rule
-      file:
-        src: /dev/null
-        dest: /etc/udev/rules.d/70-persistent-net.rules
-        state: link
-        force: yes
+  # fix persistent udev rules
+  - name: remove net udev rule
+    file:
+      src: /dev/null
+      dest: /etc/udev/rules.d/70-persistent-net.rules
+      state: link
+      force: yes
     when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'trusty'
+
+  - name: sync time
+    include_role:
+      name: time-server
 
   # set hostname
   # don't do this on lxc containers

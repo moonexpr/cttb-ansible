@@ -43,7 +43,6 @@ lxc-ldap
 lxc-cups-dvbs
 lxc-cups-dvgs
 lxc-cups-cttb
-lxc-ntp
 
 # CTTB infra
 asterix 
@@ -302,12 +301,7 @@ testlab1
 lxc-srv1
 lxc-srv2
 
-[lxc-containers]
-lxc-srv1
-lxc-testlab1
-lxc-srv-log
-
-[lxc-hosts]
+[lxd-hosts]
 srv-nas
 srv-bk-nas
 srv-vm

@@ -1,0 +1,39 @@
+---
+
+  - block:
+        - name: install ntp
+          apt:
+            name: "{{item}}"
+            state: present
+            install_recommends: no
+          with_items:
+            - ntp
+
+        - name: install ntp.conf from template
+          template:
+            src: ntp.j2
+            dest: /etc/ntp.conf
+            mode: 0644
+            owner: root
+            group: root
+          notify:
+          - restart ntp
+          tags:
+            - ntp_cfg
+
+        - name: disable systemd-timesyncd
+          systemd:
+            name: systemd-timesyncd
+            state: stopped
+            enabled: no
+    when: ansible_virtualization_type != "lxc"
+
+  - block:
+    - name: remove ntp
+      apt:
+        name: "{{item}}"
+        state: absent
+        purge: yes
+      with_items:
+        - ntp
+    when: ansible_virtualization_type == "lxc"

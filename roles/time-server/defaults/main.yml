@@ -1,0 +1,6 @@
+---
+
+ntp_servers:
+  - 3.ubuntu.pool.ntp.org
+  - ntp.berkeley.edu
+  - time.stanford.edu

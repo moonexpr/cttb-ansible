@@ -20,3 +20,5 @@ ni_preseed: "{{ni_server}}/netinstall/preseed"
 # big to fit in a repository
 ansible_assets_url: "http://theoverseer.{{dns_domain}}/ansible_assets"
 
+ntp_servers:
+  - ntp.{{dns_domain}}
