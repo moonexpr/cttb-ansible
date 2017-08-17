@@ -73,6 +73,10 @@
     include_role:
       name: time-server
 
+  - name: install CTTB CA cert
+    include_role:
+      name: cttb-ca-client
+
   # set hostname
   # don't do this on lxc containers
   # https://github.com/ansible/ansible/issues/19814

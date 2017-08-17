@@ -13,6 +13,14 @@
     # The "-f" means "fresh". It removes all existing symlinks then regenerate them, thus can delete links for removed authorities.
     command: update-ca-certificates -f
 
+  - name: create cttb-cacert.pem symlink
+    file:
+      src: /etc/ssl/certs/CTTB-Root-CA.pem
+      dest: /etc/ssl/certs/cttb-cacert.pem
+      owner: root
+      group: root
+      state: link
+
   - name: install the p11-kit-modules package
     apt:
       name: p11-kit-modules
