@@ -59,7 +59,7 @@ uidNumber: 1501
 gidNumber: 2001
 userPassword: amituofo
 loginShell: /bin/bash
-homeDirectory: /data/nfshomes/spike
+homeDirectory: /nfs/home/spike
 
 dn: uid=ruiliu,ou=People,dc=cttb
 objectClass: organizationalPerson
@@ -74,4 +74,4 @@ uidNumber: 1502
 gidNumber: 2001
 userPassword: amituofo
 loginShell: /bin/bash
-homeDirectory: /data/nfshomes/ruiliu
+homeDirectory: /nfs/home/ruiliu
