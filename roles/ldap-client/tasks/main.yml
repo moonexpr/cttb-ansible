@@ -73,6 +73,12 @@
     environment:
       DEBIAN_FRONTEND: noninteractive
 
+  - name: change bind_policy to avoid long timeouts
+    replace:
+      dest: /etc/ldap.conf
+      regexp: "^#bind_policy hard"
+      replace: "bind_policy soft"
+
   - name: enable start_tls
     replace:
       dest: /etc/ldap.conf
@@ -88,27 +94,18 @@
   - name: configure tls_cacertfile
     replace:
       dest: /etc/ldap.conf
-      regexp: "^#tls_cacertfile /etc/ssl/ca.cert"
-      replace: "tls_cacertfile /etc/ldap/cttb-cacert.pem"
+      regexp: "^[#]*tls_cacertfile /etc/.*"
+      replace: "tls_cacertfile /etc/ssl/certs/cttb-cacert.pem"
+    tags:
+      - ldap_c_tls
 
   - name: configure TLS_CACERT
     replace:
       dest: /etc/ldap/ldap.conf
-      regexp: "^TLS_CACERT	/etc/ssl/certs/ca-certificates.crt"
-      replace: "TLS_CACERT	/etc/ldap/cttb-cacert.pem"
+      regexp: "^TLS_CACERT	/etc/ssl/certs/.*"
+      replace: "TLS_CACERT	/etc/ssl/certs/cttb-cacert.pem"
     tags:
-      - testca
-
-  - name: copy CTTB CA certificate
-    copy:
-      src: cttb-cacert.pem
-      dest: /etc/ldap/cttb-cacert.pem
-      owner: root
-      group: root
-      mode: 0644
-      force: yes
-    tags:
-      - testca
+      - ldap_c_tls
 
   - name: fix to allow local passwd cmd to change LDAP password
     replace:
