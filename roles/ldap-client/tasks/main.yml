@@ -102,7 +102,7 @@
   - name: configure TLS_CACERT
     replace:
       dest: /etc/ldap/ldap.conf
-      regexp: "^TLS_CACERT	/etc/ssl/certs/.*"
+      regexp: "^TLS_CACERT	/etc/.*"
       replace: "TLS_CACERT	/etc/ssl/certs/cttb-cacert.pem"
     tags:
       - ldap_c_tls
