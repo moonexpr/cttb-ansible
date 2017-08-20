@@ -53,6 +53,8 @@ srv-bk-nas ansible_ssh_host=10.11.1.7
 srv-bk-vmgw ansible_ssh_host=10.11.1.9
 substation ansible_ssh_host=172.30.7.24
 
+fileserver
+
 # KVM
 
 ## on srv-nas
@@ -324,7 +326,12 @@ tom-lenovo-w
 tom-desktop-1
 tom-desktop-2
 
+[other-ldap-clients]
+fileserver
+rui-desktop
+
 [ldap-clients:children]
 drbu-cs-lab
 drbu-cdorm-lab
 dvgs-koha
+other-ldap-clients
