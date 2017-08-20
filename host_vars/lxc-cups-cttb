@@ -37,6 +37,7 @@ cups_printer_list:
     shared: 'true'
     options:
       sides: 'two-sided-long-edge'
+      media: 'na_letter_8.5x11in'
   - name: DRBU_Cdorm_M401dne
     uri: 'hp:/net/HP_LaserJet_400_M401dne?ip=10.11.21.126'
     driver: 'model'
@@ -60,7 +61,16 @@ cups_printer_list:
     driver: 'ppd'
     model: '/usr/share/ppd/custom/xrx7830.ppd'
     location: 'DVBS Main Office'
-    info: 'DVBS Xerox 5845'
+    info: 'DVBS Xerox 7830'
+    shared: 'true'
+    options:
+      sides: 'two-sided-long-edge'
+  - name: DVBS_Xerox_7830_for_Windows_Client
+    uri: 'socket://10.11.10.249'
+    driver: 'model'
+    model: 'raw'
+    location: 'DVBS Main Office'
+    info: 'DVBS Xerox 7830 for Windows Clients, using Raw device driver'
     shared: 'true'
     options:
       sides: 'two-sided-long-edge'
