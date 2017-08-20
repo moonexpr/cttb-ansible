@@ -73,12 +73,6 @@
     environment:
       DEBIAN_FRONTEND: noninteractive
 
-  - name: change bind_policy to avoid long timeouts
-    replace:
-      dest: /etc/ldap.conf
-      regexp: "^#bind_policy hard"
-      replace: "bind_policy soft"
-
   - name: enable start_tls
     replace:
       dest: /etc/ldap.conf
@@ -95,15 +89,15 @@
     replace:
       dest: /etc/ldap.conf
       regexp: "^[#]*tls_cacertfile /etc/.*"
-      replace: "tls_cacertfile /etc/ssl/certs/cttb-cacert.pem"
+      replace: "tls_cacertfile /etc/ssl/certs/ca-certificates.crt"
     tags:
       - ldap_c_tls
 
   - name: configure TLS_CACERT
     replace:
       dest: /etc/ldap/ldap.conf
-      regexp: "^TLS_CACERT	/etc/.*"
-      replace: "TLS_CACERT	/etc/ssl/certs/cttb-cacert.pem"
+      regexp: "^[#]*TLS_CACERT	/etc/.*"
+      replace: "TLS_CACERT	/etc/ssl/certs/ca-certificates.crt"
     tags:
       - ldap_c_tls
 
