@@ -3,6 +3,7 @@
 # E2G SSL
 enablessl: 'on'
 generatedcertstart: '1500857822'
+<<<<<<< 1eb8c35cf846df8c9a5201ca62f14d6bc08a0b66
 <<<<<<< 083db4ae3e04ce2cfc8c59594c795fbb687c18e1
 fn_rootca_crt: 'cttb-cacert.pem'
 fn_rootca_key: 'root-ca-key.pem'
@@ -12,6 +13,11 @@ fn_rootca_crt: 'cacert.crt'
 fn_private_root: 'cakey.pem'
 fn_private_cert: 'e2g-key.pem'
 >>>>>>> minor fixed to e2g role to get ready for 4.1.x upgrade.
+=======
+fn_rootca_crt: 'cttb-cacert.pem'
+fn_rootca_key: 'root-ca-key.pem'
+fn_e2g_key: 'e2g-key.pem'
+>>>>>>> large changeset to prepare to 4.1.2 E2G upgrade
 
 # Content filter settings
 filter_ip: 10.11.5.2
@@ -23,6 +29,7 @@ filtering_groups:
     naughtynesslimit: 400
     bypass: 300
     sslmitm: 'on'
+<<<<<<< 1eb8c35cf846df8c9a5201ca62f14d6bc08a0b66
 <<<<<<< 083db4ae3e04ce2cfc8c59594c795fbb687c18e1
     disablecontentscan: 'on'
     deepurlanalysis: 'on' 
@@ -30,6 +37,10 @@ filtering_groups:
     disablecontentscan: on
     deepurlanalysis: on 
 >>>>>>> minor fixed to e2g role to get ready for 4.1.x upgrade.
+=======
+    disablecontentscan: 'on'
+    deepurlanalysis: 'on' 
+>>>>>>> large changeset to prepare to 4.1.2 E2G upgrade
     reportinglevel: 3
     overrides:
       - exceptionsitelist
@@ -37,6 +48,7 @@ filtering_groups:
     num: 2
     naughtynesslimit: 175
     bypass: 0
+<<<<<<< 1eb8c35cf846df8c9a5201ca62f14d6bc08a0b66
 <<<<<<< 083db4ae3e04ce2cfc8c59594c795fbb687c18e1
     disablecontentscan: 'on'
     deepurlanalysis: 'on'
@@ -44,6 +56,10 @@ filtering_groups:
     disablecontentscan: on
     deepurlanalysis: on 
 >>>>>>> minor fixed to e2g role to get ready for 4.1.x upgrade.
+=======
+    disablecontentscan: 'on'
+    deepurlanalysis: 'on'
+>>>>>>> large changeset to prepare to 4.1.2 E2G upgrade
     reportinglevel: 3
     ips:
       - 10.11.14.65
@@ -70,6 +86,7 @@ filtering_groups:
     num: 3
     naughtynesslimit: 50
     bypass: 0
+<<<<<<< 1eb8c35cf846df8c9a5201ca62f14d6bc08a0b66
 <<<<<<< 083db4ae3e04ce2cfc8c59594c795fbb687c18e1
     disablecontentscan: 'on'
     deepurlanalysis: 'on' 
@@ -77,6 +94,10 @@ filtering_groups:
     disablecontentscan: on
     deepurlanalysis: on 
 >>>>>>> minor fixed to e2g role to get ready for 4.1.x upgrade.
+=======
+    disablecontentscan: 'on'
+    deepurlanalysis: 'on' 
+>>>>>>> large changeset to prepare to 4.1.2 E2G upgrade
     reportinglevel: 3
     ips:
       - 10.11.8.0/24

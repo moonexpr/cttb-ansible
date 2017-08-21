@@ -622,15 +622,9 @@ mailer = '/usr/sbin/sendmail -t'
 
 # SSL MITM
 enablessl = {{enablessl}}
-<<<<<<< b91eaca7bd12e605049994461dacfdb0a095aab0
 cacertificatepath = '/etc/ssl/certs/{{fn_rootca_crt}}'
 caprivatekeypath = '/etc/e2guardian/ssl/{{fn_rootca_key}}'
 certprivatekeypath = '/etc/e2guardian/ssl/{{fn_e2g_key}}'
-=======
-cacertificatepath = '/etc/e2guardian/ssl/{{fn_rootca_crt}}'
-caprivatekeypath = '/etc/e2guardian/ssl/{{fn_private_root}}'
-certprivatekeypath = '/etc/e2guardian/ssl/{{fn_private_cert}}'
->>>>>>> make all necessary changes for 3.5 -> 4.1 migration and add support for https filtering
 generatedcertpath = '/etc/e2guardian/ssl/generatedcerts'
 
 #Generated cert start time (in unix time) - optional
