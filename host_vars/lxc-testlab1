@@ -70,9 +70,10 @@ filtering_groups:
     num: 4
     naughtynesslimit: 75
     bypass: 0
-    disablecontentscan: on
-    deepurlanalysis: on 
+    disablecontentscan: 'on'
+    deepurlanalysis: 'on' 
     reportinglevel: 3
+    sslmitm: 'on'
     ips:
       - 10.11.9.0/24
       - 10.11.10.0/24

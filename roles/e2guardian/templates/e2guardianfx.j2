@@ -56,7 +56,16 @@ htmltemplate = '{% if item.bypass > 0 %}custom-bypass.html{% else %}custom.html{
 # SSL certificate checking
 # Check that ssl certificates for servers on https connections are valid
 # and signed by a ca in the configured path
+
+# A note about sslcertcheck, to not be confused with mitmcheckcert: former is
+# only used when mitm is off, it makes a connect to the proxy to check the
+# target host certificate and will abort client connection if cert check fails;
+# mitmcheckcert is by default on in MITM mode and does a certificate check on
+# making a SSL connection to a target host after e2g has already established a
+# ssl session with the browser and if cert check fails a block page is returned
+# to the user with the reason for the block.
 sslcertcheck = on
+mitmcheckcert = on
 
 # SSL man in the middle
 # Forge ssl certificates for all non-exception sites, decrypt the data then re encrypt it
@@ -67,11 +76,6 @@ sslmitm = {{item.sslmitm|default('off')}}
 # ignored if  sslmitm is off
 # SSL sites not matching greysslsitelist will be treat as if sslmitm is off.
 onlymitmsslgrey = off
-
-# Enable MITM site certificate checking
-# ignored if  sslmitm is off
-# default (recommended) is 'on'
-mitmcheckcert = on
 
 # Do not check ssl certificates for sites listed
 # Can be used to allow sites with self-signed or invalid certificates
