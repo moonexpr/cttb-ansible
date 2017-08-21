@@ -1,0 +1,5 @@
+"(^http://www\.youtube\.com/.*$)"->"YouTube-Restrict: Strict"
+"(^http://m\.youtube\.com/.*$)"->"YouTube-Restrict: Strict"
+"(^http://youtube\.googleapis\.com/.*$)"->"YouTube-Restrict: Strict"
+"(^http://youtubei\.googleapis\.com/.*$)"->"YouTube-Restrict: Strict"
+"(^http://www\.youtube-nocookie\.com/.*$)"->"YouTube-Restrict: Strict"

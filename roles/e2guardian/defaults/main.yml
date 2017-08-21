@@ -50,6 +50,7 @@ default_lists:
 
 # global lists we want all groups to include
 cttb_global_lists:
+  - addheaderregexplist
   - bannedphraselist
   - bannedregexpurllist
   - bannedsitelist
