@@ -622,9 +622,9 @@ mailer = '/usr/sbin/sendmail -t'
 
 # SSL MITM
 enablessl = {{enablessl}}
-cacertificatepath = '/etc/e2guardian/ssl/{{fn_rootca_crt}}'
-caprivatekeypath = '/etc/e2guardian/ssl/{{fn_private_root}}'
-certprivatekeypath = '/etc/e2guardian/ssl/{{fn_private_cert}}'
+cacertificatepath = '/etc/ssl/certs/{{fn_rootca_crt}}'
+caprivatekeypath = '/etc/e2guardian/ssl/{{fn_rootca_key}}'
+certprivatekeypath = '/etc/e2guardian/ssl/{{fn_e2g_key}}'
 generatedcertpath = '/etc/e2guardian/ssl/generatedcerts'
 
 #Generated cert start time (in unix time) - optional
