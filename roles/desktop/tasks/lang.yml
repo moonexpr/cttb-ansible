@@ -81,7 +81,8 @@
 
   - name: install sogoupinyin
     apt:
-      deb: "{{ansible_assets_url}}/sogou-{{ansible_architecture}}.deb"
+      name: sogoupinyin
+      state: present
   - name: remove sogoupingyin installed mirror
     file:
       path: /etc/apt/sources.list.d/sogoupinyin.list
