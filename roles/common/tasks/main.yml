@@ -69,6 +69,14 @@
       force: yes
     when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'trusty'
 
+  - name: set an explicit proxy if needed
+    lineinfile:
+      dest: /etc/environment
+      line: "{{ global_proxy }}"
+    when: global_proxy is defined
+    tags:
+      - common_proxy
+
   - name: sync time
     include_role:
       name: time-server
