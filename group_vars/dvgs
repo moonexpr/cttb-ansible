@@ -24,4 +24,7 @@ pic_bg: bg-dvgs.jpg
 openoffice: true
 
 # proxy for ssl filtering
-global_proxy: "https_proxy=http://10.11.1.1:8080/"
+global_proxy:
+  - "http_proxy=http://10.11.1.1:8080/"
+  - "https_proxy=http://10.11.1.1:8080/"
+  - "ftp_proxy=http://10.11.1.1:8080/"
