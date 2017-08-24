@@ -188,9 +188,9 @@ dvgs-laptop-2e
 dvgs-laptop-5e
 
 ## for teachers only
-dvgs-teacher-laptop-3e
 dvgs-teacher-laptop-1e
 dvgs-teacher-laptop-2e
+dvgs-teacher-laptop-3e
 
 ## disabled/not used atm
 #dvgs-lenovo-laptop-1 ansible_ssh_host=10.11.9.82
@@ -222,9 +222,9 @@ drbu-admin-office
 [dvgs-laptops]
 dvgs-laptop-2e
 dvgs-laptop-5e
-dvgs-teacher-laptop-3e
 dvgs-teacher-laptop-1e
 dvgs-teacher-laptop-2e
+dvgs-teacher-laptop-3e
 
 [dvgs-koha]
 koha-kiosk1
