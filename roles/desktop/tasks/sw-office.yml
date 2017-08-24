@@ -68,7 +68,8 @@
 
     - name: install kingsoft wps
       apt:
-        deb: "{{ansible_assets_url}}/wps-{{ansible_architecture}}.deb"
+        name: wps-office
+        state: present
 
     - name: install kingsoft fonts
       unarchive:
