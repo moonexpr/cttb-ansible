@@ -4,8 +4,8 @@
 lightdm_hide_users: true
 
 # look and feel
-pic_avatar: avatar-drbu.jpg
-pic_bg: bg-drbu.png
+pic_avatar: avatar-drbu.png
+pic_bg: bg-drbu.jpg
 
 # office
 libreoffice: true
