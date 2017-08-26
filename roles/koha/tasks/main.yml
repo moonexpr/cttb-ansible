@@ -1,0 +1,49 @@
+---
+
+  - name: add koha repo key
+    apt_key:
+      url: http://debian.koha-community.org/koha/gpg.asc
+      state: present
+    tags:
+      - koha_apt
+
+  - name: add koha mirrored repo
+    apt_repository:
+      repo: "deb {{deb_mirror}}/koha stable main"
+      state: present
+    tags:
+      - koha_apt
+
+  - name: install Koha
+    apt:
+      name: koha-common
+      state: present
+      update_cache: yes
+
+  - name: configure koha sites
+    template:
+      src: koha-sites.j2 
+      dest: /etc/koha/koha-sites.conf
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: Install apache
+    apt:
+      name: apache2
+      state: latest
+
+  - name: Enable Apache modules
+    apache2_module:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - cgi
+      - rewrite
+    notify:
+      - restart apache2
+
+  - name: Install MariaDB server
+    apt:
+      name: mariadb-server
+      state: present

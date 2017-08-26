@@ -92,6 +92,10 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
+      logs:
+        path: /logs
+        source: /data/logs
+        type: disk
   - name: git
     image: cttb-latest
     devices:
@@ -125,6 +129,15 @@ lxc_containers:
       eth0:
         host_name: metrics_e0
         hwaddr: '00:16:3e:11:01:24'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: koha
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: koha_e0
+        hwaddr: '00:16:3e:11:01:27'
         type: nic
         nictype: bridged
         parent: lxdbr0

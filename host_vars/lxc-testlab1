@@ -89,3 +89,6 @@ filtering_groups:
 
 # squid tuning
 cache_mem: "4096 MB"
+
+#koha
+koha_domain: "igdvs.{{dns_domain}}"
