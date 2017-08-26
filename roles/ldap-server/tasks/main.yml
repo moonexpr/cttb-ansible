@@ -12,7 +12,7 @@
     tags:
       set_password
 
-  - name: install slapd, ldap-utils and tls-related pkgs
+  - name: install slapd, ldap-utils, ldapscripts and tls-related pkgs
     apt:
       name: "{{item}}"
       state: present
@@ -21,6 +21,8 @@
       - ldap-utils
       - gnutls-bin
       - ssl-cert
+      - ldapscripts
+      # ldapscripts contains convenience tools such as ldapdeleteuser and ldaprenameuser.
 
   - name: copy LDIF files
     copy:
