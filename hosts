@@ -148,6 +148,7 @@ sw-unicorn                ansible_host=10.11.12.151
 ## spares
 sw-221
 
+############## Girl School #############
 # DVGS
 dvgs-main-office
 
@@ -204,6 +205,37 @@ dvgs-teacher-laptop-3e
 koha-kiosk1 ansible_ssh_host=10.11.17.1
 koha-kiosk2 ansible_ssh_host=10.11.17.2
 
+############## Boy School #############
+# DVBS 3rd Grade Classroom
+dvbs-3rd-pc01
+dvbs-3rd-pc02
+dvbs-3rd-pc03
+
+# DVBS 9th Grade Classroom
+dvbs-9th-pc01
+dvbs-9th-pc02
+dvbs-9th-pc03
+
+# DVBS Computer Lab
+dvbs-lab02
+dvbs-lab03
+dvbs-lab04
+dvbs-lab05
+dvbs-lab06
+dvbs-lab08
+dvbs-lab09
+dvbs-lab10
+dvbs-lab11
+dvbs-lab12
+dvbs-lab13
+
+# DVBS Library
+dvbs-lib01
+dvbs-lib02
+dvbs-lib03
+dvbs-lib04
+
+############## DRBU #############
 # DRBU Computer Lab
 drbu-cs-lab-pc1
 drbu-cs-lab-pc2
@@ -270,6 +302,41 @@ dvgs-cs-lab
 dvgs-dorm
 dvgs-art-studio
 
+[dvbs-3rd]
+dvbs-3rd-pc01
+dvbs-3rd-pc02
+dvbs-3rd-pc03
+
+[dvbs-9th]
+dvbs-9th-pc01
+dvbs-9th-pc02
+dvbs-9th-pc03
+
+[dvbs-cs-lab]
+dvbs-lab02
+dvbs-lab03
+dvbs-lab04
+dvbs-lab05
+dvbs-lab06
+dvbs-lab08
+dvbs-lab09
+dvbs-lab10
+dvbs-lab11
+dvbs-lab12
+dvbs-lab13
+
+[dvbs-library]
+dvbs-lib01
+dvbs-lib02
+dvbs-lib03
+dvbs-lib04
+
+[dvbs:children]
+dvbs-3rd
+dvbs-9th
+dvbs-cs-lab
+dvbs-library
+
 [drbu-cs-lab]
 drbu-cs-lab-pc1
 drbu-cs-lab-pc2
@@ -332,7 +399,15 @@ fileserver
 rui-desktop
 
 [ldap-clients:children]
+# DRBU
 drbu-cs-lab
 drbu-cdorm-lab
+# DVGS
 dvgs-koha
+# DVBS
+dvbs-3rd
+dvbs-9th
+dvbs-cs-lab
+dvbs-library
+# Others
 other-ldap-clients
