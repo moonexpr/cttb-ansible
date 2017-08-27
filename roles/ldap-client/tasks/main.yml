@@ -115,6 +115,8 @@
     service:
       name: systemd-logind
       state: restarted
+    ignore_errors: yes
+    # systemd-logind is not started in post-installation of a new machine, so ignore errors.
 
   - name: set up PAM for access control
     lineinfile:

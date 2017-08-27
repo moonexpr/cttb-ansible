@@ -26,6 +26,8 @@
             name: systemd-timesyncd
             state: stopped
             enabled: no
+          ignore_errors: yes
+          # When running ansible for post-installation of a new PC, there is no systemd-timesyncd, so ignore the errors.
     when: ansible_virtualization_type != "lxc"
 
   - block:

@@ -22,6 +22,8 @@
         force: yes
       notify:
         - restart autofs
+      ignore_errors: yes
+      # Upstart is not started yet so can not restart autofs in post-installation of a new machine, so ignore errors...
 
     - name: copy auto.master
       copy:
@@ -33,6 +35,7 @@
         force: yes
       notify:
         - restart autofs
+      ignore_errors: yes
 
     - name: setup auto.nfs
       template:
@@ -43,6 +46,7 @@
         mode: 0640
       notify:
         - restart autofs
+      ignore_errors: yes
     when: nfs_homes_host is defined and nfs_homes_export is defined
     tags:
       - autofs
