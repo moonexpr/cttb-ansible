@@ -112,6 +112,7 @@
       disable_ipv6
     notify:
       - reload ssh
+    ignore_errors: yes
 
   - name: enable centralized logging
     copy:
