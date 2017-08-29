@@ -17,6 +17,7 @@
 .Include</etc/e2guardian/lists/blacklists/onlinepayment/domains>
 .Include</etc/e2guardian/lists/blacklists/personalfinance/domains>
 .Include</etc/e2guardian/lists/blacklists/ringtones/domains>
+.Include</etc/e2guardian/lists/blacklists/webmail/domains>
 00000ah.info
 00000at.info
 007browse.info

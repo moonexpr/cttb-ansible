@@ -19,6 +19,7 @@ filtering_groups:
 
 # lists we want to be able to modify/override
 filtering_groups_lists:
+  - addheaderregexplist
   - bannedphraselist
   - bannedregexpurllist
   - bannedsitelist

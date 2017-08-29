@@ -106,3 +106,32 @@ In order to enable https filtering you need to do the following:
 
 with this done you can then turn on mitm individually per group by setting sslmitm = on in the filtering dictionary.
 
+# Migration to 4.2 and deployment instructions
+## PREPWORK
+
+- cd ~administrator
+- wget https://github.com/e2guardian/e2guardian/releases/download/v4.1.2/e2guardian_4.1.2_jessie_ubuntu16.04_amd64.deb
+
+## on spike's desktop as root in /etc/ssl/ca
+
+- scp private/ROOT-CA-key-nopw.pem administrator@srv-gw:~/root-ca-key.pem
+- scp private/e2guardian-nopw.pem administrator@srv-gw:~/
+
+- ./utils/ar srv-gw cttb-ca-client
+
+## MIGRATION
+
+- sudo su -
+- /etc/init.d/e2guardian stop
+- cp -rp /etc/e2guardian /etc/e2guardian-3.5
+- apt-get remove --purge e2guardian
+- dpkg -i ~administrator/e2guardian_4.1.2_jessie_ubuntu16.04_amd64.deb
+- ./utils/ar srv-gw e2guardian
+
+- sudo mv ~administrator/root-ca-key.pem /etc/e2guardian/ssl/
+- sudo chown e2guardian: /etc/e2guardian/ssl/root-ca-key.pem
+- sudo chmod 400 /etc/e2guardian/ssl/root-ca-key.pem
+
+- sudo mv ~administrator/e2guardian-nopw.pem /etc/e2guardian/ssl/e2g-key.pem
+- sudo chown e2guardian: /etc/e2guardian/ssl/e2g-key.pem
+- sudo chmod 400 /etc/e2guardian/ssl/e2g-key.pem
