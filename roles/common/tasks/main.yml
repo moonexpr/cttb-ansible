@@ -233,15 +233,15 @@
       owner: administrator
       group: administrator
 
-  - name: apt autoremove before a fix is in
-    command: /usr/bin/apt-get autoremove -y
-    tags:
-      - apt
-
   - name: dist-upgrade + autoremove purge
     apt:
       autoremove: yes
       purge: yes
       upgrade: dist
+    tags:
+      - apt
+
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
     tags:
       - apt
