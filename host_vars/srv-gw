@@ -41,7 +41,7 @@ server_interfaces:
 
 server_rt_tables:
   - {id: 7, tname: com7, weight: 1}
-  - {id: 20, tname: com20, weight: 1}
+  - {id: 20, tname: com20, weight: 10}
 
 # Internet restrictions based on time handled at firewall level
 timed_internet:
@@ -85,6 +85,17 @@ timed_internet:
       - days: "7"
         on_at: "14"
         off_at: "16"
+  - label: dvgs_laptops
+    type: ip
+    ips:
+      - 10.11.21.124
+      - 10.11.21.125
+      - 10.11.23.139
+      - 10.11.28.120
+    periods:
+      - days: "*"
+        on_at: "7"
+        off_at: "22"
   - label: dvgs
     type: net
     ips:

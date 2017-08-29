@@ -44,6 +44,10 @@ ipset4 addfile no_proxy_net net ipsets/no_proxy
 ipset4 create {{group.label}} hash:{{group.type}}
 {% endfor %}
 
+## other useful ipsets
+ipset4 create igdvs hash:net
+ipset4 addfile igdvs ipsets/igdvs
+
 # NAT and redirects
 
 ## this still needs port forwarding on the modem to work
@@ -91,6 +95,7 @@ router4 internet2cttb inface "${world}" outface "${home}"
   server sip accept dst 10.11.6.1 #traffic for asterisk server
 
   # for timed internet
+  client "dns http https" reject src ipset:igdvs
   client "https httpalt" reject src "{% for group in timed_internet %}ipset:{{group.label}} {% endfor %}"
 
   client all reject src 10.11.13.0/24 # temp registration range should not go online

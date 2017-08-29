@@ -1,0 +1,11 @@
+# ATTENTIO:
+# This file works only with firehol and cannot be read by ipset directly
+#
+# This file contains ips that should bypass the content filter
+# You can add entire subnets using CIDR notation, ie /24, but no ranges with -
+# ex:
+# 10.11.20.42
+# 10.11.1.0/24
+
+10.11.9.0/24
+10.11.10.0/24

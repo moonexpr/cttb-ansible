@@ -11,3 +11,4 @@
 10.11.30.225 # Dm gong desktop 1234
 10.11.4.0/24 # Temp bypass for ppl moved from .20
 10.11.1.0/24 # Requests originated on servers should not be filtered
+10.11.5.0/24 # Requests originated from lxc and test servers instances
