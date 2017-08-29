@@ -122,6 +122,12 @@
     notify:
       - restart e2g
 
+  - name: BUG| manually concatenate/include any addheaders files
+    debug:
+      msg: "See https://github.com/e2guardian/e2guardian/issues/272"
+    tags:
+      - debug
+
   # 2 pages with and without bypass
   - name: deploy custom.html access denied pages
     template:
