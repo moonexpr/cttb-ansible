@@ -1,3 +1,4 @@
+#listcategory: "IGDVS addheader"
 #add rule to filter Google
 
 "(^http[s]?:\/\/.*\.google\..*$)"->"X-GoogApps-Allowed-Domains: igdvs.org"

@@ -145,6 +145,7 @@ filtering_groups:
     reportinglevel: 3
     overrides:
       - exceptionsitelist
+      - greysitelist
   - name: adult_no_bypass
     num: 2
     naughtynesslimit: 175

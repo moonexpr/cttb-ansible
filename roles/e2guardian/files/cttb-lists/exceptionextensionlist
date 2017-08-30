@@ -1,3 +1,4 @@
+#listcategory: "CTTB Except Ext list"
 # Exception file extension list
 # Use as a filter group's "exceptionextensionlist",
 # to override a blanket download block.

@@ -58,6 +58,8 @@ cttb_global_lists:
   - exceptionextensionlist
   - exceptionregexpurllist
   - exceptionsitelist
+  - greysitelist
+  - greyurllist
   - urlregexplist
   - weightedphraselist
 
