@@ -21,3 +21,7 @@ ldap_groups:
 ldap_guest_string: "(drbu-guests) "
 ldap_group_acl_string1: "{% for item in ldap_groups %}({{item}}) {% endfor %}"
 ldap_group_acl_string: "{{ldap_group_acl_string1}}{% if inventory_hostname in groups['drbu-cs-lab-guest'] %}{{ldap_guest_string}}{%endif%}"
+
+# printing settings
+cups_srv: cups-cttb
+
