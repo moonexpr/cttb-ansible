@@ -254,6 +254,15 @@ drbu-cdorm-office-pc1
 
 drbu-admin-office
 
+# DRBU South Wing Computer Lab. Women's and men's room.
+drbu-sw-cslab-w-pc1
+drbu-sw-cslab-w-pc2
+drbu-sw-cslab-w-pc3
+
+drbu-sw-cslab-m-pc1
+drbu-sw-cslab-m-pc2
+drbu-sw-cslab-m-pc3
+
 [dvgs-laptops]
 dvgs-laptop-2e
 dvgs-laptop-5e
@@ -363,11 +372,26 @@ drbu-cs-lab-pc2
 [drbu-staff]
 sue-desktop
 
+[drbu-sw-cslab-w]
+drbu-sw-cslab-w-pc1
+drbu-sw-cslab-w-pc2
+drbu-sw-cslab-w-pc3
+
+[drbu-sw-cslab-m]
+drbu-sw-cslab-m-pc1
+drbu-sw-cslab-m-pc2
+drbu-sw-cslab-m-pc3
+
+[drbu-sw-cslab:children]
+drbu-sw-cslab-w
+drbu-sw-cslab-m
+
 [drbu:children]
 drbu-cs-lab
 drbu-cs-lab-guest
 drbu-cdorm-lab
 drbu-staff
+drbu-sw-cslab
 
 [testing]
 testlab1
@@ -405,6 +429,7 @@ rui-desktop
 # DRBU
 drbu-cs-lab
 drbu-cdorm-lab
+drbu-sw-cslab
 # DVGS
 dvgs-koha
 # DVBS
