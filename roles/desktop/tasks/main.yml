@@ -16,6 +16,26 @@
       owner: root
       group: root
 
+  # Add /bin/bash as GS "student" account shell
+  - name: Add /bin/bash as GS "student" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^student:x:2000:2000:Student:/home/student:.*"
+      replace: "student:x:2000:2000:Student:/home/student:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - gs_acct_shell
+
+  # Add /bin/bash as GS "teacher" account shell
+  - name: Add /bin/bash as GS "teacher" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^teacher:x:1999:1999:Teacher:/home/teacher:.*"
+      replace: "teacher:x:1999:1999:Teacher:/home/teacher:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - gs_acct_shell
+
   # install all lubuntu core packages
   - include: lubuntu.yml
     tags:
