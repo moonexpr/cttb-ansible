@@ -19,7 +19,6 @@ asus-test
 vbox-srv
 vbox-desktop
 vbox-pxe
-dvgs-dorm ansible_ssh_host=10.11.19.126
 kvm-testlab1
 kvm-testlab2
 floating ansible_ssh_host=10.11.19.40 #to rebuild any box, temporarily set to it
