@@ -39,6 +39,17 @@
       - brasero
       - audacity
 
+  # Install on DRBU machines, later could be everywhere.
+  - name: install dictionary software and dictionaries
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - goldendict
+    when: '"drbu" in group_names'
+    tags:
+      - dictionary
+
   - include: sw-office.yml
     tags:
       - office
