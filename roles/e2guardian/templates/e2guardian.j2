@@ -123,6 +123,12 @@ proxyport = 3128
 # Min 5 - Max 100
 proxytimeout = 20
 
+# Limit number of http header lines in a request/response
+# (to guard against attacks)
+# Minimum 10 max 2000
+# default 40
+maxheaderlines = 100
+
 #Proxy failure log interval
 # The interval between log status entries when proxy is not responding
 # minimum is proxytimeout - maximum 3600 (= 1 hour)
