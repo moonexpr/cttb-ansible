@@ -87,8 +87,8 @@ cups_printer_list:
     uri: 'socket://10.11.43.85'
     driver: 'model'
     model: 'postscript-hp:0/ppd/hplip/HP/hp-laserjet_400_m401dne-ps.ppd'
-    location: 'DRBU South Wing CSLab Women\'s Room'
-    info: 'DRBU South Wing CSLab Women\'s Room HP M401dne'
+    location: 'DRBU South Wing CSLab Women"s Room'
+    info: 'DRBU South Wing CSLab Women"s Room HP M401dne'
     shared: 'true'
     options:
       sides: 'two-sided-long-edge'
@@ -96,8 +96,8 @@ cups_printer_list:
     uri: 'socket://10.11.43.88'
     driver: 'model'
     model: 'postscript-hp:0/ppd/hplip/HP/hp-laserjet_400_m401dne-ps.ppd'
-    location: 'DRBU South Wing CSLab Men\'s Room'
-    info: 'DRBU South Wing CSLab Men\'s Room HP M401dne'
+    location: 'DRBU South Wing CSLab Men"s Room'
+    info: 'DRBU South Wing CSLab Men"s Room HP M401dne'
     shared: 'true'
     options:
       sides: 'two-sided-long-edge'
