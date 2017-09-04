@@ -1,0 +1,22 @@
+---
+
+  - name: install goldendict
+    apt:
+      name: "{{item}}"
+      state: latest
+      install_recommends: yes
+    with_items:
+      - goldendict
+    tags:
+      - goldendict
+
+  - name: install dictionaries
+    unarchive:
+      remote_src: yes
+      src: "{{ansible_assets_url}}/goldendict.tar.gz"
+      dest: /usr/local/share/
+      owner: root
+      group: root
+      mode: 0755
+    tags:
+      - goldendict

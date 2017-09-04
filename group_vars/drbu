@@ -25,3 +25,5 @@ ldap_group_acl_string: "{{ldap_group_acl_string1}}{% if inventory_hostname in gr
 # printing settings
 cups_srv: cups-cttb
 
+# dictionaries for goldendict
+goldendict: true

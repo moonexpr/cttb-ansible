@@ -50,6 +50,9 @@
     tags:
       - sw_install
 
+  - include: sw-goldendict.yml
+    when: goldendict is defined
+
   # install languages support
   - include: lang.yml
     tags:
