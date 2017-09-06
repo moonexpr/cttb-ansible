@@ -31,3 +31,8 @@ global_proxy:
   - "http_proxy=http://10.11.1.1:8080/"
   - "https_proxy=http://10.11.1.1:8080/"
   - "ftp_proxy=http://10.11.1.1:8080/"
+
+# Additional software
+additional_sw:
+  # The eclipse-platform pkg requires openjdk-8-jdk, so JDK 8 is also installed.
+  - eclipse-platform
