@@ -212,6 +212,8 @@
       state: latest
       install_recommends: yes
     with_items: "{{additional_sw | default([])}}"
+    tags:
+      - additional_sw
 
   - name: enable unattended upgrades
     copy:
@@ -261,3 +263,4 @@
     command: /usr/bin/apt-get autoremove -y
     tags:
       - apt
+      - apt_autoremove
