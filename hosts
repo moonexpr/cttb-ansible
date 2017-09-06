@@ -230,7 +230,6 @@ dvbs-lab12
 dvbs-lab13
 
 # DVBS Library
-dvbs-lib01
 dvbs-lib02
 dvbs-lib03
 dvbs-lib04
@@ -335,7 +334,6 @@ dvbs-lab12
 dvbs-lab13
 
 [dvbs-library]
-dvbs-lib01
 dvbs-lib02
 dvbs-lib03
 dvbs-lib04
