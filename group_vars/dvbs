@@ -26,3 +26,8 @@ openoffice: true
 # printing settings
 cups_default_queue: DVBS_CSLab_M401n
 
+# proxy for ssl filtering
+global_proxy:
+  - "http_proxy=http://10.11.1.1:8080/"
+  - "https_proxy=http://10.11.1.1:8080/"
+  - "ftp_proxy=http://10.11.1.1:8080/"
