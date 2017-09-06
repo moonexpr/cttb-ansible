@@ -158,6 +158,22 @@
       - popularity-contest
       - nano
       - avahi-daemon
+      - pidgin-data
+      - pidgin
+      - transmission-common
+      - transmission-gtk
+      - transmission
+    tags:
+      - remove_sw
+
+  - name: remove sw requested for this box
+    apt:
+      name: "{{item}}"
+      state: absent
+    with_items: "{{remove_sw}}"
+    when: remove_sw is defined
+    tags:
+      - remove_sw
 
   - name: install basic software
     apt:
