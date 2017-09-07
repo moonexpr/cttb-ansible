@@ -216,6 +216,10 @@ dvbs-9th-pc01
 dvbs-9th-pc02
 dvbs-9th-pc03
 
+# DVBS Main Office
+dvbs-office-pc1
+dvbs-office-pc2
+
 # DVBS Computer Lab
 dvbs-lab02
 dvbs-lab03
@@ -260,6 +264,7 @@ drbu-sw-cslab-m-pc1
 drbu-sw-cslab-m-pc2
 drbu-sw-cslab-m-pc3
 
+# Girl School.
 [dvgs-laptops]
 dvgs-laptop-2e
 dvgs-laptop-5e
@@ -310,6 +315,7 @@ dvgs-cs-lab
 dvgs-dorm
 dvgs-art-studio
 
+# Boy School.
 [dvbs-3rd]
 dvbs-3rd-pc01
 dvbs-3rd-pc02
@@ -338,12 +344,18 @@ dvbs-lib02
 dvbs-lib03
 dvbs-lib04
 
+[dvbs-main-office]
+dvbs-office-pc1
+dvbs-office-pc2
+
 [dvbs:children]
 dvbs-3rd
 dvbs-9th
 dvbs-cs-lab
 dvbs-library
+dvbs-main-office
 
+# DRBU.
 [drbu-cs-lab]
 drbu-cs-lab-pc1
 drbu-cs-lab-pc2
@@ -388,6 +400,7 @@ drbu-cdorm-lab
 drbu-staff
 drbu-sw-cslab
 
+# Other groups.
 [testing]
 testlab1
 lxc-srv1
@@ -432,5 +445,6 @@ dvbs-3rd
 dvbs-9th
 dvbs-cs-lab
 dvbs-library
+dvbs-main-office
 # Others
 other-ldap-clients
