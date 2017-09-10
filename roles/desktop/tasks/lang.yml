@@ -98,3 +98,24 @@
     apt:
       name: fcitx-chewing
       state: present
+
+  - name: install Sanskrit language support
+    apt:
+      name: "{{item}}"
+      state: present
+    with_items:
+      - fcitx-m17n
+      - fonts-deva
+      - firefox-locale-hi
+      - hunspell-hi
+      - hyphen-hi
+      - libreoffice-l10n-hi
+      - libreoffice-help-hi
+      - language-pack-hi
+      - language-pack-hi-base
+      - language-pack-gnome-hi
+      - language-pack-gnome-hi-base
+    when: sanskrit is defined
+    tags:
+      - sanskrit
+

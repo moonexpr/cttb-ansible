@@ -27,3 +27,6 @@ cups_srv: cups-cttb
 
 # dictionaries for goldendict
 goldendict: true
+
+# Sanskrit support
+sanskrit: true
