@@ -365,7 +365,7 @@ drbu-cs-lab-pc5
 drbu-cs-lab-pc6
 drbu-admin-office
 
-[drbu-cdorm-lab]
+[drbu-cdorm]
 drbu-cdorm-lab-pc1
 drbu-cdorm-lab-pc2
 drbu-cdorm-lab-pc3
@@ -396,7 +396,7 @@ drbu-sw-cslab-m
 [drbu:children]
 drbu-cs-lab
 drbu-cs-lab-guest
-drbu-cdorm-lab
+drbu-cdorm
 drbu-staff
 drbu-sw-cslab
 
@@ -436,7 +436,7 @@ rui-desktop
 [ldap-clients:children]
 # DRBU
 drbu-cs-lab
-drbu-cdorm-lab
+drbu-cdorm
 drbu-sw-cslab
 # DVGS
 dvgs-koha
