@@ -72,12 +72,9 @@
         state: present
 
     - name: install kingsoft fonts
-      unarchive:
-        remote_src: yes
-        src: "{{ansible_assets_url}}/wps-office-fonts.tar.gz"
-        dest: /usr/share/fonts
-        owner: root
-        group: root
+      apt:
+        name: wps-office-fonts
+        state: present
       register: font_install
 
     - name: regen font cache
@@ -85,4 +82,6 @@
       when: font_install|changed
 
     when: wpsoffice == true
+    tags:
+      - wps
 
