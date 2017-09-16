@@ -1,5 +1,7 @@
 ---
 
+centralized_logging: true
+
 # Network interfaces
 server_interfaces:
   - name: eth0
