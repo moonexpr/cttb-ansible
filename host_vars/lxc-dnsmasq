@@ -1,0 +1,12 @@
+---
+
+# Network interfaces
+server_interfaces:
+  - name: eth0
+    id: 1
+    mac: '00:16:3e:11:01:19'
+    auto: True
+    inet: static
+    address: 10.11.1.19
+    netmask: 255.255.0.0
+    static_routes: []

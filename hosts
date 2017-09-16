@@ -35,6 +35,7 @@ lxc-log
 lxc-git
 lxc-pxe
 lxc-debmirror
+lxc-dnsmasq
 lxc-metrics
 lxc-ub-adult
 lxc-ub-igdvs
