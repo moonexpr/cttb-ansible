@@ -196,6 +196,7 @@
       - mtr
       - nload
       - obnam
+      - p11-kit-modules
       - smartmontools
       - socat
       - tcpdump
@@ -204,13 +205,13 @@
       - unattended-upgrades
       - util-linux
       - vim
+      - wakeonlan
       - whois
 
   - name: install sw requested for this box
     apt:
       name: "{{item}}"
       state: latest
-      install_recommends: yes
     with_items: "{{additional_sw | default([])}}"
     tags:
       - additional_sw
