@@ -265,3 +265,8 @@
     tags:
       - apt
       - apt_autoremove
+
+  - name: set the system locale. Defined in group_vars, default is en_US.UTF-8
+    command: /usr/sbin/update-locale LANG={{ locale }} LANGUAGE
+    tags:
+      - locale

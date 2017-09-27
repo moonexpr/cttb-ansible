@@ -1,5 +1,8 @@
 ---
 
+# Locale
+locale: en_US.UTF-8
+
 # dns settings
 dns_domain: cttb
 dns_search: cttb
