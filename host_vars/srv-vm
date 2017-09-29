@@ -131,6 +131,33 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
+  - name: wiki
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: wiki_eth0
+        hwaddr: '00:16:3e:11:01:31'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: mon
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: mon_eth0
+        hwaddr: '00:16:3e:11:01:26'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: asterisk
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: asterisk_eth0
+        hwaddr: '00:16:3e:11:01:32'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
 
 nut_mode: netclient
 
