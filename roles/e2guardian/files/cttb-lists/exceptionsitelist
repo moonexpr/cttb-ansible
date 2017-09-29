@@ -62,8 +62,10 @@ barnesandnoble.com
 bath.ac.uk
 bbc.co.uk 
 bbc.com
-bc.ca
+# Commented out. Too broad? - Rui.
+#bc.ca
 bccampus.ca
+bccat.bc.ca
 bccdc.ca
 bccrc.ca
 bcit.ca
@@ -290,6 +292,8 @@ gov.nt.ca
 # Nunavut Territory Canada government.
 gov.nu.ca
 govolunteer.ca
+# Ontario Canada government.
+gov.on.ca
 gov.tw
 # Yukon Canada government.
 gov.yk.ca
@@ -324,6 +328,7 @@ hpsseed.com
 hs-heilbronn.de
 huanqiu.com
 huronuc.ca
+huronuc.on.ca
 hwr-berlin.de
 ice.cam.ac.uk
 icpo-65.blogspot.com
@@ -459,7 +464,8 @@ nscad.ca
 ocadu.ca
 odb.outbrain.com
 oddwires.com
-on.ca
+# Commented out below line, too broad?
+#on.ca
 # Ontario Canada government:
 ontario.ca
 opendns.com
@@ -469,6 +475,7 @@ oracle.com
 oracleofbacon.org
 ort.org
 osuosl.org
+ouac.on.ca
 ox.ac.uk
 paipai.com
 palinstravles.co.uk
