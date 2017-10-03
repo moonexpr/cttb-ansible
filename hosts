@@ -22,6 +22,8 @@ vbox-pxe
 kvm-testlab1
 kvm-testlab2
 floating ansible_ssh_host=10.11.19.40 #to rebuild any box, temporarily set to it
+rui-test1
+rui-test2
 
 # LXC
 
