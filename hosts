@@ -440,6 +440,7 @@ tom-desktop-2
 [other-ldap-clients]
 fileserver
 rui-desktop
+lxc-srv1
 
 [ldap-clients:children]
 # DRBU
