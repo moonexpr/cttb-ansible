@@ -87,7 +87,7 @@ loading-dock ansible_ssh_host=10.11.23.165
 matt-desktop
 musicroom-desktop
 rui-desktop
-rui-test-box
+rui-test-desktop
 wei-desktop
 ws-frank ansible_ssh_host=10.11.30.97
 tom-lenovo-e
@@ -196,6 +196,12 @@ dvgs-dorm-pc14
 dvgs-laptop-2e
 dvgs-laptop-5e
 
+# dvgs senior laptops
+dvgs-senior-laptop-1e
+dvgs-senior-laptop-1w
+dvgs-senior-laptop-2e
+dvgs-senior-laptop-2w
+
 ## for teachers only
 dvgs-teacher-laptop-1e
 dvgs-teacher-laptop-2e
@@ -209,8 +215,8 @@ dvgs-teacher-laptop-3e
 #dvgs-vostro-laptop-7 ansible_ssh_host=10.11.9.87
 
 # koha kiosk library
-koha-kiosk1 ansible_ssh_host=10.11.17.1
-koha-kiosk2 ansible_ssh_host=10.11.17.2
+koha-kiosk1
+koha-kiosk2
 
 ############## Boy School #############
 # DVBS 3rd Grade Classroom
@@ -278,6 +284,10 @@ dvgs-laptop-5e
 dvgs-teacher-laptop-1e
 dvgs-teacher-laptop-2e
 dvgs-teacher-laptop-3e
+dvgs-senior-laptop-1e
+dvgs-senior-laptop-1w
+dvgs-senior-laptop-2e
+dvgs-senior-laptop-2w
 
 [dvgs-koha]
 koha-kiosk1
