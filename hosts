@@ -21,9 +21,7 @@ vbox-desktop
 vbox-pxe
 kvm-testlab1
 kvm-testlab2
-floating ansible_ssh_host=10.11.19.40 #to rebuild any box, temporarily set to it
-rui-test1
-rui-test2
+floating ansible_ssh_host=10.11.43.136 #to rebuild any box, temporarily set to it
 
 # LXC
 
@@ -31,6 +29,9 @@ rui-test2
 lxc-srv1
 lxc-srv2
 lxc-testlab1
+lxd-test
+rui-test1
+rui-test2
 
 ## production containers
 lxc-asterisk
@@ -277,6 +278,11 @@ drbu-sw-cslab-m-pc1
 drbu-sw-cslab-m-pc2
 drbu-sw-cslab-m-pc3
 
+# DRBU Sudhana Center
+drbu-sc-pc1
+drbu-sc-pc2
+drbu-sc-pc3
+
 # Girl School.
 [dvgs-laptops]
 dvgs-laptop-2e
@@ -407,6 +413,13 @@ drbu-sw-cslab-m-pc1
 drbu-sw-cslab-m-pc2
 drbu-sw-cslab-m-pc3
 
+[drbu-sudhana]
+drbu-sc-pc1
+drbu-sc-pc2
+drbu-sc-pc3
+floating
+floating2
+
 [drbu-sw-cslab:children]
 drbu-sw-cslab-w
 drbu-sw-cslab-m
@@ -417,12 +430,15 @@ drbu-cs-lab-guest
 drbu-cdorm
 drbu-staff
 drbu-sw-cslab
+drbu-sudhana
 
 # Other groups.
-[testing]
-testlab1
-lxc-srv1
-lxc-srv2
+[lxc-testing]
+lxc-testlab1
+lxc-spike-test1
+lxc-spike-test2
+lxc-rui-test1
+lxc-rui-test2
 
 [lxd-hosts]
 srv-nas
@@ -430,7 +446,7 @@ srv-bk-nas
 srv-vm
 srv-bk-vmgw
 testlab1
-spike
+lxd-test
 
 [unbound]
 lxc-ub-adult
@@ -450,7 +466,9 @@ tom-desktop-2
 [other-ldap-clients]
 fileserver
 rui-desktop
-lxc-srv1
+lxc-spike-test1
+vbox-desktop
+lxc-testlab1
 
 [ldap-clients:children]
 # DRBU

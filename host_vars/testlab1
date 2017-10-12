@@ -28,77 +28,77 @@ zfs_pools:
       - name: kvm
         options: ''
 
-lxc: true
+#lxc: true
 
-lxc_storage:
-  name: default
-  type: zfs
-  source: data/lxd
-
-lxc_containers:
-  - name: testlab1
-    image: cttb-latest
-    state: stopped
-    devices:
-      eth0:
-        host_name: tl1_eth0
-        hwaddr: '00:16:3e:49:72:81'
-        type: nic
-        nictype: bridged
-        parent: lxdbr0
-  - name: rui-test1
-    image: cttb-latest
-    devices:
-      eth0:
-        host_name: rui_test1_eth0
-        hwaddr: '00:16:3e:11:05:13'
-        type: nic
-        nictype: bridged
-        parent: lxdbr0
-  - name: rui-test2
-    image: cttb-latest
-    devices:
-      eth0:
-        host_name: rui_test2_eth0
-        hwaddr: '00:16:3e:11:05:14'
-        type: nic
-        nictype: bridged
-        parent: lxdbr0
-
-kvm: true
-qemu_bridge: lxdbr0
-qemu_dir: /data/kvm
-qemu_vms:
-  - name: kvm-testlab1
-    smp: 2
-    mem: 2G
-    disks:
-      - id: root
-        file: root.raw
-        index: 1
-        format: raw
-      - id: data
-        file: data.raw
-        index: 2
-        format: raw
-    ifaces:
-      - id: eth0
-        mac: "52:54:00:2b:60:5b"
-  - name: kvm-testlab2
-    smp: 2
-    mem: 2G
-    disks:
-      - id: root
-        file: root.raw
-        index: 1
-        format: raw
-      - id: data
-        file: data.raw
-        index: 2
-        format: raw
-    ifaces:
-      - id: eth0
-        mac: "52:54:00:11:05:12"
+#lxc_storage:
+#  name: default
+#  type: zfs
+#  source: data/lxd
+#
+#lxc_containers:
+#  - name: testlab1
+#    image: cttb-latest
+#    state: stopped
+#    devices:
+#      eth0:
+#        host_name: tl1_eth0
+#        hwaddr: '00:16:3e:49:72:81'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
+#  - name: rui-test1
+#    image: cttb-latest
+#    devices:
+#      eth0:
+#        host_name: rui_test1_eth0
+#        hwaddr: '00:16:3e:11:05:13'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
+#  - name: rui-test2
+#    image: cttb-latest
+#    devices:
+#      eth0:
+#        host_name: rui_test2_eth0
+#        hwaddr: '00:16:3e:11:05:14'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
+#
+#kvm: true
+#qemu_bridge: lxdbr0
+#qemu_dir: /data/kvm
+#qemu_vms:
+#  - name: kvm-testlab1
+#    smp: 2
+#    mem: 2G
+#    disks:
+#      - id: root
+#        file: root.raw
+#        index: 1
+#        format: raw
+#      - id: data
+#        file: data.raw
+#        index: 2
+#        format: raw
+#    ifaces:
+#      - id: eth0
+#        mac: "52:54:00:2b:60:5b"
+#  - name: kvm-testlab2
+#    smp: 2
+#    mem: 2G
+#    disks:
+#      - id: root
+#        file: root.raw
+#        index: 1
+#        format: raw
+#      - id: data
+#        file: data.raw
+#        index: 2
+#        format: raw
+#    ifaces:
+#      - id: eth0
+#        mac: "52:54:00:11:05:12"
         
 
 #nut_mode: nutserver

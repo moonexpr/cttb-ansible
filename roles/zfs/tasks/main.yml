@@ -48,8 +48,10 @@
         - datasets
       tags:
         zfs_ds_quota
+
     - include: backups.yml
       when: zfs_backup is defined
       tags:
         - zfs_backup
+
     when: zfs_pools is defined

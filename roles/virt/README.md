@@ -5,7 +5,7 @@ doesn't do anything
 # LXC
 ## Adding a LXC controller
 To add a host as a lxc controller (ie running containers), this host should end
-up in the lxc-host group in the _hosts_ file.
+up in the lxd-host group in the _hosts_ file.
 
 #QEMU
 Please note at that this time *all filesystems need to be pre-created* as the

@@ -1,0 +1,5 @@
+---
+
+# nfs
+nfs_homes_host: nfs-drbu
+nfs_homes_export: /export/drbu

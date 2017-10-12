@@ -95,7 +95,7 @@ filtering_groups:
 #     - weightedphraselist
 
 # squid tuning
-cache_mem: "4096 MB"
+cache_mem: "2048 MB"
 
 #koha
 koha_domain: "igdvs.{{dns_domain}}"
