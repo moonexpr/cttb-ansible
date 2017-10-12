@@ -160,9 +160,12 @@
       - avahi-daemon
       - pidgin-data
       - pidgin
+      - snapd
+      - snap-confine
       - transmission-common
       - transmission-gtk
       - transmission
+      - ubuntu-core-launcher
     tags:
       - remove_sw
 
