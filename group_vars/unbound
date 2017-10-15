@@ -50,6 +50,7 @@ zone_cttb:
   - sw-drbu-sw-er-4: "10.11.12.194"
   - sw-drbu-sw-er-5: "10.11.12.195"
   - sw-drbu-sw-er-6: "10.11.12.196"
+  - sw-drbu-sw-er-7-poe: "10.11.12.197"
   - sw-dvbs-cs-lab: "10.11.12.179"
   - sw-dvbs-juan-office: "10.11.12.37"
   - sw-dvgs-cs-lab: "10.11.12.176"
