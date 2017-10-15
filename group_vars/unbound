@@ -41,7 +41,7 @@ zone_cttb:
   - sw-ao-srvrm: "172.30.20.5"
   - sw-ao-srvrm: "172.30.7.5"
   - sw-bh-north: "10.11.12.137"
-  - sw-drbu-downstairs: "10.11.12.138"
+  - sw-drbu-downstairs: "10.11.12.36"
   - sw-drbu-lib-down: "10.11.12.141"
   - sw-drbu-sw-er-main: "10.11.12.39"
   - sw-drbu-sw-er-1: "10.11.12.191"
