@@ -34,6 +34,7 @@ zone_cttb:
   - srv-bk-vmgw: "10.11.1.9"
   - sw-1234-machine-room: "10.11.12.172"
   - sw-1234-net-room: "10.11.12.38"
+  - sw-1234-trans-2: "10.11.12.138"
   - sw-ao-attic: "10.11.12.167"
   - sw-ao-desk: "10.11.12.156"
   - sw-ao-lan: "10.11.12.178"
