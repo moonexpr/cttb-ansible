@@ -69,7 +69,7 @@ zfs_pools:
       - name: kvm
         options: ''
         quota: none
-      - name: nfshomes
+      - name: nethomes
         options: ''
         quota: 1T
 
@@ -93,6 +93,19 @@ lxc_containers:
       logs:
         path: /logs
         source: /data/logs
+        type: disk
+  - name: fs
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: fs_e0
+        hwaddr: '00:16:3e:11:01:18'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+      logs:
+        path: /nethomes
+        source: /data/nethomes
         type: disk
   - name: git
     image: cttb-latest
