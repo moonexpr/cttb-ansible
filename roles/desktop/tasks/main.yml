@@ -16,6 +16,16 @@
       owner: root
       group: root
 
+  - name: Disallow regular user to disable/modify networking
+    copy:
+      src: "config/10-network-manager.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/10-network-manager.pkla
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - network_manager_permission
+
   # Add /bin/bash as GS "student" account shell
   - name: Add /bin/bash as GS "student" account shell
     replace:
