@@ -67,10 +67,9 @@ zfs_pools:
       - name: kvm
         options: ''
         quota: none
-    zvols:
       - name: nfshomes
         options: ''
-        size: 2T
+        quota: 1T
 
 lxc: true
 
@@ -130,26 +129,6 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
-
-kvm: true
-qemu_bridge: lxdbr0
-qemu_dir: /data/kvm
-qemu_vms:
-  - name: kvm-srv-bk-fs
-    smp: 2
-    mem: 8G
-    disks:
-      - id: root
-        file: root.raw
-        index: 1
-        format: raw
-      - id: nfshomes
-        file: /dev/zvol/data/nfshomes
-        format: raw
-        index: 2
-    ifaces:
-      - id: eth0
-        mac: "52:54:00:11:01:18"
 
 #nut_mode: netserver
 #

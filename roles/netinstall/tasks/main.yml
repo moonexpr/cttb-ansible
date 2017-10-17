@@ -25,6 +25,7 @@
       - tftpd-hpa
       - apache2 # for kernels and initrd over web
       - p7zip-full #to uncompress the iso, need to move to common role
+      - pxelinux #for lpxelinux.0 binary
 
   - include: pxe.yml
     tags:

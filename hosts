@@ -21,7 +21,7 @@ vbox-desktop
 vbox-pxe
 kvm-testlab1
 kvm-testlab2
-floating ansible_ssh_host=10.11.43.136 #to rebuild any box, temporarily set to it
+floating ansible_ssh_host=10.11.43.148 #to rebuild any box, temporarily set to it
 
 # LXC
 
@@ -50,6 +50,7 @@ lxc-pxe
 lxc-ub-adult
 lxc-ub-igdvs
 lxc-wiki
+lxc-fs
 
 # CTTB infra
 asterix 
@@ -61,11 +62,6 @@ srv-bk-vmgw ansible_ssh_host=10.11.1.9
 substation ansible_ssh_host=172.30.7.24
 
 fileserver
-
-# KVM
-
-## on srv-nas
-kvm-srv-fs
 
 # People on linux
 spike
@@ -417,8 +413,6 @@ drbu-sw-cslab-m-pc3
 drbu-sc-pc1
 drbu-sc-pc2
 drbu-sc-pc3
-floating
-floating2
 
 [drbu-sw-cslab:children]
 drbu-sw-cslab-w
@@ -467,6 +461,7 @@ tom-desktop-2
 fileserver
 rui-desktop
 lxc-spike-test1
+lxc-spike-test2
 vbox-desktop
 lxc-testlab1
 
