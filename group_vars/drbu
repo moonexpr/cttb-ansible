@@ -30,3 +30,6 @@ goldendict: true
 
 # Sanskrit support
 sanskrit: true
+
+additional_sw:
+  - stellarium
