@@ -66,6 +66,11 @@ lxc_containers:
         parent: lxdbr0
   - name: spike-test1
     image: cttb-latest
+    config:
+      'security.privileged': 'true'
+      'raw.apparmor': |
+         mount fstype=rpc_pipefs,
+         mount fstype=nfsd,
     devices:
       eth0:
         host_name: st1_eth0

@@ -96,6 +96,11 @@ lxc_containers:
         type: disk
   - name: fs
     image: cttb-latest
+    config:
+      'security.privileged': 'true'
+      'raw.apparmor': |
+         mount fstype=rpc_pipefs,
+         mount fstype=nfsd,
     devices:
       eth0:
         host_name: fs_e0
@@ -103,7 +108,7 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
-      logs:
+      nethomes:
         path: /nethomes
         source: /data/nethomes
         type: disk

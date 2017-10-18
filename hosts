@@ -464,6 +464,7 @@ lxc-spike-test1
 lxc-spike-test2
 vbox-desktop
 lxc-testlab1
+lxc-fs
 
 [ldap-clients:children]
 # DRBU

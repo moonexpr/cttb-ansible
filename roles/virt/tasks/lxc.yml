@@ -83,7 +83,8 @@
       type: image
       alias: "{{item.image}}" #implies local repo
     profiles: ["default"]
-    devices: "{{item.devices}}"
+    devices: "{{item.devices|default(omit)}}"
+    config: "{{item.config|default(omit)}}"
     ephemeral: false
     wait_for_ipv4_addresses: true
     timeout: 600
