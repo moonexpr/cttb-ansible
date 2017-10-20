@@ -78,6 +78,9 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
+      nethomes:
+        path: /dev/zd0p1
+        type: unix-block
   - name: spike-test2
     image: cttb-latest
     devices:

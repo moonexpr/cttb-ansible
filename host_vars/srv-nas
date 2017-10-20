@@ -69,9 +69,10 @@ zfs_pools:
       - name: kvm
         options: ''
         quota: none
-      - name: nethomes
+    zvols:
+      - name: z_nethomes
         options: ''
-        quota: 1T
+        size: 1T
 
 lxc: true
 
@@ -109,9 +110,8 @@ lxc_containers:
         nictype: bridged
         parent: lxdbr0
       nethomes:
-        path: /nethomes
-        source: /data/nethomes
-        type: disk
+        path: /dev/zd0p1
+        type: unix-block
   - name: git
     image: cttb-latest
     devices:
