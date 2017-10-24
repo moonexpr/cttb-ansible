@@ -15,13 +15,7 @@
       install_recommends: no
     with_items:
       - gimp-help-en
-      - hunspell-en-au
-      - hunspell-en-ca
-      - hunspell-en-gb
-      - hunspell-en-za
-      - hyphen-en-gb
       - hyphen-en-us
-      - mythes-en-au
       - mythes-en-us
       - hunspell-vi
 
@@ -36,10 +30,7 @@
       state: present
       install_recommends: no
     with_items:
-      - libreoffice-help-en-gb
       - libreoffice-help-en-us
-      - libreoffice-l10n-en-gb
-      - libreoffice-l10n-en-za
       - openoffice.org-hyphenation
     when: libreoffice_installed == 1
     tags:
@@ -65,7 +56,7 @@
       - fcitx-module-kimpanel
       - fcitx-module-x11
       - fcitx-modules
-      # - fcitx-pinyin # we use sogou which seems to work without qimpanel
+      - fcitx-pinyin # Rui changed back to use pinyin instead of sogou as pinyin is more stable.
       - fcitx-table
       - fcitx-table-cangjie
       - fcitx-ui-classic
@@ -79,10 +70,6 @@
     command: im-config -n fcitx
     ignore_errors: yes
 
-  - name: install sogoupinyin
-    apt:
-      name: sogoupinyin
-      state: present
   - name: remove sogoupingyin installed mirror
     file:
       path: /etc/apt/sources.list.d/sogoupinyin.list
@@ -94,10 +81,31 @@
   #    name: fcitx-unikey
   #    state: present
 
-  - name: install fcitx taiwanese/chewing support
+  - name: remove unneeded fcitx packages
+    apt:
+      name: "{{item}}"
+      state: absent
+    with_items:
+      - hunspell-en-au
+      - hunspell-en-ca
+      - hunspell-en-gb
+      - hunspell-en-za
+      - hyphen-en-gb
+      - mythes-en-au
+      - libreoffice-help-en-gb
+      - libreoffice-l10n-en-gb
+      - libreoffice-l10n-en-za
+      - fcitx-chewing
+      - fcitx-unikey
+      - sogoupinyin
+
+  - name: install fcitx chewing support
     apt:
       name: fcitx-chewing
       state: present
+    when: chewing is defined
+    tags:
+      - chewing
 
   - name: install Sanskrit language support
     apt:
