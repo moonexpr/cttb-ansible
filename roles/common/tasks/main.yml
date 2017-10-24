@@ -35,6 +35,7 @@
       update_cache: yes
     tags:
       - apt
+      - apt_autoremove
 
   # aptitude is not shipped with 16.04 but ansible needs it to do the upgrade
   - name: install aptitude
