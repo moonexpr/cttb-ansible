@@ -9,6 +9,8 @@ blocked_dvgs = ('docs.google',)
 blocked_dvbs = ()
 blocked_domain_strings = ('yahoo', 'pinterest', 'hoxxproxytest', 'youtube', 'playboy')
 
+google_no_sslsearch = ('accounts', 'alt', 'android', 'apis', 'calendar', 'client', 'dl', 'docs', 'drive', 'fonts', 'history', 'id', 'inputtools', 'mail', 'maps', 'news', 'nosslsearch', 'notifications', 'pki', 'play', 'plus', 'safebrowsing', 'security', 'support', 'tools') 
+
 def is_blocked_domain(qdn, ip):
   gimage = re.compile('encrypted[-]tbn[01234567][.]gstatic[.]com')
 
@@ -69,7 +71,7 @@ def operate(id, event, qstate, qdata):
       qstate.ext_state[id] = MODULE_FINISHED
       qstate.return_rcode = RCODE_NXDOMAIN
       return True
-    elif '.google.' in qdn:
+    elif '.google.' in qdn and not qdn.startswith(google_no_sslsearch):
       msg = DNSMessage(qdn, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA | PKT_AA)
       msg.answer.append('%s 3600 IN CNAME nosslsearch.google.com.' % qdn)
       msg.answer.append('nosslsearch.google.com. 86400 IN A 216.239.32.20')

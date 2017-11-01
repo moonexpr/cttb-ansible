@@ -1,7 +1,38 @@
 import re
 
 blocked_domain_strings = ('hoxxproxytest', 'playboy')
-google_no_sslsearch = ('docs', 'nosslsearch', 'drive', 'accounts', 'mail', 'apis', 'tools', 'hangouts', 'play', 'safebrowsing', 'plus', 'id', 'android', 'fonts', 'mtalk', 'pki', 'calendar', 'maps', 'client', 'chatenabled', 'support', 'news', 'dl', 'notifications', 'gmail-imap', 'picasaweb', 'history', 'inputtools', 'alt', 'security') 
+google_no_sslsearch = (
+        'accounts',
+        'alt',
+        'android',
+        'apis',
+        'calendar',
+        'chatenabled',
+        'client',
+        'dl',
+        'docs',
+        'drive',
+        'fonts',
+        'gmail-imap',
+        'hangouts',
+        'history',
+        'id',
+        'inputtools',
+        'mail',
+        'maps',
+        'mtalk',
+        'news',
+        'nosslsearch',
+        'notifications',
+        'picasaweb',
+        'pki',
+        'play',
+        'plus',
+        'safebrowsing',
+        'security',
+        'support',
+        'talk',
+        'tools') 
 
 def init(id, cfg): return True
 
