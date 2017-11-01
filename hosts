@@ -61,8 +61,6 @@ srv-bk-nas ansible_ssh_host=10.11.1.7
 srv-bk-vmgw ansible_ssh_host=10.11.1.9
 substation ansible_ssh_host=172.30.7.24
 
-fileserver
-
 # People on linux
 spike
 aaron-laptop-e
