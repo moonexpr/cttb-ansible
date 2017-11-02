@@ -11,8 +11,8 @@ pic_bg: bg-drbu.jpg
 libreoffice: true
 
 # nfs
-nfs_homes_host: nfs-drbu
-nfs_homes_export: /export/drbu
+nfs_homes_host: nfs
+nfs_homes_export: /nethomes
 
 # LDAP groups, used for access control
 ldap_groups:
