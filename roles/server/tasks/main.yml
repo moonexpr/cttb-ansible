@@ -1,13 +1,5 @@
 ---
 
-  - name: configure dns resolution
-    template:
-      src: resolv.j2
-      dest: /etc/resolv.conf
-      mode: 0644
-      owner: root
-      group: root
-
   - name: configure default grub #servers should give output on boot for debugging
     copy:
       src: default-grub
@@ -30,11 +22,19 @@
       state: absent
       purge: yes
     with_items:
-      - resolvconf
-      - open-iscsi
+      - libiscsi2
       - lxc1
       - lxd-client
-      - libiscsi2
+      - open-iscsi
+      - resolvconf
+
+  - name: configure dns resolution
+    template:
+      src: resolv.j2
+      dest: /etc/resolv.conf
+      mode: 0644
+      owner: root
+      group: root
 
   - name: install common server packages
     apt:
