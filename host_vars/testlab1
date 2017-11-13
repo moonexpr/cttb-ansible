@@ -20,51 +20,50 @@ zfs_pools:
     dataset_global_options: 'compression=lz4'
     level: ''
     disks:
-      - /dev/disk/by-id/ata-WDC_WD15EARS-00Z5B1_WD-WMAVU1378390
-    slog: '/dev/disk/by-id/nvme-BPX_C6EF076C02E135031286'
+      - /dev/disk/by-id/ata-OCZ-AGILITY3_OCZ-6QZBAD09TK68S19N
+      - /dev/disk/by-id/ata-OCZ-AGILITY3_OCZ-Q2ZO5HTTH9WL18B5
     datasets:
       - name: lxd
-        options: ''
+      - name: lxd-daemon
+        mountpoint: /var/lib/lxd
       - name: kvm
-        options: ''
 
-#lxc: true
+lxc: true
 
-#lxc_storage:
-#  name: default
-#  type: zfs
-#  source: data/lxd
-#
-#lxc_containers:
-#  - name: testlab1
-#    image: cttb-latest
-#    state: stopped
-#    devices:
-#      eth0:
-#        host_name: tl1_eth0
-#        hwaddr: '00:16:3e:49:72:81'
-#        type: nic
-#        nictype: bridged
-#        parent: lxdbr0
-#  - name: rui-test1
-#    image: cttb-latest
-#    devices:
-#      eth0:
-#        host_name: rui_test1_eth0
-#        hwaddr: '00:16:3e:11:05:13'
-#        type: nic
-#        nictype: bridged
-#        parent: lxdbr0
-#  - name: rui-test2
-#    image: cttb-latest
-#    devices:
-#      eth0:
-#        host_name: rui_test2_eth0
-#        hwaddr: '00:16:3e:11:05:14'
-#        type: nic
-#        nictype: bridged
-#        parent: lxdbr0
-#
+lxc_storage:
+  name: default
+  type: zfs
+  source: data/lxd
+
+lxc_containers:
+  - name: tlab1
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: tl1_eth0
+        hwaddr: '00:16:3e:11:05:16'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: tlab2
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: tl2_eth0
+        hwaddr: '00:16:3e:11:05:17'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: tlab3
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: tl3_eth0
+        hwaddr: '00:16:3e:11:05:18'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+
 #kvm: true
 #qemu_bridge: lxdbr0
 #qemu_dir: /data/kvm

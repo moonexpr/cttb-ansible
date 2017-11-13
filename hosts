@@ -29,6 +29,9 @@ floating ansible_ssh_host=10.11.43.148 #to rebuild any box, temporarily set to i
 lxc-srv1
 lxc-srv2
 lxc-testlab1
+lxc-tlab1
+lxc-tlab2
+lxc-tlab3
 lxd-test
 rui-test1
 rui-test2
