@@ -68,8 +68,11 @@
 
     - name: install kingsoft wps
       apt:
-        name: wps-office
+        name: "{{item}}"
         state: present
+      with_items:
+        - wps-office
+        - libpulse-mainloop-glib0
 
     - name: install kingsoft fonts
       apt:
