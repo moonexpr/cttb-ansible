@@ -1,0 +1,9 @@
+---
+
+# printing settings
+cups_default_queue: Girl_School_Dorm
+
+# Additional software
+additional_sw:
+  # To run Java Web Start apps for DM Heng Yuan's PHET simulations.
+  - icedtea-netx
