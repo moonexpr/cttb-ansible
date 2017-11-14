@@ -42,8 +42,3 @@
       install_recommends: yes
     when: firefox == true
 
-  - name: remove firefox
-    apt:
-      name: firefox
-      state: absent
-    when: firefox == false

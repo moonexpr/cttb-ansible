@@ -7,7 +7,7 @@ lightdm_hide_users: false
 wpsoffice: true
 libreoffice: false
 openoffice: false
-firefox: false
+firefox: true
 chrome: true
 dropbox: false
 skype: false
