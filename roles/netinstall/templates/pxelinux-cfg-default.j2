@@ -28,6 +28,17 @@ MENU TITLE {{m.os}} {{m.type}} ({{m.arch}})
     MENU INCLUDE menu/{{m.os}}-{{m.type}}-{{m.arch}}.menu
 MENU END
 {% endfor %}
+MENU BEGIN LiveCDs
+MENU TITLE LiveCDs
+    LABEL Previous
+    MENU LABEL Previous Menu
+    TEXT HELP
+    Return to previous menu
+    ENDTEXT
+    MENU EXIT
+    MENU SEPARATOR
+    MENU INCLUDE menu/livecds.menu
+MENU END
 LABEL Memtest
     MENU LABEL Memtest
     KERNEL {{ni_www}}/memdisk

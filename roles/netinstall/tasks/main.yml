@@ -39,6 +39,10 @@
     tags:
       - ni_isos
 
+  - include: livecds.yml
+    tags:
+      - ni_livecds
+
   - name: link www path to root dir to serve kernels over http
     file:
       src: "{{ni_root_dir}}"

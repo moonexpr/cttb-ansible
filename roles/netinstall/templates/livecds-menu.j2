@@ -1,0 +1,10 @@
+{% for m in ni_livecds %}
+LABEL {{loop.index}}
+    MENU LABEL {{m.name}}
+    KERNEL http://pxe.cttb/netinstall/memdisk
+    INITRD http://pxe.cttb/netinstall/{{m.iso}}
+    APPEND iso raw
+    TEXT HELP
+    {{m.help}}
+    ENDTEXT
+{% endfor %}

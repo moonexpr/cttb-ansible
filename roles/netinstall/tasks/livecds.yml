@@ -1,0 +1,11 @@
+---
+
+  - name: create livecds boot menu file
+    template:
+      src: livecds-menu.j2
+      dest: "{{ni_pxe_menu_dir}}/livecds.menu"
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - ni_livecds

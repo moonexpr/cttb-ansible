@@ -38,6 +38,19 @@
     with_items:
       - "{{ni_images}}"
 
+  - name: fetch liveCD isos
+    get_url:
+      url: "{{ni_isos_baseurl}}/{{item.iso}}"
+      dest: "{{ni_isos_cache_dir}}/{{item.iso}}"
+      owner: root
+      group: root
+      mode: 0644
+    with_items:
+      - "{{ni_livecds}}"
+    tags:
+      - ni_livecds
+
+
   - name: fetch memtest iso
     get_url:
       url: "{{ni_memtest_iso_url}}"

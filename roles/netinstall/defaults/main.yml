@@ -5,15 +5,31 @@ ni_tftp_dir: "{{ni_root_dir}}"
 ni_preseed_dir: "{{ni_root_dir}}/preseed"
 ni_pxe_menu_dir: "{{ni_root_dir}}/menu"
 ni_isos_cache_dir: "{{ni_root_dir}}"
+ni_isos_baseurl: "{{ansible_assets_url}}/isos"
 ni_www_path: "/var/www/html/netinstall"
 ni_memtest_iso_url: "{{ansible_assets_url}}/isos/memtest86-7.3.iso"
+
+ni_livecds:
+  - name: "Xenial 64"
+    iso: "ubuntu-16.04.3-desktop-amd64.iso"
+    help: "Ubuntu Desktop 16.04 64Bit"
+  - name: "Xenial 32"
+    iso: "ubuntu-16.04.3-desktop-i386.iso"
+    help: "Ubuntu Desktop 16.04 32Bit"
+  - name: RescaTux
+    iso: "rescatux-0.41b1.iso"
+    help: "Linux Rescue with Windows Tools"
+  - name: UBCD
+    iso: "ubcd537.iso"
+    help: "Ultimate Boot CD - Rescue System"
+
 
 ni_images:
   - name: xenial
     os: ubuntu
     type: mini
     arch: amd64
-    url: "{{ansible_assets_url}}/isos/ubuntu-mini-xenial-amd64.iso"
+    url: "{{ni_isos_baseurl}}/ubuntu-mini-xenial-amd64.iso"
     preseed:
       - name: default
         description: "Default Installation" 
@@ -48,7 +64,7 @@ ni_images:
     os: ubuntu
     type: mini
     arch: i386
-    url: "{{ansible_assets_url}}/isos/ubuntu-mini-xenial-i386.iso"
+    url: "{{ni_isos_baseurl}}/ubuntu-mini-xenial-i386.iso"
     preseed:
       - name: default
         description: "Default Installation" 
