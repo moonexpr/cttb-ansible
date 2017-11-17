@@ -1,0 +1,8 @@
+---
+
+wpsoffice: true
+libreoffice: true
+openoffice: false
+firefox: true
+chrome: true
+dropbox: true
