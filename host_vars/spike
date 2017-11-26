@@ -45,6 +45,7 @@ additional_sw:
   - python-snimpy
   - python-software-properties
   - quilt
+  - shutter
   - sipgrep
   - snimpy
   - snmp
