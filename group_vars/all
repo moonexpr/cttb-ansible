@@ -21,7 +21,7 @@ ni_preseed: "{{ni_server}}/netinstall/preseed"
 
 # various assets like isos, fonts, odd packages, etc, basically anything too
 # big to fit in a repository
-ansible_assets_url: "http://theoverseer.{{dns_domain}}/ansible_assets"
+ansible_assets_url: "http://pxe.{{dns_domain}}/ansible_assets"
 
 ntp_servers:
   - ntp.{{dns_domain}}

@@ -48,7 +48,7 @@ zfs_pools:
   - name: data
     pool_options: 'ashift=12'
     dataset_global_options: 'compression=lz4'
-    level: raidz2
+    level: raidz1
     disks:
       - /dev/disk/by-id/wwn-0x5000cca22ccbb939
       - /dev/disk/by-id/wwn-0x5000cca22ccbbc74

@@ -16,23 +16,22 @@ server_interfaces:
     lacp_rate: 1
     miimon: 100
   - name: eth0
-    mac: '0c:c4:7a:0f:76:34'
+    mac: '00:25:90:2f:9f:d0'
     auto: True
     inet: manual
     bond_master: bond0
   - name: eth1
-    id: 2
-    mac: '0c:c4:7a:0f:76:35'
+    mac: '00:25:90:2f:9f:d1'
     auto: True
     inet: manual
     bond_master: bond0
   - name: eth2
-    mac: '0c:c4:7a:0f:76:36'
+    mac: '00:25:90:2f:9f:d2'
     auto: True
     inet: manual
     bond_master: bond0
   - name: eth3
-    mac: '0c:c4:7a:0f:76:37'
+    mac: '00:25:90:2f:9f:d3'
     auto: True
     inet: manual
     bond_master: bond0
@@ -42,93 +41,93 @@ server_interfaces:
     bridge_members:
       - bond0
     inet: static
-    address: 10.11.1.7
+    address: 10.11.1.11
     netmask: 255.255.0.0
     gateway: 10.11.1.1
 
-zfs_pools:
-  - name: data
-    pool_options: 'ashift=12'
-    dataset_global_options: 'compression=lz4'
-    level: raidz2
-    disks:
-      - /dev/disk/by-id/wwn-0x5000cca225eb602a
-      - /dev/disk/by-id/wwn-0x5000cca225eb73c0
-      - /dev/disk/by-id/wwn-0x5000cca225eb03c8
-      - /dev/disk/by-id/wwn-0x5000cca225cddcec
-    slog: /dev/disk/by-id/nvme-BPX_C6EF076C02E135031245
-    datasets:
-      - name: lxd
-        options: ''
-        quota: none
-      - name: logs
-        options: ''
-        quota: 1T
-      - name: kvm
-        options: ''
-        quota: none
-      - name: nfshomes
-        options: ''
-        quota: 1T
-
-lxc: true
-
-lxc_storage:
-  name: default
-  type: zfs
-  source: data/lxd
-
-lxc_containers:
-  - name: log
-    image: cttb-latest
-    state: stopped
-    devices:
-      eth0:
-        host_name: log_e0
-        hwaddr: '00:16:3e:11:01:70'
-        type: nic
-        nictype: bridged
-        parent: lxdbr0
-  - name: git
-    image: cttb-latest
-    state: stopped
-    devices:
-      eth0:
-        host_name: git_e0
-        hwaddr: '00:16:3e:11:01:71'
-        type: nic
-        nictype: bridged
-        parent: lxdbr0
-  - name: debmirror
-    image: cttb-latest
-    state: stopped
-    devices:
-      eth0:
-        host_name: debm_e0
-        hwaddr: '00:16:3e:11:01:72'
-        type: nic
-        nictype: bridged
-        parent: lxdbr0
-  - name: pxe
-    image: cttb-latest
-    state: stopped
-    devices:
-      eth0:
-        host_name: pxe_e0
-        hwaddr: '00:16:3e:11:01:73'
-        type: nic
-        nictype: bridged
-        parent: lxdbr0
-  - name: metrics
-    image: cttb-latest
-    state: stopped
-    devices:
-      eth0:
-        host_name: metrics_e0
-        hwaddr: '00:16:3e:11:01:74'
-        type: nic
-        nictype: bridged
-        parent: lxdbr0
+#zfs_pools:
+#  - name: data
+#    pool_options: 'ashift=12'
+#    dataset_global_options: 'compression=lz4'
+#    level: raidz2
+#    disks:
+#      - /dev/disk/by-id/wwn-0x5000cca225eb602a
+#      - /dev/disk/by-id/wwn-0x5000cca225eb73c0
+#      - /dev/disk/by-id/wwn-0x5000cca225eb03c8
+#      - /dev/disk/by-id/wwn-0x5000cca225cddcec
+#    slog: /dev/disk/by-id/nvme-BPX_C6EF076C02E135031245
+#    datasets:
+#      - name: lxd
+#        options: ''
+#        quota: none
+#      - name: logs
+#        options: ''
+#        quota: 1T
+#      - name: kvm
+#        options: ''
+#        quota: none
+#      - name: nfshomes
+#        options: ''
+#        quota: 1T
+#
+#lxc: true
+#
+#lxc_storage:
+#  name: default
+#  type: zfs
+#  source: data/lxd
+#
+#lxc_containers:
+#  - name: log
+#    image: cttb-latest
+#    state: stopped
+#    devices:
+#      eth0:
+#        host_name: log_e0
+#        hwaddr: '00:16:3e:11:01:70'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
+#  - name: git
+#    image: cttb-latest
+#    state: stopped
+#    devices:
+#      eth0:
+#        host_name: git_e0
+#        hwaddr: '00:16:3e:11:01:71'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
+#  - name: debmirror
+#    image: cttb-latest
+#    state: stopped
+#    devices:
+#      eth0:
+#        host_name: debm_e0
+#        hwaddr: '00:16:3e:11:01:72'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
+#  - name: pxe
+#    image: cttb-latest
+#    state: stopped
+#    devices:
+#      eth0:
+#        host_name: pxe_e0
+#        hwaddr: '00:16:3e:11:01:73'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
+#  - name: metrics
+#    image: cttb-latest
+#    state: stopped
+#    devices:
+#      eth0:
+#        host_name: metrics_e0
+#        hwaddr: '00:16:3e:11:01:74'
+#        type: nic
+#        nictype: bridged
+#        parent: lxdbr0
 
 #nut_mode: netserver
 #

@@ -9,20 +9,7 @@ ni_isos_baseurl: "{{ansible_assets_url}}/isos"
 ni_www_path: "/var/www/html/netinstall"
 ni_memtest_iso_url: "{{ansible_assets_url}}/isos/memtest86-7.3.iso"
 
-ni_livecds:
-  - name: "Xenial 64"
-    iso: "ubuntu-16.04.3-desktop-amd64.iso"
-    help: "Ubuntu Desktop 16.04 64Bit"
-  - name: "Xenial 32"
-    iso: "ubuntu-16.04.3-desktop-i386.iso"
-    help: "Ubuntu Desktop 16.04 32Bit"
-  - name: RescaTux
-    iso: "rescatux-0.41b1.iso"
-    help: "Linux Rescue with Windows Tools"
-  - name: UBCD
-    iso: "ubcd537.iso"
-    help: "Ultimate Boot CD - Rescue System"
-
+ni_livecds: []
 
 ni_images:
   - name: xenial
