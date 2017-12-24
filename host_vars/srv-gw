@@ -50,41 +50,51 @@ timed_internet:
     ips:
       - 10.11.10.0/24
     periods:
-      - days: "1-5"
-        on_at: "6:45"
-        off_at: "7:45"
-      - days: "1-5"
-        on_at: "8"
-        off_at: "10:25"
-      - days: "1-5"
-        on_at: "11:30"
-        off_at: "22"
-      - days: "6"
-        on_at: "19"
-        off_at: "22"
-      - days: "7"
-        on_at: "20"
-        off_at: "22"
+# Per DM Shun's request, shut down internet during 2017 winter break. Commented out earlier configs for easy revertion. -Rui, 12/23/2017.
+      - days: "1"
+        on_at: "2:05"
+        off_at: "2:07"
+#      - days: "1-5"
+#        on_at: "6:45"
+#        off_at: "7:45"
+#      - days: "1-5"
+#        on_at: "8"
+#        off_at: "10:25"
+#      - days: "1-5"
+#        on_at: "11:30"
+#        off_at: "22"
+#      - days: "6"
+#        on_at: "19"
+#        off_at: "22"
+#      - days: "7"
+#        on_at: "20"
+#        off_at: "22"
   - label: dvbs_laptops
     type: ip
     ips:
       - 10.11.31.224
       - 10.11.31.225
     periods:
-      - days: "1-5"
-        on_at: "7"
-        off_at: "22"
-      - days: "6-7"
-        on_at: "8"
-        off_at: "22"
+      - days: "1"
+        on_at: "2:05"
+        off_at: "2:07"
+#      - days: "1-5"
+#        on_at: "7"
+#        off_at: "22"
+#      - days: "6-7"
+#        on_at: "8"
+#        off_at: "22"
   - label: dvbs_yearbook
     type: ip
     ips:
       - 10.11.21.222
     periods:
-      - days: "7"
-        on_at: "14"
-        off_at: "16"
+      - days: "1"
+        on_at: "2:05"
+        off_at: "2:07"
+#      - days: "7"
+#        on_at: "14"
+#        off_at: "16"
   - label: dvgs_laptops
     type: ip
     ips:
