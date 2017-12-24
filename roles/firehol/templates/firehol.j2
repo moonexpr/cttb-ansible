@@ -53,6 +53,7 @@ ipset4 addfile igdvs ipsets/igdvs
 ## this still needs port forwarding on the modem to work
 
 # redirect ssh into the city through jumpbox
+dnat4 to 10.11.1.33:1194 proto udp dport 443 inface "${world}"
 dnat4 to 10.11.1.33:22 proto tcp dport 2244 inface "${world}"
 # get sip traffic to the asterisk server. SRC is our vitelity inbound peer
 # specified in asterisk's configs
@@ -91,6 +92,7 @@ interface4 "${world}" internet
 # rules for traffic coming from the internet for the lan
 router4 internet2cttb inface "${world}" outface "${home}"
   protection bad-packets
+  server openvpn accept dst 10.11.1.33 #accept traffic to jumpbox
   server ssh accept dst 10.11.1.33 #accept traffic to jumpbox
   server sip accept dst 10.11.6.1 #traffic for asterisk server
 
