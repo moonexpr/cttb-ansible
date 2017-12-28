@@ -1,4 +1,5 @@
 .ac.uk
+# Allow .cttb domain so getting files with names matching patterns such as "libproxy-tools_...deb" from apt.cttb ubuntu mirror would work. - Rui, 12/27/2017.
 .cttb
 .edu
 .gov
