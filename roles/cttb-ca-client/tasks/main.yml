@@ -30,6 +30,6 @@
 
   - name: change the libnssckbi.so files to symlinks if not already
     # If the file is not a symbolic link, back up its content. For all, forcefully change it to a link to the p11-kit-trust.so file.
-    shell: locate -b '\libnssckbi.so' | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/x86_64-linux-gnu/pkcs11/p11-kit-trust.so {}'
+    shell: ( locate -b '\libnssckbi.so' || ls /usr/lib/firefox/libnssckbi.so /usr/lib/thunderbird/libnssckbi.so /usr/lib/x86_64-linux-gnu/nss/libnssckbi.so ) | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/x86_64-linux-gnu/pkcs11/p11-kit-trust.so {}'
     tags:
       - gen_symlinks
