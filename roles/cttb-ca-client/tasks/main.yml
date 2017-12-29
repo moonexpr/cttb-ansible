@@ -1,5 +1,12 @@
 ---
 
+  # Make sure p11-kit-modules is installed, which contains the needed file: p11-kit-trust.so.
+  - name: install p11-kit-modules
+    apt:
+      name: p11-kit-modules
+      state: present
+      install_recommends: no
+
   - name: copy CTTB Root CA certificate
     copy:
       src: CTTB-Root-CA.crt
