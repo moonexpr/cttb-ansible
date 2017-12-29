@@ -3,6 +3,7 @@
 - hosts: dvgs-cs-lab
   roles:
     - desktop
-    - nfs-home
-    - ldap-client
     - cups-client
+    - ldap-client
+    - nfs-home
+    - cttb-ca-client
