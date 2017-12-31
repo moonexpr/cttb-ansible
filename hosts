@@ -182,6 +182,7 @@ dvgs-cs-lab-pc10
 dvgs-dorm-pc1
 dvgs-dorm-pc2
 dvgs-dorm-pc3
+dvgs-dorm-pc4
 dvgs-dorm-pc5
 dvgs-dorm-pc6
 dvgs-dorm-pc7
@@ -191,7 +192,6 @@ dvgs-dorm-pc10
 dvgs-dorm-pc11
 dvgs-dorm-pc12
 dvgs-dorm-pc13
-dvgs-dorm-pc14
 
 #dvgs laptops
 
@@ -304,6 +304,7 @@ koha-kiosk2
 dvgs-dorm-pc1
 dvgs-dorm-pc2
 dvgs-dorm-pc3
+dvgs-dorm-pc4
 dvgs-dorm-pc5
 dvgs-dorm-pc6
 dvgs-dorm-pc7
@@ -313,7 +314,6 @@ dvgs-dorm-pc10
 dvgs-dorm-pc11
 dvgs-dorm-pc12
 dvgs-dorm-pc13
-dvgs-dorm-pc14
 
 [dvgs-cs-lab]
 dvgs-cs-lab-pc1
@@ -479,6 +479,7 @@ drbu-sw-cslab
 # DVGS
 dvgs-koha
 dvgs-cs-lab
+dvgs-dorm
 # DVBS
 dvbs-3rd
 dvbs-9th
