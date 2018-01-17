@@ -10,3 +10,5 @@ cups_default_queue: Girl_School_CSLab
 additional_sw:
   # To run Java Web Start apps for DM Heng Yuan's PHET simulations.
   - icedtea-netx
+  # Install PiTiVi for DM Heng Yuan to teach video editing. - Rui, 2018-01-16.
+  - pitivi
