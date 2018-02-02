@@ -1,5 +1,9 @@
 ---
 
+# desktop configuration
+# lightdm_hide_users: false
+#### !!! Set it to true as other places, but the Cisco switch was slow, so lightdm login page did not work, so keeping it as default "true". Rui, 2018-02-02.
+
 # printing settings
 cups_default_queue: ArtRoom_Xerox
 
