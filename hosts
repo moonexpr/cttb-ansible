@@ -163,8 +163,8 @@ sw-221
 dvgs-main-office
 
 # dvgs art lab
-dvgs-art-studio-pc1 ansible_ssh_host=10.11.9.95
-dvgs-art-studio-pc2 ansible_ssh_host=10.11.9.35
+dvgs-art-room-pc1
+dvgs-art-room-pc2
 
 # dvgs computer lab
 dvgs-cs-lab-pc1
@@ -327,16 +327,16 @@ dvgs-cs-lab-pc8
 dvgs-cs-lab-pc9
 dvgs-cs-lab-pc10
 
-[dvgs-art-studio]
-dvgs-art-studio-pc1 
-dvgs-art-studio-pc2 
+[dvgs-art-room]
+dvgs-art-room-pc1 
+dvgs-art-room-pc2 
 
 [dvgs:children]
 dvgs-laptops
 dvgs-koha
 dvgs-cs-lab
 dvgs-dorm
-dvgs-art-studio
+dvgs-art-room
 
 # Boy School.
 [dvbs-3rd]
@@ -480,6 +480,7 @@ drbu-sw-cslab
 dvgs-koha
 dvgs-cs-lab
 dvgs-dorm
+dvgs-art-room
 # DVBS
 dvbs-3rd
 dvbs-9th
