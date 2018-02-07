@@ -7,6 +7,11 @@
       install_recommends: yes
       update_cache: yes
 
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
+    tags:
+      - apt_autoremove
+
   - name: deploy squid.conf
     template:
       src: squid.j2
