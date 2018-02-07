@@ -1,11 +1,7 @@
 # Basic config from http://wiki.squid-cache.org/Squid-3.5
 # ACLS and allowed ports
 
-acl localnet src 10.0.0.0/8     # RFC1918 possible internal network
-acl localnet src 172.16.0.0/12  # RFC1918 possible internal network
-acl localnet src 192.168.0.0/16 # RFC1918 possible internal network
-acl localnet src fc00::/7       # RFC 4193 local private network range
-acl localnet src fe80::/10      # RFC 4291 link-local (directly plugged) machines
+acl localnet src 10.11.0.0/16     # RFC1918 possible internal network
 
 acl SSL_ports port 443
 acl SSL_ports port 8443
@@ -13,6 +9,7 @@ acl SSL_ports port 8443
 acl Safe_ports port 80          # http
 acl Safe_ports port 21          # ftp
 acl Safe_ports port 443         # https
+acl Safe_ports port 4443        # Customized https port, added per girl school student's request for https://financialaidapps.wlu.edu:4443/OLFASlateVerif.asp?ID=12345678. Rui, 2018-02-07.
 acl Safe_ports port 70          # gopher
 acl Safe_ports port 210         # wais
 acl Safe_ports port 280         # http-mgmt
