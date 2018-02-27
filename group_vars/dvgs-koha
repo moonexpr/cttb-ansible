@@ -1,2 +1,7 @@
+---
+
 # desktop configuration
 lightdm_hide_users: true
+
+# printing settings
+cups_default_queue: Girl_School_CSLab
