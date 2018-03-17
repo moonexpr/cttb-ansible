@@ -85,6 +85,14 @@ timed_internet:
       - days: "7"
         on_at: "14"
         off_at: "16"
+  - label: dvbs_office_skype
+    type: ip
+    ips:
+      - 10.11.8.52
+    periods:
+      - days: "6-7"
+        on_at: "00:01"
+        off_at: "23:59"
   - label: dvgs_laptops
     type: ip
     ips:
