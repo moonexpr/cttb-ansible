@@ -179,6 +179,7 @@
     tags:
       - remove_sw
 
+  # exfat-fuse and exfat-utils are for support of exfat file system, FAT with total fs size > 4 GB.
   - name: install basic software
     apt:
       name: "{{item}}"
@@ -189,6 +190,8 @@
       - curl
       - dconf-tools
       - ethtool
+      - exfat-fuse
+      - exfat-utils
       - fio
       - git
       - hddtemp
@@ -211,6 +214,8 @@
       - vim
       - wakeonlan
       - whois
+    tags:
+      - basic_software
 
   - name: install sw requested for this box
     apt:
