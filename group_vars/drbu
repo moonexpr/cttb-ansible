@@ -33,3 +33,4 @@ sanskrit: true
 
 additional_sw:
   - stellarium
+  - musescore
