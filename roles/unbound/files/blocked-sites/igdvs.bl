@@ -64,6 +64,8 @@ local-zone: "renren.com" static
 local-zone: "rrpproxy.net" static
 local-zone: "scribd.com" static
 local-zone: "siteenable.com" static
+local-zone: "soundcloud.com" static
+local-zone: "soundcloud.net" static
 local-zone: "sslproxybrowser.com" static
 local-zone: "sslproxyfree.com" static
 local-zone: "sslproxyunblocker.com" static
