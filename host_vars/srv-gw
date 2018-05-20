@@ -148,6 +148,15 @@ timed_internet:
       - days: "1-5"
         on_at: "12:00"
         off_at: "17"
+  - label: juan_home_pc
+    type: ip
+    ips:
+      - 10.11.15.222
+      - 10.11.8.28
+    periods:
+      - days: "*"
+        on_at: "4"
+        off_at: "22"
 
 # E2G SSL
 enablessl: 'on'
