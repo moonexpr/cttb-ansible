@@ -204,6 +204,7 @@
       - nload
       - obnam
       - p11-kit-modules
+      - quota
       - smartmontools
       - socat
       - tcpdump
