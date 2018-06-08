@@ -253,6 +253,10 @@ dvbs-lib02
 dvbs-lib03
 dvbs-lib04
 
+# DVBS student laptop StdLpt
+dvbs-stdlpt12
+dvbs-stdlpt12-w
+
 ############## DRBU #############
 # DRBU Computer Lab
 drbu-cs-lab-pc1
@@ -371,12 +375,17 @@ dvbs-lib04
 dvbs-office-pc1
 dvbs-office-pc2
 
+[dvbs-student-laptops]
+dvbs-stdlpt12
+dvbs-stdlpt12-w
+
 [dvbs:children]
 dvbs-3rd
 dvbs-9th
 dvbs-cs-lab
 dvbs-library
 dvbs-main-office
+dvbs-student-laptops
 
 # DRBU.
 [drbu-cs-lab]
