@@ -142,12 +142,16 @@ timed_internet:
       - 10.11.17.1
       - 10.11.17.2
     periods:
-      - days: "1-5"
-        on_at: "8"
-        off_at: "10:30"
-      - days: "1-5"
-        on_at: "12:00"
-        off_at: "17"
+      # Temporarily open for 2018 Summer Break for Ms. Daisy Guo to test sw. -Rui
+      - days: "*"
+        on_at: "7"
+        off_at: "22"
+      #- days: "1-5"
+      #  on_at: "8"
+      #  off_at: "10:30"
+      #- days: "1-5"
+      #  on_at: "12:00"
+      #  off_at: "17"
   - label: juan_home_pc
     type: ip
     ips:
