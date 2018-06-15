@@ -168,6 +168,15 @@ timed_internet:
       - days: "*"
         on_at: "4"
         off_at: "22"
+  - label: home_phones
+    type: ip
+    ips:
+      # Juan Samsung phone
+      - 10.11.14.147
+    periods:
+      - days: "*"
+        on_at: "5"
+        off_at: "22"
 
 # E2G SSL
 enablessl: 'on'
