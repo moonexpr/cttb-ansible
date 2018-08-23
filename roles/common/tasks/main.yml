@@ -30,6 +30,16 @@
     tags:
       - apt
 
+  - name: add additional apt repo
+    apt_repository:
+      repo: "{{item}}"
+      state: present
+    with_items: "{{additional_apt_repo}}"
+    when: additional_apt_repo is defined
+    tags:
+      - apt
+      - additional_apt_repo
+
   - name: refresh the mirrors
     apt:
       update_cache: yes
