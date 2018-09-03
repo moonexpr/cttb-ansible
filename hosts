@@ -253,6 +253,20 @@ dvbs-lib02
 dvbs-lib03
 dvbs-lib04
 
+# DVBS Community center
+dvbs-cc-pc1
+dvbs-cc-pc2
+dvbs-cc-pc3
+dvbs-cc-pc4
+dvbs-cc-pc5
+dvbs-cc-pc6
+dvbs-cc-pc7
+dvbs-cc-pc8
+dvbs-cc-pc9
+dvbs-cc-pc10
+dvbs-cc-pc11
+dvbs-cc-pc12
+
 # DVBS student laptop StdLpt
 dvbs-stdlpt12
 dvbs-stdlpt12-w
@@ -375,6 +389,20 @@ dvbs-lib04
 dvbs-office-pc1
 dvbs-office-pc2
 
+[dvbs-cc]
+dvbs-cc-pc1
+dvbs-cc-pc2
+dvbs-cc-pc3
+dvbs-cc-pc4
+dvbs-cc-pc5
+dvbs-cc-pc6
+dvbs-cc-pc7
+dvbs-cc-pc8
+dvbs-cc-pc9
+dvbs-cc-pc10
+dvbs-cc-pc11
+dvbs-cc-pc12
+
 [dvbs-student-laptops]
 dvbs-stdlpt12
 dvbs-stdlpt12-w
@@ -386,6 +414,7 @@ dvbs-cs-lab
 dvbs-library
 dvbs-main-office
 dvbs-student-laptops
+dvbs-cc
 
 # DRBU.
 [drbu-cs-lab]
@@ -496,5 +525,6 @@ dvbs-9th
 dvbs-cs-lab
 dvbs-library
 dvbs-main-office
+dvbs-cc
 # Others
 other-ldap-clients
