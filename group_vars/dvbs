@@ -1,5 +1,8 @@
 ---
 
+# Browser.
+firefox: true
+
 # nfs homes settings
 nfs_homes_host: fileserver
 nfs_homes_export: /nethomes
