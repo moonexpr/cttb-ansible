@@ -167,6 +167,15 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
+  - name: sltp
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: sltp_eth0
+        hwaddr: '00:16:3e:11:01:39'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
 
 nut_mode: netclient
 
