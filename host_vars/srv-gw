@@ -142,25 +142,21 @@ timed_internet:
       - 10.11.17.1
       - 10.11.17.2
     periods:
-      # Temporarily open for 2018 Summer Break for Ms. Daisy Guo to test sw. -Rui
-      - days: "*"
-        on_at: "7"
-        off_at: "22"
-      #- days: "1-5"
-      #  on_at: "8"
-      #  off_at: "10:30"
-      #- days: "1-5"
-      #  on_at: "12:00"
-      #  off_at: "17"
+      - days: "1-5"
+        on_at: "8"
+        off_at: "10:30"
+      - days: "1-5"
+        on_at: "12:00"
+        off_at: "18:30"
   - label: home_pcs
     type: ip
     ips:
       # Juan home pc (Dell Vostro 3300), 8.28 is wireless.
       - 10.11.15.222
       - 10.11.8.28
-      # Juan home pc (Samsung laptop) for Miguel, 8.56 is wireless.
-      - 10.11.8.56
-      - 10.11.8.57
+      # Juan home pc (Samsung laptop) for Miguel, 22.17 is wireless.
+      - 10.11.22.17
+      - 10.11.22.25
       # Rui home pc (ThinkPad laptop), 21.75 is wireless.
       - 10.11.21.130
       - 10.11.21.75
