@@ -271,6 +271,9 @@ dvbs-cc-pc9
 dvbs-cc-pc10
 dvbs-cc-pc11
 dvbs-cc-pc12
+dvbs-cc-pc13
+dvbs-cc-pc14
+dvbs-cc-pc15
 
 # DVBS student laptop StdLpt
 dvbs-stdlpt12
@@ -410,6 +413,9 @@ dvbs-cc-pc9
 dvbs-cc-pc10
 dvbs-cc-pc11
 dvbs-cc-pc12
+dvbs-cc-pc13
+dvbs-cc-pc14
+dvbs-cc-pc15
 
 [dvbs-student-laptops]
 dvbs-stdlpt12
