@@ -75,6 +75,7 @@ zone_cttb:
   - sw-drbu-sw-er-7-poe: "10.11.12.197"
   - sw-drbu-upstairs: "10.11.12.243"
   - sw-dvbs-calligraphy-room: "10.11.12.90"
+  - sw-dvbs-comm-center: "10.11.12.158"
   - sw-dvbs-cs-lab: "10.11.12.179"
   - sw-dvbs-dm-office: "10.11.12.85"
   - sw-dvbs-juan-office: "10.11.12.37"
