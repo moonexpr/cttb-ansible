@@ -48,7 +48,10 @@ timed_internet:
   - label: dvbs
     type: net
     ips:
-      - 10.11.10.0/24
+      # 10.11.10.0/24 except for CC and student laptops
+      - 10.11.10.0-10.11.10.63
+      - 10.11.10.69-10.11.10.110
+      - 10.11.10.126-10.11.10.255
     periods:
       - days: "1-5"
         on_at: "8"
@@ -59,7 +62,9 @@ timed_internet:
   - label: dvbs_cc_and_student_laptops
     type: net
     ips:
+      # CC
       - 10.11.10.111-10.11.10.125
+      # Student laptops
       - 10.11.10.64-10.11.10.68
     periods:
       - days: "1-5"
@@ -135,9 +140,10 @@ timed_internet:
   - label: dvgs_cslab
     type: ip
     ips:
+      # cslab
       - 10.11.9.21-10.11.9.30
-      - 10.11.17.1
-      - 10.11.17.2
+      # koha kiosks
+      - 10.11.17.1-10.11.17.2
     periods:
       - days: "1-5"
         on_at: "8"
