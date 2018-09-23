@@ -136,10 +136,10 @@ timed_internet:
       - days: "1-5"
         on_at: "8"
         off_at: "10:30"
-      - days: "1-4"
+      - days: "1,3,4"
         on_at: "12:00"
         off_at: "18:30"
-      - days: "5"
+      - days: "2,5"
         on_at: "12:00"
         off_at: "19:15"
   - label: home_pcs
