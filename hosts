@@ -216,7 +216,11 @@ dvgs-teacher-laptop-3e
 
 ## disabled/not used atm
 #dvgs-lenovo-laptop-1 ansible_ssh_host=10.11.9.82
-#dvgs-vostro-laptop-3 ansible_ssh_host=10.11.9.83
+dvgs-vostro-laptop-3
+dvgs-vostro-laptop-4
+dvgs-vostro-laptop-4e
+dvgs-vostro-laptop-6
+dvgs-vostro-laptop-6e
 #dvgs-vostro-laptop-4 ansible_ssh_host=10.11.9.84
 #dvgs-vostro-laptop-6 ansible_ssh_host=10.11.9.86
 #dvgs-vostro-laptop-7 ansible_ssh_host=10.11.9.87
@@ -324,6 +328,10 @@ dvgs-senior-laptop-2e
 dvgs-senior-laptop-2w
 dvgs-senior-laptop-3e
 dvgs-senior-laptop-3w
+dvgs-vostro-laptop-4
+dvgs-vostro-laptop-4e
+dvgs-vostro-laptop-6
+dvgs-vostro-laptop-6e
 
 [dvgs-koha]
 koha-kiosk1
