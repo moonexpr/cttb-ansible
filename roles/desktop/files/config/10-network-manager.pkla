@@ -1,6 +1,6 @@
 [Do not allow any user to modify any network state or setting]
 Identity=unix-user:*
-Action=org.freedesktop.NetworkManager.*
+Action=org.freedesktop.NetworkManager.enable-disable-network;org.freedesktop.NetworkManager.enable-disable-wifi;org.freedesktop.NetworkManager.settings.modify.system
 ResultAny=no
 ResultInactive=no
 ResultActive=no
