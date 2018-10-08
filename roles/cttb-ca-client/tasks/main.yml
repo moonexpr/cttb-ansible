@@ -40,5 +40,4 @@
     shell: ls -1 /usr/lib/firefox/libnssckbi.so /usr/lib/thunderbird/libnssckbi.so /usr/lib/i386-linux-gnu/nss/libnssckbi.so `locate -b '\libnssckbi.so'` | sort -u | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/i386-linux-gnu/pkcs11/p11-kit-trust.so {}'
     when: ansible_architecture == "i386"
     tags:
-    tags:
       - gen_symlinks
