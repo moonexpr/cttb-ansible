@@ -16,9 +16,18 @@
       mode: 0644
       force: yes
 
-  - name: update the system-wide certificate info
-    # The "-f" means "fresh". It removes all existing symlinks then regenerate them, thus can delete links for removed authorities.
-    command: update-ca-certificates -f
+  - name: check system cert info whether CTTB Root CA cert is not already added
+    shell: grep -E '^EH4GBuvisHX1r5NIV5g89uEcsYgUWw5xYi3NgfzyelOBhrUc$' /etc/ssl/certs/ca-certificates.crt
+    register: grep_result
+    ignore_errors: True
+    changed_when: False
+    failed_when: grep_result.rc >= 2
+
+  - name: update system cert info if CTTB Root CA cert is not already added
+    # Update only when the CTTB Root CA is not in the all-containing file.
+    shell: /usr/sbin/update-ca-certificates -f
+    # "-f" means "fresh". It removes all existing symlinks then regenerate them, thus can delete links for removed authorities.
+    when: "grep_result.rc != 0"
 
   - name: create cttb-cacert.pem symlink
     file:
