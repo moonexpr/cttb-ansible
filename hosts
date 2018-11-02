@@ -243,6 +243,7 @@ dvbs-9th-pc03
 # DVBS Main Office
 dvbs-office-pc1
 dvbs-office-pc2
+dvbs-office-optiplex-3010
 
 # DVBS Computer Lab
 dvbs-lab02
@@ -407,6 +408,7 @@ dvbs-lib04
 [dvbs-main-office]
 dvbs-office-pc1
 dvbs-office-pc2
+dvbs-office-optiplex-3010
 
 [dvbs-cc]
 dvbs-cc-pc1
