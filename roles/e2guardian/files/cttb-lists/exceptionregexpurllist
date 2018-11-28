@@ -5,4 +5,5 @@
 
 # Example
 #news
-
+# Allow downloading of libreoffice from its hosting service at tdf.mirrors.tds.net, not allowing entire tds.net, but use the URL:
+/pub/documentfoundation.org/libreoffice/
