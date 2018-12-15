@@ -176,6 +176,15 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
+  - name: sltp-git
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: sltp_git_eth0
+        hwaddr: '00:16:3e:11:01:40'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
 
 nut_mode: netclient
 
