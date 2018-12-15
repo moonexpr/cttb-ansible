@@ -82,6 +82,7 @@ dm-yan-latitude
 dmyong-eepc
 donnafarmer-eepc ansible_ssh_host=10.11.11.252
 donnafarmer-latitude-e5510 ansible_ssh_host=10.11.29.185
+donna-farmer-hp-8300-desktop
 dvbs-rm1-downstairs
 dvbs-women-office
 jgh-drbu-student ansible_ssh_host=10.11.23.155
@@ -109,6 +110,8 @@ jroberts-desktop
 spike-laptop
 cttb-it-asus-w5f-laptop
 cttb-it-inspiron-e1405    ansible_host=10.11.15.234
+cttb-it-lenovo-m10
+donna-farmer-dell-e5510-laptop
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
