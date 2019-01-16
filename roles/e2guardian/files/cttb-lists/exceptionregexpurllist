@@ -7,3 +7,5 @@
 #news
 # Allow downloading of libreoffice from its hosting service at tdf.mirrors.tds.net, not allowing entire tds.net, but use the URL:
 /pub/documentfoundation.org/libreoffice/
+# GS students requested to unblock the URL
+/proxy.qualtrics.com/proxy/
