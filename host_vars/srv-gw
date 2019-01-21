@@ -50,7 +50,7 @@ timed_internet:
     ips:
       # 10.11.10.0/24 except for CC and student laptops
       - 10.11.10.0-10.11.10.63
-      - 10.11.10.70-10.11.10.110
+      - 10.11.10.71-10.11.10.110
       - 10.11.10.126-10.11.10.255
     periods:
       - days: "1-5"
@@ -59,35 +59,24 @@ timed_internet:
       - days: "1-5"
         on_at: "11:30"
         off_at: "16:00"
-  - label: dvbs_cc_and_student_laptops
+  - label: dvbs_cc
     type: net
     ips:
       # CC
       - 10.11.10.111-10.11.10.125
-      # Student laptops
-      - 10.11.10.64-10.11.10.69
       # Skype computer
       - 10.11.8.52
     periods:
-      - days: "1-5"
-        on_at: "5"
-        off_at: "7:45"
-      - days: "1-5"
+      - days: "*"
         on_at: "16"
-        off_at: "17"
-      - days: "1-5"
-        on_at: "17:30"
-        off_at: "18"
-      - days: "1-5"
-        on_at: "19:30"
         off_at: "22"
-      - days: "6-7"
-        on_at: "8"
-        off_at: "9"
-      - days: "6-7"
-        on_at: "13"
-        off_at: "15"
-      - days: "6-7"
+  - label: dvbs_student_laptops
+    type: net
+    ips:
+      # Boy school juniors and seniors laptops
+      - 10.11.10.64-10.11.10.70
+    periods:
+      - days: "*"
         on_at: "19:30"
         off_at: "22"
   - label: dvbs_laptops
