@@ -152,6 +152,7 @@ cl.exct.net
 cloudfront.net
 cltac.org
 cmu.ca
+cmu-proxy.cirrusidentity.com
 cnet.com
 cnet,net
 coach.com
@@ -712,6 +713,8 @@ usherbrooke.ca
 usnews.com
 usnewsworldreport.com
 ustpaul.ca
+# Hong Kong Univ of Sci and Tech
+ust.hk
 usudbury.ca
 utoronto.ca
 u]ttawa.ca
