@@ -51,7 +51,8 @@ timed_internet:
       # 10.11.10.0/24 except for CC and student laptops
       - 10.11.10.0-10.11.10.63
       - 10.11.10.71-10.11.10.110
-      - 10.11.10.126-10.11.10.255
+      - 10.11.10.126-10.11.10.140
+      - 10.11.10.143-10.11.10.255
     periods:
       - days: "1-5"
         on_at: "8"
@@ -64,6 +65,8 @@ timed_internet:
     ips:
       # CC
       - 10.11.10.111-10.11.10.125
+      # Annex 4/5 quite area machines
+      - 10.11.10.141-10.11.10.142
       # Skype computer
       - 10.11.8.52
     periods:
