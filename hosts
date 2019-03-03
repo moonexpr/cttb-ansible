@@ -76,6 +76,7 @@ ao-laptop
 dininghall
 dmchih-desktop-drbu ansible_ssh_host=10.11.23.136
 dmqi-desktop
+dm-qi-hp-desktop
 dmtsung-desktop
 dmtsung-toshiba # -w for wireless, no time to port all the changes, so changed pwd to dvbstsung to admin account
 dm-yan-latitude
@@ -112,6 +113,7 @@ spike-laptop
 cttb-it-asus-w5f-laptop
 cttb-it-inspiron-e1405    ansible_host=10.11.15.234
 cttb-it-lenovo-m10
+cttb-it-hp-6200pro-desktop
 donna-farmer-dell-e5510-laptop
 
 # Switches
@@ -204,7 +206,9 @@ dvgs-dorm-pc13
 #dvgs laptops
 
 dvgs-laptop-2e
+dvgs-laptop-2w
 dvgs-laptop-5e
+dvgs-laptop-5w
 
 # dvgs senior laptops
 dvgs-senior-laptop-1e
@@ -221,7 +225,7 @@ dvgs-teacher-laptop-3e
 
 ## disabled/not used atm
 #dvgs-lenovo-laptop-1 ansible_ssh_host=10.11.9.82
-dvgs-vostro-laptop-3
+dvgs-vostro-laptop-3w
 dvgs-vostro-laptop-4
 dvgs-vostro-laptop-4e
 dvgs-vostro-laptop-6
@@ -251,6 +255,7 @@ dvbs-office-pc2
 dvbs-office-optiplex-3010
 
 # DVBS Computer Lab
+dvbs-lab01
 dvbs-lab02
 dvbs-lab03
 dvbs-lab04
@@ -260,8 +265,6 @@ dvbs-lab08
 dvbs-lab09
 dvbs-lab10
 dvbs-lab11
-dvbs-lab12
-dvbs-lab13
 
 # DVBS Library
 dvbs-lib02
@@ -282,8 +285,8 @@ dvbs-cc-pc10
 dvbs-cc-pc11
 dvbs-cc-pc12
 dvbs-cc-pc13
-dvbs-cc-pc14
-dvbs-cc-pc15
+dvbs-annex45-usb-w1
+dvbs-annex45-usb-w2
 
 # DVBS student laptop StdLpt
 dvbs-stdlpt12
@@ -323,7 +326,9 @@ drbu-sc-pc3
 # Girl School.
 [dvgs-laptops]
 dvgs-laptop-2e
+dvgs-laptop-2w
 dvgs-laptop-5e
+dvgs-laptop-5w
 dvgs-teacher-laptop-1e
 dvgs-teacher-laptop-2e
 dvgs-teacher-laptop-2w
@@ -393,6 +398,7 @@ dvbs-9th-pc02
 dvbs-9th-pc03
 
 [dvbs-cs-lab]
+dvbs-lab01
 dvbs-lab02
 dvbs-lab03
 dvbs-lab04
@@ -402,8 +408,6 @@ dvbs-lab08
 dvbs-lab09
 dvbs-lab10
 dvbs-lab11
-dvbs-lab12
-dvbs-lab13
 
 [dvbs-library]
 dvbs-lib02
@@ -429,9 +433,10 @@ dvbs-cc-pc10
 dvbs-cc-pc11
 dvbs-cc-pc12
 dvbs-cc-pc13
-dvbs-cc-pc14
-dvbs-cc-pc15
+dvbs-annex45-usb-w1
+dvbs-annex45-usb-w2
 
+# The group has a diff meaning than that in host_vars/srv-gw.
 [dvbs-student-laptops]
 dvbs-stdlpt12
 dvbs-stdlpt12-w
