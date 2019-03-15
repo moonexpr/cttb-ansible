@@ -222,6 +222,7 @@ dvgs-senior-laptop-3w
 dvgs-teacher-laptop-1e
 dvgs-teacher-laptop-2e
 dvgs-teacher-laptop-3e
+dm-jr-mba
 
 ## disabled/not used atm
 #dvgs-lenovo-laptop-1 ansible_ssh_host=10.11.9.82
@@ -333,6 +334,7 @@ dvgs-teacher-laptop-1e
 dvgs-teacher-laptop-2e
 dvgs-teacher-laptop-2w
 dvgs-teacher-laptop-3e
+dm-jr-mba
 dvgs-senior-laptop-1e
 dvgs-senior-laptop-1w
 dvgs-senior-laptop-2e
