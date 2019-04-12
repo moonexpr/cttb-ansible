@@ -7,8 +7,10 @@
 # 10.11.20.42
 # 10.11.1.0/24
 
-10.11.30.201 # Theoverseer , especially for mirroring stuff
 10.11.30.225 # Dm gong desktop 1234
+10.11.40.11  # dm-lai-acer-laptop. DM Lai requested through Dennis to not have nay filtering around 2019-04-10.
+10.11.14.169 # dm-lai-iphone
+10.11.14.171 # dm-lai-android-tablet
 10.11.4.0/24 # Temp bypass for ppl moved from .20
 10.11.1.0/24 # Requests originated on servers should not be filtered
 10.11.5.0/24 # Requests originated from lxc and test servers instances
