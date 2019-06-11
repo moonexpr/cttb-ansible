@@ -178,7 +178,7 @@ timed_internet:
 # E2G SSL
 enablessl: 'on'
 generatedcertstart: '1500857822'
-fn_rootca_crt: 'cttb-cacert.pem'
+fn_rootca_crt: 'CTTB-Root-CA.pem'
 fn_rootca_key: 'root-ca-key.pem'
 fn_e2g_key: 'e2g-key.pem'
 
