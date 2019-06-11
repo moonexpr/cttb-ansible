@@ -158,6 +158,9 @@ timed_internet:
       # Rui home pc (ThinkPad laptop), 21.75 is wireless.
       - 10.11.21.130
       - 10.11.21.75
+      # Rui home pc (MacBook Air laptop), 21.74 is wireless.
+      - 10.11.21.88
+      - 10.11.21.74
     periods:
       - days: "*"
         on_at: "4"
