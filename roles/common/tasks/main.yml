@@ -43,6 +43,7 @@
   - name: refresh the mirrors
     apt:
       update_cache: yes
+    ignore_errors: True
     tags:
       - apt
       - apt_autoremove
