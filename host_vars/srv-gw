@@ -70,8 +70,23 @@ timed_internet:
       # Skype computer
       - 10.11.8.52
     periods:
-      - days: "*"
-        on_at: "16"
+      - days: "1-5"
+        on_at: "19:30"
+        off_at: "22"
+      - days: "6"
+        on_at: "15"
+        off_at: "17"
+      - days: "6"
+        on_at: "19:30"
+        off_at: "22"
+      - days: "7"
+        on_at: "9"
+        off_at: "10"
+      - days: "7"
+        on_at: "15"
+        off_at: "17"
+      - days: "7"
+        on_at: "19:30"
         off_at: "22"
   - label: dvbs_student_laptops
     type: net
