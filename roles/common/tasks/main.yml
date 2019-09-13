@@ -283,6 +283,8 @@
 
   - name: apt autoremove before a fix is in
     command: /usr/bin/apt-get autoremove -y
+    args:
+      warn: false
     tags:
       - apt
       - apt_autoremove
