@@ -57,6 +57,7 @@ lxc-fs
 lxc-jumpbox
 lxc-sltp
 lxc-sltp-git
+lxc-drbu-sis
 
 # CTTB infra
 asterix 
