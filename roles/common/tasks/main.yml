@@ -16,6 +16,12 @@
       - remove_old_repo_files
       - apt
 
+  - name: refresh existing apt keys
+    shell: /usr/bin/apt-key adv --keyserver keyserver.ubuntu.com --refresh-keys Google OpenOffice Ubuntu
+    tags:
+      - refresh_apt_keys
+      - apt
+
   - name: add cttb custom ubuntu repo key
     apt_key:
       url: "{{cttb_repo}}/cttb-repo.gpg.key"
