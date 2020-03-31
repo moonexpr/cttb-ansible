@@ -2,7 +2,7 @@
 
   - name: assert the host is in an LDAP-enabled group
     assert:
-      that: "'ldap-clients' in group_names"
+      that: "'ldap_clients' in group_names"
     tags:
       - assert_ldap
 

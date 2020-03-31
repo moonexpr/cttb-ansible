@@ -9,7 +9,7 @@
 #   - A hostname/ip can be a member of multiple groups
 
 # Global vars
-* ansible_ssh_user=administrator
+* ansible_user=administrator
 
 # TESTLAB
 testlab1
@@ -58,6 +58,7 @@ lxc-jumpbox
 lxc-sltp
 lxc-sltp-git
 lxc-drbu-sis
+lxc-blogger
 
 # CTTB infra
 asterix 
@@ -115,10 +116,13 @@ spike-laptop
 cttb-it-asus-w5f-laptop
 cttb-it-inspiron-e1405    ansible_host=10.11.15.234
 cttb-it-lenovo-m10
+cttb-it-acer-desktop
+jgh-office-pc1
 dan-barth-desktop
 donna-farmer-dell-e5510-laptop
 drbustaff-latitude-e6400
 motorpool-hp8200
+jiyanxlate
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
@@ -206,6 +210,8 @@ dvgs-dorm-pc10
 dvgs-dorm-pc11
 dvgs-dorm-pc12
 dvgs-dorm-pc13
+dvgs-dorm-pc14
+dvgs-dorm-pc15
 
 #dvgs laptops
 
@@ -329,7 +335,7 @@ drbu-sc-pc2
 drbu-sc-pc3
 
 # Girl School.
-[dvgs-laptops]
+[dvgs_laptops]
 dvgs-laptop-2e
 dvgs-laptop-2w
 dvgs-laptop-5e
@@ -350,11 +356,11 @@ dvgs-vostro-laptop-4e
 dvgs-vostro-laptop-6
 dvgs-vostro-laptop-6e
 
-[dvgs-koha]
+[dvgs_koha]
 koha-kiosk1
 koha-kiosk2
 
-[dvgs-dorm]
+[dvgs_dorm]
 dvgs-dorm-pc1
 dvgs-dorm-pc2
 dvgs-dorm-pc3
@@ -368,8 +374,10 @@ dvgs-dorm-pc10
 dvgs-dorm-pc11
 dvgs-dorm-pc12
 dvgs-dorm-pc13
+dvgs-dorm-pc14
+dvgs-dorm-pc15
 
-[dvgs-cs-lab]
+[dvgs_cs_lab]
 dvgs-cs-lab-pc1
 dvgs-cs-lab-pc2
 dvgs-cs-lab-pc3
@@ -381,29 +389,29 @@ dvgs-cs-lab-pc8
 dvgs-cs-lab-pc9
 dvgs-cs-lab-pc10
 
-[dvgs-art-room]
+[dvgs_art_room]
 dvgs-art-room-pc1 
 dvgs-art-room-pc2 
 
 [dvgs:children]
-dvgs-laptops
-dvgs-koha
-dvgs-cs-lab
-dvgs-dorm
-dvgs-art-room
+dvgs_laptops
+dvgs_koha
+dvgs_cs_lab
+dvgs_dorm
+dvgs_art_room
 
 # Boy School.
-[dvbs-3rd]
+[dvbs_3rd]
 dvbs-3rd-pc01
 dvbs-3rd-pc02
 dvbs-3rd-pc03
 
-[dvbs-9th]
+[dvbs_9th]
 dvbs-9th-pc01
 dvbs-9th-pc02
 dvbs-9th-pc03
 
-[dvbs-cs-lab]
+[dvbs_cs_lab]
 dvbs-lab01
 dvbs-lab02
 dvbs-lab03
@@ -415,17 +423,17 @@ dvbs-lab09
 dvbs-lab10
 dvbs-lab11
 
-[dvbs-library]
+[dvbs_library]
 dvbs-lib02
 dvbs-lib03
 dvbs-lib04
 
-[dvbs-main-office]
+[dvbs_main_office]
 dvbs-office-pc1
 dvbs-office-pc2
 dvbs-office-optiplex-3010
 
-[dvbs-cc]
+[dvbs_cc]
 dvbs-cc-pc1
 dvbs-cc-pc2
 dvbs-cc-pc3
@@ -443,21 +451,21 @@ dvbs-annex45-usb-w1
 dvbs-annex45-usb-w2
 
 # The group has a diff meaning than that in host_vars/srv-gw.
-[dvbs-student-laptops]
+[dvbs_student_laptops]
 dvbs-stdlpt12
 dvbs-stdlpt12-w
 
 [dvbs:children]
-dvbs-3rd
-dvbs-9th
-dvbs-cs-lab
-dvbs-library
-dvbs-main-office
-dvbs-student-laptops
-dvbs-cc
+dvbs_3rd
+dvbs_9th
+dvbs_cs_lab
+dvbs_library
+dvbs_main_office
+dvbs_student_laptops
+dvbs_cc
 
 # DRBU.
-[drbu-cs-lab]
+[drbu_cs_lab]
 drbu-cs-lab-pc1
 drbu-cs-lab-pc2
 drbu-cs-lab-pc3
@@ -466,59 +474,59 @@ drbu-cs-lab-pc5
 drbu-cs-lab-pc6
 drbu-admin-office
 
-[drbu-cdorm]
+[drbu_cdorm]
 drbu-cdorm-lab-pc1
 drbu-cdorm-lab-pc2
 drbu-cdorm-lab-pc3
 drbu-cdorm-lab-pc4
 drbu-cdorm-office-pc1
 
-[drbu-cs-lab-guest]
+[drbu_cs_lab_guest]
 drbu-cs-lab-pc1
 drbu-cs-lab-pc2
 
-[drbu-staff]
+[drbu_staff]
 sue-desktop
 drbu-janice-latitude
 jroberts-desktop
 drbustaff-latitude-e6400
 
-[drbu-sw-cslab-w]
+[drbu_sw_cslab_w]
 drbu-sw-cslab-w-pc1
 drbu-sw-cslab-w-pc2
 drbu-sw-cslab-w-pc3
 
-[drbu-sw-cslab-m]
+[drbu_sw_cslab_m]
 drbu-sw-cslab-m-pc1
 drbu-sw-cslab-m-pc2
 drbu-sw-cslab-m-pc3
 
-[drbu-sudhana]
+[drbu_sudhana]
 drbu-sc-pc1
 drbu-sc-pc2
 drbu-sc-pc3
 
-[drbu-sw-cslab:children]
-drbu-sw-cslab-w
-drbu-sw-cslab-m
+[drbu_sw_cslab:children]
+drbu_sw_cslab_w
+drbu_sw_cslab_m
 
 [drbu:children]
-drbu-cs-lab
-drbu-cs-lab-guest
-drbu-cdorm
-drbu-staff
-drbu-sw-cslab
-drbu-sudhana
+drbu_cs_lab
+drbu_cs_lab_guest
+drbu_cdorm
+drbu_staff
+drbu_sw_cslab
+drbu_sudhana
 
 # Other groups.
-[lxc-testing]
+[lxc_testing]
 lxc-testlab1
 lxc-spike-test1
 lxc-spike-test2
 lxc-rui-test1
 lxc-rui-test2
 
-[lxd-hosts]
+[lxd_hosts]
 srv-nas
 srv-bk-nas
 srv-vm
@@ -541,7 +549,7 @@ tom-lenovo-w
 tom-desktop-1
 tom-desktop-2
 
-[other-ldap-clients]
+[other_ldap_clients]
 fileserver
 rui-desktop
 lxc-spike-test1
@@ -552,22 +560,22 @@ lxc-fs
 dvgs-senior-laptop-3e
 dvgs-senior-laptop-3w
 
-[ldap-clients:children]
+[ldap_clients:children]
 # DRBU
-drbu-cs-lab
-drbu-cdorm
-drbu-sw-cslab
+drbu_cs_lab
+drbu_cdorm
+drbu_sw_cslab
 # DVGS
-dvgs-koha
-dvgs-cs-lab
-dvgs-dorm
-dvgs-art-room
+dvgs_koha
+dvgs_cs_lab
+dvgs_dorm
+dvgs_art_room
 # DVBS
-dvbs-3rd
-dvbs-9th
-dvbs-cs-lab
-dvbs-library
-dvbs-main-office
-dvbs-cc
+dvbs_3rd
+dvbs_9th
+dvbs_cs_lab
+dvbs_library
+dvbs_main_office
+dvbs_cc
 # Others
-other-ldap-clients
+other_ldap_clients
