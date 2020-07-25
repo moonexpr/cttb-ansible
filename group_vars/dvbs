@@ -15,6 +15,7 @@ ldap_group_acl_string: "{% for item in ldap_groups %}({{item}}) {% endfor %}"
 
 # printing settings
 cups_srv: cups-dvbs
+cups_default_queue: Boy_School_CSLab
 
 # desktop configuration
 lightdm_hide_users: true
@@ -25,9 +26,6 @@ pic_bg: bg-dvbs.jpg
 
 # office
 openoffice: true
-
-# printing settings
-cups_default_queue: Boy_School_CSLab
 
 # proxy for ssl filtering
 global_proxy:
