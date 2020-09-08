@@ -31,7 +31,13 @@ server_interfaces:
     balancer:
       check_ip: 75.75.76.76
       gw: 172.30.20.1
-    static_routes: []
+    static_routes:
+      - table: main
+        dst: 66.241.99.22
+        gw: 172.30.20.1
+      - table: main
+        dst: 64.74.178.100
+        gw: 172.30.20.1
   - name: com10
     id: 10
     mac: '00:25:90:d3:39:1b'
