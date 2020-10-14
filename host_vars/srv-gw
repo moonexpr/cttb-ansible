@@ -38,6 +38,9 @@ server_interfaces:
       - table: main
         dst: 64.74.178.100
         gw: 172.30.20.1
+      - table: main
+        dst: 64.2.142.93
+        gw: 172.30.20.1
   - name: com10
     id: 10
     mac: '00:25:90:d3:39:1b'
