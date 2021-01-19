@@ -57,7 +57,7 @@ zone_cttb:
   - sw-annex-1: "10.11.12.201"
   - sw-ao-attic: "10.11.12.167"
   - sw-ao-desk: "10.11.12.156"
-  - sw-ao-joey-wei-office: "10.11.12.92"
+  - sw-ao-joey-wei-office: "10.11.12.222"
   - sw-ao-lan: "10.11.12.178"
   - sw-ao-srvrm: "10.11.12.31"
   - sw-ao-srvrm: "172.30.20.31"
