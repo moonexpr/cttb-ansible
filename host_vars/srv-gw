@@ -193,13 +193,13 @@ timed_internet:
       # Juan home pc (Samsung laptop) for Miguel, 22.17 is wireless.
       - 10.11.22.17
       - 10.11.22.25
-      # Rui home pc (ThinkPad laptop), 21.75 is wireless.
-      - 10.11.21.130
-      - 10.11.21.75
-      # Rui home pc (MacBook Air laptop), 21.74 is wireless. 14.92 is a blue USB ethernet adapter.
+      # Rui home pc (MacBook Air laptop), 21.74 is wireless. 21.88 thunderbold adapter (stopped working), 40.44 white USB ethernet adapter.
       - 10.11.21.88
-      - 10.11.14.92
+      - 10.11.40.44
       - 10.11.21.74
+      # Rui home pc (ThinkPad T440s laptop), 11.186 wired, 11.187 wireless.
+      - 10.11.11.186
+      - 10.11.11.187
     periods:
       - days: "*"
         on_at: "4"
@@ -209,6 +209,8 @@ timed_internet:
     ips:
       # Juan Samsung phone
       - 10.11.14.147
+      # Sophia Moto e4 phone
+      - 10.11.11.173
     periods:
       - days: "*"
         on_at: "5"
