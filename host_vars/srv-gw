@@ -33,13 +33,24 @@ server_interfaces:
       gw: 172.30.20.1
     static_routes:
       - table: main
-        dst: 66.241.99.22
-        gw: 172.30.20.1
-      - table: main
+        # Comcast DNS1, added to help restore routes after a power outage.
         dst: 64.74.178.100
         gw: 172.30.20.1
       - table: main
+        # google.com (& family): connections via com10 often get stuck in SYN_SENT.
+        dst: 216.239.32.20
+        gw: 172.30.20.1
+      - table: main
+        # Vitelity call server.
+        dst: 66.241.99.22
+        gw: 172.30.20.1
+      - table: main
+        # Another Vitelity call server found in tcpdump.
         dst: 64.2.142.93
+        gw: 172.30.20.1
+      - table: main
+        # portail.vitelity.net.
+        dst: 64.74.178.100
         gw: 172.30.20.1
   - name: com10
     id: 10
