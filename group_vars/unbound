@@ -110,6 +110,7 @@ zone_cttb:
   - sw-iitbt-west-scilab: "10.11.12.208"
   - sw-jgh-north: "10.11.12.131"
   - sw-jgh-north-stealth: "10.11.12.200"
+  - sw-jgh-solarium: "10.11.12.214"
   - sw-jgh-south: "10.11.12.240"
   - sw-laundry-entrance: "10.11.12.211"
   - sw-laundry-office: "10.11.12.212"
