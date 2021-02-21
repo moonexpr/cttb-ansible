@@ -100,6 +100,7 @@ zone_cttb:
   - sw-dvgs-es-lang-lab: "10.11.12.162"
   - sw-dvgs-furnace: "10.11.12.32"
   - sw-dvgs-library: "10.11.12.97"
+  - sw-dvgs-stud: "10.11.12.227"
   - sw-dvgs-teacher-office: "10.11.12.140"
   - sw-dvgs-upstairs: "10.11.12.155"
   - sw-gh-basement: "10.11.12.42"
