@@ -156,17 +156,6 @@ timed_internet:
       - days: "1-5"
         on_at: "8"
         off_at: "17"
-  - label: dvgs_laptops
-    type: ip
-    ips:
-      - 10.11.21.124
-      - 10.11.21.125
-      - 10.11.23.139
-      - 10.11.28.120
-    periods:
-      - days: "*"
-        on_at: "7"
-        off_at: "22"
   - label: dvgs
     type: net
     ips:
