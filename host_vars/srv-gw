@@ -207,13 +207,13 @@ timed_internet:
   - label: home_phones
     type: ip
     ips:
-      # Juan Samsung phone
-      - 10.11.14.147
       # Sophia Moto e4 phone
       - 10.11.11.173
+      # GS dorm students' phones
+      - 10.11.14.121-10.11.14.140
     periods:
       - days: "*"
-        on_at: "5"
+        on_at: "7"
         off_at: "22"
 
 # E2G SSL
