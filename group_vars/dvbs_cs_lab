@@ -1,5 +1,8 @@
 ---
 
+# Browser.
+firefox: true
+
 # desktop configuration
 lightdm_hide_users: true
 
