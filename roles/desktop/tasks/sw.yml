@@ -38,7 +38,6 @@
       - vlc
       - brasero
       - audacity
-      - thunderbird
 
   - include: sw-office.yml
     tags:
