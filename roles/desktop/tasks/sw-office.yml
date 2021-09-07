@@ -49,6 +49,7 @@
         name: "{{item}}"
         state: present
         install_recommends: yes
+        allow_unauthenticated: yes
       with_items:
         - openoffice-brand-en-us
         - openoffice-brand-writer
@@ -82,7 +83,7 @@
 
     - name: regen font cache
       command: fc-cache -fv
-      when: font_install|changed
+      when: font_install
 
     when: wpsoffice == true
     tags:
