@@ -64,7 +64,7 @@ zone_cttb:
   - sw-ao-srvrm: "172.30.7.31"
   - sw-art-room: "10.11.12.207"
   - sw-bh-north: "10.11.12.137"
-  - sw-bh-south: "10.11.12.86"
+  - sw-bh-south: "10.11.12.138"
   - sw-dragon-68: "10.11.12.83"
   - sw-dragon-way: "10.11.12.40"
   - sw-drbu-cdorm-basement: "10.11.12.169"
