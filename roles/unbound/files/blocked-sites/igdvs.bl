@@ -62,6 +62,7 @@ local-zone: "qq.com" static
 local-zone: "reddit.com" static
 local-zone: "renren.com" static
 local-zone: "rrpproxy.net" static
+local-zone: "scratch.mit.edu" static
 local-zone: "scribd.com" static
 local-zone: "siteenable.com" static
 local-zone: "soundcloud.com" static
