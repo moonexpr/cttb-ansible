@@ -49,8 +49,12 @@ server_interfaces:
         dst: 64.2.142.93
         gw: 172.30.20.1
       - table: main
-        # portail.vitelity.net.
-        dst: 64.74.178.100
+        # portal.vitelity.net. Rui found that the IP changed to cloudflare.net and updated it on 2022-01-15. Was 64.74.178.100, now 104.18.6.30 and 104.18.7.30.
+        dst: 104.18.6.30
+        gw: 172.30.20.1
+      - table: main
+        # portal.vitelity.net.
+        dst: 104.18.7.30
         gw: 172.30.20.1
   - name: com10
     id: 10
