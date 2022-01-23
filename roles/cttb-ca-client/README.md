@@ -8,6 +8,6 @@ certificates issued by the CTTB Root CA.
 - How do you add a certificate authority (CA) to Ubuntu?
   https://superuser.com/questions/437330/how-do-you-add-a-certificate-authority-ca-to-ubuntu/747992
 - CTTB Wiki page at:
-  http://theoverseer.cttb/wiki/AddTrustedCASystemWideOnUbuntu
+  http://wiki.cttb/wiki/AddTrustedCASystemWideOnUbuntu
 
    
