@@ -2,6 +2,7 @@
 
 # Browser.
 firefox: true
+chrome: true
 
 # nfs homes settings
 nfs_homes_host: fileserver
@@ -25,7 +26,9 @@ pic_avatar: avatar-dvbs.png
 pic_bg: bg-dvbs.jpg
 
 # office
-openoffice: true
+libreoffice: true
+openoffice: false
+wpsoffice: false
 
 # proxy for ssl filtering
 global_proxy:
