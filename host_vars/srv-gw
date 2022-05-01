@@ -210,6 +210,17 @@ timed_internet:
       - days: "*"
         on_at: "7"
         off_at: "22"
+  - label: guo_hua_shr_devices
+    type: ip
+    ips:
+      # iPad
+      - 10.11.21.3
+      # MacBook Pro
+      - 10.11.44.106
+    periods:
+      - days: "*"
+        on_at: "6:15"
+        off_at: "7"
 
 # E2G SSL
 enablessl: 'on'
