@@ -221,6 +221,9 @@ timed_internet:
       - days: "*"
         on_at: "6:15"
         off_at: "7"
+      - days: "*"
+        on_at: "17:50"
+        off_at: "18:20"
 
 # E2G SSL
 enablessl: 'on'
