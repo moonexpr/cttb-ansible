@@ -27,23 +27,23 @@
       #- lubuntu-core   # Absent in 20.04.
       #- lubuntu-default-session   # Absent in 20.04.
       - lubuntu-default-settings
-      - lubuntu-lxpanel-icons
+      #- lubuntu-lxpanel-icons     # Absent in 20.04.
       - lxappearance
       - lxappearance-obconf
       - lxinput
       - lxlauncher
-      - lxpanel-indicator-applet-plugin
+      #- lxpanel-indicator-applet-plugin   # Absent in 20.04.
       - lxrandr
       - lxsession-default-apps
       - lxsession-logout
-      - lxshortcut
-      - lxtask
+      #- lxshortcut   # Absent in 20.04.
+      #- lxtask   # Unneeded.
       - lxterminal
       - network-manager
       - network-manager-gnome
       - obconf
-      - plymouth-theme-lubuntu-logo
-      - plymouth-theme-lubuntu-text
+      #- plymouth-theme-lubuntu-logo
+      #- plymouth-theme-lubuntu-text
       - pm-utils
       - policykit-1
       - policykit-1-gnome
