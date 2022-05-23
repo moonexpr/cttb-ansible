@@ -64,6 +64,6 @@
   # Did not exist in Lubuntu 20.04.
   - name: create /usr/share/lubuntu/images/ if it does not exist
     file:
-      path: /usr/share/lubuntu/image
+      path: /usr/share/lubuntu/images
       state: directory
       mode: '0755'
