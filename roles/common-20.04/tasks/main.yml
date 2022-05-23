@@ -1,0 +1,267 @@
+---
+
+  - name: custom apt sources.list
+    template:
+      src: sources.list.j2
+      dest: /etc/apt/sources.list
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - apt
+
+  - name: refresh existing apt keys
+    shell: /usr/bin/apt-key adv --keyserver keyserver.ubuntu.com --refresh-keys Google OpenOffice Ubuntu
+    tags:
+      - refresh_apt_keys
+      - apt
+
+  - name: add cttb custom ubuntu repo key
+    apt_key:
+      url: "{{cttb_repo}}/cttb-repo.gpg.key"
+      state: present
+    tags:
+      - apt
+
+  - name: add cttb custom ubuntu repo
+    apt_repository:
+      repo: "deb [arch=amd64] {{cttb_repo}}/apt/ubuntu {{ansible_distribution_release}} main"
+      state: present
+    tags:
+      - apt
+
+  - name: add additional apt repo
+    apt_repository:
+      repo: "{{item}}"
+      state: present
+    with_items: "{{additional_apt_repo}}"
+    when: additional_apt_repo is defined
+    tags:
+      - apt
+      - additional_apt_repo
+
+  - name: refresh the mirrors
+    apt:
+      update_cache: yes
+    ignore_errors: True
+    tags:
+      - apt
+      - apt_autoremove
+
+  # in case for whatever reason this is missing, it's useful to add ppas to test stuff
+  - name: install apt-add-repository
+    apt:
+      name: software-properties-common
+      state: present
+    tags:
+      - apt
+
+  # setup during preseed stage, but just in case, make sure it's there
+  - name: Set up ansible/cttb-os authorized_key
+    authorized_key:
+      user: administrator
+      key: "{{item}}"
+    with_file:
+      - ssh_keys/ansible.pub
+
+  - name: set an explicit proxy if needed
+    lineinfile:
+      dest: /etc/environment
+      line: "{{item}}"
+    with_items: "{{global_proxy}}"
+    when: global_proxy is defined
+    tags:
+      - common_proxy
+
+  - name: sync time
+    include_role:
+      name: time-server
+
+  - name: install CTTB CA cert
+    include_role:
+      name: cttb-ca-client
+
+  # set hostname
+  # don't do this on lxc containers
+  # https://github.com/ansible/ansible/issues/19814
+  - name: set hostname
+    hostname:
+      name: "{{inventory_hostname}}"
+    when: ansible_virtualization_type != "lxc" and ansible_virtualization_role != "guest"
+
+  - name: fix /etc/hosts
+    replace:
+      dest: /etc/hosts
+      regexp: "computer"
+      replace: "{{inventory_hostname}}"
+      backup: no
+
+  - name: make ssh use ipv4 only # we disable ipv6 and X11forwarding fails
+    lineinfile:
+      dest: /etc/ssh/sshd_config
+      regexp: '^AddressFamily inet'
+      # Insert the line before "ListenAddress" or "#ListenAddress" lines.
+      insertbefore: '^.?ListenAddress'
+      line: 'AddressFamily inet'
+    tags:
+      disable_ipv6
+    notify:
+      - reload ssh
+    ignore_errors: yes
+
+  - name: enable centralized logging
+    copy:
+      src: conf/10-centralized-logging.conf
+      dest: /etc/rsyslog.d/10-centralized-logging.conf
+      mode: 0644
+      owner: root
+      group: root
+    when: centralized_logging == true
+    notify:
+      - restart rsyslog
+    tags:
+      - logging
+
+  - name: add ansible repo key
+    apt_key:
+      keyserver: keyserver.ubuntu.com
+      id: 7BB9C367
+      state: present
+    tags:
+      - apt
+
+  - name: add ansible repo mirror
+    apt_repository:
+      repo: "deb {{deb_mirror}}/ansible {{ansible_distribution_release}} main"
+      state: present
+    tags:
+      - apt
+
+  # sometimes bootstrapped version is not enough to run the rest of the playbook
+  - name: upgrade ansible to latest
+    apt:
+      name: ansible
+      state: latest
+    tags:
+      - apt
+
+  - name: remove some software
+    apt:
+      state: absent
+      name:
+      - popularity-contest
+      - nano
+      - avahi-daemon
+    tags:
+      - remove_sw
+
+  - name: remove sw requested for this box
+    apt:
+      name: "{{item}}"
+      state: absent
+    with_items: "{{remove_sw}}"
+    when: remove_sw is defined
+    tags:
+      - remove_sw
+
+  # exfat-fuse and exfat-utils are for support of exfat file system, FAT with total fs size > 4 GB.
+  - name: install basic software
+    apt:
+      state: latest
+      install_recommends: yes
+      name:
+      - byobu
+      - curl
+      - ethtool
+      - exfat-fuse
+      - exfat-utils
+      - fio
+      - git
+      - hddtemp
+      - htop
+      - iftop
+      - iotop
+      - iperf
+      - iptraf
+      - mtr
+      - nload
+      - p11-kit-modules
+      - quota
+      - smartmontools
+      - socat
+      - tcpdump
+      - traceroute
+      - udisks2
+      - unattended-upgrades
+      - util-linux
+      - vim
+      - wakeonlan
+      - whois
+    tags:
+      - basic_software
+
+  - name: install sw requested for this box
+    apt:
+      name: "{{additional_sw | default([])}}"
+      state: latest
+    tags:
+      - additional_sw
+
+  # Seems unneeded, already there after 20.04 installation. Rui, 2022-01-23.
+  #- name: enable unattended upgrades
+    #copy:
+      #src: conf/unattended-upgrades
+      #dest: /etc/apt/apt.conf.d/20auto-upgrades
+      #mode: 0644
+      #owner: root
+      #group: root
+
+  - name: disable ipv6 #defaults to yes
+    copy:
+      src: conf/disable-ipv6.conf
+      dest: /etc/sysctl.d/60-disable-ipv6.conf
+      mode: 0644
+      owner: root
+      group: root
+    when: disable_ipv6
+    tags:
+      - disable_ipv6
+
+  - name: vim saner defaults
+    copy:
+      src: conf/vimrc
+      dest: /etc/skel/.vimrc
+      mode: 0644
+      owner: root
+      group: root
+
+  # administrator account has already been created so the above won't take effect
+  - name: vim saner defaults for administrator
+    copy:
+      src: conf/vimrc
+      dest: /home/administrator/.vimrc
+      mode: 0644
+      owner: administrator
+      group: administrator
+
+  - name: dist-upgrade + autoremove purge
+    apt:
+      autoremove: yes
+      purge: yes
+      upgrade: dist
+    tags:
+      - apt
+
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
+    args:
+      warn: false
+    tags:
+      - apt
+      - apt_autoremove
+
+    # Defined in group_vars, default is en_US.UTF-8.
+  - name: set the system locale
+    command: /usr/sbin/update-locale LANG={{ locale }} LANGUAGE
+    tags:
+      - locale
