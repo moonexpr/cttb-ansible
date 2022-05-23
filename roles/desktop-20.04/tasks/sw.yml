@@ -1,0 +1,48 @@
+---
+
+  #- name: Add canonical third-party mirror
+    #apt_repository:
+      #repo: "deb {{deb_mirror}}/canonical {{ansible_distribution_release}} partner"
+      #state: present
+    #tags:
+      #- deb_repo
+
+  - name: install additional software
+    apt:
+      name: "{{item}}"
+      state: latest
+      install_recommends: yes
+    with_items:
+      - curl
+      - cups-client
+      - gimp
+      - ubuntu-restricted-addons
+      - ubuntu-restricted-extras
+      - vlc
+      - brasero
+      - audacity
+
+  # removing bunch of sw I don't need
+  - name: remove other apps
+    apt:
+      name: "{{item}}"
+      state: absent
+      purge: yes
+    with_items:
+      - whoopsie
+      - deja-dup
+      - gnome-keyring
+      - update-manager
+      - update-notifier
+      #- lubuntu-software-center    # Does not exist.
+      - update-notifier-common     # Will be installed by "ubuntu-restricted-extras".
+      - sylpheed*
+      - cups-browsed
+
+  - include: sw-office.yml
+    tags:
+      - office
+  - include: sw-browser.yml
+    tags:
+      - browser
+
