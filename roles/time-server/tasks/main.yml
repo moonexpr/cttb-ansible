@@ -3,10 +3,9 @@
   - block:
         - name: install ntp
           apt:
-            name: "{{item}}"
             state: present
             install_recommends: no
-          with_items:
+            name:
             - ntp
 
         - name: install ntp.conf from template
@@ -33,9 +32,8 @@
   - block:
     - name: remove ntp
       apt:
-        name: "{{item}}"
         state: absent
         purge: yes
-      with_items:
+        name:
         - ntp
     when: ansible_virtualization_type == "lxc"
