@@ -6,6 +6,12 @@
       src: config/etc-skel/
       dest: /etc/skel/
 
+  # gnome-shell: a few buttons at left, status on top. Default in Lubuntu 20.04 install. Not CTTB Lubuntu style, must remove it.
+  - name: remove gnome-shell
+    apt:
+      state: absent
+      name: gnome-shell
+
   - block: # when icons on the desktop are defined
 
     - name: create Desktop in skel
@@ -110,10 +116,11 @@
       owner: root
       group: root
 
-  - name: install noobslab windos10-theme
-    apt:
-      name: windos-10-themes
-      state: present
+  # Pkg absent for Lubuntu 20.04.
+  #- name: install noobslab windos10-theme
+    #apt:
+      #name: windos-10-themes
+      #state: present
 
   - name: configure openbox
     template:
