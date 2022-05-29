@@ -16,10 +16,9 @@
     # since we're installing remote get rid of all the local cups stuff
     - name: uninstall cupsd & co
       apt:
-        name: "{{item}}"
         state: absent
         purge: yes
-      with_items:
+        name:
         - cupsd
         - cups-browsed
         - cups-daemon
