@@ -33,6 +33,7 @@
       - lxinput
       - lxlauncher
       #- lxpanel-indicator-applet-plugin   # Absent in 20.04.
+      - lxqt-panel   # Added for 20.04.
       - lxrandr
       - lxsession-default-apps
       - lxsession-logout
