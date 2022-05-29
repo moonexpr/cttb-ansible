@@ -9,10 +9,9 @@
 
   - name: install additional software
     apt:
-      name: "{{item}}"
       state: latest
-      install_recommends: yes
-    with_items:
+      install_recommends: no
+      name:
       - curl
       - cups-client
       - gimp
@@ -25,10 +24,9 @@
   # removing bunch of sw I don't need
   - name: remove other apps
     apt:
-      name: "{{item}}"
       state: absent
       purge: yes
-    with_items:
+      name:
       - whoopsie
       - deja-dup
       - gnome-keyring

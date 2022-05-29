@@ -3,21 +3,20 @@
   # if we install anything more powerful get rid of abiword/gnumeric
   - name: remove default office suite
     apt:
-      name: "{{item}}"
       state: absent
       purge: yes
-    with_items:
+      name:
       - abiword
       - gnumeric
     when: libreoffice == true or openoffice == true or wpsoffice == true
 
   - name: install libreoffice
     apt:
-      name: "{{item}}"
       state: present
-      install_recommends: yes
-    with_items:
+      install_recommends: no
+      name:
       - libreoffice-writer
+      - libreoffice-impress
       - libreoffice-calc
       - libreoffice-gtk
       - libreoffice-help-en-us

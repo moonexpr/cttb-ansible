@@ -2,9 +2,8 @@
 
   - name: install goldendict and dictionaries
     apt:
-      name: "{{item}}"
       state: latest
-    with_items:
+      name:
       - goldendict
       - goldendict-dicts
     tags:
