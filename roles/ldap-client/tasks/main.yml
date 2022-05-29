@@ -57,16 +57,33 @@
 
   - name: install ldap/nss/pam pkgs
     apt:
-      name: "{{item}}"
       state: present
-      install_recommends: yes  
-    with_items:
+      install_recommends: yes
+      name:
       - libpam-runtime
       - libnss-ldap
       - ldap-auth-config
 
-  - name: configure ldap for nss
+  - name: configure ldap for nss, on Ubuntu 16.04
     command: auth-client-config -t nss -p lac_ldap
+    # Ignore errors since Ubuntu 20.04 does not have this pkg/command.
+    when: ansible_distribution_version == '16.04'
+    tags:
+      - nsswitch.conf
+
+  - name: configure ldap for nss, on Ubuntu 20.04
+    lineinfile:
+      path: /etc/nsswitch.conf
+      regexp: "{{ item.From }}"
+      line: "{{ item.To }}"
+      state: present
+    loop:
+      - { From: '^passwd:.*files systemd', To: 'passwd:         files systemd ldap'}
+      - { From: '^group:.*files systemd',  To: 'group:          files systemd ldap'}
+      - { From: '^shadow:.*files',         To: 'shadow:         files ldap'}
+    when: ansible_distribution_version == '20.04'
+    tags:
+      - nsswitch.conf
 
   - name: setup ldap authentication
     command: pam-auth-update
