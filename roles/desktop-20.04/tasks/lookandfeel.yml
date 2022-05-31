@@ -113,6 +113,8 @@
       remote_src: yes
       src: "{{ansible_assets_url}}/windos10-icons-custom.tar.gz"
       dest: /usr/share/icons/
+      # Use "creates" to skip copying if already exists:
+      creates: /usr/share/icons/windos10-icons
       owner: root
       group: root
 
@@ -125,32 +127,32 @@
   - name: configure openbox
     template:
       src: openbox-rc.j2
-      dest: /usr/share/lubuntu/openbox/rc.xml
+      #dest: /usr/share/lubuntu/openbox/rc.xml    # For Lubuntu 16.04.
+      dest: /etc/xdg/openbox/lxqt-rc.xml          # For Lubuntu 20.04.
       mode: 0644
       owner: root
       group: root
 
   # from testing the xdg directory is there but not used in this case
-  - name: configure lxpanel
-    template:
-      src: lxpanel.j2
-      dest: /usr/share/lxpanel/profile/Lubuntu/panels/panel
-      mode: 0644
-      owner: root
-      group: root
+  #- name: configure lxpanel
+    #template:
+      #src: lxpanel.j2
+      #dest: /usr/share/lxpanel/profile/Lubuntu/panels/panel
+      #mode: 0644
+      #owner: root
+      #group: root
 
-  - name: configure lxsession
-    template:
-      src: lxsession.j2
-      dest: /etc/xdg/lxsession/Lubuntu/desktop.conf
-      mode: 0644
-      owner: root
-      group: root
+  #- name: configure lxsession
+    #template:
+      #src: lxsession.j2
+      #dest: /etc/xdg/lxsession/Lubuntu/desktop.conf
+      #mode: 0644
+      #owner: root
+      #group: root
 
-  - name: configure pcmanfm
-    template:
-      src: pcmanfm.j2
-      dest: /etc/xdg/pcmanfm/lubuntu/pcmanfm.conf
-      mode: 0644
-      owner: root
-      group: root
+  #- name: configure pcmanfm
+    #template:
+      #src: pcmanfm.j2
+      #dest: /etc/xdg/pcmanfm/lubuntu/pcmanfm.conf
+      #mode: 0644
+      #owner: root
