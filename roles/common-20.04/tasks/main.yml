@@ -168,9 +168,8 @@
   - name: install basic software
     apt:
       state: latest
-      install_recommends: yes
+      install_recommends: no
       name:
-      - byobu
       - curl
       - ethtool
       - exfat-fuse
