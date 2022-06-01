@@ -150,9 +150,9 @@
       owner: root
       group: root
 
-  #- name: configure pcmanfm
-    #template:
-      #src: pcmanfm.j2
-      #dest: /etc/xdg/pcmanfm/lubuntu/pcmanfm.conf
-      #mode: 0644
-      #owner: root
+  - name: configure pcmanfm
+    template:
+      src: pcmanfm.j2
+      dest: /usr/share/pcmanfm-qt/lxqt/settings.conf
+      mode: 0644
+      owner: root
