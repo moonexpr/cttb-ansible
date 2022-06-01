@@ -133,22 +133,22 @@
       owner: root
       group: root
 
-  # from testing the xdg directory is there but not used in this case
-  #- name: configure lxpanel
-    #template:
-      #src: lxpanel.j2
-      #dest: /usr/share/lxpanel/profile/Lubuntu/panels/panel
-      #mode: 0644
-      #owner: root
-      #group: root
+  # Lubuntu 20.04 uses lxqt-panel. System default conf file is at /usr/share/lxqt/panel.conf.
+  - name: configure lxpanel
+    template:
+      src: lxpanel.j2
+      dest: /usr/share/lxqt/panel.conf
+      mode: 0644
+      owner: root
+      group: root
 
-  #- name: configure lxsession
-    #template:
-      #src: lxsession.j2
-      #dest: /etc/xdg/lxsession/Lubuntu/desktop.conf
-      #mode: 0644
-      #owner: root
-      #group: root
+  - name: configure lxsession
+    template:
+      src: lxsession.j2
+      dest: /usr/share/lxqt/session.conf
+      mode: 0644
+      owner: root
+      group: root
 
   #- name: configure pcmanfm
     #template:
