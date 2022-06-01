@@ -43,6 +43,7 @@
       - network-manager
       - network-manager-gnome
       - obconf
+      - pcmanfm-qt   # Added for 20.04.
       #- plymouth-theme-lubuntu-logo
       #- plymouth-theme-lubuntu-text
       - pm-utils
