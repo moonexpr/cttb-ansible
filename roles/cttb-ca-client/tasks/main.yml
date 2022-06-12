@@ -39,14 +39,14 @@
 
   - name: change the libnssckbi.so files to symlinks if not already, x86_64
     # If the file is not a symbolic link, back up its content. For all, forcefully change it to a link to the p11-kit-trust.so file.
-    shell: ls -1 /usr/lib/firefox/libnssckbi.so /usr/lib/thunderbird/libnssckbi.so /usr/lib/x86_64-linux-gnu/nss/libnssckbi.so `locate -b '\libnssckbi.so'` | sort -u | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/x86_64-linux-gnu/pkcs11/p11-kit-trust.so {}'
+    shell: ls -1 /usr/lib/firefox/libnssckbi.so /usr/lib/thunderbird/libnssckbi.so /usr/lib/x86_64-linux-gnu/nss/libnssckbi.so `locate -b '\libnssckbi.so'` 2>/dev/null | grep -v snap | sort -u | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/x86_64-linux-gnu/pkcs11/p11-kit-trust.so {}'
     when: ansible_architecture == "x86_64"
     tags:
       - gen_symlinks
 
   - name: change the libnssckbi.so files to symlinks if not already, i386
     # If the file is not a symbolic link, back up its content. For all, forcefully change it to a link to the p11-kit-trust.so file.
-    shell: ls -1 /usr/lib/firefox/libnssckbi.so /usr/lib/thunderbird/libnssckbi.so /usr/lib/i386-linux-gnu/nss/libnssckbi.so `locate -b '\libnssckbi.so'` | sort -u | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/i386-linux-gnu/pkcs11/p11-kit-trust.so {}'
+    shell: ls -1 /usr/lib/firefox/libnssckbi.so /usr/lib/thunderbird/libnssckbi.so /usr/lib/i386-linux-gnu/nss/libnssckbi.so `locate -b '\libnssckbi.so'` 2>/dev/null | grep -v snap | sort -u | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/i386-linux-gnu/pkcs11/p11-kit-trust.so {}'
     when: ansible_architecture == "i386"
     tags:
       - gen_symlinks
