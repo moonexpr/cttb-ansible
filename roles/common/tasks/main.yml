@@ -70,7 +70,7 @@
     tags:
       - apt
 
-  # setup durign preseed stage, but just in case, make sure it's there
+  # setup during preseed stage, but just in case, make sure it's there
   - name: Set up ansible/cttb-os authorized_key
     authorized_key:
       user: administrator
