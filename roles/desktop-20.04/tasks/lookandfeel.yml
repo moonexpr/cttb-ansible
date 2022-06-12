@@ -83,31 +83,6 @@
     tags:
       - icons
 
-  #- name: add noobslab mirror key
-    #apt_key:
-      #keyserver: keyserver.ubuntu.com
-      #id: "0xF59EAE4D"
-
-  #- name: Add noobslab icon repository
-    #apt_repository:
-      #repo: "deb {{deb_mirror}}/noobslab-icons {{ansible_distribution_release}} main"
-      #state: present
-
-  #- name: Add noobslab theme repository
-    #apt_repository:
-      #repo: "deb {{deb_mirror}}/noobslab-themes {{ansible_distribution_release}} main"
-      #state: present
-
-  #- name: install noobs icons
-    #apt:
-      #name: "{{item}}"
-      #state: present
-      #install_recommends: no
-    #with_items:
-      #- super-flat-remix-icons
-      #- vertex-icons
-      #- arc-icons
-
   - name: install windos10 icons
     unarchive:
       remote_src: yes
@@ -117,12 +92,6 @@
       creates: /usr/share/icons/windos10-icons
       owner: root
       group: root
-
-  # Pkg absent for Lubuntu 20.04.
-  #- name: install noobslab windos10-theme
-    #apt:
-      #name: windos-10-themes
-      #state: present
 
   # Lubuntu 20.04: mainly to configure 1 desktop only.
   - name: configure openbox
