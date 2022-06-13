@@ -141,3 +141,7 @@
     tags:
       - customize_app_menu
       - add_newline
+
+  - include: app-menu.yml
+    tags:
+      - app_menu

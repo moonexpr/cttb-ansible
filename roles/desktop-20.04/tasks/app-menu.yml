@@ -1,0 +1,45 @@
+---
+# Customize the applications menu in lxqt-panel
+
+  - name: move 'Lock Screen' into Leave
+    lineinfile:
+      path: /usr/share/applications/lxqt-lockscreen.desktop
+      regexp: '^Categories='
+      line: Categories=System;X-Leave
+    tags:
+      - app_menu
+
+  - name: hide apps in the app menu
+    lineinfile:
+      dest: {{item}}
+      line: NoDisplay=true
+      with_items:
+      - /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
+      - /usr/share/applications/fcitx.desktop
+      # No need to show a generic Leave
+      - /usr/share/applications/lxqt-leave.desktop
+      # Hibernate does not work.
+      - /usr/share/applications/lxqt-hibernate.desktop
+      - /usr/share/applications/qlipper.desktop
+      # TeXInfo
+      - /usr/share/applications/info.desktop
+      - /usr/share/applications/vim.desktop
+      # Additional Device Drivers
+      - /usr/share/applications/software-properties-drivers.desktop
+      - /usr/share/applications/org.debian.galternatives.desktop
+      - /usr/share/applications/nm-connection-editor.desktop
+      - /usr/share/applications/org.freedesktop.IBus.Setup.desktop.desktop
+      - /usr/share/applications/im-config.desktop
+      - /usr/share/applications/time.desktop
+      - /usr/share/applications/software-property-gtk.desktop
+      - /usr/share/applications/users.desktop
+      - /usr/share/applications/obconf.desktop
+      - /usr/share/applications/fcitx-configtool.desktop
+      - /usr/share/applications/lightdm-gtk-greeter-settings.desktop
+      - /usr/share/applications/light-locker-settings.desktop
+      - /usr/share/applications/gnome-language-selector.desktop
+      - /usr/share/applications/xfce4-power-manager-settings.desktop
+      - /usr/share/applications/lxinput.desktop
+      - /usr/share/applications/lxqt-config-monitor.desktop
+    tags:
+      - app_menu
