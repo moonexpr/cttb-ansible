@@ -70,6 +70,7 @@
     apt:
       state: absent
       name:
+      - galculator
       - galternatives
       - qlipper
 
