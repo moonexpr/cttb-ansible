@@ -79,6 +79,10 @@
     tags:
       lang
 
+  - include: sound.yml
+    tags:
+      sound
+
   # upgrade to latest for release
   - name: update system
     apt:
@@ -90,3 +94,11 @@
       - os_upgrade
 
   # - include: fix-xorg-intel.yml
+
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
+    args:
+      warn: false
+    tags:
+      - apt
+      - apt_autoremove
