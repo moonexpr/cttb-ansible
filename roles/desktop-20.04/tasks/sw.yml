@@ -18,7 +18,6 @@
       - ubuntu-restricted-addons
       - ubuntu-restricted-extras
       - vlc
-      - brasero
       - audacity
 
   # removing bunch of sw I don't need
@@ -36,9 +35,6 @@
       - update-notifier-common     # Will be installed by "ubuntu-restricted-extras".
       - sylpheed*
       - cups-browsed
-      - brasero         # We usually don't burn CD/DVDs any more.
-      - brasero-cdrkit
-      - dvdauthor
       - htop            # Remove the following apps, unneeded in 20.04.
       - gnome-logs
       - galculator
