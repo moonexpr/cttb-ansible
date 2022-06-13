@@ -113,7 +113,7 @@
       group: root
 
   # Lubuntu 20.04 system default icons_theme is in /usr/share/lxqt/lxqt.conf.
-  - name: configure lxpanel
+  - name: configure icon and desktop theme
     template:
       src: lxqt-conf.j2
       dest: /usr/share/lxqt/lxqt.conf
@@ -129,7 +129,7 @@
       owner: root
       group: root
 
-  - name: configure pcmanfm
+  - name: configure pcmanfm-qt
     template:
       src: pcmanfm.j2
       dest: /usr/share/pcmanfm-qt/lxqt/settings.conf
