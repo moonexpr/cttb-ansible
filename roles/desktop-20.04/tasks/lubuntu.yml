@@ -68,8 +68,10 @@
   # Remove unneeded lubuntu pkgs.
   - name: remove unneeded lubuntu pkgs
     apt:
-      name: galternatives
       state: absent
+      name:
+      - galternatives
+      - qlipper
 
   # Did not exist in Lubuntu 20.04.
   - name: create /usr/share/lubuntu/images/ if it does not exist
