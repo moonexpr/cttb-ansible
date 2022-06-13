@@ -35,12 +35,10 @@
       - update-notifier-common     # Will be installed by "ubuntu-restricted-extras".
       - sylpheed*
       - cups-browsed
-      - htop            # Remove the following apps, unneeded in 20.04.
       - gnome-logs
       - galculator
       - nautilus
       - eog
-      - htop
 
   - include: sw-office.yml
     tags:
