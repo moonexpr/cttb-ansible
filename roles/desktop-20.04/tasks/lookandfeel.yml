@@ -135,3 +135,9 @@
       dest: /usr/share/pcmanfm-qt/lxqt/settings.conf
       mode: 0644
       owner: root
+
+  - name: fix a desktop file that missed an ending newline character
+    shell: cd /usr/share/applications; FILE1=light-locker-settings.desktop; tail -c1 $FILE1 | read -r _ || echo >> $FILE1
+    tags:
+      - customize_app_menu
+      - add_newline
