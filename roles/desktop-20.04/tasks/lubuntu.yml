@@ -11,7 +11,7 @@
       - dmz-cursor-theme
       - evince
       - file-roller
-      - galculator
+      #- galculator    # Unneeded in 20.04, has gnome-calculator.
       - gnome-system-tools
       - indicator-application
       #- leafpad       # Absent in 20.04.
