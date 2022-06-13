@@ -8,7 +8,7 @@
 
   - name: add /etc/modprobe.d/alsa.conf with a option for sound to work
     copy:
-      content: "options snd-hda-intel model=dell-headset-multi"
+      content: "options snd-hda-intel model=dell-headset-multi\n"
       dest: /etc/modprobe.d/alsa.conf
       mode: 0644
       owner: root
