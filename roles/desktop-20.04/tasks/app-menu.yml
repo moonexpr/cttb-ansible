@@ -10,23 +10,23 @@
       regexp: '^\s+<Menuname(.*)>Screensaver</Menuname>'
       line: '                        <!-- <Menuname\1>Screensaver</Menuname> -->'
       backrefs: yes
-    tags:
-      - app_menu
+
+  - name: comment out the Screensaver category in the top menu
+    replace:
+      path: /etc/xdg/menus/lxqt-applications.menu
+      regexp: '^\s+<!-- Screensaver -->[^"]*<!-- End Screensaver -->\s+$'
+      replace: ''
 
   - name: move 'Lock Screen' into Leave
     lineinfile:
       path: /usr/share/applications/lxqt-lockscreen.desktop
       regexp: '^Categories='
       line: Categories=System;X-Leave
-    tags:
-      - app_menu
 
   - name: hide Snap Store in the app menu
     lineinfile:
       dest: /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
       line: "NoDisplay=true"
-    tags:
-      - app_menu
 
   - name: hide apps in the app menu
     lineinfile:
@@ -38,18 +38,17 @@
       - lxqt-leave
       # Hibernate does not work.
       - lxqt-hibernate
-      - qlipper
+      #- qlipper
       # TeXInfo
       - info
       - vim
       # Additional Device Drivers
       - software-properties-drivers
-      - org.debian.galternatives
       - nm-connection-editor
-      - org.freedesktop.IBus.Setup.desktop
+      - org.freedesktop.IBus.Setup
       - im-config
       - time
-      - software-property-gtk
+      - software-properties-gtk
       - users
       - obconf
       - fcitx-configtool
@@ -59,5 +58,3 @@
       - xfce4-power-manager-settings
       - lxinput
       - lxqt-config-monitor
-    tags:
-      - app_menu
