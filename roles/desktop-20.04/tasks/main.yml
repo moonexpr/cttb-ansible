@@ -93,8 +93,6 @@
     tags:
       - os_upgrade
 
-  # - include: fix-xorg-intel.yml
-
   - name: apt autoremove before a fix is in
     command: /usr/bin/apt-get autoremove -y
     args:
