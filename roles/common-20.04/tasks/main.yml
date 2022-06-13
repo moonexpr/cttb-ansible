@@ -177,11 +177,11 @@
       - fio
       - git
       - hddtemp
-      - htop
       - iftop
       - iotop
       - iperf
       - iptraf
+      - mlocate
       - mtr
       - nload
       - p11-kit-modules
