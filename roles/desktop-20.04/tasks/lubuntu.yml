@@ -30,10 +30,12 @@
       #- lubuntu-lxpanel-icons     # Absent in 20.04.
       - lxappearance
       - lxappearance-obconf
+      - lximage-qt          # For 20.04.
       - lxinput
       - lxlauncher
       #- lxpanel-indicator-applet-plugin   # Absent in 20.04.
-      - lxqt-panel   # Added for 20.04.
+      - lxqt-config   # Added for 20.04.
+      - lxqt-panel    # Added for 20.04.
       - lxrandr
       - lxsession-default-apps
       - lxsession-logout
