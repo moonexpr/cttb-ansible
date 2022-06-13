@@ -58,11 +58,17 @@
       - xfce4-power-manager
       - xz-utils
 
-    # overrides lubuntu default triggering the LXDE session to be loaded which
-    # in turns make lxde pick up the wrong configs.
+  # overrides lubuntu default triggering the LXDE session to be loaded which
+  # in turns make lxde pick up the wrong configs.
   - name: remove lxde-common
     apt:
       name: lxde-common
+      state: absent
+
+  # Remove unneeded lubuntu pkgs.
+  - name: remove unneeded lubuntu pkgs
+    apt:
+      name: galternatives
       state: absent
 
   # Did not exist in Lubuntu 20.04.
