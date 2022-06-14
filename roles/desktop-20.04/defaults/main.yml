@@ -15,7 +15,7 @@ skype: false
 # look and feel
 desktop_shortcuts: false
 desktop_theme: Clearlooks
-icons_theme: windos10-icons
+icon_theme: windos10-icons
 pic_avatar: avatar-cttb.png
 pic_bg: bg-windos10.jpg
 start_icon: windos10-icons/scalable/places/start-here-symbolic.svg
