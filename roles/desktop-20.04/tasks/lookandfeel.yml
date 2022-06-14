@@ -112,11 +112,20 @@
       owner: root
       group: root
 
-  # Lubuntu 20.04 system default icon_theme is in /usr/share/lxqt/lxqt.conf.
-  - name: configure icon and desktop theme
+  # Lubuntu 20.04 system default theme is in /usr/share/lxqt/lxqt.conf.
+  - name: configure desktop theme
     template:
       src: lxqt-conf.j2
       dest: /usr/share/lxqt/lxqt.conf
+      mode: 0644
+      owner: root
+      group: root
+
+  # Lubuntu 20.04 system default icon_theme is in /etc/gtk-3.0/settings.ini.
+  - name: configure default icon theme
+    template:
+      src: gtk-3.0-settings.j2
+      dest: /etc/gtk-3.0/settings.ini
       mode: 0644
       owner: root
       group: root
