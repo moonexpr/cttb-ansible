@@ -1,6 +1,9 @@
 ---
 # Customize the applications menu in lxqt-panel
 
+  - name: fix a desktop file missing ending newline
+    shell: cd /usr/share/applications; FILE1=light-locker-settings.desktop; tail -c1 $FILE1 | read -r _ || echo >> $FILE1
+
   # First, update the lxqt-applications.menu file itself;
   # Then, update the individual .desktop files.
 
