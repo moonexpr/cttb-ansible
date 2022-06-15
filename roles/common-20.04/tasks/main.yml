@@ -227,6 +227,15 @@
     tags:
       - disable_ipv6
 
+  # Add history search using the first few characters.
+  - name: account default .bashrc
+    copy:
+      src: conf/bashrc
+      dest: /etc/skel/.bashrc
+      mode: 0644
+      owner: root
+      group: root
+
   - name: vim saner defaults
     copy:
       src: conf/vimrc
