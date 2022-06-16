@@ -18,6 +18,7 @@
       - ubuntu-restricted-addons
       - ubuntu-restricted-extras
       - vlc
+      - audacious
       - audacity
 
   # removing bunch of sw I don't need
