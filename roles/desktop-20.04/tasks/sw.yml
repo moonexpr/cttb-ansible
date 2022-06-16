@@ -15,6 +15,7 @@
       - curl
       - cups-client
       - gimp
+      - pavucontrol-qt
       - ubuntu-restricted-addons
       - ubuntu-restricted-extras
       - vlc
