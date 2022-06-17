@@ -95,7 +95,6 @@ matt-desktop
 musicroom-desktop
 rui-desktop
 rui-test-desktop
-rui-liu-thinkpad
 wei-desktop
 ws-frank ansible_ssh_host=10.11.30.97
 tom-lenovo-e
