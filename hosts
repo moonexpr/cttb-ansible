@@ -116,12 +116,24 @@ cttb-it-asus-w5f-laptop
 cttb-it-inspiron-e1405    ansible_host=10.11.15.234
 cttb-it-lenovo-m10
 cttb-it-acer-desktop
+cttb-it-acer-aspire-7110
 jgh-office-pc1
 dan-barth-desktop
 donna-farmer-dell-e5510-laptop
 drbustaff-latitude-e6400
 motorpool-hp8200
 jiyanxlate
+amy-liu-t430s
+bs-teacher-desktop1
+iitbt-east-classroom
+dm-jin-zhi-pc
+sister-anita-latitude-e6400
+dvgs-mbp15
+wei-xue-asus-laptop
+tob-desktop
+cttb-it-pavilion-laptop
+gs-hs-office-pc
+gs-es-office-pc
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
@@ -271,6 +283,7 @@ dvbs-lab03
 dvbs-lab04
 dvbs-lab05
 dvbs-lab06
+dvbs-lab07
 dvbs-lab08
 dvbs-lab09
 dvbs-lab10
@@ -297,10 +310,14 @@ dvbs-cc-pc12
 dvbs-cc-pc13
 dvbs-annex45-usb-w1
 dvbs-annex45-usb-w2
+dvbs-cc-pc1-dell
 
 # DVBS student laptop StdLpt
+dvbs-stdlpt03
+dvbs-stdlpt10
 dvbs-stdlpt12
 dvbs-stdlpt12-w
+dvbs-stdlpt15 ansible_ssh_host=10.11.19.188
 
 ############## DRBU #############
 # DRBU Computer Lab
@@ -417,6 +434,7 @@ dvbs-lab03
 dvbs-lab04
 dvbs-lab05
 dvbs-lab06
+dvbs-lab07
 dvbs-lab08
 dvbs-lab09
 dvbs-lab10
@@ -448,11 +466,15 @@ dvbs-cc-pc12
 dvbs-cc-pc13
 dvbs-annex45-usb-w1
 dvbs-annex45-usb-w2
+dvbs-cc-pc1-dell
 
 # The group has a diff meaning than that in host_vars/srv-gw.
 [dvbs_student_laptops]
+dvbs-stdlpt03
+dvbs-stdlpt10
 dvbs-stdlpt12
 dvbs-stdlpt12-w
+dvbs-stdlpt15
 
 [dvbs:children]
 dvbs_3rd
@@ -576,5 +598,6 @@ dvbs_cs_lab
 dvbs_library
 dvbs_main_office
 dvbs_cc
+dvbs_student_laptops
 # Others
 other_ldap_clients
