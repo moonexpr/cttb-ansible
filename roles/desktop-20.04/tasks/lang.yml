@@ -20,7 +20,7 @@
   - name: install base fcitx packages
     apt:
       state: present
-      install_recommends: yes
+      install_recommends: no
       name:
       - fcitx
       - fcitx-bin

@@ -27,6 +27,6 @@
     apt:
       name: firefox
       state: latest
-      install_recommends: yes
+      install_recommends: no
     when: firefox == true
 
