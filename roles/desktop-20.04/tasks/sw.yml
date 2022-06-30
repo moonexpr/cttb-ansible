@@ -46,7 +46,22 @@
   - include: sw-office.yml
     tags:
       - office
+
   - include: sw-browser.yml
     tags:
       - browser
 
+  - name: upgrade Zoom client
+    apt:
+      deb: "{{ansible_assets_url}}/zoom_amd64.deb"
+      only_upgrade: true
+    register: zoom_upgraded
+    tags:
+      - zoom
+
+  - name: install Zoom client for the 1st time
+    apt:
+      deb: "{{ansible_assets_url}}/zoom_amd64.deb"
+    when: zoom_upgraded == 0
+    tags:
+      - zoom
