@@ -63,6 +63,7 @@
       - libpam-runtime
       - libnss-ldap
       - ldap-auth-config
+      - nscd
 
   - name: configure ldap for nss, on Ubuntu 16.04
     command: auth-client-config -t nss -p lac_ldap
