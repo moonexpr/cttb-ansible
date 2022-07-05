@@ -62,6 +62,11 @@
     tags:
       - lubuntu
 
+  # install languages support. Moved before lookandfeel, since laf requires fcitx to be installed. Rui 2022-07-04.
+  - include: lang.yml
+    tags:
+      lang
+
   # customize the desktop based on cttb/dvgs/dvbs etc
   - include: lookandfeel.yml
     tags:
@@ -73,11 +78,6 @@
 
   - include: sw-goldendict.yml
     when: goldendict is defined
-
-  # install languages support
-  - include: lang.yml
-    tags:
-      lang
 
   - include: sound.yml
     tags:
