@@ -2,9 +2,8 @@
 
   - name: install autofs and nfs
     apt:
-      name: "{{item}}"
       state: present
-    with_items:
+      name:
       - autofs
       - nfs-common
     tags:
