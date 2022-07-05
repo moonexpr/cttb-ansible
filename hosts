@@ -257,8 +257,8 @@ dvgs-vostro-laptop-6e
 #dvgs-vostro-laptop-7 ansible_ssh_host=10.11.9.87
 
 # koha kiosk library
-koha-kiosk1
-koha-kiosk2
+dvgs-koha-kiosk-1
+dvgs-koha-kiosk-2
 
 ############## Boy School #############
 # DVBS 3rd Grade Classroom
@@ -373,8 +373,8 @@ dvgs-vostro-laptop-6
 dvgs-vostro-laptop-6e
 
 [dvgs_koha]
-koha-kiosk1
-koha-kiosk2
+dvgs-koha-kiosk-1
+dvgs-koha-kiosk-2
 
 [dvgs_dorm]
 dvgs-dorm-pc1
