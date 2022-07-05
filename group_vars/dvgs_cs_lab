@@ -9,9 +9,9 @@ cups_default_queue: Girl_School_CSLab
 # Additional software
 additional_sw:
   # To run Java Web Start apps for DM Heng Yuan's PHET simulations.
-  - icedtea-netx
+  #- icedtea-netx
   # Install PiTiVi for DM Heng Yuan to teach video editing. - Rui, 2018-01-16.
-  - pitivi
+  #- pitivi
   # Install pycharm for Ms. Daisy Guo to teach AP comp sci. - Rui, 2018-08-22.
   - pycharm-community
   # The eclipse-platform pkg requires openjdk-8-jdk, so JDK 8 is also installed.
