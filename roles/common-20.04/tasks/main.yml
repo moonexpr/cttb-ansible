@@ -245,13 +245,44 @@
       group: root
 
   # administrator account has already been created so the above won't take effect
-  - name: vim saner defaults for administrator
+  #- name: vim saner defaults for administrator
+  - name: customize settings for administrator -- prep, creating folders
+    file:
+      path: '{{ item }}'
+      state: directory
+      mode: 0755
+      owner: administrator
+      group: administrator
+    with_items:
+        - { '/home/administrator/.config/lxqt/' }
+        - { '/home/administrator/.config/autostart/' }
+    tags:
+      - administrator
+
+  - name: customize settings for administrator -- .bashrc, .vimrc, key shortcuts
     copy:
-      src: conf/vimrc
-      dest: /home/administrator/.vimrc
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
+      remote_src: yes
       mode: 0644
       owner: administrator
       group: administrator
+    with_items:
+        - { src: '/etc/skel/.bashrc', dest: '/home/administrator/.bashrc' }
+        - { src: '/etc/skel/.vimrc', dest: '/home/administrator/.vimrc' }
+        - { src: '/etc/skel/.config/lxqt/globalkeyshortcuts.conf', dest: '/home/administrator/.config/lxqt/' }
+    tags:
+      - administrator
+
+  - name: customize settings for administrator -- auto start a terminal
+    copy:
+      src: conf/LXTerminal.desktop
+      dest: /home/administrator/.config/autostart/
+      mode: 0644
+      owner: administrator
+      group: administrator
+    tags:
+      - administrator
 
   - name: dist-upgrade + autoremove purge
     apt:
