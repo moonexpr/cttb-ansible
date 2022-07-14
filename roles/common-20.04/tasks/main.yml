@@ -254,8 +254,8 @@
       owner: administrator
       group: administrator
     with_items:
-        - { '/home/administrator/.config/lxqt/' }
-        - { '/home/administrator/.config/autostart/' }
+        - /home/administrator/.config/lxqt/
+        - /home/administrator/.config/autostart/
     tags:
       - administrator
 
