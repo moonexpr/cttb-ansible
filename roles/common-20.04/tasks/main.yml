@@ -259,7 +259,9 @@
     tags:
       - administrator
 
-  - name: customize settings for administrator -- .bashrc, .vimrc, key shortcuts
+  # The globalkeyshortcuts.conf file is only available later in desktop-20.04.
+  #- name: customize settings for administrator -- .bashrc, .vimrc, key shortcuts
+  - name: customize settings for administrator -- .bashrc, .vimrc
     copy:
       src: '{{ item.src }}'
       dest: '{{ item.dest }}'
@@ -270,7 +272,7 @@
     with_items:
         - { src: '/etc/skel/.bashrc', dest: '/home/administrator/.bashrc' }
         - { src: '/etc/skel/.vimrc', dest: '/home/administrator/.vimrc' }
-        - { src: '/etc/skel/.config/lxqt/globalkeyshortcuts.conf', dest: '/home/administrator/.config/lxqt/' }
+        #- { src: '/etc/skel/.config/lxqt/globalkeyshortcuts.conf', dest: '/home/administrator/.config/lxqt/' }
     tags:
       - administrator
 
