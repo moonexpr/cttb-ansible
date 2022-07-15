@@ -30,6 +30,7 @@
     lineinfile:
       dest: /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
       line: "NoDisplay=true"
+    ignore_errors: yes
 
   - name: hide apps in the app menu
     lineinfile:
@@ -61,3 +62,4 @@
       - xfce4-power-manager-settings
       - lxinput
       - lxqt-config-monitor
+    ignore_errors: yes
