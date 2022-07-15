@@ -29,19 +29,28 @@
       state: absent
       purge: yes
       name:
-      - whoopsie
+      - cups-browsed
       - deja-dup
+      - eog
+      - galculator
+      - gdb
       - gnome-keyring
+      - gnome-logs
+      - nautilus
+      - sylpheed*
       - update-manager
       - update-notifier
       #- lubuntu-software-center    # Does not exist.
       - update-notifier-common     # Will be installed by "ubuntu-restricted-extras".
-      - sylpheed*
-      - cups-browsed
-      - gnome-logs
-      - galculator
-      - nautilus
-      - eog
+
+   # Purging failed at preseed time since it's removing a file /.../whoopsie-id is that'll be created until the 1st run.
+  - name: purge whoopsie
+    apt:
+      state: absent
+      purge: yes
+      name:
+      - whoopsie
+    ignore_errors: true
 
   - include: sw-office.yml
     tags:
