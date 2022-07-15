@@ -84,10 +84,11 @@
   # set hostname
   # don't do this on lxc containers
   # https://github.com/ansible/ansible/issues/19814
-  - name: set hostname
-    hostname:
-      name: "{{inventory_hostname}}"
-    when: ansible_virtualization_type != "lxc" and ansible_virtualization_role != "guest"
+  # Failed when executing in preseeding. Rui, 2022-07-14.
+  #- name: set hostname
+    #hostname:
+      #name: "{{inventory_hostname}}"
+    #when: ansible_virtualization_type != "lxc" and ansible_virtualization_role != "guest"
 
   - name: fix /etc/hosts
     replace:
@@ -183,6 +184,7 @@
       - iptraf
       - mlocate
       - mtr
+      - net-tools          # Absent in 20.04 desktop minimal, has ifconfig.
       - nload
       - p11-kit-modules
       - quota
@@ -285,6 +287,15 @@
       group: administrator
     tags:
       - administrator
+
+  # Autoremove before upgrade, to avoid unnecessary upgrades.
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
+    args:
+      warn: false
+    tags:
+      - apt
+      - apt_autoremove
 
   - name: dist-upgrade + autoremove purge
     apt:
