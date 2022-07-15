@@ -42,9 +42,9 @@
       - fcitx-ui-classic
       - fonts-arphic-ukai
       - fonts-arphic-uming
-      #- fonts-noto-cjk   # already installed
+      - fonts-noto-cjk   # already installed
       #- qtdeclarative5-qtquick2-plugin  # absent in 20.04
-      #- im-config   # already installed
+      - im-config   # already installed
 
   - name: set fcitx as default input method
     command: im-config -n fcitx
