@@ -38,14 +38,14 @@
     debconf:
       name: ldap-auth-config
       question: ldap-auth-config/dblogin
-      value: false
+      value: 'False'
       vtype: boolean
 
   - name: debconf ldap-auth-config/dbrootlogin
     debconf:
       name: ldap-auth-config
       question: ldap-auth-config/dbrootlogin
-      value: false
+      value: 'False'
       vtype: boolean
 
   - name: debconf libpam-runtime/profiles multiselect
