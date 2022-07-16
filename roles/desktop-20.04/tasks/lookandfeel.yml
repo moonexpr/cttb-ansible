@@ -29,9 +29,9 @@
         group: root
       with_items: "{{desktop_shortcuts}}"
 
-    when: desktop_shortcuts
-    tags:
-      - shortcuts
+      when: desktop_shortcuts
+      tags:
+        - shortcuts
 
   - name: configure lightdm
     template:
@@ -112,6 +112,24 @@
       owner: root
       group: root
 
+  # Use NetworkManager to manage networks instead of the default netplan on 20.04.
+  - name: remove netplan's default config file
+    file:
+      path: /etc/netplan/01-netcfg.yaml
+      state: absent
+    tags:
+      - network_manager
+
+  - name: use NetworkManager instead of netplan to manage networks
+    copy:
+      src: config/01-network-manager-all.yaml
+      dest: /etc/netplan/
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - network_manager
+
   # Lubuntu 20.04 system default theme is in /usr/share/lxqt/lxqt.conf.
   - name: configure desktop theme
     template:
@@ -158,3 +176,30 @@
   - include: app-menu.yml
     tags:
       - app_menu
+
+  # administrator acct: set keyboard shortcuts, autostarts an LXTerminal.
+  - name: admin acct customization -- prep, creating folders
+    file:
+      path: '{{ item }}'
+      state: directory
+      mode: 0755
+      owner: administrator
+      group: administrator
+    with_items:
+        - /home/administrator/.config/lxqt/
+        - /home/administrator/.config/autostart/
+    tags:
+      - administrator
+
+  - name: admin acct customization -- key shortcuts, autostarts an LXTerminal
+    copy:
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
+      mode: 0644
+      owner: administrator
+      group: administrator
+    with_items:
+        - { src: 'config/etc-skel/.config/lxqt/globalkeyshortcuts.conf', dest: '/home/administrator/.config/lxqt/' }
+        - { src: 'config/etc-skel/.config/autostart/LXTerminal.desktop', dest: '/home/administrator/.config/autostart/' }
+    tags:
+      - administrator
