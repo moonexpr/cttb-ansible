@@ -1,5 +1,12 @@
 ---
 
+  - name: install ubuntu desktop minimal
+    apt:
+      state: latest
+      install_recommends: no
+      name:
+      - ubuntu-desktop-minimal
+
   - name: install lubuntu
     apt:
       state: latest
@@ -12,6 +19,10 @@
       - evince
       - file-roller
       #- galculator    # Unneeded in 20.04, has gnome-calculator.
+      - gedit          # 20.04 Ubuntu-desktop-minimal in mini.iso did not include these 4 pkgs: gedit, gnome-calculator/characters/system-monitor.
+      - gnome-calculator
+      - gnome-characters
+      - gnome-system-monitor
       - gnome-system-tools
       - indicator-application
       #- leafpad       # Absent in 20.04.
@@ -73,6 +84,8 @@
       name:
       - galculator
       - galternatives
+      - gnome-disk-utility
+      - gnome-font-viewer
       - qlipper
 
   # Did not exist in Lubuntu 20.04.
