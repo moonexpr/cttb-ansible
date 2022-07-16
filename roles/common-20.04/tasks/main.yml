@@ -184,7 +184,7 @@
       - iptraf
       - mlocate
       - mtr
-      - net-tools          # Absent in 20.04 desktop minimal, has ifconfig.
+      - net-tools          # Contains ifconfig, absent in 20.04 desktop minimal.
       - nload
       - p11-kit-modules
       - quota
@@ -246,23 +246,21 @@
       owner: root
       group: root
 
+  #- name: customize settings for administrator -- prep, creating folders
+    #file:
+      #path: '{{ item }}'
+      #state: directory
+      #mode: 0755
+      #owner: administrator
+      #group: administrator
+    #with_items:
+        #- /home/administrator/.config/lxqt/
+        #- /home/administrator/.config/autostart/
+    #tags:
+      #- administrator
+
   # administrator account has already been created so the above won't take effect
   #- name: vim saner defaults for administrator
-  - name: customize settings for administrator -- prep, creating folders
-    file:
-      path: '{{ item }}'
-      state: directory
-      mode: 0755
-      owner: administrator
-      group: administrator
-    with_items:
-        - /home/administrator/.config/lxqt/
-        - /home/administrator/.config/autostart/
-    tags:
-      - administrator
-
-  # The globalkeyshortcuts.conf file is only available later in desktop-20.04.
-  #- name: customize settings for administrator -- .bashrc, .vimrc, key shortcuts
   - name: customize settings for administrator -- .bashrc, .vimrc
     copy:
       src: '{{ item.src }}'
@@ -272,21 +270,20 @@
       owner: administrator
       group: administrator
     with_items:
-        - { src: '/etc/skel/.bashrc', dest: '/home/administrator/.bashrc' }
-        - { src: '/etc/skel/.vimrc', dest: '/home/administrator/.vimrc' }
-        #- { src: '/etc/skel/.config/lxqt/globalkeyshortcuts.conf', dest: '/home/administrator/.config/lxqt/' }
+        - { src: '/etc/skel/.bashrc', dest: '/home/administrator/' }
+        - { src: '/etc/skel/.vimrc', dest: '/home/administrator/' }
     tags:
       - administrator
 
-  - name: customize settings for administrator -- auto start a terminal
-    copy:
-      src: conf/LXTerminal.desktop
-      dest: /home/administrator/.config/autostart/
-      mode: 0644
-      owner: administrator
-      group: administrator
-    tags:
-      - administrator
+  #- name: customize settings for administrator -- auto start a terminal
+    #copy:
+      #src: conf/LXTerminal.desktop
+      #dest: /home/administrator/.config/autostart/
+      #mode: 0644
+      #owner: administrator
+      #group: administrator
+    #tags:
+      #- administrator
 
   # Autoremove before upgrade, to avoid unnecessary upgrades.
   - name: apt autoremove before a fix is in
