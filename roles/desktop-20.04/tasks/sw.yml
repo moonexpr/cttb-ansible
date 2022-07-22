@@ -36,7 +36,7 @@
       - gdb
       - gnome-keyring
       - gnome-logs
-      - midori
+      - midori      # a lightweight web browser in Ubuntu 20.04 minimal ISO.
       - nautilus
       - sylpheed*
       - update-manager
