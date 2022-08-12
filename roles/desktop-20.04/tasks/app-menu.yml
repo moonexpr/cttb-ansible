@@ -26,11 +26,11 @@
       regexp: '^Categories='
       line: Categories=System;X-Leave
 
-  - name: hide Snap Store in the app menu
-    lineinfile:
-      dest: /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
-      line: "NoDisplay=true"
-    ignore_errors: yes
+  #- name: hide Snap Store in the app menu
+    #lineinfile:
+      #dest: /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
+      #line: "NoDisplay=true"
+    #ignore_errors: yes
 
   - name: hide apps in the app menu
     lineinfile:

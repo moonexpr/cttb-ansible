@@ -103,11 +103,11 @@
       - os_upgrade
 
   # Did this in app-menu.yml included in lookandfeel.yml, but "apt update" updated the snapd pkg and undid the change, so do it again.
-  - name: hide Snap Store in the app menu
-    lineinfile:
-      dest: /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
-      line: "NoDisplay=true"
-    ignore_errors: yes
+  #- name: hide Snap Store in the app menu
+    #lineinfile:
+      #dest: /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
+      #line: "NoDisplay=true"
+    #ignore_errors: yes
 
   - name: apt autoremove before a fix is in
     command: /usr/bin/apt-get autoremove -y

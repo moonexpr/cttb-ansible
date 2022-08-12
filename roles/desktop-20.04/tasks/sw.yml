@@ -53,6 +53,12 @@
       - whoopsie
     ignore_errors: true
 
+  # Seems no need to have snap store.
+  - name: remove snap-store
+    snap:
+      name: snap-store
+      state: absent
+
   - include: sw-office.yml
     tags:
       - office
