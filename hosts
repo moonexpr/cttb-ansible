@@ -135,6 +135,7 @@ cttb-it-pavilion-laptop
 gs-hs-office-pc
 gs-es-office-pc
 dvgs-koha-librarian
+dvgs-vaio-laptop
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
@@ -197,16 +198,14 @@ dvgs-art-room-pc1
 dvgs-art-room-pc2
 
 # dvgs computer lab
-dvgs-cs-lab-pc1
-dvgs-cs-lab-pc2
-dvgs-cs-lab-pc3
-dvgs-cs-lab-pc4
-dvgs-cs-lab-pc5
-dvgs-cs-lab-pc6
-dvgs-cs-lab-pc7
-dvgs-cs-lab-pc8
-dvgs-cs-lab-pc9
-dvgs-cs-lab-pc10
+dvgs-lab1
+dvgs-lab2
+dvgs-lab3
+dvgs-lab4
+dvgs-lab5
+dvgs-lab6
+dvgs-lab7
+dvgs-lab8
 
 # dvgs dorm
 dvgs-dorm-pc1
@@ -289,6 +288,11 @@ dvbs-lab08
 dvbs-lab09
 dvbs-lab10
 dvbs-lab11
+dvbs-lab12
+dvbs-lab13
+dvbs-lab14
+dvbs-lab15
+dvbs-lab16
 
 # DVBS Library
 dvbs-lib02
@@ -406,16 +410,14 @@ dvgs-dorm-pc14
 dvgs-dorm-pc15
 
 [dvgs_cs_lab]
-dvgs-cs-lab-pc1
-dvgs-cs-lab-pc2
-dvgs-cs-lab-pc3
-dvgs-cs-lab-pc4
-dvgs-cs-lab-pc5
-dvgs-cs-lab-pc6
-dvgs-cs-lab-pc7
-dvgs-cs-lab-pc8
-dvgs-cs-lab-pc9
-dvgs-cs-lab-pc10
+dvgs-lab1
+dvgs-lab2
+dvgs-lab3
+dvgs-lab4
+dvgs-lab5
+dvgs-lab6
+dvgs-lab7
+dvgs-lab8
 
 [dvgs_art_room]
 dvgs-art-room-pc1 
@@ -451,6 +453,11 @@ dvbs-lab08
 dvbs-lab09
 dvbs-lab10
 dvbs-lab11
+dvbs-lab12
+dvbs-lab13
+dvbs-lab14
+dvbs-lab15
+dvbs-lab16
 
 [dvbs_library]
 dvbs-lib02
