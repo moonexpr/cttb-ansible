@@ -295,9 +295,9 @@ dvbs-lab15
 dvbs-lab16
 
 # DVBS Library
-dvbs-lib02
-dvbs-lib03
-dvbs-lib04
+dvbs-lib1
+dvbs-lib2
+dvbs-lib3
 
 # DVBS Community center
 dvbs-cc-pc1
@@ -460,9 +460,9 @@ dvbs-lab15
 dvbs-lab16
 
 [dvbs_library]
-dvbs-lib02
-dvbs-lib03
-dvbs-lib04
+dvbs-lib1
+dvbs-lib2
+dvbs-lib3
 
 [dvbs_main_office]
 dvbs-office-pc1
