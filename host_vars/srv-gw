@@ -106,10 +106,13 @@ timed_internet:
       - 10.11.8.52
     periods:
       - days: "1-5"
+        on_at: "12"
+        off_at: "14:30"
+      - days: "1-5"
         on_at: "16"
         off_at: "17"
       - days: "1-5"
-        on_at: "18:30"
+        on_at: "18"
         off_at: "21:30"
       - days: "6,7"
         on_at: "6"
