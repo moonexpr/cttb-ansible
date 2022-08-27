@@ -81,3 +81,18 @@
     when: zoom_upgraded == 0
     tags:
       - zoom
+
+  - name: upgrade Skype
+    apt:
+      deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
+      only_upgrade: true
+    register: skype_upgraded
+    tags:
+      - skype
+
+  - name: install Skype for the 1st time
+    apt:
+      deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
+    when: skype_upgraded == 0
+    tags:
+      - skype
