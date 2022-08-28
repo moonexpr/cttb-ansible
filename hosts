@@ -470,23 +470,6 @@ dvbs-office-pc2
 dvbs-office-optiplex-3010
 
 [dvbs_cc]
-dvbs-cc-pc1
-dvbs-cc-pc2
-dvbs-cc-pc3
-dvbs-cc-pc4
-dvbs-cc-pc5
-dvbs-cc-pc6
-dvbs-cc-pc7
-dvbs-cc-pc8
-dvbs-cc-pc9
-dvbs-cc-pc10
-dvbs-cc-pc11
-dvbs-cc-pc12
-dvbs-cc-pc13
-dvbs-cc-pc14
-dvbs-cc-pc15
-dvbs-annex45-usb-w1
-dvbs-annex45-usb-w2
 dvbs-cc-pc1-dell
 dvbs-cc-pc2-dell
 dvbs-cc-pc3-dell
@@ -497,6 +480,13 @@ dvbs-cc-pc7-dell
 dvbs-cc-pc8-dell
 dvbs-cc-pc9-dell
 dvbs-cc-pc10-dell
+dvbs-cc-pc11
+dvbs-cc-pc12
+dvbs-cc-pc13
+dvbs-cc-pc14
+dvbs-cc-pc15
+dvbs-annex45-usb-w1
+dvbs-annex45-usb-w2
 
 # The group has a diff meaning than that in host_vars/srv-gw.
 [dvbs_student_laptops]
