@@ -237,7 +237,7 @@ timed_internet:
         on_at: "9:40"
         off_at: "10:20"
       - days: "*"
-        on_at: "12:40"
+        on_at: "12:30"
         off_at: "12:55"
       - days: "*"
         on_at: "14"
