@@ -94,6 +94,7 @@ loading-dock ansible_ssh_host=10.11.23.165
 matt-desktop
 musicroom-desktop
 rui-desktop
+rui-desktop2
 rui-test-desktop
 wei-desktop
 ws-frank ansible_ssh_host=10.11.30.97
@@ -138,6 +139,9 @@ dvgs-koha-librarian
 dvgs-vaio-laptop
 drbu-lib-dell-xps-laptop
 drbu-lib-toshiba-laptop
+drbu-lib-toshiba-satellite-laptop
+cttb-asus-a8j-laptop
+cttb-it-dellaio
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
@@ -263,15 +267,6 @@ dvgs-koha-kiosk-1
 dvgs-koha-kiosk-2
 
 ############## Boy School #############
-# DVBS 3rd Grade Classroom
-dvbs-3rd-pc01
-dvbs-3rd-pc02
-dvbs-3rd-pc03
-
-# DVBS 9th Grade Classroom
-dvbs-9th-pc01
-dvbs-9th-pc02
-dvbs-9th-pc03
 
 # DVBS Main Office
 dvbs-office-pc1
@@ -433,15 +428,6 @@ dvgs_dorm
 dvgs_art_room
 
 # Boy School.
-[dvbs_3rd]
-dvbs-3rd-pc01
-dvbs-3rd-pc02
-dvbs-3rd-pc03
-
-[dvbs_9th]
-dvbs-9th-pc01
-dvbs-9th-pc02
-dvbs-9th-pc03
 
 [dvbs_cs_lab]
 dvbs-lab01
@@ -487,8 +473,8 @@ dvbs-cc-pc12
 dvbs-cc-pc13
 dvbs-cc-pc14
 dvbs-cc-pc15
-dvbs-annex45-usb-w1
-dvbs-annex45-usb-w2
+#dvbs-annex45-usb-w1
+#dvbs-annex45-usb-w2
 
 # The group has a diff meaning than that in host_vars/srv-gw.
 [dvbs_student_laptops]
