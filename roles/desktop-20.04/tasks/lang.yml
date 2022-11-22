@@ -55,11 +55,10 @@
       path: /etc/apt/sources.list.d/sogoupinyin.list
       state: absent
 
-  # disabled. Most ppl just want the vietnamese keyboard which is built-in
-  #- name: install fcitx vietnamese/unikey support
-  #  apt:
-  #    name: fcitx-unikey
-  #    state: present
+  - name: install fcitx vietnamese/unikey support
+    apt:
+      name: fcitx-unikey
+      state: present
 
   - name: remove unneeded fcitx packages
     apt:
