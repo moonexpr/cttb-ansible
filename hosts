@@ -142,6 +142,7 @@ drbu-lib-toshiba-laptop
 drbu-lib-toshiba-satellite-laptop
 cttb-asus-a8j-laptop
 cttb-it-dellaio
+dvgs-dorm-hp-aio1
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
@@ -485,8 +486,6 @@ dvbs-stdlpt12-w
 dvbs-stdlpt15
 
 [dvbs:children]
-dvbs_3rd
-dvbs_9th
 dvbs_cs_lab
 dvbs_library
 dvbs_main_office
@@ -600,8 +599,6 @@ dvgs_cs_lab
 dvgs_dorm
 dvgs_art_room
 # DVBS
-dvbs_3rd
-dvbs_9th
 dvbs_cs_lab
 dvbs_library
 dvbs_main_office
