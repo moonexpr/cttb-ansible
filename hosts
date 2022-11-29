@@ -143,6 +143,7 @@ drbu-lib-toshiba-satellite-laptop
 cttb-asus-a8j-laptop
 cttb-it-dellaio
 dvgs-dorm-hp-aio1
+dvgs-dorm-hp-aio2
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
@@ -391,21 +392,8 @@ dvgs-koha-kiosk-1
 dvgs-koha-kiosk-2
 
 [dvgs_dorm]
-dvgs-dorm-pc1
-dvgs-dorm-pc2
-dvgs-dorm-pc3
-dvgs-dorm-pc4
-dvgs-dorm-pc5
-dvgs-dorm-pc6
-dvgs-dorm-pc7
-dvgs-dorm-pc8
-dvgs-dorm-pc9
-dvgs-dorm-pc10
-dvgs-dorm-pc11
-dvgs-dorm-pc12
-dvgs-dorm-pc13
-dvgs-dorm-pc14
-dvgs-dorm-pc15
+dvgs-dorm-hp-aio1
+dvgs-dorm-hp-aio2
 
 [dvgs_cs_lab]
 dvgs-lab1
