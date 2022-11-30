@@ -125,7 +125,6 @@
       - administrator
   # ******** A few account and application customizations ends ********
 
-  - name: add ansible repo key
   - name: custom apt sources.list
     template:
       src: sources.list.j2
@@ -191,6 +190,7 @@
     tags:
       - apt
 
+  - name: add ansible repo key
     apt_key:
       keyserver: keyserver.ubuntu.com
       id: 7BB9C367
