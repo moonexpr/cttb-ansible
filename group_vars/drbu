@@ -20,7 +20,7 @@ ldap_groups:
   - drbu-staff
 ldap_guest_string: "(drbu-guests) "
 ldap_group_acl_string1: "{% for item in ldap_groups %}({{item}}) {% endfor %}"
-ldap_group_acl_string: "{{ldap_group_acl_string1}}{% if inventory_hostname in groups['drbu-cs-lab-guest'] %}{{ldap_guest_string}}{%endif%}"
+ldap_group_acl_string: "{{ldap_group_acl_string1}}{% if inventory_hostname in groups['drbu_cs_lab_guest'] %}{{ldap_guest_string}}{%endif%}"
 
 # printing settings
 cups_srv: cups-cttb
@@ -31,7 +31,10 @@ goldendict: true
 # Sanskrit support
 sanskrit: true
 
-additional_sw:
+additional_apt_repo:
+  - ppa:stellarium/stellarium-releases
+ 
+additional_desktop_sw:
   - stellarium
-  - musescore
+  - musescore3
   - anki
