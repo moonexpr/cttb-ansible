@@ -24,6 +24,13 @@
       - ubuntu-restricted-extras
       - vlc
 
+  - name: install desktop sw requested for this box
+    apt:
+      name: "{{additional_desktop_sw | default([])}}"
+      state: latest
+    tags:
+      - additional_desktop_sw
+
   # removing bunch of sw I don't need
   - name: remove other apps
     apt:
