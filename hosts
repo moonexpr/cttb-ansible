@@ -108,7 +108,6 @@ peterson-lenovo
 ao-public-pc
 jinsheng-vaio
 jinsheng-desktop
-librarian-desktop
 drbu-janice-latitude
 dennis-desktop
 jroberts-desktop
@@ -144,6 +143,7 @@ cttb-asus-a8j-laptop
 cttb-it-dellaio
 dvgs-dorm-hp-aio1
 dvgs-dorm-hp-aio2
+dining-hall-pc2
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
