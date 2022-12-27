@@ -1,130 +1,5 @@
 ---
 
-  - name: sync time
-    include_role:
-      name: time-server
-
-    # Defined in group_vars, default is en_US.UTF-8.
-  - name: set the system locale
-    command: /usr/sbin/update-locale LANG={{ locale }} LANGUAGE
-    tags:
-      - locale
-
-  - name: disable ipv6 #defaults to yes
-    copy:
-      src: conf/disable-ipv6.conf
-      dest: /etc/sysctl.d/60-disable-ipv6.conf
-      mode: 0644
-      owner: root
-      group: root
-    when: disable_ipv6
-    tags:
-      - disable_ipv6
-
-  - name: fix /etc/hosts
-    replace:
-      dest: /etc/hosts
-      regexp: "computer"
-      replace: "{{inventory_hostname}}"
-      backup: no
-
-  # set hostname
-  # don't do this on lxc containers
-  # https://github.com/ansible/ansible/issues/19814
-  # Failed when executing in preseeding. Rui, 2022-07-14.
-  #- name: set hostname
-    #hostname:
-      #name: "{{inventory_hostname}}"
-    #when: ansible_virtualization_type != "lxc" and ansible_virtualization_role != "guest"
-
-  - name: enable centralized logging
-    copy:
-      src: conf/10-centralized-logging.conf
-      dest: /etc/rsyslog.d/10-centralized-logging.conf
-      mode: 0644
-      owner: root
-      group: root
-    when: centralized_logging == true
-    notify:
-      - restart rsyslog
-    tags:
-      - logging
-
-  - name: enable Wake On LAN on Ethernet interfaces
-    copy:
-      src: conf/ethernet-wake-on-lan.conf
-      dest: /etc/NetworkManager/conf.d/ethernet-wake-on-lan.conf
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - wake_on_lan
-
-  - name: make ssh use ipv4 only # we disable ipv6 and X11forwarding fails
-    lineinfile:
-      dest: /etc/ssh/sshd_config
-      regexp: '^AddressFamily inet'
-      # Insert the line before "ListenAddress" or "#ListenAddress" lines.
-      insertbefore: '^.?ListenAddress'
-      line: 'AddressFamily inet'
-    tags:
-      disable_ipv6
-    notify:
-      - reload ssh
-    ignore_errors: yes
-
-  # setup during preseed stage, but just in case, make sure it's there
-  - name: Set up ansible/cttb-os authorized_key
-    authorized_key:
-      user: administrator
-      key: "{{item}}"
-    with_file:
-      - ssh_keys/ansible.pub
-
-  - name: set an explicit proxy if needed
-    lineinfile:
-      dest: /etc/environment
-      line: "{{item}}"
-    with_items: "{{global_proxy}}"
-    when: global_proxy is defined
-    tags:
-      - common_proxy
-
-  # ******** A few account and application customizations starts ********
-  # Add history search using the first few characters.
-  - name: account default .bashrc
-    copy:
-      src: conf/bashrc
-      dest: /etc/skel/.bashrc
-      mode: 0644
-      owner: root
-      group: root
-
-  - name: vim saner defaults
-    copy:
-      src: conf/vimrc
-      dest: /etc/skel/.vimrc
-      mode: 0644
-      owner: root
-      group: root
-
-  # The "administrator" account has already been created, so the above wouldn't take effect.
-  #- name: vim saner defaults for administrator
-  - name: customize settings for administrator -- .bashrc, .vimrc
-    copy:
-      src: '{{ item.src }}'
-      dest: '{{ item.dest }}'
-      remote_src: yes
-      mode: 0644
-      owner: administrator
-      group: administrator
-    with_items:
-        - { src: '/etc/skel/.bashrc', dest: '/home/administrator/' }
-        - { src: '/etc/skel/.vimrc', dest: '/home/administrator/' }
-    tags:
-      - administrator
-  # ******** A few account and application customizations ends ********
-
   - name: custom apt sources.list
     template:
       src: sources.list.j2
@@ -165,15 +40,6 @@
       - apt
       - additional_apt_repo
 
-  # Seems unneeded, already there after 20.04 installation. Rui, 2022-01-23.
-  #- name: enable unattended upgrades
-    #copy:
-      #src: conf/unattended-upgrades
-      #dest: /etc/apt/apt.conf.d/20auto-upgrades
-      #mode: 0644
-      #owner: root
-      #group: root
-
   - name: refresh the mirrors
     apt:
       update_cache: yes
@@ -189,6 +55,83 @@
       state: present
     tags:
       - apt
+
+  # setup during preseed stage, but just in case, make sure it's there
+  - name: Set up ansible/cttb-os authorized_key
+    authorized_key:
+      user: administrator
+      key: "{{item}}"
+    with_file:
+      - ssh_keys/ansible.pub
+
+  - name: set an explicit proxy if needed
+    lineinfile:
+      dest: /etc/environment
+      line: "{{item}}"
+    with_items: "{{global_proxy}}"
+    when: global_proxy is defined
+    tags:
+      - common_proxy
+
+  - name: sync time
+    include_role:
+      name: time-server
+
+  - name: install CTTB CA cert
+    include_role:
+      name: cttb-ca-client
+
+  # set hostname
+  # don't do this on lxc containers
+  # https://github.com/ansible/ansible/issues/19814
+  # Failed when executing in preseeding. Rui, 2022-07-14.
+  #- name: set hostname
+    #hostname:
+      #name: "{{inventory_hostname}}"
+    #when: ansible_virtualization_type != "lxc" and ansible_virtualization_role != "guest"
+
+  - name: fix /etc/hosts
+    replace:
+      dest: /etc/hosts
+      regexp: "computer"
+      replace: "{{inventory_hostname}}"
+      backup: no
+
+  - name: make ssh use ipv4 only # we disable ipv6 and X11forwarding fails
+    lineinfile:
+      dest: /etc/ssh/sshd_config
+      regexp: '^AddressFamily inet'
+      # Insert the line before "ListenAddress" or "#ListenAddress" lines.
+      insertbefore: '^.?ListenAddress'
+      line: 'AddressFamily inet'
+    tags:
+      disable_ipv6
+    notify:
+      - reload ssh
+    ignore_errors: yes
+
+  - name: enable centralized logging
+    copy:
+      src: conf/10-centralized-logging.conf
+      dest: /etc/rsyslog.d/10-centralized-logging.conf
+      mode: 0644
+      owner: root
+      group: root
+    when: centralized_logging == true
+    notify:
+      - restart rsyslog
+    tags:
+      - logging
+
+  - name: enable Wake On LAN on Ethernet interfaces
+    copy:
+      src: conf/ethernet-wake-on-lan.conf
+      dest: /etc/NetworkManager/conf.d/ethernet-wake-on-lan.conf
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - wake_on_lan
 
   - name: add ansible repo key
     apt_key:
@@ -276,9 +219,58 @@
     tags:
       - additional_sw
 
-  - name: install CTTB CA cert
-    include_role:
-      name: cttb-ca-client
+  # Seems unneeded, already there after 20.04 installation. Rui, 2022-01-23.
+  #- name: enable unattended upgrades
+    #copy:
+      #src: conf/unattended-upgrades
+      #dest: /etc/apt/apt.conf.d/20auto-upgrades
+      #mode: 0644
+      #owner: root
+      #group: root
+
+  - name: disable ipv6 #defaults to yes
+    copy:
+      src: conf/disable-ipv6.conf
+      dest: /etc/sysctl.d/60-disable-ipv6.conf
+      mode: 0644
+      owner: root
+      group: root
+    when: disable_ipv6
+    tags:
+      - disable_ipv6
+
+  # Add history search using the first few characters.
+  - name: account default .bashrc
+    copy:
+      src: conf/bashrc
+      dest: /etc/skel/.bashrc
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: vim saner defaults
+    copy:
+      src: conf/vimrc
+      dest: /etc/skel/.vimrc
+      mode: 0644
+      owner: root
+      group: root
+
+  # administrator account has already been created so the above won't take effect
+  #- name: vim saner defaults for administrator
+  - name: customize settings for administrator -- .bashrc, .vimrc
+    copy:
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
+      remote_src: yes
+      mode: 0644
+      owner: administrator
+      group: administrator
+    with_items:
+        - { src: '/etc/skel/.bashrc', dest: '/home/administrator/' }
+        - { src: '/etc/skel/.vimrc', dest: '/home/administrator/' }
+    tags:
+      - administrator
 
   # Autoremove before upgrade, to avoid unnecessary upgrades.
   - name: apt autoremove before a fix is in
@@ -304,3 +296,9 @@
     tags:
       - apt
       - apt_autoremove
+
+    # Defined in group_vars, default is en_US.UTF-8.
+  - name: set the system locale
+    command: /usr/sbin/update-locale LANG={{ locale }} LANGUAGE
+    tags:
+      - locale
