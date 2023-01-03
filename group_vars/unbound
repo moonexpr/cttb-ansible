@@ -93,7 +93,7 @@ zone_cttb:
   - sw-dvbs-main-office: "10.11.12.209"
   - sw-dvbs-principal-room: "10.11.12.84"
   - sw-dvgs-a-dorm: "10.11.12.227"
-  - sw-dvgs-cs-lab: "10.11.12.176"
+  - sw-dvgs-cs-lab: "10.11.12.44"
   - sw-dvgs-dorm-basement: "10.11.12.142"
   - sw-dvgs-dorm-kitchen: "10.11.12.246"
   - sw-dvgs-dorm-phoneroom: "10.11.12.213"
