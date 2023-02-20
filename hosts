@@ -143,7 +143,8 @@ cttb-asus-a8j-laptop
 cttb-it-dellaio
 dvgs-dorm-hp-aio1
 dvgs-dorm-hp-aio2
-dining-hall-pc2
+dining-hall-pc
+vincent-pc2
 
 # Switches
 sw-1234-machine-room      ansible_host=10.11.12.172
