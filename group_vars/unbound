@@ -142,7 +142,7 @@ zone_cttb:
   - sw-tob-science-lab: "10.11.12.146"
   - sw-tob-west: "10.11.12.33"
   - sw-unicorn: "10.11.12.41"
-  - sw-water-tank: "10.11.12.62"
+  - sw-water-tank: "10.11.12.45"
   - sw-wonderful-word-hall: "10.11.12.229"
   - time: "10.11.1.1"
   - ub-adult: "10.11.1.29"
