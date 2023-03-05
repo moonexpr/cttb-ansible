@@ -215,6 +215,7 @@ dvgs-lab5
 dvgs-lab6
 dvgs-lab7
 dvgs-lab8
+dvgs-lab9
 
 # dvgs dorm
 dvgs-dorm-pc1
@@ -253,6 +254,7 @@ dvgs-teacher-laptop-1e
 dvgs-teacher-laptop-2e
 dvgs-teacher-laptop-3e
 dm-jr-mba
+gs-lenovo-ideapad-330
 
 ## disabled/not used atm
 #dvgs-lenovo-laptop-1 ansible_ssh_host=10.11.9.82
@@ -405,6 +407,7 @@ dvgs-lab5
 dvgs-lab6
 dvgs-lab7
 dvgs-lab8
+dvgs-lab9
 
 [dvgs_art_room]
 dvgs-art-room-pc1 
