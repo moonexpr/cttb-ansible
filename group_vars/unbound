@@ -47,7 +47,7 @@ zone_cttb:
   - srv-bk-gw: "10.11.1.9"
   - sw-1234-machine-room: "10.11.12.172"
   - sw-1234-net-room: "10.11.12.38"
-  - sw-1234-rui-cube-gige: "10.11.12.204"
+  - sw-1234-rui-cube-gige: "10.11.12.102"
   - sw-1234-spike-cube: "10.11.12.216"
   - sw-1234-spike-cube-2: "10.11.12.224"
   - sw-1234-spike-cube-3: "10.11.12.101"
