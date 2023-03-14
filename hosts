@@ -255,6 +255,7 @@ dvgs-teacher-laptop-2e
 dvgs-teacher-laptop-3e
 dm-jr-mba
 gs-lenovo-ideapad-330
+gs-sony-laptop
 
 ## disabled/not used atm
 #dvgs-lenovo-laptop-1 ansible_ssh_host=10.11.9.82
