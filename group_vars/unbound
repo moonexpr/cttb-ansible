@@ -123,7 +123,7 @@ zone_cttb:
   - sw-mpoe: "172.30.20.30"
   - sw-mpoe: "172.30.7.30"
   - sw-music-room: "10.11.12.228"
-  - sw-precepts-hall: "10.11.12.174"
+  - sw-precepts-hall: "10.11.12.145"
   - sw-restaurant: "10.11.12.91"
   - sw-s-house: "10.11.12.203"
   - sw-scroggs-office: "10.11.12.210"
