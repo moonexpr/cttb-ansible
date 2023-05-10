@@ -201,10 +201,12 @@ timed_internet:
       # Rui home pc (ThinkPad T440s laptop), 11.186 wired, 11.187 wireless.
       - 10.11.11.186
       - 10.11.11.187
+      # Rui home phone (Amy).
+      - 10.11.25.18
     periods:
       - days: "*"
         on_at: "4"
-        off_at: "22"
+        off_at: "21:30"
   - label: home_phones
     type: ip
     ips:
