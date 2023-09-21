@@ -48,6 +48,7 @@
       - lxqt-config   # Added for 20.04.
       - lxqt-globalkeys   # Added for 20.04.
       - lxqt-panel    # Added for 20.04.
+      - lxqt-powermanagement    # Added for 20.04 to allow no idleness checker/screen always on, Rui 2023-09-21, requested by BS stud Jason Chiem.
       - lxrandr
       - lxsession-default-apps
       - lxsession-logout
@@ -63,6 +64,7 @@
       - pm-utils
       - policykit-1
       - policykit-1-gnome
+      - xscreensaver    # Added for 20.04 to allow no idleness checker/screen always on, Rui 2023-09-21, requested by BS stud Jason Chiem.
       - scrot
       - simple-scan
       - system-tools-backends
