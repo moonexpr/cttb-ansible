@@ -1,0 +1,8 @@
+---
+
+- hosts: dvgs-laptops
+  roles:
+    - desktop
+    #- ldap-client
+    #- nfs-home
+    - cups-client

@@ -1,0 +1,17 @@
+
+firefox: true
+chrome: true
+goldendict: false
+
+# desktop configuration
+lightdm_hide_users: false
+
+# look and feel
+pic_avatar: avatar-cttb.png
+pic_bg: bg-drba.jpg
+
+# office
+openoffice: false
+libreoffice: false
+wpsoffice: true
+

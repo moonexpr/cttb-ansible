@@ -1,0 +1,11 @@
+---
+
+- hosts: dvgs-cs-lab-pc2 dvgs-cs-lab-pc3 dvgs-cs-lab-pc4 dvgs-cs-lab-pc9
+  gather_facts: no
+  tasks:
+    - name: reboot
+      command: /sbin/shutdown -r now
+      become: yes
+
+    - name: wait go down
+      local_action: wait_for host={{ ansible_ssh_host }} port=22 state=stopped

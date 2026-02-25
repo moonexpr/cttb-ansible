@@ -23,12 +23,12 @@
     tags:
       - apt
 
-  - name: add cttb custom ubuntu repo
-    apt_repository:
-      repo: "deb [arch=amd64] {{cttb_repo}}/apt/ubuntu {{ansible_distribution_release}} main"
-      state: present
-    tags:
-      - apt
+        #- name: add cttb custom ubuntu repo
+        #apt_repository:
+        #repo: "deb [arch=amd64] {{cttb_repo}}/apt/ubuntu {{ansible_distribution_release}} main"
+        #state: present
+        #tags:
+        #- apt
 
   - name: add additional apt repo
     apt_repository:

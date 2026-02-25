@@ -1,0 +1,5 @@
+---
+
+- hosts: dvgs-main-office
+  roles:
+    - desktop

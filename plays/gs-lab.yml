@@ -1,0 +1,5 @@
+---
+
+- hosts: dvgs-cs-lab-pc5
+  roles:
+    - cttb-ca-client

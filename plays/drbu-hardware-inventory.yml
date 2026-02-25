@@ -1,0 +1,56 @@
+---
+
+- hosts: drbu_sw_cslab_m
+
+- name: Collect hardware information from Ubuntu hosts
+  hosts: ubuntu_hosts
+  become: yes
+  gather_facts: yes
+
+  tasks:
+
+    - name: Collect CPU information
+      set_fact:
+        cpu_model: "{{ ansible_facts['processor'][2] | default('Unknown') }}"
+        cpu_cores: "{{ ansible_facts['processor_vcpus'] }}"
+        cpu_clock_mhz: "{{ ansible_facts['processor_speed'] | default('Unknown') }}"
+
+    - name: Collect RAM information
+      set_fact:
+        total_ram_mb: "{{ ansible_facts['memtotal_mb'] }}"
+
+    - name: Collect storage information
+      command: lsblk -b -dn -o NAME,SIZE,TYPE
+      register: lsblk_output
+
+    - name: Parse storage devices
+      set_fact:
+        storage_devices: >-
+          {{
+            lsblk_output.stdout_lines
+            | map('split')
+            | selectattr('2', 'equalto', 'disk')
+            | list
+          }}
+
+    - name: Collect GPU info
+      command: lspci -vnn
+      register: lspci_output
+      changed_when: false
+
+    - name: Extract GPU memory (VRAM)
+      shell: |
+        lspci -vnn | awk '/VGA|3D controller/{flag=1} flag && /Memory at/{print $0} /Kernel driver in use/{flag=0}'
+      register: vram_output
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Display collected information
+      debug:
+        msg:
+          CPU_Model: "{{ cpu_model }}"
+          CPU_Cores: "{{ cpu_cores }}"
+          CPU_Clock_MHz: "{{ cpu_clock_mhz }}"
+          Total_RAM_MB: "{{ total_ram_mb }}"
+          Storage_Devices: "{{ storage_devices }}"
+          GPU_VRAM_Info: "{{ vram_output.stdout_lines | default([]) }}"

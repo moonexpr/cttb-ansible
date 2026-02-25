@@ -11,10 +11,10 @@
         apt_repository:
           repo: "deb [arch=amd64] {{deb_mirror}}/chrome stable main"
           state: present
-      - name: install chrome
-        apt:
-          name: google-chrome-stable
-          state: latest
+          #- name: install chrome
+          #apt:
+          #name: google-chrome-stable
+          #state: latest
       # remove dup apt mirror file created by the install process (the pkg adds its own)
       - name: remove original chrome repository
         file:

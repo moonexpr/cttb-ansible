@@ -1,0 +1,7 @@
+---
+
+- hosts: dvgs-koha
+  roles:
+    - desktop
+    - ldap-client
+    - nfs-home

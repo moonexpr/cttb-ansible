@@ -1,0 +1,6 @@
+
+lxc_images:
+  - alias: cttb-srv-1604-20170422
+    fingerprint: 'e1e8ef444a55'
+    source: "{{ansible_assets_url}}/lxc-images/lxc-cttb-srv-1604-20170408.tar.gz"
+    latest: True

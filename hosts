@@ -117,6 +117,7 @@ cttb-it-inspiron-e1405    ansible_host=10.11.15.234
 cttb-it-lenovo-m10
 cttb-it-acer-desktop
 cttb-it-acer-aspire-7110
+cttb-it-aspire-laptop
 jgh-office-pc1
 dan-barth-desktop
 donna-farmer-dell-e5510-laptop
@@ -334,6 +335,7 @@ dvbs-cc-pc7-dell
 dvbs-cc-pc8-dell
 dvbs-cc-pc9-dell
 dvbs-cc-pc10-dell
+dvbs-cc-pc19-hp
 
 # DVBS student laptop StdLpt
 dvbs-stdlpt03
@@ -476,6 +478,7 @@ dvbs-cc-pc16
 dvbs-cc-pc17
 #dvbs-annex45-usb-w1
 #dvbs-annex45-usb-w2
+dvbs-cc-pc19-hp
 
 # The group has a diff meaning than that in host_vars/srv-gw.
 [dvbs_student_laptops]

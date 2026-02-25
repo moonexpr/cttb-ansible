@@ -1,0 +1,9 @@
+---
+
+- hosts: dvgs-dorm-pc3 dvgs-dorm-pc12
+  roles:
+    - desktop
+    - cups-client
+    - ldap-client
+    - nfs-home
+    - cttb-ca-client

@@ -1,0 +1,53 @@
+---
+
+- name: install asterisk packages
+  apt:
+    name:               "{{item}}"
+    state:              present
+    update_cache:       yes
+    install_recommends: no
+    cache_valid_time:   3600
+  with_items:
+    - asterisk
+    - asterisk-core-sounds-en
+    - asterisk-core-sounds-en-gsm
+    - asterisk-modules
+    - asterisk-moh-opsound-gsm
+    - asterisk-mp3
+    - asterisk-voicemail
+  tags:
+    - pkg
+
+- name: copy etc configs
+  synchronize: 
+    src:      etc/
+    dest:     /etc/asterisk/
+    delete:   yes
+    checksum: yes
+    #rsync_path: sudo /usr/bin/rsync
+  tags:
+    - cfg
+  notify:
+    - restart asterisk
+
+- name: fix permissions /etc/asterisk
+  file:
+    path:     /etc/asterisk/
+    owner:    asterisk
+    group:    asterisk
+    mode:     u=rwX,g=rX,o=
+    recurse:  True
+  tags:
+    - cfg
+  notify:
+    - restart asterisk
+
+- name: copy drbu sound prompts
+  copy:
+    src:    sounds/
+    dest:   /var/lib/asterisk/sounds/custom/
+    owner:  asterisk
+    group:  asterisk
+    mode:   0644
+  tags:
+    - cfg

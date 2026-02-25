@@ -1,0 +1,11 @@
+---
+
+- hosts: dvgs-cs-lab
+  gather_facts: no
+  tasks:
+    - name: back up /etc/environment
+      shell: cp -p /etc/environment /etc/environment.0.haiku
+
+    - name: remove proxy settings from /etc/environment
+      shell: /bin/sed -i '/10.11.1.1:8080/d' /etc/environment
+

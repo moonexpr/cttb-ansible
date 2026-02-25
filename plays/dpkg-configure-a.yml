@@ -1,0 +1,6 @@
+---
+
+- hosts: dvgs-dorm
+  tasks:
+    - name: dpkg configure, apt update, autoremove
+      shell: ( /usr/bin/dpkg --configure -a && /usr/bin/apt-get update && /usr/bin/apt-get autoremove -y )

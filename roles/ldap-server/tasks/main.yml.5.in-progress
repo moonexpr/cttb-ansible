@@ -1,0 +1,119 @@
+---
+
+  - name: install slapd, ldap-utils and tls-related pkgs
+    apt:
+      name: "{{item}}"
+      state: present
+    with_items:
+      - slapd
+      - ldap-utils
+      - gnutls-bin
+      - ssl-cert
+
+  - name: set default openldap admin password
+    debconf:
+      name: slapd
+      question: slapd/password1
+      value: "{{ldap_admin_password | quote}}"
+      vtype: password
+  
+  - name: set default openldap admin password
+    debconf:
+      name: slapd
+      question: slapd/password2
+      value: "{{ldap_admin_password | quote}}"
+      vtype: password
+  
+  - name: set up CA info file for cert generation
+    copy:
+      src: cttb-ca.info
+      dest: /etc/ssl/
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - gen_cert
+
+  #- stat: /etc/ssl/.loaded-certs
+  #  register: loaded-certs
+
+  - name: generate cttb-ldap-srv.info
+    template:
+        src:   cttb-ldap-srv.info.j2
+        dest:  /etc/ssl/cttb-ldap-srv.info
+        owner: root
+        group: root
+        mode: 0644
+    tags:
+      - gen_cert
+
+  - name: generate CA private key
+    command: certtool --generate-privkey --outfile /etc/ssl/private/cakey.pem
+    args:
+        creates: /etc/ssl/private/cakey.pem
+    tags:
+      - gen_cert
+
+  - name: generate self-signed CA certificate
+    command: certtool --generate-self-signed --load-privkey /etc/ssl/private/cakey.pem --template /etc/ssl/cttb-ca.info --outfile /etc/ssl/certs/cttb-cacert.pem
+    args:
+        creates: /etc/ssl/certs/cttb-cacert.pem
+    tags:
+      - gen_cert
+
+  - name: generate ldap-server private key
+    command: certtool --generate-privkey --bits 1024 --outfile /etc/ssl/private/ldap-srv_slapd_key.pem
+    args:
+        creates: /etc/ssl/private/ldap-srv_slapd_key.pem
+    tags:
+      - gen_cert
+
+  - name: generate self-signed server certificate
+    command: certtool --generate-certificate --load-privkey /etc/ssl/private/ldap-srv_slapd_key.pem --load-ca-certificate /etc/ssl/certs/cttb-cacert.pem --load-ca-privkey /etc/ssl/private/cakey.pem --template /etc/ssl/cttb-ldap-srv.info --outfile /etc/ssl/certs/cttb-ldap-srv_slapd_cert.pem
+    args:
+        creates: /etc/ssl/certs/cttb-ldap-srv_slapd_cert.pem
+    tags:
+      - gen_cert
+
+  - name: copy LDIF files
+    copy:
+      src: "{{item}}"
+      dest: /etc/ssl/
+      mode: 0644
+      owner: root
+      group: root
+      force: yes
+    with_items:
+      - cttb-init.ldif
+      - certinfo.ldif
+      - forcetls.ldif
+    tags:
+      - gen_cert
+
+  - name: set up CTTB LDAP initial content
+    command: ldapadd -x -D cn=admin,dc=cttb -w "{{ldap_admin_password | quote}}" -f /etc/ssl/cttb-init.ldif
+    tags:
+      - gen_cert
+
+  - name: load certificates into LDAP
+    command: chmod go+rx /etc/ssl/private &&
+             chmod go+r /etc/ssl/certs/cttb-cacert.pem /etc/ssl/certs/cttb-ldap-srv_slapd_cert.pem /etc/ssl/private/ldap-srv_slapd_key.pem &&
+             ldapmodify -Y EXTERNAL -H ldapi:/// -f /etc/ssl/certinfo.ldif &&
+             adduser openldap ssl-cert &&
+             chgrp ssl-cert /etc/ssl/private/ &&
+             chmod 710 /etc/ssl/private/ &&
+             chgrp ssl-cert /etc/ssl/private/cakey.pem /etc/ssl/private/ldap-srv_slapd_key.pem &&
+             chmod g+r,o-r /etc/ssl/private/cakey.pem /etc/ssl/private/ldap-srv_slapd_key.pem &&
+             touch /etc/ssl/.loaded-certs
+    args:
+        creates: /etc/ssl/.loaded-certs
+    tags:
+      - gen_cert
+
+  - name: require TLS
+    command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /etc/ssl/forcetls.conf &&
+             touch /etc/ssl/.required-tls
+    args:
+        creates: /etc/ssl/.required-tls
+    tags:
+      - gen_cert

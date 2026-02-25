@@ -1,0 +1,9 @@
+---
+
+- hosts: drbu-admin-office
+  vars:
+    chrome: false
+  roles:
+    - desktop
+    - ldap-client
+    - nfs-home
