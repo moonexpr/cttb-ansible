@@ -1,0 +1,11 @@
+---
+
+- hosts: dvbs-lab04 dvbs-lab05 dvbs-lab09
+  gather_facts: no
+  tasks:
+    - name: shutdown
+      command: /sbin/shutdown -P now
+      become: yes
+
+    - name: wait go down
+      local_action: wait_for host={{ ansible_ssh_host }} port=22 state=stopped

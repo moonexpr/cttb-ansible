@@ -1,0 +1,4 @@
+---
+
+# LDAP groups, used for access control
+ldap_group_acl_string: "(it) "

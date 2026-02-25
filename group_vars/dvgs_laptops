@@ -1,0 +1,21 @@
+---
+
+# desktop configuration
+lightdm_hide_users: true
+
+# printing settings
+cups_default_queue: Girl_School_CSLab
+
+# Additional software
+additional_sw:
+  # To run Java Web Start apps for DM Heng Yuan's PHET simulations.
+  #- icedtea-netx
+  # Install PiTiVi for DM Heng Yuan to teach video editing. - Rui, 2018-01-16.
+  #- pitivi
+  # Install pycharm for Ms. Daisy Guo to teach AP comp sci. - Rui, 2018-08-22.
+  #- pycharm-community
+
+# Additional apt repo
+#additional_apt_repo:
+  # To install pycharm.
+  #- ppa:mystic-mirage/pycharm

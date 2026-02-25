@@ -1,0 +1,101 @@
+---
+
+# Order seems to matter, put bond interface last
+
+# Network interfaces
+server_interfaces:
+  - name: eno1
+    id: 1
+    mac: '8c:89:a5:31:ef:bc'
+    auto: false
+    inet: manual
+  - name: lxdbr0
+    id: 2
+    auto: true
+    inet: dhcp
+    bridge: true
+    bridge_members:
+      - eno1
+
+zfs_pools:
+  - name: data
+    pool_options: 'ashift=12'
+    dataset_global_options: 'compression=lz4'
+    level: ''
+    disks:
+      - /dev/disk/by-id/ata-ADATA_SP550_2G1920075558
+      - /dev/disk/by-id/ata-ADATA_SP550_2G2120009890
+    datasets:
+      - name: lxd
+        options: ''
+
+lxc: true
+
+lxc_storage:
+  name: default
+  type: zfs
+  source: data/lxd
+
+lxc_containers:
+  - name: testlab1
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: tl1_eth0
+        hwaddr: '00:16:3e:49:72:81'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: rui-test1
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: rui_test1_eth0
+        hwaddr: '00:16:3e:11:05:13'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: rui-test2
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: rui_test2_eth0
+        hwaddr: '00:16:3e:11:05:14'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: rui-test3
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: rui_test3_eth0
+        hwaddr: '00:16:3e:11:05:15'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+  - name: spike-test1
+    image: cttb-latest
+    config:
+      'security.privileged': 'true'
+      'raw.apparmor': |
+         mount fstype=rpc_pipefs,
+         mount fstype=nfsd,
+    devices:
+      eth0:
+        host_name: st1_eth0
+        hwaddr: '00:16:3e:49:72:80'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0
+      nethomes:
+        path: /dev/zd0p1
+        type: unix-block
+  - name: spike-test2
+    image: cttb-latest
+    devices:
+      eth0:
+        host_name: st2_eth0
+        hwaddr: '00:16:3e:49:72:82'
+        type: nic
+        nictype: bridged
+        parent: lxdbr0

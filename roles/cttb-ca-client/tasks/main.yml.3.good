@@ -1,0 +1,52 @@
+---
+
+  # Make sure p11-kit-modules is installed, which contains the needed file: p11-kit-trust.so.
+  - name: install p11-kit-modules
+    apt:
+      name: p11-kit-modules
+      state: present
+      install_recommends: no
+
+  - name: copy CTTB Root CA certificate
+    copy:
+      src: CTTB-Root-CA.crt
+      dest: /usr/local/share/ca-certificates/CTTB-Root-CA.crt
+      owner: root
+      group: root
+      mode: 0644
+      force: yes
+
+  - name: check system cert info whether CTTB Root CA cert is not already added
+    shell: grep -E '^EH4GBuvisHX1r5NIV5g89uEcsYgUWw5xYi3NgfzyelOBhrUc$' /etc/ssl/certs/ca-certificates.crt
+    register: grep_result
+    ignore_errors: True
+    changed_when: False
+    failed_when: grep_result.rc >= 2
+
+  - name: update system cert info if CTTB Root CA cert is not already added
+    # Update only when the CTTB Root CA is not in the all-containing file.
+    shell: /usr/sbin/update-ca-certificates -f
+    # "-f" means "fresh". It removes all existing symlinks then regenerate them, thus can delete links for removed authorities.
+    when: "grep_result.rc != 0"
+
+  - name: create cttb-cacert.pem symlink
+    file:
+      src: /etc/ssl/certs/CTTB-Root-CA.pem
+      dest: /etc/ssl/certs/cttb-cacert.pem
+      owner: root
+      group: root
+      state: link
+
+  - name: change the libnssckbi.so files to symlinks if not already, x86_64
+    # If the file is not a symbolic link, back up its content. For all, forcefully change it to a link to the p11-kit-trust.so file.
+    shell: ls -1 /usr/lib/firefox/libnssckbi.so /usr/lib/thunderbird/libnssckbi.so /usr/lib/x86_64-linux-gnu/nss/libnssckbi.so `locate -b '\libnssckbi.so'` | sort -u | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/x86_64-linux-gnu/pkcs11/p11-kit-trust.so {}'
+    when: ansible_architecture == "x86_64"
+    tags:
+      - gen_symlinks
+
+  - name: change the libnssckbi.so files to symlinks if not already, i386
+    # If the file is not a symbolic link, back up its content. For all, forcefully change it to a link to the p11-kit-trust.so file.
+    shell: ls -1 /usr/lib/firefox/libnssckbi.so /usr/lib/thunderbird/libnssckbi.so /usr/lib/i386-linux-gnu/nss/libnssckbi.so `locate -b '\libnssckbi.so'` | sort -u | xargs -I{} sh -c 'if [ ! -L {} ]; then cp -p {} {}.orig ; fi ; ln -f -s /usr/lib/i386-linux-gnu/pkcs11/p11-kit-trust.so {}'
+    when: ansible_architecture == "i386"
+    tags:
+      - gen_symlinks

@@ -1,0 +1,26 @@
+---
+
+- hosts: dvbs-cc-pc1
+  gather_facts: no
+  tasks:
+    - name: ca certificate | Check whether CTTB Root CA certificate is already added
+      # Check whether it's already added into the all-containing file.
+      #shell: grep -E '^EH4GBuvisHX1r5NIV5g89uEcsYgUWw5xYi3NgfzyelOBhrUc$' /etc/ssl/certs/ca-certificates.crt | wc -l
+      command: grep -Fxq 'EH4GBuvisHX1r5NIV5g89uEcsYgUWw5xYi3NgfzyelOBhrUc' /etc/ssl/certs/ca-certificates.crt
+      register: cttb
+      check_mode: no
+      ignore_errors: yes
+      changed_when: no
+
+    - debug:
+        var: cttb
+        verbosity: 2
+
+    - name: update the system-wide certificate info
+      #command: update-ca-certificates -f
+      #command: touch /tmp/tt1
+      command: echo "already added."
+      #when: cttb-ca-cert-included.stdout == 0
+      #when: cttb-ca-cert-included.rc == 0
+      when: True
+      # The "-f" means "fresh". It removes all existing symlinks then regenerate them, thus can delete links for removed authorities.

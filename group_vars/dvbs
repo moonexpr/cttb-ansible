@@ -39,4 +39,5 @@ global_proxy:
 # Additional software
 additional_sw:
   # The eclipse-platform pkg requires openjdk-8-jdk, so JDK 8 is also installed.
-  - eclipse-platform
+  #- eclipse-platform
+  - fbreader

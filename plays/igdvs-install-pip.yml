@@ -1,0 +1,12 @@
+---
+
+#- hosts: dvgs_cs_lab dvgs_koha dvbs_cs_lab dvbs_library dvbs_cc
+- hosts: dvbs-cc-pc6-dell dvbs-cc-pc14
+  gather_facts: no
+  tasks:
+    - name: install python3-pip
+      apt:
+        state: latest
+        install_recommends: no
+        name:
+        - python3-pip

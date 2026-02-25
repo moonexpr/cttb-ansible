@@ -1,0 +1,5 @@
+---
+
+- hosts: dvbs-3rd dvbs-9th
+  roles:
+    - cttb-ca-client

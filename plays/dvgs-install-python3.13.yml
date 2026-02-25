@@ -1,0 +1,10 @@
+---
+
+- hosts: dvgs_cs_lab dvgs_koha
+  tasks:
+#    - name: remove the python snap
+#      shell: ( snap remove python )
+#      ignore_errors: yes
+
+    - name: download and install python3.130 install-sh
+      shell: ( cd /tmp && rm -f install-sh && wget http://apt.cttb/it/Python3.13.0/install-sh && cd /opt && rm -rf install-sh Python3.13.0 && tar xf /tmp/Python3.13.0 && mv Python3.13.0 && cd /usr/local/src && ln -s -f /opt/Python3.13.0 && cd /usr/share/applications && rm -f python.desktop && wget http://apt.cttb/it/python.desktop )

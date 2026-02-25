@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Generates a playbook from one hostname or hostgroup and applies one or more roles to it,
+# and then runs it.
+
+
+USAGE="Usage:   $0 hostname|hostsgroup role_name1[,role_name2,...] [ansible-playbook OPTIONS]"
+USAGE_EXAMPLE="Example: $0 drbu-sw-cslab desktop,cups-client,ldap-client,nfs-home" 
+
+if [ $# -lt 2 ]; then
+  echo "$USAGE"
+  echo "$USAGE_EXAMPLE"
+  exit 1
+fi
+
+source utils/setup-env
+
+HOST=$1
+ROLE=$2
+ROLES_STR=`echo $ROLE | sed 's/^/    - /;s/,/\n    - /g'`
+echo "ROLE: $ROLE"
+echo -e "ROLES_STR:\n$ROLES_STR"
+shift
+shift
+
+cat << EOF > ${ANSIBLE_PLAYBOOKS}/autogen.yml
+---
+
+- hosts: $HOST
+  roles:
+$ROLES_STR
+EOF
+echo "ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/autogen.yml --diff $@"

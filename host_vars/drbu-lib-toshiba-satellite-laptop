@@ -1,0 +1,25 @@
+---
+
+# printing settings
+cups_srv: cups-cttb.cttb
+cups_default_queue: DRBU_South_Wing_Xerox_Copier_B8045
+
+# Web browser
+firefox: true
+chrome: true
+
+# desktop configuration
+lightdm_hide_users: false
+
+# look and feel
+pic_avatar: avatar-cttb.png
+pic_bg: bg-drba.jpg
+
+# office
+openoffice: false
+libreoffice: true
+wpsoffice: false
+
+# Chewing support
+#chewing: true
+chewing: false

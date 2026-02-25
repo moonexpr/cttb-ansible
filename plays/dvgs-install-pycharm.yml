@@ -1,0 +1,11 @@
+---
+
+#- hosts: dvgs-lab2
+- hosts: dvgs_cs_lab dvgs_koha
+  tasks:
+    - name: remove the pycharm-community snap
+      shell: ( snap remove pycharm-community )
+      ignore_errors: yes
+
+    - name: download and install pycharm-community tar ball
+      shell: ( cd /tmp && rm -f pycharm.tar.gz && wget http://apt.cttb/it/pycharm.tar.gz && cd /opt && rm -rf pycharm-community pycharm-community-2022.2.3 && tar zxf /tmp/pycharm.tar.gz && mv pycharm-community-2022.2.3 pycharm-community && cd /usr/local/bin && ln -s -f /opt/pycharm-community/bin/pycharm.sh pycharm-community && cd /usr/share/applications && rm -f pycharm-community_pycharm-community.desktop && wget http://apt.cttb/it/pycharm-community_pycharm-community.desktop )

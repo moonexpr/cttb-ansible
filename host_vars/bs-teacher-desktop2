@@ -1,0 +1,25 @@
+---
+
+# Web browser
+firefox: true
+chrome: true
+
+# printing settings
+cups_srv: cups-dvbs
+cups_default_queue: Boy_School_CSLab
+
+# desktop configuration
+lightdm_hide_users: false
+
+# look and feel
+pic_avatar: avatar-dvbs.png
+pic_bg: bg-dvbs.jpg
+
+# office
+openoffice: false
+libreoffice: true
+wpsoffice: false
+
+# Chewing support
+#chewing: true
+chewing: false

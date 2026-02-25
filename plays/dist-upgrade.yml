@@ -1,0 +1,32 @@
+---
+
+- hosts: dvgs_cs_lab dvgs_koha
+#- hosts: dvgs_cs_lab dvgs_koha dvbs_cs_lab dvbs_library dvbs_cc
+#- hosts: dvbs-cc-pc6-dell dvbs-cc-pc14
+#- hosts: drbu_sw_cslab
+  gather_facts: no
+  tasks:
+    # Autoremove before upgrade, to avoid unnecessary upgrades.
+    - name: apt autoremove before a fix is in
+      command: /usr/bin/apt-get autoremove -y
+      args:
+        warn: false
+      tags:
+        - apt
+        - apt_autoremove
+
+    - name: dist-upgrade + autoremove purge
+      apt:
+        autoremove: yes
+        purge: yes
+        upgrade: dist
+      tags:
+        - apt
+  
+    - name: apt autoremove before a fix is in
+      command: /usr/bin/apt-get autoremove -y
+      args:
+        warn: false
+      tags:
+        - apt
+        - apt_autoremove

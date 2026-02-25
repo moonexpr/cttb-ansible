@@ -1,0 +1,20 @@
+---
+
+# Web browser
+firefox: true
+chrome: true
+
+# printing settings
+cups_srv: cups-cttb.cttb
+cups_default_queue: Girl_School_Xerox
+
+# desktop configuration
+lightdm_hide_users: false
+
+# office
+openoffice: false
+libreoffice: true
+wpsoffice: true
+
+# Dictionary
+goldendict: true
