@@ -1,11 +1,12 @@
 ---
+- name: Collect hardware information from computer lab hosts
+  hosts: drbu-sw-cslab-m-pc1 drbu-sw-cslab-m-pc2 drbu-sw-cslab-m-pc3
 
-- hosts: drbu_sw_cslab_m
-
-- name: Collect hardware information from Ubuntu hosts
-  hosts: ubuntu_hosts
-  become: yes
-  gather_facts: yes
+  become: true 
+  become_user: administrator
+  gather_facts: true
+  #vars_files:
+  #  - ../vars/drbu-secrets.yml  
 
   tasks:
 
@@ -23,15 +24,15 @@
       command: lsblk -b -dn -o NAME,SIZE,TYPE
       register: lsblk_output
 
-    - name: Parse storage devices
-      set_fact:
-        storage_devices: >-
-          {{
-            lsblk_output.stdout_lines
-            | map('split')
-            | selectattr('2', 'equalto', 'disk')
-            | list
-          }}
+      # - name: Parse storage devices
+      #   set_fact:
+      #     storage_devices: >-
+      #       {{
+      #         lsblk_output.stdout_lines
+      #         | map('split')
+      #         | selectattr('2', 'equalto', 'disk')
+      #         | list
+      #       }}
 
     - name: Collect GPU info
       command: lspci -vnn
