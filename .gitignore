@@ -2,3 +2,7 @@ logs/
 tmp/
 *.pyc
 plays/autogen.yml
+
+# Ignore MacOS artifacts
+plays/.*
+group_vars/.*
