@@ -1,1 +1,1 @@
-ansible-playbook plays/drbu-hardware-inventory.yml -i hosts
+ansible-playbook plays/util-hardware-survey.yml --limit drbu_hosts
