@@ -1,1 +1,1 @@
-ansible-playbook plays/util-ssh-copy-id.yml -i hosts -k
+ansible-playbook plays/util-ssh-copy-id.yml -k --limit drbu_hosts

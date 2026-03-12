@@ -1,6 +1,6 @@
 ---  
 - name: Manage authorized keys using authorized_key module  
-  hosts: drbu_sw_cslab
+  hosts: all
   gather_facts: true  
   vars:  
     remote_user: "administrator"  

@@ -1,0 +1,12 @@
+---
+- name: Wake hosts
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Send WoL packet
+      community.general.wakeonlan:
+        mac: "{{ mac_addr }}"
+        port: 9
+        #broadcast: 192.168.1.255
+      delegate_to: localhost
