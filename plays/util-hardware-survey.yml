@@ -3,21 +3,83 @@
   hosts: all
   gather_facts: true
 
+  vars_files:
+    - ./../vars/jc_passwds.enc.yml
+
   vars:
+    ansible_become_password: "{{ drbu_cslab_admin_passwd }}"
     output_csv: "~/hardware_survey.csv"
 
   tasks:
+    # -------------------------
+    # General System Info
+    # -------------------------
+
+    - name: Collect general facts
+      set_fact:
+        system_arch: "{{ ansible_facts['machine'] | default('Unknown') }}"
 
     # -------------------------
     # CPU + RAM
     # -------------------------
 
-    - name: Collect CPU and RAM facts
+    - name: Collect CPU model and core count.
       set_fact:
         cpu_model: "{{ ansible_facts['processor'][2] | default('Unknown') }}"
-        cpu_cores: "{{ ansible_facts['processor_vcpus'] }}"
-        cpu_clock_mhz: "{{ ansible_facts['processor_speed'] | default('Unknown') }}"
-        total_ram_mb: "{{ ansible_facts['memtotal_mb'] }}"
+        cpu_cores: "{{ ansible_facts['processor_cores'] }}"
+
+    - name: Query RAM information
+      command: dmidecode --type 17
+      register: ram_info
+      changed_when: false
+      failed_when: false
+      become: true
+      become_user: root
+
+
+    - name: Extract all DIMM speeds
+      set_fact:
+        ram_size_mb: "{{ ansible_facts['memtotal_mb'] }}"
+        ram_speeds: "
+          {{
+            (ram_info.stdout_lines | join('\n'))
+            | regex_findall('Speed:\\s*([0-9]+) MT/s')
+            | map('int')
+            | list
+          }}"
+
+    - name: Determine maximum RAM speed
+      set_fact:
+        ram_speed_mts: "
+          {{
+            (ram_speeds | map('int') | max)
+            if ram_speeds | length > 0
+            else '--'
+          }}"
+
+    - name: Check if cpuinfo_max_freq exists
+      stat:
+        path: /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
+      register: cpu_freq_file
+
+    - name: Read cpuinfo_max_freq
+      command: cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
+      register: cpu_freq_raw
+      changed_when: false
+      when: cpu_freq_file.stat.exists
+
+    - name: Convert CPU frequency to GHz
+      set_fact:
+        cpu_clock_ghz: >-
+          {{
+            ((cpu_freq_raw.stdout | int) / 1000000) | round(2)
+          }}
+      when: cpu_freq_file.stat.exists
+
+    - name: Set placeholder if frequency unavailable
+      set_fact:
+        cpu_clock_ghz: "--"
+      when: not cpu_freq_file.stat.exists
 
     # -------------------------
     # Storage
@@ -151,7 +213,7 @@
       delegate_to: localhost
       lineinfile:
         path: "{{ output_csv }}"
-        line: "hostname,cpu_model,cpu_cores,cpu_clock_mhz,ram_mb,total_storage_gb,motherboard_manufacturer,motherboard_model,usb_devices,usb_root_hubs,gpu_vram_mb"
+        line: "hostname,cpu_model,cpu_cores,cpu_clock_ghz,ram_size_mb,ram_speed,ram_speed_mts,total_storage_gb,motherboard_manufacturer,motherboard_model,usb_devices,usb_root_hubs,gpu_vram_mb"
         insertbefore: BOF
         create: yes
 
@@ -167,8 +229,10 @@
           {{ inventory_hostname }},
           {{ cpu_model | replace(',', ';') }},
           {{ cpu_cores }},
-          {{ cpu_clock_mhz }},
-          {{ total_ram_mb }},
+          {{ cpu_clock_ghz }},
+          {{ ram_size_mb }},
+          {{ ram_speeds[0] | default("Unknown") }},
+          {{ ram_speed_mts }},
           {{ total_storage_gb }},
           {{ motherboard_manufacturer | replace(',', ';') }},
           {{ motherboard_model | replace(',', ';') }},
