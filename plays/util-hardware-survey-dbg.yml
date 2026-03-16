@@ -1,0 +1,41 @@
+---
+- name: Collect extended hardware information
+  hosts: all
+  gather_facts: true
+
+  vars_files:
+    - ./../vars/jc_passwds.enc.yml
+
+  vars:
+    ansible_become_password: "{{ drbu_cslab_admin_passwd }}"
+    output_csv: "~/hardware_survey.csv"
+
+  tasks:
+    # -------------------------
+    # CPU + RAM
+    # -------------------------
+
+    - name: Query RAM information
+      command: dmidecode --type 17
+      register: ram_info
+      changed_when: false
+      failed_when: false
+      become: true
+      become_user: root
+
+
+    - name: Extract all DIMM speeds
+      set_fact:
+        ram_size_mb: "{{ ansible_facts['memtotal_mb'] }}"
+        ram_speeds: "
+          {{
+            ram_info.stdout_lines 
+            | join('\n')
+            | regex_findall('Speed:\\s*([0-9]+) MT/s')
+            | map('int')
+            | list
+          }}"
+    - debug:
+        var: ram_speeds,
+        #msg: "{{ ram_info.stdout_lines | join('\n') | regex_findall('Speed:\\s*([0-9]+) MT/s') | map('int') | list}}"
+
