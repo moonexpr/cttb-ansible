@@ -18,6 +18,9 @@
     - name: Collect general facts
       set_fact:
         system_arch: "{{ ansible_facts['machine'] | default('Unknown') }}"
+        os_name: "{{ ansible_facts['distribution'] | default('Unknown') }}"
+        os_version: "{{ ansible_facts['distribution_version'] | default('Unknown') }}"
+        os_codename: "{{ ansible_facts['distribution_release'] | default('Unknown') }}"
 
     # -------------------------
     # CPU + RAM
@@ -37,25 +40,39 @@
       become_user: root
 
 
-    - name: Extract all DIMM speeds
+    - name: Extract RAM details from dmidecode
       set_fact:
         ram_size_mb: "{{ ansible_facts['memtotal_mb'] }}"
-        ram_speeds: "
+        ram_dimm_sizes: >-
           {{
-            (ram_info.stdout_lines | join('\n'))
-            | regex_findall('Speed:\\s*([0-9]+) MT/s')
+            (ram_info.stdout | default(''))
+            | regex_findall('Size:\\s*([0-9]+)\\s*(?:MB|GB)')
+            | list
+          }}
+        ram_speeds: >-
+          {{
+            (ram_info.stdout | default(''))
+            | regex_findall('Speed:\\s*([0-9]+)\\s*(?:MT/s|MHz)')
             | map('int')
             | list
-          }}"
+          }}
+        ram_type: >-
+          {{
+            ((ram_info.stdout | default(''))
+            | regex_findall('Type:\\s*(DDR[0-9]+)')
+            + ['Unknown'])
+            | first
+          }}
 
-    - name: Determine maximum RAM speed
+    - name: Determine RAM speed and DIMM count
       set_fact:
-        ram_speed_mts: "
+        ram_speed_mts: >-
           {{
             (ram_speeds | map('int') | max)
             if ram_speeds | length > 0
             else '--'
-          }}"
+          }}
+        ram_dimm_count: "{{ ram_dimm_sizes | length }}"
 
     - name: Check if cpuinfo_max_freq exists
       stat:
@@ -213,7 +230,7 @@
       delegate_to: localhost
       lineinfile:
         path: "{{ output_csv }}"
-        line: "hostname,cpu_model,cpu_cores,cpu_clock_ghz,ram_size_mb,ram_speed,ram_speed_mts,total_storage_gb,motherboard_manufacturer,motherboard_model,usb_devices,usb_root_hubs,gpu_vram_mb"
+        line: "hostname,os_name,os_version,os_codename,cpu_model,cpu_cores,cpu_clock_ghz,ram_size_mb,ram_dimm_count,ram_type,ram_speed_mts,total_storage_gb,motherboard_manufacturer,motherboard_model,usb_devices,usb_root_hubs,gpu_vram_mb,system_arch"
         insertbefore: BOF
         create: yes
 
@@ -227,16 +244,21 @@
         path: "{{ output_csv }}"
         line: >-
           {{ inventory_hostname }},
+          {{ os_name }},
+          {{ os_version }},
+          {{ os_codename }},
           {{ cpu_model | replace(',', ';') }},
           {{ cpu_cores }},
           {{ cpu_clock_ghz }},
           {{ ram_size_mb }},
-          {{ ram_speeds[0] | default("Unknown") }},
+          {{ ram_dimm_count }},
+          {{ ram_type }},
           {{ ram_speed_mts }},
           {{ total_storage_gb }},
           {{ motherboard_manufacturer | replace(',', ';') }},
           {{ motherboard_model | replace(',', ';') }},
           {{ usb_device_count }},
           {{ usb_root_hub_count }},
-          {{ gpu_vram_mb }}
+          {{ gpu_vram_mb }},
+          {{ system_arch }}
         insertafter: EOF
