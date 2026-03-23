@@ -1,0 +1,44 @@
+---
+
+ni_root_dir: /srv/netinstall
+ni_tftp_dir: "{{ni_root_dir}}"
+ni_autoinstall_dir: "{{ni_root_dir}}/autoinstall"
+ni_pxe_menu_dir: "{{ni_root_dir}}/menu"
+ni_isos_cache_dir: "{{ni_root_dir}}"
+ni_isos_baseurl: "{{ansible_assets_url}}/isos"
+ni_www_path: "/var/www/html/netinstall"
+
+# Ubuntu 24.04.2 LTS (Noble Numbat) live server ISO
+# The live server ISO is used for headless autoinstall deployments.
+# No mini.iso exists for 24.04; autoinstall replaces preseed.
+ni_2404_images:
+  - name: noble
+    os: ubuntu
+    type: live-server
+    arch: amd64
+    url: "{{ni_isos_baseurl}}/ubuntu-24.04.2-live-server-amd64.iso"
+    # casper paths inside the live server ISO
+    kernel_path: casper/vmlinuz
+    initrd_path: casper/initrd
+    autoinstall:
+      - name: desktop
+        description: "Ubuntu 24.04 Desktop (headless install)"
+      - name: server
+        description: "Ubuntu 24.04 Server"
+      - name: desktop-minimal
+        description: "Ubuntu 24.04 Desktop Minimal (headless install)"
+
+# Default administrator user for autoinstall
+ni_admin_user: administrator
+ni_admin_fullname: Administrator
+ni_admin_uid: "999"
+# Same crypted password as the existing preseed deployment
+ni_admin_password_crypted: "$1$YGmPEYhr$WDaYWLKV.dixml0kcrUr91"
+
+# Ansible SSH public key for post-install access
+ni_ansible_ssh_pubkey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nTH15aJs0AOVSLaSN6TH+zrdyaRGk6XwrbvLoCiyGOveOt4TcwmOzgyrXg9p1Vy0gcd2pjN+fDbO07ftwPGtuSfbvShvnwYaRPzF1IcBEBMeml/e05Naw8Q0KhZbuGXnCHvEDM2QArw9qD/a77kEV9vxrhJaOUOFkdVx1gsU/dAjQikZzD+Sag7JhtSYIpZupA+YbD1K0dRYUdE9dm3yTUUFmWM3nCCpj8kpU+TWjFeG2M4ilWym7Y81tk3CgI3vzRZRkA395IZlpP1FKNjAlNsit8YuldRvgrYXjPH3TcM1XkLFL4k6EJTjwsM5oWC4o9TriFJRTN75MxGgs72tZcgwlN2W+qkGAGAAYMvSqCBPIXuVCp+3ixuECgnJ3pYq48x8J5DmTn6i93Q9eAv7Xj8B9shts8MlrwGzMBHqjEu/CFfJAHtsLmJ34vvfM0kTFp6Du/K7WnYAuBvB4agMSMBAKy3+9ij5r1+hOxEv7rPkJvlFTECYLvEmNGXOSthuKLEHarlAH21YB1+aP5GwdrypLlYifXYXbQyf/nc/sebyleA3yHs99OLxxW3SCFOqvWxRH7kV/i56Ei8JFxAASauQMy/jXT/FgnIKYae46c7ZJ9jTgfsrhZ1OSQ9oUqzyAS3ugUa5QW3uMEpfnXVxt/EnwnOw== ansible@cttb.us"
+
+# Timezone and locale defaults
+ni_timezone: US/Pacific
+ni_locale: en_US.UTF-8
+ni_keyboard_layout: us
