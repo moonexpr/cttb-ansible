@@ -6,3 +6,4 @@ plays/autogen.yml
 # Ignore MacOS artifacts
 plays/.*
 group_vars/.*
+.DS_Store
