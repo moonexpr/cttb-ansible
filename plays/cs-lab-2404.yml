@@ -1,0 +1,21 @@
+---
+# Post-installation configuration for Computer Lab hosts running Ubuntu 24.04.
+#
+# Run this after PXE-installing Ubuntu 24.04 on lab machines.
+# Applies the desktop-20.04 role (compatible with 24.04) plus lab-specific
+# roles (CUPS, LDAP, NFS home, CA certificates).
+#
+# Usage:
+#   ansible-playbook plays/cs-lab-2404.yml -l dvgs_cs_lab
+#   ansible-playbook plays/cs-lab-2404.yml -l dvbs_cs_lab
+#   ansible-playbook plays/cs-lab-2404.yml -l drbu_cs_lab
+#   ansible-playbook plays/cs-lab-2404.yml  # all labs
+
+- hosts: dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
+  become: true
+  roles:
+    - desktop-20.04
+    - cups-client
+    - ldap-client
+    - nfs-home
+    - cttb-ca-client

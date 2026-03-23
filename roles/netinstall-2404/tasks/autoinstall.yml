@@ -1,0 +1,59 @@
+---
+
+  - name: create autoinstall root directory
+    file:
+      path: "{{ni_autoinstall_dir}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: create autoinstall os directories
+    file:
+      path: "{{ni_autoinstall_dir}}/{{item}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+    with_items: "{{ni_2404_images|map(attribute='os')|list|unique}}"
+
+  - name: create autoinstall profile directories
+    file:
+      path: "{{ni_autoinstall_dir}}/{{item.0.os}}/{{item.1.name}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+    with_subelements:
+      - "{{ni_2404_images}}"
+      - autoinstall
+
+  - name: generate autoinstall user-data files
+    template:
+      src: "autoinstall/user-data-{{item.1.name}}.j2"
+      dest: "{{ni_autoinstall_dir}}/{{item.0.os}}/{{item.1.name}}/user-data"
+      owner: root
+      group: root
+      mode: 0644
+    with_subelements:
+      - "{{ni_2404_images}}"
+      - autoinstall
+
+  - name: generate autoinstall meta-data files
+    template:
+      src: "autoinstall/meta-data.j2"
+      dest: "{{ni_autoinstall_dir}}/{{item.0.os}}/{{item.1.name}}/meta-data"
+      owner: root
+      group: root
+      mode: 0644
+    with_subelements:
+      - "{{ni_2404_images}}"
+      - autoinstall
+
+  - name: install post-install script
+    copy:
+      src: "autoinstall-postinst.sh"
+      dest: "{{ni_autoinstall_dir}}/postinst.sh"
+      owner: root
+      group: root
+      mode: 0755

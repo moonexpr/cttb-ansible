@@ -1,0 +1,16 @@
+---
+# Deploy Ubuntu 24.04 LTS network installation infrastructure.
+#
+# Run on the PXE server to set up autoinstall-based headless deployment
+# for Computer Lab hosts (dvgs_cs_lab, dvbs_cs_lab, drbu_cs_lab).
+#
+# Usage:
+#   ansible-playbook plays/netinstall-2404.yml
+#
+# After running this playbook, PXE-boot any lab machine and select
+# the desired Ubuntu 24.04 installation profile from the boot menu.
+
+- hosts: pxe-server
+  become: true
+  roles:
+    - netinstall-2404
