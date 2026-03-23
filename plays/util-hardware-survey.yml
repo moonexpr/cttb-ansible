@@ -3,11 +3,11 @@
   hosts: all
   gather_facts: true
 
-  vars_files:
-    - ./../vars/jc_passwds.enc.yml
+  # vars_files:
+  #   - ./../vars/jc_passwds.enc.yml
 
   vars:
-    ansible_become_password: "{{ drbu_cslab_admin_passwd }}"
+  # ansible_become_password: "{{ drbu_cslab_admin_passwd }}"
     output_csv: "~/hardware_survey.csv"
 
   tasks:
