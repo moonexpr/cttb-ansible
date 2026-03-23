@@ -1,0 +1,50 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: {{ni_locale}}
+  keyboard:
+    layout: {{ni_keyboard_layout}}
+  network:
+    version: 2
+    ethernets:
+      id0:
+        match:
+          name: "en*"
+        dhcp4: true
+        dhcp6: false
+  apt:
+    preserve_sources_list: false
+    mirror-selection:
+      primary:
+        - uri: http://{{apt_host}}/mirrors/ubuntu/
+    security:
+      - uri: http://{{apt_host}}/mirrors/ubuntu
+    geoip: false
+  storage:
+    layout:
+      name: direct
+  identity:
+    hostname: computer
+    realname: {{ni_admin_fullname}}
+    username: {{ni_admin_user}}
+    password: "{{ni_admin_password_crypted}}"
+  ssh:
+    install-server: true
+    allow-pw: true
+    authorized-keys:
+      - "{{ni_ansible_ssh_pubkey}}"
+  timezone: {{ni_timezone}}
+  updates: security
+  packages:
+    - openssh-server
+    - python3
+  late-commands:
+    - curtin in-target -- usermod -u {{ni_admin_uid}} {{ni_admin_user}}
+    - curtin in-target -- mkdir -p /home/{{ni_admin_user}}/.ssh
+    - curtin in-target -- chmod 700 /home/{{ni_admin_user}}/.ssh
+    - |
+      cat <<'SSHEOF' > /target/home/{{ni_admin_user}}/.ssh/authorized_keys
+      {{ni_ansible_ssh_pubkey}}
+      SSHEOF
+    - curtin in-target -- chown -R {{ni_admin_uid}}:{{ni_admin_uid}} /home/{{ni_admin_user}}/.ssh
+    - curtin in-target -- chmod 600 /home/{{ni_admin_user}}/.ssh/authorized_keys

@@ -1,0 +1,46 @@
+---
+
+  - name: create netinstall root directory
+    file:
+      path: "{{ni_root_dir}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  # add it before installing the pkg since there's an ipv6 bug in it
+  - name: create default tftp config
+    template:
+      src: ../../netinstall/templates/etc-default-tftpd-hpa.j2
+      dest: /etc/default/tftpd-hpa
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: install required packages
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - tftpd-hpa
+      - apache2
+      - p7zip-full
+      - pxelinux
+
+  - include: autoinstall.yml
+    tags:
+      - ni_autoinstall
+
+  - include: pxe.yml
+    tags:
+      - ni_pxe
+
+  - include: isos.yml
+    tags:
+      - ni_isos
+
+  - name: link www path to root dir to serve kernels over http
+    file:
+      src: "{{ni_root_dir}}"
+      dest: "{{ni_www_path}}"
+      state: link

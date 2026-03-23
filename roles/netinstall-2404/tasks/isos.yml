@@ -1,0 +1,47 @@
+---
+
+  - name: create iso cache dir
+    file:
+      path: "{{ni_isos_cache_dir}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: fetch Ubuntu 24.04 ISOs
+    get_url:
+      url: "{{item.url}}"
+      dest: "{{ni_isos_cache_dir}}/{{item.os}}-{{item.type}}-{{item.name}}-{{item.arch}}.iso"
+      owner: root
+      group: root
+      mode: 0644
+    with_items:
+      - "{{ni_2404_images}}"
+    tags:
+      - ni_get_isos
+
+  - name: extract kernel and initrd from ISOs
+    command: >
+      /usr/bin/7z x
+      -o{{ni_root_dir}}/{{item.os}}/{{item.type}}-{{item.name}}-{{item.arch}}
+      {{ni_isos_cache_dir}}/{{item.os}}-{{item.type}}-{{item.name}}-{{item.arch}}.iso
+    args:
+      creates: "{{ni_root_dir}}/{{item.os}}/{{item.type}}-{{item.name}}-{{item.arch}}"
+    with_items:
+      - "{{ni_2404_images}}"
+
+  - name: fix permissions on extracted image dirs
+    file:
+      path: "{{ni_root_dir}}/{{item.os}}"
+      recurse: yes
+      mode: 0755
+    with_items:
+      - "{{ni_2404_images}}"
+
+  - name: symlink ISO for HTTP serving (needed by autoinstall url= parameter)
+    file:
+      src: "{{ni_isos_cache_dir}}/{{item.os}}-{{item.type}}-{{item.name}}-{{item.arch}}.iso"
+      dest: "{{ni_root_dir}}/{{item.os}}/{{item.type}}-{{item.name}}-{{item.arch}}.iso"
+      state: link
+    with_items:
+      - "{{ni_2404_images}}"
