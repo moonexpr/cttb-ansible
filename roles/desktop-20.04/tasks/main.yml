@@ -58,28 +58,28 @@
       - gs_acct_shell
 
   # install all lubuntu core packages
-  - include: lubuntu.yml
+  - include_tasks: lubuntu.yml
     tags:
       - lubuntu
 
   # install languages support. Moved before lookandfeel, since laf requires fcitx to be installed. Rui 2022-07-04.
-  - include: lang.yml
+  - include_tasks: lang.yml
     tags:
       lang
 
   # customize the desktop based on cttb/dvgs/dvbs etc
-  - include: lookandfeel.yml
+  - include_tasks: lookandfeel.yml
     tags:
       - lookandfeel
 
-  - include: sw.yml
+  - include_tasks: sw.yml
     tags:
       - sw_install
 
-  - include: sw-goldendict.yml
+  - include_tasks: sw-goldendict.yml
     when: goldendict is defined
 
-  - include: sound.yml
+  - include_tasks: sound.yml
     tags:
       sound
 
