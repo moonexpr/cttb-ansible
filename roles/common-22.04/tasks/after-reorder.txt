@@ -1,0 +1,33 @@
+  - name: account default .bashrc
+  - name: add additional apt repo
+  - name: add ansible repo key
+  - name: add ansible repo mirror
+  - name: add cttb custom ubuntu repo
+  - name: add cttb custom ubuntu repo key
+  - name: apt autoremove before a fix is in
+  - name: apt autoremove before a fix is in
+  - name: custom apt sources.list
+  - name: customize settings for administrator -- .bashrc, .vimrc
+  - name: disable ipv6 #defaults to yes
+  - name: dist-upgrade + autoremove purge
+  - name: enable centralized logging
+  #- name: enable unattended upgrades
+  - name: enable Wake On LAN on Ethernet interfaces
+  - name: fix /etc/hosts
+  - name: install apt-add-repository
+  - name: install basic software
+  - name: install CTTB CA cert
+  - name: install sw requested for this box
+  - name: make ssh use ipv4 only # we disable ipv6 and X11forwarding fails
+  - name: refresh existing apt keys
+  - name: refresh the mirrors
+  - name: remove some software
+  - name: remove sw requested for this box
+  - name: set an explicit proxy if needed
+  #- name: set hostname
+  - name: set the system locale
+  - name: Set up ansible/cttb-os authorized_key
+  - name: sync time
+  - name: upgrade ansible to latest
+  - name: vim saner defaults
+  #- name: vim saner defaults for administrator
