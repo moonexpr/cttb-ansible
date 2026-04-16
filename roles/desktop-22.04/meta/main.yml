@@ -1,4 +1,4 @@
 ---
 
 dependencies:
-  - { role: common-20.04 }
+  - { role: common-22.04 }
