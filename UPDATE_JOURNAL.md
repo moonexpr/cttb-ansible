@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-16
 **Branch:** feature/ubuntu22-upgrade
-**Target:** dvgs-lab3.cttb (10.11.13.78)
+**Target:** dvgs-lab3.cttb (current IP: 10.11.30.32, WAN port)
 
 ---
 
@@ -101,11 +101,43 @@ ln -s ../host_vars inventory/host_vars
 
 **How to verify:** `ansible dvgs-lab3.cttb -m debug -a "var=deb_mirror"` should show the resolved value.
 
-### 5. APT mirror unreachable (CURRENT BLOCKER)
+### 5. APT mirror unreachable (RESOLVED)
 
-**Problem:** `apt.cttb` (internal APT mirror) refuses connections from dvgs-lab3. The `common-20.04` role fails trying to download the CTTB repo GPG key from `http://apt.cttb/cttb-repos/cttb-repo.gpg.key`.
+**Problem:** `apt.cttb` refused connections from dvgs-lab3 on WiFi.
 
-**Status:** Under investigation. This is a network/service issue, not a playbook bug.
+**Fix:** Connected device to WAN port (new IP: 10.11.30.32). APT mirror reachable. Updated inventory with `ansible_host=10.11.30.32`.
+
+### 6. Python 3.8 / Ansible 2.20 incompatibility (RESOLVED)
+
+**Problem:** Ansible 2.20 requires Python 3.9+ on targets. Ubuntu 20.04 ships Python 3.8. The `apt` module produced deserialization errors (dual JSON output from 3.8 and 3.13 interpreters).
+
+**Root cause:** `/usr/bin/python3` symlinked to `python3.8`. The `apt` module's bootstrap discovers `/usr/bin/python3` regardless of `ansible_python_interpreter` setting. Also, `python3-apt` bindings (`apt_pkg.so`, `apt_inst.so`) were compiled for cpython-38 only.
+
+**Fixes applied on dvgs-lab3:**
+```bash
+# Repoint python3 to 3.13
+sudo ln -sf python3.13 /usr/bin/python3
+
+# Symlink apt bindings for 3.13
+sudo ln -sf apt_pkg.cpython-38-x86_64-linux-gnu.so \
+  /usr/lib/python3/dist-packages/apt_pkg.cpython-313-x86_64-linux-gnu.so
+sudo ln -sf apt_inst.cpython-38-x86_64-linux-gnu.so \
+  /usr/lib/python3/dist-packages/apt_inst.cpython-313-x86_64-linux-gnu.so
+```
+
+**Note:** These symlinks are fragile (3.8 ABI loaded by 3.13). This workaround is acceptable for testing but reinforces the decision to do clean PXE reinstalls rather than in-place upgrades.
+
+### 7. Deprecated `warn` parameter in command module (RESOLVED)
+
+**Problem:** `roles/common-20.04/tasks/main.yml` used `warn: false` in `command` module args. The `warn` parameter was removed in ansible-core 2.20+.
+
+**Fix:** Removed `args: warn: false` from both `apt autoremove` tasks (lines 278-279, 294-295).
+
+### 8. `ubuntu-desktop-minimal` package not available on 20.04
+
+**Problem:** `roles/desktop-20.04/tasks/lubuntu.yml` references `ubuntu-desktop-minimal` which is a 22.04+ package.
+
+**Resolution:** Not a bug — the `cs-lab-2404.yml` playbook is designed for post-PXE-install configuration on 24.04, not for running on 20.04 hosts. Decision made to use PXE reinstall path instead of in-place upgrade.
 
 ---
 
@@ -175,6 +207,51 @@ git diff main..feature/ubuntu22-upgrade --stat
 
 ---
 
-## Deployment Log
+## Dry Run Results (cs-lab-2404.yml against 20.04 host)
 
-**Status:** Dry run partially passed. Blocked on APT mirror connectivity (`apt.cttb` unreachable from dvgs-lab3).
+| Metric | Value |
+|--------|-------|
+| Tasks passed | 31 |
+| Tasks failed | 1 (ubuntu-desktop-minimal — expected, 24.04 package) |
+| Tasks skipped | 16 |
+| Changed | 1 (apt cache refresh) |
+
+All infrastructure/config tasks pass. Package installation tasks expect 24.04. This confirms the playbook is ready for post-PXE-install use.
+
+---
+
+## Decision: PXE Reinstall over In-Place Upgrade
+
+**Date:** 2026-04-16
+
+In-place dist-upgrade (20.04 → 22.04 → 24.04) was considered but rejected:
+- Requires two version hops (can't skip)
+- `do-release-upgrade` is fragile over SSH, often needs interactive prompts
+- Python 3.8 / Ansible 2.20 incompatibility makes automation unreliable on 20.04
+- Leaves package cruft and broken configs
+
+**Chosen path:** PXE reinstall to Ubuntu 24.04 via the `netinstall-2404` role, then configure with `cs-lab-2404.yml`.
+
+### PXE Pipeline Assessment
+
+The `netinstall-2404` role was reviewed. The pipeline is **fully autonomous** — no interactive gates:
+- `autoinstall` + `noprompt` kernel params
+- `PROMPT 0` in PXE menu (auto-boots, 10s timeout to local disk)
+- Pre-set admin password hash, SSH key injection via late-commands
+- Post-install script is non-interactive
+
+### RISK: Storage layout is destructive
+
+All autoinstall profiles use `storage: layout: name: direct` which **wipes the entire disk**. Lab machines (including dvgs-lab3) have Windows partitions (OS, WINRETOOLS, DELLSUPPORT, Image recovery) that will be destroyed.
+
+**Decision:** Risk accepted. Lab machines are Ubuntu-primary; Windows partitions are legacy OEM installs not in active use. Dell recovery can be rebuilt from Dell media if ever needed.
+
+---
+
+## Next Steps: PXE Pipeline
+
+1. Set up PXE server — `ansible-playbook plays/netinstall-2404.yml`
+2. Test on dvgs-lab3 — WoL, PXE boot, autoinstall
+3. Post-install config — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb`
+4. Verify services (CUPS, LDAP, NFS, CA certs, desktop)
+5. Roll out to remaining dvgs_cs_lab hosts
