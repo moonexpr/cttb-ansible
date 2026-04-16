@@ -10,15 +10,37 @@
       - packages
       - lubuntu
 
-  - name: install desktop theme packages
-    apt:
-      state: present
-      name:
-      - breeze-gtk-theme
-      - breeze-icon-theme
-      - papirus-icon-theme
+  - name: install WhiteSur GTK theme
+    unarchive:
+      remote_src: yes
+      src: "{{ansible_assets_url}}/WhiteSur-gtk-theme.tar.gz"
+      dest: /usr/share/themes/
+      creates: /usr/share/themes/WhiteSur
+      owner: root
+      group: root
     tags:
-      - packages
+      - desktop
+
+  - name: install WhiteSur icon theme
+    unarchive:
+      remote_src: yes
+      src: "{{ansible_assets_url}}/WhiteSur-icon-theme.tar.gz"
+      dest: /usr/share/icons/
+      creates: /usr/share/icons/WhiteSur
+      owner: root
+      group: root
+    tags:
+      - desktop
+
+  - name: install WhiteSur cursor theme
+    unarchive:
+      remote_src: yes
+      src: "{{ansible_assets_url}}/WhiteSur-cursors.tar.gz"
+      dest: /usr/share/icons/
+      creates: /usr/share/icons/WhiteSur-cursors
+      owner: root
+      group: root
+    tags:
       - desktop
 
   - name: install lubuntu
