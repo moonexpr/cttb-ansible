@@ -9,6 +9,8 @@
       - abiword
       - gnumeric
     when: libreoffice == true or openoffice == true or wpsoffice == true
+    tags:
+      - office
 
   - name: install libreoffice
     apt:
@@ -22,7 +24,7 @@
       - libreoffice-help-en-us
     when: libreoffice == true
     tags:
-      - libreoffice
+      - office
 
   # since it's installed by default it matters if we said no to it. It will also conflict with openoffice
   - name: uninstall libreoffice
@@ -31,4 +33,5 @@
       state: absent
       purge: yes
     when: libreoffice == false
-
+    tags:
+      - office

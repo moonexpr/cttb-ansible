@@ -2,14 +2,17 @@
 
   - name: install ubuntu desktop minimal
     apt:
-      state: latest
+      state: present
       install_recommends: no
       name:
       - ubuntu-desktop-minimal
+    tags:
+      - packages
+      - lubuntu
 
   - name: install lubuntu
     apt:
-      state: latest
+      state: present
       install_recommends: no
       name:
       - alsa-utils
@@ -71,6 +74,9 @@
       - xdg-user-dirs
       - xfce4-power-manager
       - xz-utils
+    tags:
+      - packages
+      - lubuntu
 
   # overrides lubuntu default triggering the LXDE session to be loaded which
   # in turns make lxde pick up the wrong configs.
@@ -78,6 +84,9 @@
     apt:
       name: lxde-common
       state: absent
+    tags:
+      - packages
+      - lubuntu
 
   # Remove unneeded lubuntu pkgs.
   - name: remove unneeded lubuntu pkgs
@@ -89,6 +98,9 @@
       - gnome-disk-utility
       - gnome-font-viewer
       - qlipper
+    tags:
+      - packages
+      - lubuntu
 
   # Did not exist in Lubuntu 20.04.
   - name: create /usr/share/lubuntu/images/ if it does not exist
@@ -96,3 +108,5 @@
       path: /usr/share/lubuntu/images
       state: directory
       mode: '0755'
+    tags:
+      - lubuntu
