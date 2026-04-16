@@ -30,7 +30,12 @@
       - sound
 
   - name: enable the system pulseaudio service
-    shell: systemctl --system enable --now pulseaudio.service
+    systemd:
+      name: pulseaudio.service
+      enabled: yes
+      state: started
+      scope: system
+    notify: restart pulseaudio
     tags:
       - sound
 
