@@ -16,6 +16,8 @@
       - mythes-en-us
       state: present
       install_recommends: no
+    tags:
+      - lang
 
   - name: install base fcitx packages
     apt:
@@ -45,20 +47,28 @@
       - fonts-noto-cjk   # already installed
       #- qtdeclarative5-qtquick2-plugin  # absent in 20.04
       - im-config   # already installed
+    tags:
+      - lang
 
   - name: set fcitx as default input method
     command: im-config -n fcitx
-    ignore_errors: yes
+    changed_when: false
+    tags:
+      - lang
 
   - name: remove sogoupingyin installed mirror
     file:
       path: /etc/apt/sources.list.d/sogoupinyin.list
       state: absent
+    tags:
+      - lang
 
   - name: install fcitx vietnamese/unikey support
     apt:
       name: fcitx-unikey
       state: present
+    tags:
+      - lang
 
   - name: remove unneeded fcitx packages
     apt:
@@ -76,6 +86,8 @@
       - fcitx-chewing
       - fcitx-unikey
       - sogoupinyin
+    tags:
+      - lang
 
   - name: install fcitx chewing support
     apt:
@@ -83,6 +95,7 @@
       state: present
     when: chewing is defined
     tags:
+      - lang
       - chewing
 
   - name: install Sanskrit language support
@@ -102,5 +115,5 @@
       - language-pack-gnome-hi-base
     when: sanskrit is defined
     tags:
+      - lang
       - sanskrit
-
