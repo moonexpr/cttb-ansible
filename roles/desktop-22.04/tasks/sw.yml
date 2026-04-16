@@ -76,6 +76,10 @@
     tags:
       - browser
 
+  - include_tasks: sw-vscode.yml
+    tags:
+      - vscode
+
   - name: upgrade Zoom client
     apt:
       deb: "{{ansible_assets_url}}/zoom_amd64.deb"

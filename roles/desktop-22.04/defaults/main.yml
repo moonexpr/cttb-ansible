@@ -11,6 +11,7 @@ libreoffice: true
 openoffice: false
 firefox: true
 chrome: true
+vscode: true
 dropbox: false
 skype: false
 
