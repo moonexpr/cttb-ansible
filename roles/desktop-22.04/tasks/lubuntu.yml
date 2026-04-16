@@ -10,6 +10,17 @@
       - packages
       - lubuntu
 
+  - name: install desktop theme packages
+    apt:
+      state: present
+      name:
+      - breeze-gtk-theme
+      - breeze-icon-theme
+      - papirus-icon-theme
+    tags:
+      - packages
+      - desktop
+
   - name: install lubuntu
     apt:
       state: present
