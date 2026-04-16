@@ -14,7 +14,7 @@
 - hosts: dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
   become: true
   roles:
-    - desktop-20.04
+    - desktop-22.04
     - cups-client
     - ldap-client
     - nfs-home
