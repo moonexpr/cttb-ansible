@@ -248,10 +248,80 @@ All autoinstall profiles use `storage: layout: name: direct` which **wipes the e
 
 ---
 
-## Next Steps: PXE Pipeline
+## Autoinstall USB Build
 
-1. Set up PXE server — `ansible-playbook plays/netinstall-2404.yml`
-2. Test on dvgs-lab3 — WoL, PXE boot, autoinstall
-3. Post-install config — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb`
-4. Verify services (CUPS, LDAP, NFS, CA certs, desktop)
-5. Roll out to remaining dvgs_cs_lab hosts
+**No PXE server SSH access**, so built a USB installer instead.
+
+Built at `build/autoinstall-usb/`:
+- Downloaded ISO from `http://pxe.cttb/ansible_assets/isos/ubuntu-24.04.2-live-server-amd64.iso`
+- Injected `user-data` with desktop profile (lubuntu-desktop, administrator account, SSH keys, hostname dvgs-lab3)
+- Repacked with xorriso preserving original boot parameters
+- Output: `ubuntu-24.04.2-autoinstall-dvgs-lab3.iso` (3.0GB)
+- GRUB: 5s timeout, autoinstall is default entry
+- Written to 59GB Flash Disk at `/dev/rdisk4` via dd
+
+### USB build commands (for reference)
+```bash
+cd build/autoinstall-usb
+
+# Download ISO (skip if cached)
+curl -L -o ubuntu-24.04.2-live-server-amd64.iso \
+  http://pxe.cttb/ansible_assets/isos/ubuntu-24.04.2-live-server-amd64.iso
+
+# Extract
+xorriso -osirrox on -indev ubuntu-24.04.2-live-server-amd64.iso -extract / work/iso
+
+# Inject autoinstall
+cp user-data work/nocloud/user-data
+cp meta-data work/nocloud/meta-data
+cp -r work/nocloud work/iso/nocloud
+# (also overwrote work/iso/boot/grub/grub.cfg with autoinstall entry)
+
+# Repack (uses original ISO's boot params)
+xorriso -as mkisofs \
+  -r -V 'Ubuntu 24.04 Autoinstall' \
+  -o ubuntu-24.04.2-autoinstall-dvgs-lab3.iso \
+  --grub2-mbr --interval:local_fs:0s-15s:zero_mbrpt,zero_gpt:ubuntu-24.04.2-live-server-amd64.iso \
+  --protective-msdos-label -partition_cyl_align off -partition_offset 16 \
+  --mbr-force-bootable \
+  -append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b \
+    --interval:local_fs:6264708d-6274851d::ubuntu-24.04.2-live-server-amd64.iso \
+  -appended_part_as_gpt \
+  -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
+  -c '/boot.catalog' -b '/boot/grub/i386-pc/eltorito.img' \
+  -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
+  -eltorito-alt-boot -e '--interval:appended_partition_2:::' -no-emul-boot \
+  work/iso
+
+# Write to USB
+sudo dd if=ubuntu-24.04.2-autoinstall-dvgs-lab3.iso of=/dev/rdisk4 bs=4m status=progress
+diskutil eject /dev/disk4
+```
+
+---
+
+## CURRENT BLOCKER: USB not visible in Dell boot menu
+
+**Date:** 2026-04-16
+
+USB drive written with `dd` but not appearing in F12 boot menu on dvgs-lab3 (Dell Inspiron 5400 AIO).
+
+**Troubleshooting checklist:**
+- [ ] Verify partition table on Mac: `diskutil list /dev/disk4`
+- [ ] Try different USB port on the Dell
+- [ ] Enter BIOS Setup (F2) and check:
+  - [ ] Secure Boot is **disabled**
+  - [ ] USB Boot is **enabled**
+  - [ ] Boot list mode includes **UEFI**
+- [ ] If partition table looks wrong, may need alternative write method (e.g., `balenaEtcher`, or use `Startup Disk Creator` from the current Ubuntu install on dvgs-lab3)
+
+---
+
+## Next Steps
+
+1. **Fix USB boot** — resolve the boot menu visibility issue
+2. **Autoinstall runs** — fully autonomous (~15-20 min)
+3. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
+4. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop
+5. **Get PXE server access** — add `pxe-server` to inventory, run `plays/netinstall-2404.yml`
+6. **Roll out** to remaining dvgs_cs_lab hosts
