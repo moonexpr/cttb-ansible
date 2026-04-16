@@ -1,15 +1,8 @@
 ---
 
-  #- name: Add canonical third-party mirror
-    #apt_repository:
-      #repo: "deb {{deb_mirror}}/canonical {{ansible_distribution_release}} partner"
-      #state: present
-    #tags:
-      #- deb_repo
-
   - name: install additional software
     apt:
-      state: latest
+      state: present
       install_recommends: no
       name:
       - audacious
@@ -23,12 +16,15 @@
       - ubuntu-restricted-addons
       - ubuntu-restricted-extras
       - vlc
+    tags:
+      - packages
 
   - name: install desktop sw requested for this box
     apt:
       name: "{{additional_desktop_sw | default([])}}"
-      state: latest
+      state: present
     tags:
+      - packages
       - additional_desktop_sw
 
   # removing bunch of sw I don't need
@@ -49,8 +45,9 @@
       - sylpheed*
       - update-manager
       - update-notifier
-      #- lubuntu-software-center    # Does not exist.
       - update-notifier-common     # Will be installed by "ubuntu-restricted-extras".
+    tags:
+      - packages
 
    # Purging failed at preseed time since it's removing a file /.../whoopsie-id is that'll be created until the 1st run.
   - name: purge whoopsie
@@ -60,12 +57,16 @@
       name:
       - whoopsie
     ignore_errors: true
+    tags:
+      - packages
 
   # Seems no need to have snap store.
   - name: remove snap-store
     snap:
       name: snap-store
       state: absent
+    tags:
+      - packages
 
   - include_tasks: sw-office.yml
     tags:
@@ -86,7 +87,7 @@
   - name: install Zoom client for the 1st time
     apt:
       deb: "{{ansible_assets_url}}/zoom_amd64.deb"
-    when: zoom_upgraded == 0
+    when: zoom_upgraded is not changed
     tags:
       - zoom
 
@@ -102,6 +103,6 @@
   - name: install Skype for the 1st time
     apt:
       deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
-    when: (skype == true) and (skype_upgraded == 0)
+    when: (skype == true) and (skype_upgraded is not changed)
     tags:
       - skype
