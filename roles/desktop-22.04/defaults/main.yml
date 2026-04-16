@@ -17,13 +17,13 @@ skype: false
 
 # look and feel
 desktop_shortcuts: false
-desktop_theme: Breeze
-gtk_theme: Breeze
-icon_theme: Papirus
+desktop_theme: WhiteSur
+gtk_theme: WhiteSur
+icon_theme: WhiteSur
 pic_avatar: avatar-cttb.png
 pic_bg: bg-windos10.jpg
-start_icon: Papirus/64x64/places/start-here.svg
-cursor_theme: breeze_cursors
+start_icon: WhiteSur/scalable/places/start-here.svg
+cursor_theme: WhiteSur-cursors
 
 # hardware
 dell_aio: true
