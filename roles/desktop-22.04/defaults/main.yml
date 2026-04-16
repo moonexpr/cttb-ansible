@@ -2,6 +2,8 @@
 
 # lightdm configuration
 lightdm_hide_users: false
+lightdm_autologin_user: ""
+lightdm_autologin_timeout: 0
 
 # sw install
 wpsoffice: false
