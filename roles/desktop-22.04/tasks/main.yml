@@ -84,8 +84,10 @@
       sound
 
   # Autoremove before upgrade, to avoid unnecessary upgrades.
-  - name: apt autoremove before a fix is in
-    command: /usr/bin/apt-get autoremove -y
+  - name: apt autoremove before upgrade
+    apt:
+      autoremove: yes
+      purge: yes
     tags:
       - apt
       - apt_autoremove
@@ -107,8 +109,10 @@
       #line: "NoDisplay=true"
     #ignore_errors: yes
 
-  - name: apt autoremove before a fix is in
-    command: /usr/bin/apt-get autoremove -y
+  - name: apt autoremove after upgrade
+    apt:
+      autoremove: yes
+      purge: yes
     tags:
       - apt
       - apt_autoremove
