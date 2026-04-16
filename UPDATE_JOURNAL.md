@@ -317,11 +317,77 @@ USB drive written with `dd` but not appearing in F12 boot menu on dvgs-lab3 (Del
 
 ---
 
+## Role Refactor: desktop-22.04 & common-22.04
+
+**Date:** 2026-04-16
+
+Forked `desktop-20.04` → `desktop-22.04` and `common-20.04` → `common-22.04` for the 24.04 upgrade path. Applied Ansible 2.20 compatibility fixes and best-practice cleanup across both roles.
+
+### Changes made
+- `include:` → `include_tasks:` (all files)
+- Removed deprecated `warn: false` from command module
+- Replaced deprecated `apt_key` with signed-by keyring pattern (common, sw-browser)
+- `with_items` → `loop` everywhere
+- `state: latest` → `state: present` for stability
+- Fixed broken Zoom/Skype register logic (`== 0` → `is not changed`)
+- Replaced `shell: systemctl` with `systemd` module (sound.yml)
+- Added `changed_when: false` to non-idempotent commands (im-config, locale)
+- Added handlers for pulseaudio and lightdm
+- Consistent tag strategy across all task files
+- Removed legacy backup files (.0, .1.reordered, etc.)
+- Resolved all TODO items (lightdm autologin, wps-fonts, autoremove)
+
+### Software additions
+- Visual Studio Code (via Microsoft repo, signed-by keyring)
+- Blender, Inkscape, Kdenlive (creative tools for students)
+
+### Theme: WhiteSur
+Switched from Clearlooks/windos10-icons to WhiteSur (macOS Aqua-inspired). All theme references are now templatized via variables in `defaults/main.yml`.
+
+**ACTION REQUIRED — Upload to asset server before deployment:**
+
+Upload these tarballs to `ansible_assets_url` (same location as `windos10-icons-custom.tar.gz`):
+
+| File | Source | Extract to |
+|------|--------|------------|
+| `WhiteSur-gtk-theme.tar.gz` | https://github.com/vinceliuice/WhiteSur-gtk-theme | `WhiteSur/` in `/usr/share/themes/` |
+| `WhiteSur-icon-theme.tar.gz` | https://github.com/vinceliuice/WhiteSur-icon-theme | `WhiteSur/` in `/usr/share/icons/` |
+| `WhiteSur-cursors.tar.gz` | https://github.com/vinceliuice/WhiteSur-cursors | `WhiteSur-cursors/` in `/usr/share/icons/` |
+
+**How to build the tarballs:**
+```bash
+# GTK theme
+git clone https://github.com/vinceliuice/WhiteSur-gtk-theme.git
+cd WhiteSur-gtk-theme
+./install.sh -d /tmp/whitesur-gtk
+cd /tmp/whitesur-gtk && tar czf WhiteSur-gtk-theme.tar.gz WhiteSur/
+
+# Icon theme
+git clone https://github.com/vinceliuice/WhiteSur-icon-theme.git
+cd WhiteSur-icon-theme
+./install.sh -d /tmp/whitesur-icons
+cd /tmp/whitesur-icons && tar czf WhiteSur-icon-theme.tar.gz WhiteSur/
+
+# Cursors
+git clone https://github.com/vinceliuice/WhiteSur-cursors.git
+cd WhiteSur-cursors
+./install.sh
+cd /usr/share/icons && tar czf /tmp/WhiteSur-cursors.tar.gz WhiteSur-cursors/
+```
+
+Then copy to the asset server:
+```bash
+scp /tmp/WhiteSur-*.tar.gz pxe.cttb:/path/to/ansible_assets/
+```
+
+---
+
 ## Next Steps
 
 1. **Fix USB boot** — resolve the boot menu visibility issue
-2. **Autoinstall runs** — fully autonomous (~15-20 min)
-3. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
-4. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop
-5. **Get PXE server access** — add `pxe-server` to inventory, run `plays/netinstall-2404.yml`
-6. **Roll out** to remaining dvgs_cs_lab hosts
+2. **Upload WhiteSur tarballs** to asset server (see above)
+3. **Autoinstall runs** — fully autonomous (~15-20 min)
+4. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
+5. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
+6. **Get PXE server access** — add `pxe-server` to inventory, run `plays/netinstall-2404.yml`
+7. **Roll out** to remaining dvgs_cs_lab hosts
