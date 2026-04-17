@@ -45,5 +45,5 @@ ni_keyboard_layout: us
 
 # Wifi configuration for autoinstall (needed when hosts aren't wired)
 # Set per-site in group_vars. Leave ni_wifi_ssid empty to skip wifi config.
-ni_wifi_ssid: ""
+ni_wifi_ssid: "DRBU"
 ni_wifi_password: ""
