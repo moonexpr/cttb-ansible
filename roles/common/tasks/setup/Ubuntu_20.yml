@@ -1,0 +1,31 @@
+---
+# Ubuntu 20.04 specific tasks
+
+- name: add cttb custom ubuntu repo key
+  apt_key:
+    url: "{{ cttb_repo }}/cttb-repo.gpg.key"
+    state: present
+  tags:
+    - apt
+
+- name: add ansible repo key
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 7BB9C367
+    state: present
+  tags:
+    - apt
+
+- name: add ansible repo mirror
+  apt_repository:
+    repo: "deb {{ deb_mirror }}/ansible {{ ansible_distribution_release }} main"
+    state: present
+  tags:
+    - apt
+
+- name: remove old software
+  apt:
+    state: absent
+    name: "{{ common_extra_remove_sw | default([]) }}"
+  tags:
+    - remove_sw
