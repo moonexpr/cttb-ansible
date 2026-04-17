@@ -1,0 +1,5 @@
+---
+# Ubuntu 20.04 specific variables for desktop role
+
+# 20.04 does not have VSCode by default
+vscode: false

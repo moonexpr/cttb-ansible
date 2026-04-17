@@ -5,6 +5,17 @@
     copy:
       src: config/etc-skel/
       dest: /etc/skel/
+    tags:
+      - desktop
+
+  # gnome-shell: a few buttons at left, status on top. Default in Lubuntu 20.04 install. Not CTTB Lubuntu style, must remove it.
+  - name: remove gnome-shell
+    apt:
+      state: absent
+      name: gnome-shell
+    tags:
+      - desktop
+      - packages
 
   - block: # when icons on the desktop are defined
 
@@ -13,7 +24,7 @@
         path: /etc/skel/Desktop
         state: directory
         mode: 0755
-    
+
     - name: add desktop shortcuts
       copy:
         src: "desktop-shortcuts/{{item}}.desktop"
@@ -21,11 +32,12 @@
         mode: 0644
         owner: root
         group: root
-      with_items: "{{desktop_shortcuts}}"
+      loop: "{{desktop_shortcuts}}"
 
-    when: desktop_shortcuts
-    tags:
-      - shortcuts
+      when: desktop_shortcuts
+      tags:
+        - desktop
+        - shortcuts
 
   - name: configure lightdm
     template:
@@ -34,6 +46,7 @@
       mode: 0644
       owner: root
       group: root
+    notify: restart lightdm
     tags:
       - lightdm
 
@@ -44,6 +57,7 @@
       mode: 0644
       owner: root
       group: root
+    notify: restart lightdm
     tags:
       - lightdm
 
@@ -57,9 +71,9 @@
     tags:
       - lightdm
 
-  - name: deploy image background
+  - name: deploy login background image
     copy:
-      src: "pics/{{pic_bg}}"
+      src: "pics/{{desktop_login_background}}"
       dest: /usr/share/lubuntu/wallpapers/background.jpg
       mode: 0644
       owner: root
@@ -75,75 +89,140 @@
       owner: root
       group: root
     tags:
+      - desktop
       - icons
-
-  - name: add noobslab mirror key
-    apt_key:
-      keyserver: keyserver.ubuntu.com
-      id: "0xF59EAE4D"
-
-  - name: Add noobslab icon repository
-    apt_repository:
-      repo: "deb {{deb_mirror}}/noobslab-icons {{ansible_distribution_release}} main"
-      state: present
-
-  - name: Add noobslab theme repository
-    apt_repository:
-      repo: "deb {{deb_mirror}}/noobslab-themes {{ansible_distribution_release}} main"
-      state: present
-
-  - name: install noobs icons
-    apt:
-      name: "{{item}}"
-      state: present
-      install_recommends: no
-    with_items:
-      - super-flat-remix-icons
-      - vertex-icons
-      - arc-icons
 
   - name: install windos10 icons
     unarchive:
       remote_src: yes
       src: "{{ansible_assets_url}}/windos10-icons-custom.tar.gz"
       dest: /usr/share/icons/
+      # Use "creates" to skip copying if already exists:
+      creates: /usr/share/icons/windos10-icons
       owner: root
       group: root
+    tags:
+      - desktop
 
-  - name: install noobslab windos10-theme
-    apt:
-      name: windos-10-themes
-      state: present
-
+  # Lubuntu 20.04: mainly to configure 1 desktop only.
   - name: configure openbox
     template:
       src: openbox-rc.j2
-      dest: /usr/share/lubuntu/openbox/rc.xml
+      dest: /etc/xdg/openbox/lxqt-rc.xml
       mode: 0644
       owner: root
       group: root
+    tags:
+      - desktop
 
-  # from testing the xdg directory is there but not used in this case
+  # Lubuntu 20.04 uses lxqt-panel. System default conf file is at /usr/share/lxqt/panel.conf. This defines the panel's behavior and look and feel.
   - name: configure lxpanel
     template:
       src: lxpanel.j2
-      dest: /usr/share/lxpanel/profile/Lubuntu/panels/panel
+      dest: /usr/share/lxqt/panel.conf
       mode: 0644
       owner: root
       group: root
+    tags:
+      - desktop
+
+  # Use NetworkManager to manage networks instead of the default netplan on 20.04.
+  - name: remove netplan's default config file
+    file:
+      path: /etc/netplan/01-netcfg.yaml
+      state: absent
+    tags:
+      - network
+
+  - name: use NetworkManager instead of netplan to manage networks
+    copy:
+      src: config/01-network-manager-all.yaml
+      dest: /etc/netplan/
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - network
+
+  # Lubuntu 20.04 system default theme is in /usr/share/lxqt/lxqt.conf.
+  - name: configure desktop theme
+    template:
+      src: lxqt-conf.j2
+      dest: /usr/share/lxqt/lxqt.conf
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+
+  # Lubuntu 20.04 system default icon_theme is in /etc/gtk-3.0/settings.ini.
+  - name: configure default icon theme
+    template:
+      src: gtk-3.0-settings.j2
+      dest: /etc/gtk-3.0/settings.ini
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
 
   - name: configure lxsession
     template:
       src: lxsession.j2
-      dest: /etc/xdg/lxsession/Lubuntu/desktop.conf
+      dest: /usr/share/lxqt/session.conf
       mode: 0644
       owner: root
       group: root
+    tags:
+      - desktop
 
-  - name: configure pcmanfm
+  - name: configure pcmanfm-qt
     template:
       src: pcmanfm.j2
-      dest: /etc/xdg/pcmanfm/lubuntu/pcmanfm.conf
+      dest: /usr/share/pcmanfm-qt/lxqt/settings.conf
+      mode: 0644
+      owner: root
+    tags:
+      - desktop
+
+  - name: configure lxterminal
+    copy:
+      src: "config/lxterminal.conf"
+      dest: /usr/share/lxterminal/lxterminal.conf
       mode: 0644
       owner: root
       group: root
+    tags:
+      - desktop
+      - lxterminal
+
+  - include_tasks: app-menu.yml
+    tags:
+      - app_menu
+
+  # administrator acct: set keyboard shortcuts, autostarts an LXTerminal.
+  - name: admin acct customization -- prep, creating folders
+    file:
+      path: '{{ item }}'
+      state: directory
+      mode: 0755
+      owner: administrator
+      group: administrator
+    loop:
+        - /home/administrator/.config/lxqt/
+        - /home/administrator/.config/autostart/
+    tags:
+      - administrator
+
+  - name: admin acct customization -- key shortcuts, autostarts an LXTerminal
+    copy:
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
+      mode: 0644
+      owner: administrator
+      group: administrator
+    loop:
+        - { src: 'config/etc-skel/.config/lxqt/globalkeyshortcuts.conf', dest: '/home/administrator/.config/lxqt/' }
+        - { src: 'config/etc-skel/.config/autostart/LXTerminal.desktop', dest: '/home/administrator/.config/autostart/' }
+    tags:
+      - administrator

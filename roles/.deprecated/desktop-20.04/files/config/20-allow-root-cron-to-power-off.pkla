@@ -1,0 +1,6 @@
+[Allow root account to power off, suspend, etc. from crontab ]
+Identity=unix-user:root
+Action=org.freedesktop.login1.*
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes

@@ -1,0 +1,12 @@
+---
+
+  - name: restart pulseaudio
+    systemd:
+      name: pulseaudio.service
+      state: restarted
+      scope: system
+
+  - name: restart lightdm
+    service:
+      name: lightdm
+      state: restarted

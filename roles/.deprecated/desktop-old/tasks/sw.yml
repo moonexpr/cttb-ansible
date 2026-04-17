@@ -1,0 +1,81 @@
+---
+
+  - name: Add canonical third-party mirror
+    apt_repository:
+      repo: "deb {{deb_mirror}}/canonical {{ansible_distribution_release}} partner"
+      state: present
+    tags:
+      - deb_repo
+
+  # removing bunch of sw I don't need
+  - name: remove other apps
+    apt:
+      name: "{{item}}"
+      state: absent
+      purge: yes
+    with_items:
+      - whoopsie
+      - deja-dup
+      - gnome-keyring
+      - update-manager
+      - update-notifier
+      - lubuntu-software-center
+      - update-notifier-common
+      - sylpheed*
+      - cups-browsed
+
+  - name: install additional software
+    apt:
+      name: "{{item}}"
+      state: latest
+      install_recommends: yes
+    with_items:
+      - curl
+      - cups-client
+      - gimp
+      - ubuntu-restricted-addons
+      - ubuntu-restricted-extras
+      - vlc
+      - brasero
+      - audacity
+
+  - include: sw-office.yml
+    tags:
+      - office
+  - include: sw-browser.yml
+    tags:
+      - browser
+
+  - block: # install dropbox
+    - name: add dropbox apt key
+      apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: "1C61A2656FB57B7E4DE0F4C1FC918B335044912E"
+        state: present
+
+    - name: Add dropbox mirror
+      apt_repository:
+        repo: "deb {{deb_mirror}}/dropbox {{ansible_distribution_release}} main"
+        state: present
+
+    - name: install dropbox deps
+      apt:
+        name: python-gpgme
+        state: latest
+        install_recommends: yes
+
+    - name: install dropbox
+      apt:
+        name: dropbox
+        state: latest
+        install_recommends: yes
+    when: dropbox == true
+
+
+  - name: install skype
+    apt:
+      name: skype
+      state: latest
+      install_recommends: yes
+    when: skype == true
+

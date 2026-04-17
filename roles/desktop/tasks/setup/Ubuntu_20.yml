@@ -1,0 +1,12 @@
+---
+# Ubuntu 20.04 specific desktop tasks
+
+  - name: install ubuntu desktop minimal
+    apt:
+      state: latest
+      install_recommends: no
+      name:
+      - ubuntu-desktop-minimal
+    tags:
+      - packages
+      - lubuntu
