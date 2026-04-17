@@ -42,3 +42,8 @@ ni_ansible_ssh_pubkey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDYi3OOvRQAJnIZk+nT
 ni_timezone: US/Pacific
 ni_locale: en_US.UTF-8
 ni_keyboard_layout: us
+
+# Wifi configuration for autoinstall (needed when hosts aren't wired)
+# Set per-site in group_vars. Leave ni_wifi_ssid empty to skip wifi config.
+ni_wifi_ssid: ""
+ni_wifi_password: ""
