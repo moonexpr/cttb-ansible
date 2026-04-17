@@ -1,0 +1,25 @@
+---
+# Ubuntu 22.04 specific tasks
+
+- name: download cttb custom ubuntu repo key
+  get_url:
+    url: "{{ cttb_repo }}/cttb-repo.gpg.key"
+    dest: /usr/share/keyrings/cttb-repo.asc
+    mode: '0644'
+  tags:
+    - apt
+
+- name: download ansible repo key
+  get_url:
+    url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7BB9C367"
+    dest: /usr/share/keyrings/ansible.asc
+    mode: '0644'
+  tags:
+    - apt
+
+- name: add ansible repo mirror
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/ansible.asc] {{ deb_mirror }}/ansible {{ ansible_distribution_release }} main"
+    state: present
+  tags:
+    - apt
