@@ -71,33 +71,12 @@ echo "Extracting ISO..."
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR/iso" "$WORK_DIR/nocloud"
 
-# Mount and copy ISO contents (macOS)
-MOUNT_POINT=$(hdiutil attach -nomount "$ISO_FILE" 2>/dev/null | grep "Apple_ISO" | head -1 | awk '{print $1}')
-if [ -z "$MOUNT_POINT" ]; then
-    # Try without -nomount
-    MOUNT_POINT=$(hdiutil attach "$ISO_FILE" 2>/dev/null | tail -1 | awk '{print $1}')
-fi
-
-# Find the actual mount point
-MOUNT_DIR=$(hdiutil info | grep -A1 "$ISO_FILE" | grep "/Volumes" | awk -F'\t' '{print $NF}' | head -1)
-if [ -z "$MOUNT_DIR" ]; then
-    # Wait a moment for mount
-    sleep 2
-    MOUNT_DIR=$(mount | grep "iso9660\|cd9660\|udf" | tail -1 | awk -F' on ' '{print $2}' | awk -F' \\(' '{print $1}')
-fi
-
-if [ -z "$MOUNT_DIR" ]; then
-    echo "ERROR: Could not mount ISO. Trying xorriso extraction instead..."
-    if command -v xorriso &>/dev/null; then
-        xorriso -osirrox on -indev "$ISO_FILE" -extract / "$WORK_DIR/iso"
-    else
-        echo "ERROR: Install xorriso: brew install xorriso"
-        exit 1
-    fi
+# Extract ISO with xorriso (reliable on macOS; hdiutil often hangs on Linux ISOs)
+if command -v xorriso &>/dev/null; then
+    xorriso -osirrox on -indev "$ISO_FILE" -extract / "$WORK_DIR/iso"
 else
-    echo "ISO mounted at: $MOUNT_DIR"
-    cp -a "$MOUNT_DIR"/ "$WORK_DIR/iso/"
-    hdiutil detach "$MOUNT_DIR" 2>/dev/null || hdiutil detach "$MOUNT_POINT" 2>/dev/null || true
+    echo "ERROR: Install xorriso: brew install xorriso"
+    exit 1
 fi
 
 # Step 3: Inject autoinstall config
@@ -105,13 +84,13 @@ echo "Injecting autoinstall user-data..."
 cp "$USER_DATA" "$WORK_DIR/nocloud/user-data"
 cp "$META_DATA" "$WORK_DIR/nocloud/meta-data"
 
-# Modify GRUB config to add autoinstall parameter
+# Modify GRUB config to add autoinstall parameter and rename entry
 GRUB_CFG="$WORK_DIR/iso/boot/grub/grub.cfg"
 if [ -f "$GRUB_CFG" ]; then
-    # Add autoinstall and nocloud datasource to the first menuentry
-    sed -i.bak 's|linux\t/casper/vmlinuz ---|linux\t/casper/vmlinuz autoinstall ds=nocloud;s=/cdrom/nocloud/ ---|' "$GRUB_CFG"
-    # Also handle spaces instead of tabs
-    sed -i.bak 's|linux /casper/vmlinuz ---|linux /casper/vmlinuz autoinstall ds=nocloud;s=/cdrom/nocloud/ ---|' "$GRUB_CFG"
+    # Rename the first menu entry
+    sed -i.bak 's|"Try or Install Ubuntu Server"|"Autoinstall Ubuntu 24.04 Desktop (CTTB)"|' "$GRUB_CFG"
+    # Inject autoinstall kernel params (handle tabs and varying whitespace before ---)
+    sed -i.bak 's|/casper/vmlinuz *---|/casper/vmlinuz autoinstall ds=nocloud\\;s=/cdrom/nocloud/ ---|' "$GRUB_CFG"
     rm -f "$GRUB_CFG.bak"
     echo "GRUB config updated."
 fi
@@ -139,14 +118,16 @@ if command -v xorriso &>/dev/null; then
     echo "Repacking ISO with xorriso..."
     OUTPUT_ISO="$SCRIPT_DIR/ubuntu-24.04.2-autoinstall-dvgs-lab3.iso"
     xorriso -as mkisofs \
-        -r -V "Ubuntu 24.04 Autoinstall" \
+        -r -V 'Ubuntu 24.04 Autoinstall' \
         -o "$OUTPUT_ISO" \
-        --grub2-mbr "$WORK_DIR/iso/boot/grub/i386-pc/boot_hybrid.img" \
-        -partition_offset 16 \
+        --grub2-mbr --interval:local_fs:0s-15s:zero_mbrpt,zero_gpt:"$ISO_FILE" \
+        --protective-msdos-label \
+        -partition_cyl_align off -partition_offset 16 \
         --mbr-force-bootable \
-        -append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b "$WORK_DIR/iso/boot/grub/efi.img" \
+        -append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b \
+          --interval:local_fs:6264708d-6274851d::"$ISO_FILE" \
         -appended_part_as_gpt \
-        -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b7264689 \
+        -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
         -c '/boot.catalog' \
         -b '/boot/grub/i386-pc/eltorito.img' \
         -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
