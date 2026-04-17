@@ -382,12 +382,49 @@ scp /tmp/WhiteSur-*.tar.gz pxe.cttb:/path/to/ansible_assets/
 
 ---
 
+## 2026-04-17 — USB Autoinstall with DRBU Wifi
+
+### Changes made
+
+1. **Set DRBU as default wifi SSID** in `roles/netinstall-2404/defaults/main.yml` (`ni_wifi_ssid: "DRBU"`). DRBU is an open network (no password).
+
+2. **Added wifi config to USB user-data** in `build/autoinstall-usb/user-data` — added `wifis` block matching `wl*` interfaces with DRBU SSID.
+
+3. **Fixed `build-usb.sh` — three bugs:**
+   - **hdiutil hang:** Replaced unreliable `hdiutil attach` ISO extraction with direct `xorriso -osirrox` extraction. macOS `hdiutil` frequently hangs on Linux hybrid ISOs.
+   - **xorriso repack failure:** The `--grub2-mbr` flag referenced `boot_hybrid.img` which doesn't exist in the extracted ISO. Fixed to use `--interval:local_fs:0s-15s:...` to pull boot sectors directly from the source ISO (matching the working command from the previous session).
+   - **sed GRUB injection failure:** The sed pattern expected single space before `---` but the ISO has double space (`vmlinuz  ---`). Fixed with `*` glob. Also renamed the first menu entry to "Autoinstall Ubuntu 24.04 Desktop (CTTB)".
+
+### USB test on dvgs-lab3
+
+- Built repacked ISO on Mac, wrote to 59GB Flash Disk via `dd`
+- USB booted successfully on dvgs-lab3 (F12 boot menu)
+- GRUB menu appeared with stock entries (autoinstall params were NOT injected due to the sed bug — discovered after boot)
+- **cloud-init crashed** with `OSError: [Errno 5] Input/output error` — USB drive I/O failure during boot
+- Tried second boot — same I/O error
+- Root cause likely: xorriso repack corruption, slow/flaky USB drive, or USB port issue
+
+### Stock ISO test
+
+- SSH'd into dvgs-lab3 (still on old 20.04 install — autoinstall never ran, disk not wiped)
+- Wrote stock (unmodified) ISO directly to USB from `pxe.cttb` mirror via `curl | dd`
+- USB write was very slow (~15 MB/s) — completed after ~4 minutes
+- Machine powered off remotely after write
+
+### Status
+
+- The USB currently has the **stock ISO** (no autoinstall config)
+- The build script bugs are **fixed but untested** — need to rebuild and re-test
+- PXE server access requested (email drafted to Frank and Jerry)
+
+---
+
 ## Next Steps
 
-1. **Fix USB boot** — resolve the boot menu visibility issue
-2. **Upload WhiteSur tarballs** to asset server (see above)
-3. **Autoinstall runs** — fully autonomous (~15-20 min)
+1. **Rebuild USB** with fixed `build-usb.sh` and test autoinstall end-to-end
+2. **Get PXE server access** — SSH to `pxe.cttb` (email sent to Frank/Jerry)
+3. **Upload WhiteSur tarballs** to asset server (see above)
 4. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
 5. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
-6. **Get PXE server access** — add `pxe-server` to inventory, run `plays/netinstall-2404.yml`
-7. **Roll out** to remaining dvgs_cs_lab hosts
+6. **Deploy netinstall-2404** on PXE server once access is granted
+7. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
