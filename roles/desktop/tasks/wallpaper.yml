@@ -1,0 +1,58 @@
+---
+# Wallpaper rotation setup — syncs images and configures cron + feh rotation
+
+  - name: install feh for wallpaper rotation
+    apt:
+      name: feh
+      state: present
+    tags:
+      - wallpaper
+      - packages
+
+  - name: create wallpaper directory
+    file:
+      path: "{{ desktop_wallpaper_dir }}"
+      state: directory
+      mode: '0755'
+      owner: root
+      group: root
+    tags:
+      - wallpaper
+
+  - name: sync wallpaper images
+    synchronize:
+      src: wallpapers/
+      dest: "{{ desktop_wallpaper_dir }}/"
+      delete: no
+      recursive: yes
+    tags:
+      - wallpaper
+
+  - name: deploy wallpaper rotation script
+    copy:
+      content: |
+        #!/bin/bash
+        # Rotate wallpaper — picks a random image from the wallpaper directory
+        WALLPAPER_DIR="{{ desktop_wallpaper_dir }}"
+        IMAGE=$(find "$WALLPAPER_DIR" -type f \( -name '*.jpg' -o -name '*.png' -o -name '*.jpeg' \) | shuf -n 1)
+        if [ -n "$IMAGE" ]; then
+          DISPLAY=:0 feh --bg-fill "$IMAGE"
+        fi
+      dest: /usr/local/bin/rotate-wallpaper.sh
+      mode: '0755'
+      owner: root
+      group: root
+    tags:
+      - wallpaper
+
+  - name: configure wallpaper rotation cron job
+    copy:
+      content: |
+        # Rotate desktop wallpaper every {{ desktop_wallpaper_interval // 60 }} minutes
+        */{{ desktop_wallpaper_interval // 60 }} * * * * root /usr/local/bin/rotate-wallpaper.sh
+      dest: /etc/cron.d/wallpaper-rotation
+      mode: '0644'
+      owner: root
+      group: root
+    tags:
+      - wallpaper

@@ -1,0 +1,92 @@
+---
+
+#  - name: debug variables
+#    debug: var=hostvars[inventory_hostname] verbosity=4
+#    tags:
+#      - debug
+
+  #when installing mini stuff ends up there and network manager refuses to touch it
+  - name: fix network interfaces
+    copy:
+      content: |
+        auto lo
+        iface lo inet loopback
+      dest: /etc/network/interfaces
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: Disallow regular user to disable/modify networking
+    copy:
+      src: "config/10-network-manager.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/10-network-manager.pkla
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - network_manager_permission
+
+  - name: Allow root to power off/reboot/... in crontab
+    copy:
+      src: "config/20-allow-root-cron-to-power-off.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/20-allow-root-cron-to-power-off.pkla
+      mode: 0644
+      owner: root
+      group: root
+    when: allow_root_crontab_power_off is defined
+    tags:
+      - allow_root_crontab_power_off
+
+  # Add /bin/bash as GS "student" account shell
+  - name: Add /bin/bash as GS "student" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^student:x:2000:2000:Student:/home/student:.*"
+      replace: "student:x:2000:2000:Student:/home/student:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - gs_acct_shell
+
+  # Add /bin/bash as GS "teacher" account shell
+  - name: Add /bin/bash as GS "teacher" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^teacher:x:1999:1999:Teacher:/home/teacher:.*"
+      replace: "teacher:x:1999:1999:Teacher:/home/teacher:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - gs_acct_shell
+
+  # install all lubuntu core packages
+  - include: lubuntu.yml
+    tags:
+      - lubuntu
+
+  # customize the desktop based on cttb/dvgs/dvbs etc
+  - include: lookandfeel.yml
+    tags:
+      - lookandfeel
+
+  - include: sw.yml
+    tags:
+      - sw_install
+
+  - include: sw-goldendict.yml
+    when: goldendict is defined
+
+  # install languages support
+  - include: lang.yml
+    tags:
+      lang
+
+  # upgrade to latest for release
+  - name: update system
+    apt:
+      upgrade: full
+      update_cache: yes
+      cache_valid_time: 3600
+      autoremove: yes
+    tags:
+      - os_upgrade
+
+  # - include: fix-xorg-intel.yml
