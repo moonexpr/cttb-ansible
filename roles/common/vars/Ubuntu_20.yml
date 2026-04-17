@@ -1,0 +1,17 @@
+---
+# Ubuntu 20.04 specific variables
+
+common_extra_install_sw:
+  - mlocate
+  - net-tools
+  - binutils
+
+common_extra_remove_sw:
+  - snapd
+  - snap-confine
+  - transmission-common
+  - transmission-gtk
+  - transmission
+  - pidgin-data
+  - pidgin
+  - ubuntu-core-launcher
