@@ -7,3 +7,12 @@ plays/autogen.yml
 plays/.*
 group_vars/.*
 .DS_Store
+
+
+# claude framework (personal methods)
+PROJECT.md
+WORKPLAN.md
+.claude/agents/
+
+# sprint (ephemeral)
+SPRINT_PLAN.md
