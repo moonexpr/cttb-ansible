@@ -1,0 +1,66 @@
+---
+
+  - name: install lubuntu
+    apt:
+      name: "{{item}}"
+      state: latest
+      install_recommends: no
+      update_cache: yes
+      cache_valid_time: 3600
+    with_items:
+      - alsa-utils
+      - alsamixergui
+      - desktop-file-utils
+      - dmz-cursor-theme
+      - evince
+      - file-roller
+      - galculator
+      - gnome-system-tools
+      - indicator-application
+      - indicator-application-gtk2
+      - leafpad
+      - libpolkit-agent-1-0
+      - libpolkit-backend-1-0
+      - libpolkit-gobject-1-0
+      - libpolkit-qt-1-1
+      - libpolkit-qt5-1-1
+      - lightdm-gtk-greeter-settings
+      - light-locker
+      - light-locker-settings
+      - lubuntu-artwork
+      - lubuntu-core
+      - lubuntu-default-session
+      - lubuntu-default-settings
+      - lubuntu-lxpanel-icons
+      - lxappearance
+      - lxappearance-obconf
+      - lxinput
+      - lxlauncher
+      - lxpanel-indicator-applet-plugin
+      - lxrandr
+      - lxsession-default-apps
+      - lxsession-logout
+      - lxshortcut
+      - lxtask
+      - lxterminal
+      - network-manager
+      - network-manager-gnome
+      - obconf
+      - plymouth-theme-lubuntu-logo
+      - plymouth-theme-lubuntu-text
+      - pm-utils
+      - policykit-1
+      - policykit-1-gnome
+      - scrot
+      - simple-scan
+      - system-tools-backends
+      - xdg-user-dirs
+      - xfce4-power-manager
+      - xz-utils
+
+    # overrides lubuntu default triggering the LXDE session to be loaded which
+    # in turns make lxde pick up the wrong configs.
+  - name: remove lxde-common
+    apt:
+      name: lxde-common
+      state: absent

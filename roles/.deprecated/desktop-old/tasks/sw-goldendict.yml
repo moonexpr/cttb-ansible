@@ -1,0 +1,12 @@
+---
+
+  - name: install goldendict and dictionaries
+    apt:
+      name: "{{item}}"
+      state: latest
+    with_items:
+      - goldendict
+      - goldendict-dicts
+    tags:
+      - goldendict
+

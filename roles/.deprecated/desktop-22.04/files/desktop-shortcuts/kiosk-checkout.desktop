@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Terminal=false
+Type=Application
+Name=Koha
+Exec=/usr/bin/google-chrome --new-window http://library.igdvs.cttb/cgi-bin/koha/sco/sco-main.pl
+Icon=/usr/share/icons/koha.gif
+GenericName[en_US]=Check In/Out
+Comment[en_US]=Check In/Out
+Name[en_US]=Kiosk Check In/Out

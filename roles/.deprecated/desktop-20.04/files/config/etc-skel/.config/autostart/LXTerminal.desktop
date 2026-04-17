@@ -1,0 +1,6 @@
+[Desktop Entry]
+Exec=/usr/bin/lxterminal
+Name=LXTerminal
+OnlyShowIn=LXQt;
+Type=Application
+Version=1.0

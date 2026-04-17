@@ -1,0 +1,65 @@
+---
+# Customize the applications menu in lxqt-panel
+
+  - name: fix a desktop file missing ending newline
+    shell: cd /usr/share/applications; FILE1=light-locker-settings.desktop; tail -c1 $FILE1 | read -r _ || echo >> $FILE1
+
+  # First, update the lxqt-applications.menu file itself;
+  # Then, update the individual .desktop files.
+
+  - name: hide 'Lock Screen' from top menu
+    lineinfile:
+      path: /etc/xdg/menus/lxqt-applications.menu
+      regexp: '^\s+<Menuname(.*)>Screensaver</Menuname>'
+      line: '                        <!-- <Menuname\1>Screensaver</Menuname> -->'
+      backrefs: yes
+
+  - name: comment out the Screensaver category in the top menu
+    replace:
+      path: /etc/xdg/menus/lxqt-applications.menu
+      regexp: '^\s+<!-- Screensaver -->[^"]*<!-- End Screensaver -->\s+$'
+      replace: ''
+
+  - name: move 'Lock Screen' into Leave
+    lineinfile:
+      path: /usr/share/applications/lxqt-lockscreen.desktop
+      regexp: '^Categories='
+      line: Categories=System;X-Leave
+
+  #- name: hide Snap Store in the app menu
+    #lineinfile:
+      #dest: /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
+      #line: "NoDisplay=true"
+    #ignore_errors: yes
+
+  - name: hide apps in the app menu
+    lineinfile:
+      dest: "/usr/share/applications/{{ item }}.desktop"
+      line: "NoDisplay=true"
+    with_items:
+      - fcitx
+      # No need to show a generic Leave
+      - lxqt-leave
+      # Hibernate does not work.
+      - lxqt-hibernate
+      #- qlipper
+      # TeXInfo
+      - info
+      - vim
+      # Additional Device Drivers
+      - software-properties-drivers
+      - nm-connection-editor
+      - org.freedesktop.IBus.Setup
+      - im-config
+      - time
+      - software-properties-gtk
+      - users
+      - obconf
+      - fcitx-configtool
+      - lightdm-gtk-greeter-settings
+      - light-locker-settings
+      - gnome-language-selector
+      - xfce4-power-manager-settings
+      - lxinput
+      - lxqt-config-monitor
+    ignore_errors: yes
