@@ -9,10 +9,9 @@ group_vars/.*
 .DS_Store
 
 
-# claude framework (personal methods)
+# claude (confidential)
+CLAUDE.md
 PROJECT.md
 WORKPLAN.md
-.claude/agents/
-
-# sprint (ephemeral)
+.claude/
 SPRINT_PLAN.md
