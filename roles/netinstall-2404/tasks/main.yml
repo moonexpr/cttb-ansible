@@ -27,15 +27,15 @@
       - p7zip-full
       - pxelinux
 
-  - include: autoinstall.yml
+  - include_tasks: autoinstall.yml
     tags:
       - ni_autoinstall
 
-  - include: pxe.yml
+  - include_tasks: pxe.yml
     tags:
       - ni_pxe
 
-  - include: isos.yml
+  - include_tasks: isos.yml
     tags:
       - ni_isos
 
