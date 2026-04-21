@@ -1,6 +1,6 @@
 DEFAULT menu.c32
-TIMEOUT 100
-ONTIMEOUT BootLocal
+TIMEOUT {{ni_pxe_timeout|default(100)}}
+ONTIMEOUT {{ni_pxe_default|default('BootLocal')}}
 PROMPT 0
 NOESCAPE 1
 ALLOWOPTIONS 1
@@ -16,18 +16,19 @@ LABEL BootLocal
     Boot to local hard disk
     ENDTEXT
 {% for m in ni_2404_images %}
-MENU BEGIN {{m.os}} {{m.type}} ({{m.arch}}) - {{m.name}}
-MENU TITLE {{m.os}} {{m.type}} ({{m.arch}}) - {{m.name}}
-    LABEL Previous
-    MENU LABEL Previous Menu
+{% set path = m.os + "/" + m.type + "-" + m.name + "-" + m.arch %}
+{% for ai in m.autoinstall %}
+LABEL Autoinstall-{{m.name}}-{{ai.name}}
+    MENU LABEL {{ai.description}}
+    KERNEL {{ni_www}}/{{path}}/{{m.kernel_path}}
+    INITRD {{ni_www}}/{{path}}/{{m.initrd_path}}
+    APPEND noprompt ip=dhcp ipv6.disable=1 url={{ni_www}}/{{path}}.iso autoinstall ds=nocloud-net;s={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/ ---
     TEXT HELP
-    Return to previous menu
+    {{ai.description}} via autoinstall (Ubuntu 24.04 LTS)
     ENDTEXT
-    MENU EXIT
-    MENU SEPARATOR
-    MENU INCLUDE menu/{{m.os}}-{{m.type}}-{{m.arch}}-{{m.name}}.menu
-MENU END
 {% endfor %}
+{% endfor %}
+MENU SEPARATOR
 {% for m in ni_images|default([]) %}
 MENU BEGIN {{m.os}} {{m.type}} ({{m.arch}}) [legacy]
 MENU TITLE {{m.os}} {{m.type}} ({{m.arch}}) [legacy]

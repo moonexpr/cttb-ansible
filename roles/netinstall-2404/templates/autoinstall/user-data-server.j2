@@ -53,6 +53,7 @@ autoinstall:
   packages:
     - openssh-server
     - python3
+    - fish
   late-commands:
     - curtin in-target -- usermod -u {{ni_admin_uid}} {{ni_admin_user}}
     - curtin in-target -- mkdir -p /home/{{ni_admin_user}}/.ssh
