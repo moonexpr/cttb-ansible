@@ -415,16 +415,60 @@ scp /tmp/WhiteSur-*.tar.gz pxe.cttb:/path/to/ansible_assets/
 
 - The USB currently has the **stock ISO** (no autoinstall config)
 - The build script bugs are **fixed but untested** — need to rebuild and re-test
-- PXE server access requested (email drafted to Frank and Jerry)
+- PXE server access **granted** (see 2026-04-21 entry)
+
+---
+
+## 2026-04-21 — PXE Server Access & Deployment
+
+**Access:** `ssh rui-desktop2` (jump host) → `jc@pxe.cttb` (ProxyJump)
+**PXE server:** Ubuntu 16.04, IP 10.11.1.23, kernel 4.4.0-179
+**SSH key:** `~/.ssh/rui-desktop2` (passphrase in vault)
+**Sudo password:** stored in `inventory/group_vars/pxe-server.yml` (ansible-vault encrypted)
+
+### PXE access setup
+1. SSH key passphrase loaded via `ssh-add ~/.ssh/rui-desktop2`
+2. Public key copied to `jc@pxe.cttb:~/.ssh/authorized_keys` via jump host
+3. ProxyJump now works: `ssh -o ProxyJump=rui-desktop2 jc@pxe.cttb`
+4. Inventory updated: `[pxe-server]` group in `hosts_os_upgrade.ini`
+
+### Ansible compatibility issue
+PXE server has only Python 3.5 (Ubuntu 16.04 Xenial). Ansible 2.20 requires 3.9+. Deadsnakes PPA doesn't support Xenial for 3.10+. Deployed role manually via SSH instead.
+
+### netinstall-2404 deployed manually
+Rendered Jinja2 templates locally, rsynced to server, installed via sudo:
+
+- **Autoinstall profiles** → `/srv/netinstall/autoinstall/ubuntu/{desktop,server,desktop-minimal}/`
+  - `user-data` — full autoinstall config (identity, SSH keys, packages, late-commands)
+  - `meta-data` — empty (required by cloud-init)
+- **PXE menu** → `/srv/netinstall/menu/ubuntu-live-server-amd64-noble.menu`
+  - 3 entries: Desktop (lubuntu-desktop), Server, Desktop Minimal (lubuntu-core)
+- **pxelinux config** → `/srv/netinstall/pxelinux.cfg/default`
+  - Added "ubuntu live-server (amd64) - noble" submenu before existing entries
+  - Backed up original to `default.bak`
+- **ISO** — already present at `/var/www/html/ansible_assets/isos/ubuntu-24.04.2-live-server-amd64.iso`
+  - Copied to `/srv/netinstall/ubuntu-live-server-noble-amd64.iso`
+  - Extracted `casper/vmlinuz` and `casper/initrd` to `/srv/netinstall/ubuntu/live-server-noble-amd64/`
+  - Symlinked ISO for HTTP serving
+- **Post-install script** → `/srv/netinstall/autoinstall/postinst.sh`
+
+### Verification
+- All 3 autoinstall profiles serve via HTTP (200 OK)
+- Kernel/initrd accessible via HTTP (200 OK)
+- TFTP service active
+- PXE menu has 10 labels (existing + new 24.04 entries)
+
+### Repo changes
+- `inventory/hosts_os_upgrade.ini` — added `[pxe-server]` group
+- `inventory/group_vars/pxe-server.yml` — ansible-vault encrypted sudo password
+- `roles/netinstall-2404/tasks/main.yml` — `include:` → `include_tasks:` (3 occurrences)
 
 ---
 
 ## Next Steps
 
-1. **Rebuild USB** with fixed `build-usb.sh` and test autoinstall end-to-end
-2. **Get PXE server access** — SSH to `pxe.cttb` (email sent to Frank/Jerry)
-3. **Upload WhiteSur tarballs** to asset server (see above)
-4. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
-5. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
-6. **Deploy netinstall-2404** on PXE server once access is granted
-7. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
+1. **PXE boot test** — boot dvgs-lab3 via PXE (F12), select "Ubuntu 24.04 Desktop", verify autoinstall runs end-to-end
+2. **Upload WhiteSur tarballs** to asset server (see Role Refactor section)
+3. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
+4. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
+5. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
