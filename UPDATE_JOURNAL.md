@@ -467,7 +467,13 @@ Rendered Jinja2 templates locally, rsynced to server, installed via sudo:
 
 ## Next Steps
 
-1. **PXE boot test** — boot dvgs-lab3 via PXE (F12), select "Ubuntu 24.04 Desktop", verify autoinstall runs end-to-end
+1. **PXE boot test** — boot dvgs-lab3 via PXE, autoinstall auto-selects after 10s timeout
+
+### PXE deployment constraints
+- **PXE requires wired ethernet** — WiFi not available at boot time, no driver loaded
+- **Wired hosts lose WAN access** — campus LAN ports are on the internal network; WAN access requires WiFi
+- **Most cslab hosts are unwired** — USB autoinstall path needed for those; PXE only for hosts with ethernet
+- **After PXE install, host needs WiFi configured** to regain WAN access (or stay wired)
 2. **Upload WhiteSur tarballs** to asset server (see Role Refactor section)
 3. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
 4. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
