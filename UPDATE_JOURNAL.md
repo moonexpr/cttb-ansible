@@ -465,16 +465,63 @@ Rendered Jinja2 templates locally, rsynced to server, installed via sudo:
 
 ---
 
-## Next Steps
+## PXE Deployment Constraints
 
-1. **PXE boot test** — boot dvgs-lab3 via PXE, autoinstall auto-selects after 10s timeout
-
-### PXE deployment constraints
 - **PXE requires wired ethernet** — WiFi not available at boot time, no driver loaded
 - **Wired hosts lose WAN access** — campus LAN ports are on the internal network; WAN access requires WiFi
 - **Most cslab hosts are unwired** — USB autoinstall path needed for those; PXE only for hosts with ethernet
 - **After PXE install, host needs WiFi configured** to regain WAN access (or stay wired)
-2. **Upload WhiteSur tarballs** to asset server (see Role Refactor section)
-3. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
-4. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
-5. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
+- **DHCP server (dnsmasq.cttb at 10.11.1.19) lacks PXE options** — email sent to Frank requesting `dhcp-boot=pxelinux.0,,10.11.1.23`
+- **PXE server is an LXC container** (lxc-pxe) on the 10.11.0.0/16 network
+
+---
+
+## USB Autoinstall Issues Found and Fixed
+
+- **GRUB semicolon escaping:** `ds=nocloud;s=...` — GRUB treats `;` as command separator. Fixed by escaping as `\;` in grub.cfg. Used `perl -pi -e` because `sed` doesn't reliably preserve the backslash.
+- **WiFi in autoinstall crashes installer:** Live-server ISO lacks WiFi firmware. `wifis` block in netplan causes `netplan apply` to fail fatally. Removed WiFi from USB user-data. Fix for templates: add `optional: true` to wifis block.
+- **SQUASHFS corruption on USB:** The 59GB Flash Disk has flaky I/O — squashfs decompression errors during install. Same drive had I/O errors on 2026-04-17. **Need a different USB drive for future builds.**
+- **Local apt mirror (apt.cttb) missing noble:** Mirror only has focal/xenial. Debootstrap and package installs must use `archive.ubuntu.com` over WAN.
+
+---
+
+## 2026-04-21 — dvgs-lab3 Installed via SSH Debootstrap
+
+After USB autoinstall failed due to SQUASHFS corruption, installed Ubuntu 24.04 directly over SSH from the live installer shell:
+
+1. **Partitioned NVMe** — wiped all partitions (Windows + old Ubuntu), created 512M EFI + 238G root
+2. **Debootstrapped noble** — downloaded debootstrap 1.0.134 from archive.ubuntu.com (focal version lacked noble scripts), bootstrapped to /mnt
+3. **Installed in chroot:**
+   - linux-generic (6.8.0-110), grub-efi-amd64, shim-signed
+   - openssh-server, python3, network-manager
+   - lubuntu-desktop (Firefox snap skipped — snaps don't work in chroot, held with apt-mark)
+4. **Configured:**
+   - User `administrator` (UID 1000, password `a`, sudo NOPASSWD)
+   - SSH keys: ansible@cttb.us RSA + jc ed25519
+   - Hostname: dvgs-lab3
+   - Timezone: US/Pacific
+   - Default target: graphical
+   - fstab with UUIDs
+5. **GRUB installed** to EFI — warning about EFI vars not settable in chroot, may need manual boot menu selection on first boot
+6. **Rebooted** — awaiting first boot verification
+
+**Note:** UID is 1000 (not 999 as in autoinstall profile) because dnsmasq already had UID 999 in the debootstrap base. The cs-lab-2404 playbook should handle UID alignment.
+
+**Still TODO on dvgs-lab3 after first boot:**
+- Verify GRUB boots correctly
+- Verify desktop loads (LightDM/SDDM + Lubuntu)
+- Configure WiFi (NetworkManager) for WAN access
+- Run `cs-lab-2404.yml` playbook for full CTTB config
+
+---
+
+## Next Steps
+
+1. **Verify dvgs-lab3 first boot** — check GRUB, desktop, SSH access
+2. **Configure WiFi on dvgs-lab3** — needed for WAN access after disconnecting ethernet
+3. **Upload WhiteSur tarballs** to asset server (see Role Refactor section)
+4. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
+5. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
+6. **Fix USB autoinstall** — add `optional: true` to wifi in templates, get a reliable USB drive
+7. **Get PXE DHCP config** from Frank — unblocks PXE for wired hosts
+8. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
