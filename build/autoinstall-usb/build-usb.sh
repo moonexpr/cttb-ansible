@@ -89,8 +89,14 @@ GRUB_CFG="$WORK_DIR/iso/boot/grub/grub.cfg"
 if [ -f "$GRUB_CFG" ]; then
     # Rename the first menu entry
     sed -i.bak 's|"Try or Install Ubuntu Server"|"Autoinstall Ubuntu 24.04 Desktop (CTTB)"|' "$GRUB_CFG"
-    # Inject autoinstall kernel params (handle tabs and varying whitespace before ---)
+    # Inject autoinstall kernel params
+    # GRUB treats ; as command separator — must escape as \; in grub.cfg
     sed -i.bak 's|/casper/vmlinuz *---|/casper/vmlinuz autoinstall ds=nocloud\\;s=/cdrom/nocloud/ ---|' "$GRUB_CFG"
+    # Verify the backslash survived (sed escaping is tricky)
+    if ! grep -q 'ds=nocloud\\;' "$GRUB_CFG"; then
+        # Fallback: write it directly
+        sed -i.bak 's|ds=nocloud;|ds=nocloud\\;|' "$GRUB_CFG"
+    fi
     rm -f "$GRUB_CFG.bak"
     echo "GRUB config updated."
 fi
