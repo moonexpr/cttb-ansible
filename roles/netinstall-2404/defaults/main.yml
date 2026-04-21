@@ -47,3 +47,9 @@ ni_keyboard_layout: us
 # Set per-site in group_vars. Leave ni_wifi_ssid empty to skip wifi config.
 ni_wifi_ssid: "DRBU"
 ni_wifi_password: ""
+
+# PXE menu behavior
+# Set ni_pxe_default to a LABEL name to auto-select on timeout.
+# Use "BootLocal" for normal operation, "Autoinstall-noble-desktop" for upgrade rollouts.
+ni_pxe_default: "BootLocal"
+ni_pxe_timeout: 100
