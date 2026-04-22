@@ -1,0 +1,57 @@
+---
+# Trigger a one-time PXE network boot and reboot.
+#
+# Uses efibootmgr to set the UEFI "next boot" to the onboard NIC,
+# then reboots. The boot order reverts automatically after one boot.
+#
+# Usage:
+#   ansible-playbook plays/pxe-reboot.yml -l dvgs-lab3.cttb
+#   ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab
+#   ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab --check  # dry run
+
+- hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: ensure efibootmgr is installed
+      apt:
+        name: efibootmgr
+        state: present
+
+    - name: get EFI boot entries
+      command: efibootmgr
+      register: efi_entries
+      changed_when: false
+
+    - name: find NIC IPV4 boot entry
+      set_fact:
+        nic_boot_num: "{{ efi_entries.stdout | regex_search('Boot([0-9A-Fa-f]{4})\\* .*NIC.*IPV4', '\\1') | first }}"
+
+    - name: fail if NIC boot entry not found
+      fail:
+        msg: >
+          No 'Onboard NIC(IPV4)' entry found in efibootmgr output.
+          This machine may not support UEFI PXE boot or the entry name differs.
+          Output was: {{ efi_entries.stdout_lines }}
+      when: nic_boot_num is not defined or nic_boot_num == ''
+
+    - name: set next boot to NIC (one-time)
+      command: "efibootmgr -n {{ nic_boot_num }}"
+
+    - name: confirm next boot is set
+      command: efibootmgr
+      register: efi_verify
+      changed_when: false
+
+    - name: show next boot entry
+      debug:
+        msg: "Next boot set to {{ nic_boot_num }} (NIC IPV4). Rebooting into PXE."
+
+    - name: reboot into PXE
+      reboot:
+        msg: "PXE reboot triggered by Ansible pxe-reboot playbook"
+        pre_reboot_delay: 5
+        post_reboot_delay: 0
+        reboot_timeout: 0  # don't wait for machine to come back — it's reinstalling
+      ignore_errors: true  # machine won't come back on same OS
