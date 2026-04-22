@@ -515,7 +515,19 @@ After USB autoinstall failed due to SQUASHFS corruption, installed Ubuntu 24.04 
 
 ---
 
-## 2026-04-22 — UEFI PXE Boot Working
+## 2026-04-22 — UEFI PXE Boot, Theme Upload, Autoinstall Debugging
+
+### Session Timeline
+
+1. **Inspected dnsmasq DHCP config** — discovered PXE boot options already present (blocker from 04-21 was already resolved). Found both tagged (`tag:tftp`) and untagged `dhcp-boot` lines.
+2. **Identified UEFI vs BIOS mismatch** — Dell Inspiron 5400 AIO F12 boot menu is UEFI-only, but PXE server only had `pxelinux.0` (BIOS). Needed GRUB EFI bootloader.
+3. **Set up UEFI PXE boot** — extracted `grubx64.efi` from ISO (wrong one — no TFTP module), then got `grubnetx64.efi.signed` from `grub-efi-amd64-signed` package. Created GRUB config. Updated dnsmasq with architecture detection (`dhcp-match` for UEFI vs BIOS). GRUB menu appeared on dvgs-lab3.
+4. **Changed SSH_AUTH_SOCK** — Bitwarden SSH agent was blocking `ssh-add`. Switched to macOS launchd agent: `SSH_AUTH_SOCK=$(launchctl getenv SSH_AUTH_SOCK)`.
+5. **Hardened server access** — changed `jc` password to `a` on pxe.cttb and dnsmasq.cttb. Added `Match User jc` / `PasswordAuthentication no` to sshd_config on both servers. rui-desktop2 skipped (not a sudoer).
+6. **Built and uploaded WhiteSur theme tarballs** — cloned 3 GitHub repos, packaged GTK (Light+Dark), icons (from src/), cursors (from dist/). Uploaded to `pxe.cttb:/var/www/html/ansible_assets/`. All serving HTTP 200.
+7. **Verified avatar/background config** — group_vars correctly set per-site (`dvgs`, `dvbs`, `drbu`). Noted `desktop_login_background` var missing from dvbs/drbu group_vars (only have old `pic_bg`).
+8. **Documented full deployment pipeline** — PXE install → post-boot setup → Ansible playbook → verification checklist.
+9. **Debugged autoinstall failure** — kernel boots, ISO downloads, but installer drops to interactive mode. Cloud-init log showed `nocloud-net` deprecated in cloud-init 24.4. Changed to `ds=nocloud;seedfrom=URL` — still not triggering. Updated pxelinux menus too. **Unresolved — end of session.**
 
 ### Problem
 
