@@ -471,7 +471,7 @@ Rendered Jinja2 templates locally, rsynced to server, installed via sudo:
 - **Wired hosts lose WAN access** — campus LAN ports are on the internal network; WAN access requires WiFi
 - **Most cslab hosts are unwired** — USB autoinstall path needed for those; PXE only for hosts with ethernet
 - **After PXE install, host needs WiFi configured** to regain WAN access (or stay wired)
-- **DHCP server (dnsmasq.cttb at 10.11.1.19) lacks PXE options** — email sent to Frank requesting `dhcp-boot=pxelinux.0,,10.11.1.23`
+- **DHCP server (dnsmasq.cttb at 10.11.1.19)** — PXE options were already present; updated to support UEFI (see 2026-04-22 entry)
 - **PXE server is an LXC container** (lxc-pxe) on the 10.11.0.0/16 network
 
 ---
@@ -515,13 +515,248 @@ After USB autoinstall failed due to SQUASHFS corruption, installed Ubuntu 24.04 
 
 ---
 
+## 2026-04-22 — UEFI PXE Boot Working
+
+### Problem
+
+Dell Inspiron 5400 AIO machines are UEFI-only (no legacy BIOS boot). The existing PXE infrastructure served `pxelinux.0` — a BIOS-only bootloader. UEFI clients selecting "Onboard NIC (IPV4)" from F12 boot menu received `pxelinux.0` which they couldn't execute.
+
+### Discovery: DHCP PXE already configured
+
+Inspected `/etc/dnsmasq.conf` on the DHCP server (dnsmasq.cttb). Found PXE boot options were **already present** — both a tagged and untagged `dhcp-boot` line pointing to `pxelinux.0` at `10.11.1.23`. The blocker from 2026-04-21 ("email sent to Frank") was already resolved.
+
+### UEFI PXE setup
+
+**On pxe.cttb (TFTP server at 10.11.1.23):**
+
+1. Extracted `EFI/boot/grubx64.efi` from Ubuntu 24.04 ISO — **failed**: this is the local-disk GRUB binary, lacks TFTP module. GRUB loaded but dropped to shell with "disk 'tftp,10.11.1.23' not found."
+
+2. Downloaded `grub-efi-amd64-signed` package, extracted `grubnetx64.efi.signed` — the **network-capable** GRUB binary with TFTP support built in. Placed at `/srv/netinstall/grubx64.efi`.
+
+3. Created GRUB config at `/srv/netinstall/boot/grub/grub.cfg` (UEFI GRUB's `prefix` is `(tftp,10.11.1.23)/boot/grub` — discovered via `set` command in GRUB shell):
+
+```
+set default=0
+set timeout=10
+
+menuentry "Ubuntu 24.04 Desktop (CTTB)" {
+    linux ubuntu/live-server-noble-amd64/casper/vmlinuz noprompt ip=dhcp ipv6.disable=1 url=http://pxe.cttb/netinstall/ubuntu-live-server-noble-amd64.iso autoinstall "ds=nocloud-net;s=http://pxe.cttb/netinstall/autoinstall/ubuntu/desktop/"
+    initrd ubuntu/live-server-noble-amd64/casper/initrd
+}
+# + Server and Desktop Minimal entries
+```
+
+**On dnsmasq.cttb (DHCP server):**
+
+4. Backed up `/etc/dnsmasq.conf` → `/etc/dnsmasq.conf.bak.20260422`
+
+5. Replaced `dhcp-boot` lines with architecture-aware config:
+```
+# Architecture detection
+dhcp-match=set:efi-x86_64,option:client-arch,7
+dhcp-match=set:efi-x86_64,option:client-arch,9
+dhcp-match=set:bios,option:client-arch,0
+dhcp-boot=tag:efi-x86_64,grubx64.efi,,10.11.1.23
+dhcp-boot=tag:bios,pxelinux.0,,10.11.1.23
+```
+
+6. Restarted dnsmasq — config test passed, service active.
+
+### Files on PXE server
+
+| File | Purpose |
+|------|---------|
+| `/srv/netinstall/grubx64.efi` | Network GRUB EFI binary (`grubnetx64.efi.signed` from `grub-efi-amd64-signed` package) |
+| `/srv/netinstall/grubx64.efi.bak-local` | Backup of the non-network ISO-extracted binary (doesn't work for PXE) |
+| `/srv/netinstall/boot/grub/grub.cfg` | UEFI GRUB menu config |
+| `/srv/netinstall/grub/grub.cfg` | Copy of above (kept in sync) |
+
+### Backups
+
+| File | Location |
+|------|----------|
+| `/etc/dnsmasq.conf.bak.20260422` | dnsmasq.cttb — pre-UEFI dnsmasq config |
+| `/etc/dnsmasq.conf.sed-bak` | dnsmasq.cttb — sed auto-backup |
+| `/srv/netinstall/grubx64.efi.bak-local` | pxe.cttb — ISO-extracted GRUB (non-network) |
+
+### Result
+
+UEFI PXE boot fully working on dvgs-lab3. Machine selected "Onboard NIC (IPV4)" from F12 menu → received `grubx64.efi` via TFTP → loaded GRUB menu with 3 autoinstall options → Desktop selected → autoinstall running.
+
+### Key lesson: `grubx64.efi` vs `grubnetx64.efi.signed`
+
+- `grubx64.efi` from the ISO = local disk boot only, no network modules
+- `grubnetx64.efi.signed` from `grub-efi-amd64-signed` package = has TFTP/HTTP modules for network boot
+- The `prefix` GRUB variable reveals where it looks for config — use `set` at the GRUB shell to discover
+
+### Access used
+
+- **pxe.cttb**: `ssh jc@pxe.cttb` (direct, no jump host needed with key loaded)
+- **dnsmasq.cttb**: `ssh jc@dnsmasq.cttb`, sudo password provided by user
+
+### WhiteSur theme tarballs uploaded
+
+Built from GitHub repos, uploaded to `pxe.cttb:/var/www/html/ansible_assets/`:
+
+| File | Size | Contents |
+|------|------|----------|
+| `WhiteSur-gtk-theme.tar.gz` | 849K | `WhiteSur/` (Light) + `WhiteSur-Dark/` |
+| `WhiteSur-icon-theme.tar.gz` | 6.6M | `WhiteSur/` (from src/) |
+| `WhiteSur-cursors.tar.gz` | 1.7M | `WhiteSur-cursors/` (from dist/) |
+
+All serve HTTP 200 at `http://pxe.cttb/ansible_assets/WhiteSur-*.tar.gz`.
+
+### CURRENT BLOCKER: Autoinstall not triggering on 24.04
+
+**Status:** UEFI PXE boot works (GRUB menu loads, kernel boots), but the Ubuntu installer drops to interactive mode instead of running autoinstall.
+
+**Root cause investigation:**
+
+1. First attempt used `ds=nocloud-net;s=URL` — cloud-init log showed `DataSourceNoCloud only uses seeds starting with ('/', 'file://') - will try to use http://... in the network stage` but then exited with "No local datasource found" and fell back to `DataSourceNone`. The `nocloud-net` datasource type was **deprecated in cloud-init 24.4** (shipped with Ubuntu 24.04).
+
+2. Changed to `ds=nocloud;seedfrom=URL` (new syntax) — still drops to interactive installer. `/proc/cmdline` shows params are passed correctly. Not yet debugged with cloud-init logs on this attempt.
+
+**Kernel cmdline (confirmed correct via /proc/cmdline):**
+```
+BOOT_IMAGE=/ubuntu/live-server-noble-amd64/casper/vmlinuz noprompt ip=dhcp ipv6.disable=1 url=http://pxe.cttb/netinstall/ubuntu-live-server-noble-amd64.iso autoinstall ds=nocloud;seedfrom=http://pxe.cttb/netinstall/autoinstall/ubuntu/desktop/
+```
+
+**What works:**
+- UEFI PXE boot — GRUB menu loads ✓
+- Kernel/initrd load via TFTP ✓
+- ISO downloads via HTTP (`url=`) ✓
+- Installer boots ✓
+- user-data accessible at URL (HTTP 200, correct format) ✓
+
+**What doesn't work:**
+- cloud-init doesn't fetch user-data from network URL
+- Installer falls back to interactive mode
+
+**Next things to try:**
+- Check cloud-init logs after `seedfrom=` attempt for specific error
+- Try `ds=nocloud\;seedfrom=URL` with escaped semicolon (GRUB may be splitting on `;` despite quotes)
+- Try `cloud-config-url=http://URL/user-data` as alternative kernel param
+- Check if Ubuntu 24.04 subiquity requires `autoinstall` data embedded differently (e.g., in the ISO itself via `/cdrom/` path)
+- Test whether the live installer's cloud-init even reaches the network stage before subiquity takes over
+
+---
+
+## Full Deployment Pipeline: Lab Machine Upgrade to 24.04
+
+End-to-end procedure for upgrading a lab machine from any state to Ubuntu 24.04 with full CTTB configuration.
+
+### Prerequisites
+
+- Machine connected via **wired ethernet** (PXE requires it; WiFi not available at boot)
+- PXE server deployed (see 2026-04-21 entry)
+- UEFI GRUB config deployed (see 2026-04-22 entry)
+- WhiteSur theme tarballs on asset server (uploaded 2026-04-22)
+- Ansible environment: `source utils/setup-env`
+
+### Phase 1: PXE Install (hands-on, ~20 min)
+
+1. **Boot to PXE:** Power on machine → F12 → **Onboard NIC (IPV4)**
+2. **GRUB menu appears:** "Ubuntu 24.04 Desktop (CTTB)" auto-selects after 10s
+3. **Autoinstall runs unattended:**
+   - Wipes entire disk (`storage: layout: direct`)
+   - Installs Ubuntu 24.04 base + `lubuntu-desktop` + `openssh-server` + `python3` + `fish` + `network-manager`
+   - Creates `administrator` user (UID 999, password from vault, NOPASSWD sudo)
+   - Injects ansible SSH public key
+   - Sets graphical.target as default
+4. **Machine reboots** into fresh 24.04 desktop
+
+### Phase 2: Post-boot Setup (SSH, ~5 min)
+
+1. **Verify SSH access:**
+   ```bash
+   ansible dvgs-labN.cttb -m ping
+   ```
+2. **Set hostname** (autoinstall sets it to `computer` by default):
+   ```bash
+   ansible dvgs-labN.cttb -m hostname -a "name=dvgs-labN"
+   ```
+3. **Update inventory IP** if needed in `inventory/hosts_os_upgrade.ini`
+4. **Configure WiFi** (if machine needs WAN access and will be disconnected from ethernet):
+   ```bash
+   ssh administrator@dvgs-labN.cttb
+   nmcli dev wifi connect "DRBU" ifname wlan0   # open network
+   ```
+
+### Phase 3: Ansible Playbook (SSH, ~15-30 min)
+
+```bash
+source utils/setup-env
+ansible-playbook plays/cs-lab-2404.yml --limit dvgs-labN.cttb --diff
+```
+
+This runs 5 roles in order:
+
+| Role | What it configures |
+|------|--------------------|
+| `desktop` | Lubuntu desktop: APT packages, WhiteSur GTK/icon/cursor themes, login avatar & background (per-site via group_vars), LightDM config, locale, language packs, browser (Chrome/Firefox), sound, wallpaper rotation |
+| `cups-client` | CUPS print client: removes local cupsd, configures remote print server (`cups_srv`), sets default queue |
+| `ldap-client` | LDAP authentication: installs `libnss-ldapd`/`nslcd`, configures PAM for LDAP login, NSS, access control via `access.conf` |
+| `nfs-home` | NFS home directories: installs `autofs` + `nfs-common`, configures auto.master/auto.nfs for network home dirs, `unburden-home-dir` for cache offloading |
+| `cttb-ca-client` | CA certificates: installs CTTB internal CA cert for HTTPS trust (apt mirror, internal services) |
+
+### Phase 4: Verification (manual, ~10 min)
+
+- [ ] Desktop loads (LightDM greeter with correct avatar/background)
+- [ ] LDAP login works (log in as an LDAP user, not just `administrator`)
+- [ ] Home directory mounts via NFS
+- [ ] Printing works (`lpstat -p` shows remote queues)
+- [ ] Theme correct (WhiteSur GTK, icons, cursors)
+- [ ] CA cert trusted (`curl https://apt.cttb` — no cert error)
+- [ ] WiFi connects after ethernet removed (if applicable)
+
+### Per-site Customization
+
+Avatar and background are set automatically via group_vars:
+
+| Group | Avatar | Background |
+|-------|--------|------------|
+| `dvgs` | `avatar-dvgs.png` | `bg-dvgs.jpg` |
+| `dvbs` | `avatar-dvbs.png` | `bg-dvbs.jpg` |
+| `drbu` | `avatar-drbu.png` | `bg-drbu.jpg` |
+
+Other per-site vars: `cups_srv`, `cups_default_queue`, `nfs_homes_host`, `nfs_homes_export`, LDAP server, DNS server.
+
+### Batch Rollout
+
+To deploy multiple machines at once:
+
+```bash
+# All DVGS lab machines
+ansible-playbook plays/cs-lab-2404.yml --limit dvgs_cs_lab --diff
+
+# All labs at all sites
+ansible-playbook plays/cs-lab-2404.yml --diff
+
+# Specific machines
+ansible-playbook plays/cs-lab-2404.yml --limit "dvgs-lab1.cttb,dvgs-lab2.cttb" --diff
+```
+
+PXE install is per-machine (physical F12 boot), but Phase 3 (Ansible) can run against all machines in parallel once they're PXE'd and SSH-reachable.
+
+### Known Issues / Workarounds
+
+- **Hostname:** Autoinstall sets hostname to `computer` — must be set manually or via Ansible before playbook run (playbook may depend on hostname for group membership)
+- **WiFi:** PXE install is wired-only. WiFi must be configured post-install if machine needs WAN access
+- **UID mismatch:** Autoinstall creates UID 999; debootstrap installs may get UID 1000. The desktop role should handle alignment
+- **apt mirror:** `apt.cttb` only has focal/xenial. Noble packages come from `archive.ubuntu.com` over WAN. Machines need internet access during playbook run
+- **GRUB semicolons:** `ds=nocloud-net;s=...` must use `\;` in GRUB configs (both PXE and USB)
+
+---
+
 ## Next Steps
 
-1. **Verify dvgs-lab3 first boot** — check GRUB, desktop, SSH access
+1. **Monitor dvgs-lab3 autoinstall** — verify completion, first boot, desktop
 2. **Configure WiFi on dvgs-lab3** — needed for WAN access after disconnecting ethernet
-3. **Upload WhiteSur tarballs** to asset server (see Role Refactor section)
+3. ~~**Upload WhiteSur tarballs** to asset server~~ — done 2026-04-22
 4. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
 5. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
 6. **Fix USB autoinstall** — add `optional: true` to wifi in templates, get a reliable USB drive
-7. **Get PXE DHCP config** from Frank — unblocks PXE for wired hosts
-8. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
+7. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
+8. **Codify UEFI GRUB in netinstall-2404 role** — add grub.cfg template, grubnetx64.efi deployment task
+9. **Fix autoinstall hostname** — template per-host user-data or add hostname task to playbook
+10. **Add `desktop_login_background` to dvbs/drbu group_vars** — currently only dvgs has the new variable
