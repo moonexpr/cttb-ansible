@@ -672,21 +672,22 @@ End-to-end procedure for upgrading a lab machine from any state to Ubuntu 24.04 
 Use `efibootmgr` to set a one-time network boot — no physical access needed:
 
 ```bash
-# Single machine: find NIC boot entry and set as next boot
-ssh administrator@dvgs-labN.cttb 'sudo efibootmgr | grep -i "NIC.*IPV4"'
-# Example output: Boot0005* Onboard NIC(IPV4)
+# Single machine
+ansible-playbook plays/pxe-reboot.yml -l dvgs-lab3.cttb
 
-ssh administrator@dvgs-labN.cttb 'sudo efibootmgr -n 0005 && sudo reboot'
+# Dry run (shows what would happen without rebooting)
+ansible-playbook plays/pxe-reboot.yml -l dvgs-lab3.cttb --check
+
+# Batch: all DVGS lab machines
+ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab
+
+# All labs at all sites
+ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
 ```
 
-The `-n` flag is **one-shot** — the machine PXE boots once, then boot order reverts to disk automatically after install.
+The playbook installs `efibootmgr` if missing, finds the NIC(IPV4) boot entry automatically, sets it as one-shot next boot (`-n`), and reboots. Boot order reverts to disk after one boot.
 
-```bash
-# Batch: trigger PXE reboot on all DVGS lab machines
-ansible dvgs_cs_lab -b -m shell -a 'NICBOOT=$(efibootmgr | grep -i "NIC.*IPV4" | grep -oP "Boot\K[0-9A-Fa-f]{4}") && efibootmgr -n $NICBOOT && reboot'
-```
-
-**Requirements:** Machine must be SSH-reachable and running a UEFI OS with `efibootmgr` installed. Works on the existing 20.04 installs.
+**Requirements:** Machine must be SSH-reachable and running a UEFI OS. Works on the existing 20.04 installs.
 
 #### Fallback: manual F12 boot
 
