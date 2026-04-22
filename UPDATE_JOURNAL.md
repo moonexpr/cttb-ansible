@@ -665,17 +665,44 @@ End-to-end procedure for upgrading a lab machine from any state to Ubuntu 24.04 
 - WhiteSur theme tarballs on asset server (uploaded 2026-04-22)
 - Ansible environment: `source utils/setup-env`
 
-### Phase 1: PXE Install (hands-on, ~20 min)
+### Phase 1: PXE Install (~20 min)
 
-1. **Boot to PXE:** Power on machine → F12 → **Onboard NIC (IPV4)**
-2. **GRUB menu appears:** "Ubuntu 24.04 Desktop (CTTB)" auto-selects after 10s
-3. **Autoinstall runs unattended:**
+#### Triggering PXE boot remotely (primary method)
+
+Use `efibootmgr` to set a one-time network boot — no physical access needed:
+
+```bash
+# Single machine: find NIC boot entry and set as next boot
+ssh administrator@dvgs-labN.cttb 'sudo efibootmgr | grep -i "NIC.*IPV4"'
+# Example output: Boot0005* Onboard NIC(IPV4)
+
+ssh administrator@dvgs-labN.cttb 'sudo efibootmgr -n 0005 && sudo reboot'
+```
+
+The `-n` flag is **one-shot** — the machine PXE boots once, then boot order reverts to disk automatically after install.
+
+```bash
+# Batch: trigger PXE reboot on all DVGS lab machines
+ansible dvgs_cs_lab -b -m shell -a 'NICBOOT=$(efibootmgr | grep -i "NIC.*IPV4" | grep -oP "Boot\K[0-9A-Fa-f]{4}") && efibootmgr -n $NICBOOT && reboot'
+```
+
+**Requirements:** Machine must be SSH-reachable and running a UEFI OS with `efibootmgr` installed. Works on the existing 20.04 installs.
+
+#### Fallback: manual F12 boot
+
+If the machine is powered off or SSH is unreachable, boot manually:
+1. Power on → **F12** → **Onboard NIC (IPV4)**
+
+#### What happens after PXE boot
+
+1. **GRUB menu appears:** "Ubuntu 24.04 Desktop (CTTB)" auto-selects after 10s
+2. **Autoinstall runs unattended:**
    - Wipes entire disk (`storage: layout: direct`)
    - Installs Ubuntu 24.04 base + `lubuntu-desktop` + `openssh-server` + `python3` + `fish` + `network-manager`
    - Creates `administrator` user (UID 999, password from vault, NOPASSWD sudo)
    - Injects ansible SSH public key
    - Sets graphical.target as default
-4. **Machine reboots** into fresh 24.04 desktop
+3. **Machine reboots** into fresh 24.04 desktop
 
 ### Phase 2: Post-boot Setup (SSH, ~5 min)
 
