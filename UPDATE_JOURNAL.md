@@ -788,15 +788,162 @@ PXE install is per-machine (physical F12 boot), but Phase 3 (Ansible) can run ag
 
 ---
 
+## 2026-04-23 — Autoinstall Datasource Fix (Attempt 3)
+
+### Problem
+
+Autoinstall still not triggering. PXE GRUB menu loads, kernel boots, ISO downloads, but installer drops to interactive language picker (screenshot confirmed). Same blocker as 04-22.
+
+### Root Cause Analysis
+
+Web research across multiple confirmed-working Ubuntu 24.04 PXE autoinstall setups revealed three issues with our kernel cmdline:
+
+1. **Semicolon escaping method wrong**: We used `ds=nocloud\;s=URL` (backslash escape). All working GRUB configs use `ds="nocloud-net;s=URL"` (double-quote escaping). GRUB's `\;` may not pass the semicolon correctly to `/proc/cmdline`.
+
+2. **Switched to `nocloud` too early**: We changed `nocloud-net` → `nocloud` based on the cloud-init 24.x deprecation notice. But every confirmed-working 24.04 PXE setup still uses `nocloud-net`. The deprecation warning is cosmetic — `nocloud-net` still works and `nocloud` alone may only look for local seeds, not network URLs.
+
+3. **Missing `cloud-config-url=` fallback**: The Griffon's IT Library guide (the only confirmed-working example using ISO download via HTTP, same as our setup) uses **both** `ds="nocloud-net;s=URL/"` AND `cloud-config-url=URL/user-data` together. Belt-and-suspenders — if cloud-init's nocloud datasource fails to parse the ds= param, cloud-config-url provides a direct pointer to the user-data file.
+
+### Sources
+
+- [Griffon's IT Library — Ubuntu 24.04 Server PXE Autoinstall](https://c-nergy.be/blog/?p=20076) — uses `iso-url=` + `ds="cloud-net;s=URL"` + `cloud-config-url=URL/user-data`
+- [Griffon's IT Library — Ubuntu 24.04 Desktop PXE Autoinstall](https://c-nergy.be/blog/?p=20051) — uses NFS boot + `cloud-config-url=URL`
+- [Erwan Dufour — Ubuntu 24.04 PXE Autoinstall](https://erwan.dufour.io/devops/2024/08/31/autoInstallUbuntu.html) — uses NFS boot + `ds="nocloud-net;s=URL"` with double quotes
+- [Kikyo-chan — Autoinstall Ubuntu 24.04 LTS](https://github.com/Kikyo-chan/Autoinstall-Ubuntu24.04-LTS-Server-and-Desktop) — iPXE with `ds=nocloud-net\;s=URL` + `cloud-config-url=/dev/null`
+
+### Changes Made
+
+**GRUB EFI template** (`roles/netinstall-2404/templates/pxe/grub-efi-2404.cfg.j2`):
+```
+# Before (attempt 2)
+linux ... autoinstall ds=nocloud\;s={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/
+
+# After (attempt 3)
+linux ... autoinstall ds="nocloud-net;s={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/" cloud-config-url={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/user-data
+```
+
+**Both pxelinux templates** (menu + default): same change, minus the quotes (semicolons aren't special in SYSLINUX):
+```
+APPEND ... autoinstall ds=nocloud-net;s={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/ cloud-config-url={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/user-data ---
+```
+
+**Also in this session (from previous session's unfinished work):**
+- Added `optional: true` to wifi netplan block in all 3 user-data templates (fixes 04-17 installer crash)
+- Added `ni_www` variable to defaults/main.yml
+- Added GRUB EFI config directory + template tasks to pxe.yml
+
+### Rendered GRUB line for PXE server
+
+```
+linux ubuntu/live-server-noble-amd64/casper/vmlinuz noprompt ip=dhcp ipv6.disable=1 url=http://pxe.cttb/netinstall/ubuntu-live-server-noble-amd64.iso autoinstall ds="nocloud-net;s=http://pxe.cttb/netinstall/autoinstall/ubuntu/desktop/" cloud-config-url=http://pxe.cttb/netinstall/autoinstall/ubuntu/desktop/user-data
+```
+
+### Status
+
+Templates updated in repo. **Not yet deployed to PXE server** — need to SSH in and update `/srv/netinstall/boot/grub/grub.cfg` with the rendered line above, then PXE reboot dvgs-lab3.
+
+---
+
+## 2026-04-23 — Core Services Audit & Gitolite Access
+
+### Infrastructure Access Audit
+
+Performed a full audit of all CTTB core infrastructure to map services and establish SSH access. Started from `administrator@dnsmasq.cttb` (password `4m1t0f0`) — discovered most hosts are pubkey-only.
+
+**Access path discovered:**
+1. `~/.ssh/rui-desktop2` key is passphrase-protected (AES-256-CTR, bcrypt). Passphrase: `a` (loaded via `expect` + `ssh-add`).
+2. rui-desktop2 → `johnchandara` account → can see `/home/kit.chong` but can't sudo (password unknown).
+3. Added ed25519 pubkey directly to `administrator@srv-vm.cttb` and `administrator@srv-gw.cttb` (manually by user).
+4. Later added pubkey to `administrator@srv-nas.cttb`.
+
+### srv-vm (10.11.1.3) — Primary LXD Host
+
+Ubuntu 16.04. Runs 15 LXC containers:
+
+| Container | IP | OS | Services |
+|-----------|-----|-----|----------|
+| dnsmasq | 10.11.1.19 | 16.04 | dnsmasq (DHCP+DNS) |
+| ldap | 10.11.1.25 | 16.04 | slapd (OpenLDAP) |
+| asterisk | 10.11.6.1 / 10.11.1.32 | 16.04 | asterisk, apache2, tftpd-hpa |
+| cups-cttb | 10.11.1.36 | 16.04 | cups, colord |
+| cups-dvbs | 10.11.1.37 | 16.04 | cups, colord |
+| cups-dvgs | 10.11.1.38 | 16.04 | cups, colord |
+| ub-adult | 10.11.1.29 | 16.04 | unbound (DNS filter) |
+| ub-igdvs | 10.11.1.28 | 16.04 | unbound (DNS filter, schools) |
+| jumpbox | 10.11.1.33 + 10.11.100.1 | 16.04 | openvpn@server |
+| wiki | 10.11.1.31 | 16.04 | apache2, mysql, php7.0-fpm |
+| blogger | 10.11.1.42 | 16.04 | ghost_blogger-cttb, nginx, mysql |
+| drbu-sis | 10.11.1.41 | 16.04 | nginx, mariadb, php7.4-fpm |
+| sltp | 10.11.1.39 | **22.04** | apache2, postgresql@{10..18}-main, sendmail |
+| sltp-git | 10.11.1.40 | **18.04** | koha-common, elasticsearch, mariadb, memcached, rabbitmq, apache2, postfix |
+| mon | 10.11.1.26 | 16.04 | (no app services detected) |
+
+### srv-nas (10.11.1.5) — Secondary LXD Host
+
+Ubuntu 16.04. Runs 6 containers + 1 stopped:
+
+| Container | IP | OS | Services |
+|-----------|-----|-----|----------|
+| git | 10.11.1.21 | 16.04 | apache2 (gitweb), gitolite3 |
+| koha | 10.11.1.27 | 16.04 | koha-common, apache2, mysql, memcached |
+| fs | 10.11.1.18 | 16.04 | nfs-mountd, rpcbind, quotarpc, apache2 |
+| pxe | 10.11.1.23 | 16.04 | apache2, tftpd-hpa |
+| debmirror | 10.11.1.22 | 16.04 | apache2 |
+| log | 10.11.1.20 | 16.04 | sfcapd (NetFlow) |
+| metrics | — | — | **STOPPED** |
+
+### srv-gw (10.11.1.1) — Gateway/Firewall
+
+Ubuntu 16.04. Services: squid (proxy), e2guardian (content filter), ulogd2 (firewall logging), ntp, mdadm, smartd.
+
+### Gitolite Access Established
+
+`git.cttb` resolves to 10.11.1.21 (container `git` on srv-nas). Runs **Gitolite 3.6.4** + gitweb.
+
+**Problem:** Gitolite's `update` hook was broken — Perl couldn't find `Gitolite::Hooks::Update` module (`@INC` missing gitolite lib path). Push via `gitolite-admin.git` clone failed.
+
+**Fix:** Added pubkey directly to gitolite keydir and recompiled:
+```bash
+lxc exec git -- sh -c '
+  echo "PUBKEY" > /srv/gitolite/.gitolite/keydir/jc.pub
+  chown git:git /srv/gitolite/.gitolite/keydir/jc.pub
+  su - git -c "gitolite compile; gitolite trigger POST_COMPILE"
+'
+```
+
+**Result:** Full R/W access to all repos as `jc`:
+```
+ansible-conf, ansible-files-conf, ansible-new, asterix, dnsmasq,
+nagios, snmp-lldp, testing, unattended-install, utils
+```
+
+Clone: `git clone git@git.cttb:ansible-new`
+
+### Infographic
+
+Generated `cttb-core-services.html` — interactive HTML dashboard showing all 24 core hosts with service details, IPs, OS versions, and access status.
+
+### Hosts still inaccessible
+
+- **srv-bk-nas** (10.11.1.11) — powered off
+- **srv-bk-vm** (10.11.1.7) — powered off
+- **metrics** container on srv-nas — stopped
+
+---
+
 ## Next Steps
 
-1. **Monitor dvgs-lab3 autoinstall** — verify completion, first boot, desktop
-2. **Configure WiFi on dvgs-lab3** — needed for WAN access after disconnecting ethernet
-3. ~~**Upload WhiteSur tarballs** to asset server~~ — done 2026-04-22
-4. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
-5. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
-6. **Fix USB autoinstall** — add `optional: true` to wifi in templates, get a reliable USB drive
-7. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
-8. **Codify UEFI GRUB in netinstall-2404 role** — add grub.cfg template, grubnetx64.efi deployment task
-9. **Fix autoinstall hostname** — template per-host user-data or add hostname task to playbook
-10. **Add `desktop_login_background` to dvbs/drbu group_vars** — currently only dvgs has the new variable
+1. **Clone `ansible-new` from git.cttb** — compare with local repo to identify drift
+2. **Monitor dvgs-lab3 autoinstall** — verify completion, first boot, desktop
+3. **Configure WiFi on dvgs-lab3** — needed for WAN access after disconnecting ethernet
+4. ~~**Upload WhiteSur tarballs** to asset server~~ — done 2026-04-22
+5. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
+6. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
+7. **Fix USB autoinstall** — add `optional: true` to wifi in templates, get a reliable USB drive
+8. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
+9. **Codify UEFI GRUB in netinstall-2404 role** — add grub.cfg template, grubnetx64.efi deployment task
+10. **Fix autoinstall hostname** — template per-host user-data or add hostname task to playbook
+11. **Add `desktop_login_background` to dvbs/drbu group_vars** — currently only dvgs has the new variable
+12. **Fix gitolite hooks** — Perl `@INC` missing gitolite lib; `update` hook broken on push
+13. **Investigate mon container** — running but no monitoring daemon detected
+14. **Investigate metrics container** — stopped, may need restart or is decommissioned
