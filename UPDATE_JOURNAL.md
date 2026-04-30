@@ -300,20 +300,20 @@ diskutil eject /dev/disk4
 
 ---
 
-## CURRENT BLOCKER: USB not visible in Dell boot menu
+## ~~CURRENT BLOCKER: USB not visible in Dell boot menu~~ (RESOLVED)
 
-**Date:** 2026-04-16
+**Date:** 2026-04-16 | **Resolved:** 2026-04-21
 
-USB drive written with `dd` but not appearing in F12 boot menu on dvgs-lab3 (Dell Inspiron 5400 AIO).
+USB drive written with `dd` but not appearing in F12 boot menu on dvgs-lab3 (Dell Inspiron 5400 AIO). Superseded — dvgs-lab3 was installed via SSH debootstrap (2026-04-21) after USB autoinstall had SQUASHFS corruption. USB path abandoned for this host.
 
 **Troubleshooting checklist:**
-- [ ] Verify partition table on Mac: `diskutil list /dev/disk4`
-- [ ] Try different USB port on the Dell
-- [ ] Enter BIOS Setup (F2) and check:
-  - [ ] Secure Boot is **disabled**
-  - [ ] USB Boot is **enabled**
-  - [ ] Boot list mode includes **UEFI**
-- [ ] If partition table looks wrong, may need alternative write method (e.g., `balenaEtcher`, or use `Startup Disk Creator` from the current Ubuntu install on dvgs-lab3)
+- [x] Verify partition table on Mac: `diskutil list /dev/disk4`
+- [x] Try different USB port on the Dell
+- [x] Enter BIOS Setup (F2) and check:
+  - [x] Secure Boot is **disabled**
+  - [x] USB Boot is **enabled**
+  - [x] Boot list mode includes **UEFI**
+- [x] If partition table looks wrong, may need alternative write method — USB booted on 04-17, but had I/O corruption
 
 ---
 
@@ -508,10 +508,10 @@ After USB autoinstall failed due to SQUASHFS corruption, installed Ubuntu 24.04 
 **Note:** UID is 1000 (not 999 as in autoinstall profile) because dnsmasq already had UID 999 in the debootstrap base. The cs-lab-2404 playbook should handle UID alignment.
 
 **Still TODO on dvgs-lab3 after first boot:**
-- Verify GRUB boots correctly
-- Verify desktop loads (LightDM/SDDM + Lubuntu)
-- Configure WiFi (NetworkManager) for WAN access
-- Run `cs-lab-2404.yml` playbook for full CTTB config
+- [x] Verify GRUB boots correctly — confirmed, machine boots to Ubuntu 24.04
+- [ ] Verify desktop loads (LightDM/SDDM + Lubuntu) — lubuntu-desktop installing via playbook (2026-04-30)
+- [x] Configure WiFi (NetworkManager) for WAN access — connected to DRBU via nmcli (2026-04-30 session 1)
+- [ ] Run `cs-lab-2404.yml` playbook for full CTTB config — in progress (2026-04-30 session 2, run 4)
 
 ---
 
@@ -934,10 +934,10 @@ Generated `cttb-core-services.html` — interactive HTML dashboard showing all 2
 ## Next Steps
 
 1. **Clone `ansible-new` from git.cttb** — compare with local repo to identify drift
-2. **Monitor dvgs-lab3 autoinstall** — verify completion, first boot, desktop
-3. **Configure WiFi on dvgs-lab3** — needed for WAN access after disconnecting ethernet
+2. ~~**Monitor dvgs-lab3 autoinstall**~~ — N/A, installed via debootstrap (2026-04-21)
+3. ~~**Configure WiFi on dvgs-lab3**~~ — done via nmcli (2026-04-30)
 4. ~~**Upload WhiteSur tarballs** to asset server~~ — done 2026-04-22
-5. **Post-install config** — `ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
+5. ~~**Post-install config**~~ — in progress (2026-04-30), playbook running (run 4)
 6. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
 7. **Fix USB autoinstall** — add `optional: true` to wifi in templates, get a reliable USB drive
 8. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
@@ -947,6 +947,71 @@ Generated `cttb-core-services.html` — interactive HTML dashboard showing all 2
 12. **Fix gitolite hooks** — Perl `@INC` missing gitolite lib; `update` hook broken on push
 13. **Investigate mon container** — running but no monitoring daemon detected
 14. **Investigate metrics container** — stopped, may need restart or is decommissioned
+
+---
+
+## 2026-04-30 — Add Noble to apt.cttb debmirror
+
+### Context
+
+All 24.04 playbook runs require `deb_mirror=http://archive.ubuntu.com` because the local apt mirror only has focal and xenial. This pulls 1GB+ over WAN per machine — blocker for mass rollout.
+
+### What was done
+
+1. **Probed debmirror container** (10.11.1.22, Ubuntu 16.04):
+   - 4.0 TB free disk, debmirror v2.25 (2016)
+   - Existing dists: focal + xenial (both with -security/-updates/-backports)
+   - Focal was added manually by Rui in 2022, not through the ansible role
+
+2. **GPG key for noble** — Ubuntu Archive Signing Key (2018) `991BC93C` was already in the keyring. Verified it signs the noble Release file.
+
+3. **Tested debmirror v2.25 compatibility** — dry run with `--dry-run -d noble -s main` succeeded. Old binary handles noble Release format fine.
+
+4. **Created `/srv/debmirror/scripts/dm-ubuntu-24.04.sh`** on container:
+   - Matches Rui's pattern from `dm-ubuntu-20.04.sh`
+   - Uses `--nocleanup` so noble packages coexist with focal/xenial in shared pool
+   - Sections: main,restricted,universe,multiverse + debian-installer variants
+   - Releases: noble,noble-security,noble-updates,noble-backports
+
+5. **Added to `/srv/debmirror/scripts/runall.sh`** — noble script runs alongside 16.04/20.04 in nightly cron (1:00 AM)
+
+6. **Kicked off initial sync** — started 2026-04-30 14:29 PDT. Will take several hours. Progress in `/srv/debmirror/log/ubuntu-24.04.log`.
+
+7. **Updated ansible role** (`roles/debmirror/`):
+   - `defaults/main.yml`: Added focal and noble entries alongside xenial (was out of sync with container reality)
+   - `templates/debmirror.j2`: Added `--nocleanup` support via `nocleanup` variable
+
+### Current sync state (as of 2026-04-30 14:48 PDT)
+
+- **Sync running** on container PID 4677. Sections: `main,restricted,universe,multiverse`. Releases: `noble,noble-security,noble-updates`. No backports, no d-i sections.
+- Sync is incremental — was restarted twice (first with all sections + d-i + backports, then trimmed). Already-downloaded packages are skipped.
+- Expect several hours for initial sync to complete.
+
+### Next session checklist
+
+1. **Check if sync completed:**
+   ```bash
+   ssh administrator@srv-nas.cttb "lxc exec debmirror -- tail -10 /srv/debmirror/log/ubuntu-24.04.log"
+   ```
+   Look for "Debmirror ubuntu 24.04 Completed" at the end. If still running, `ps aux | grep dm-ubuntu-24.04`.
+
+2. **Verify noble dists served:**
+   ```bash
+   curl -sI http://apt.cttb/mirrors/ubuntu/dists/noble/Release | head -5
+   # Should return HTTP 200
+   ```
+
+3. **Test apt update from lab machine (no deb_mirror override):**
+   ```bash
+   source utils/setup-env
+   ansible dvgs-lab3.cttb -m apt -a "update_cache=yes" -e "ansible_ssh_pass=a ansible_become_pass=a ansible_python_interpreter=/usr/bin/python3"
+   ```
+
+4. **If working, run playbook without `deb_mirror` override** to confirm all packages resolve from apt.cttb.
+
+5. **Commit ansible role changes** — `roles/debmirror/defaults/main.yml` and `templates/debmirror.j2` were modified (added focal + noble entries, nocleanup support).
+
+6. **SSH access:** `ssh administrator@srv-nas.cttb` then `lxc exec debmirror -- bash`. Sudo password on container: `4m1t0f0`.
 
 ---
 
@@ -996,6 +1061,86 @@ Generated `cttb-core-services.html` — interactive HTML dashboard showing all 2
 
 4. **NOPASSWD sudo configured** on dvgs-lab3 (was missing after debootstrap install)
 
-### Status
+5. **Ubuntu_24 platform stubs** (`roles/common/tasks/setup/Ubuntu_24.yml`, `roles/common/vars/Ubuntu_24.yml`, `roles/desktop/tasks/setup/Ubuntu_24.yml`, `roles/desktop/vars/Ubuntu_24.yml`)
+   - Ansible 2.20 treats `first_found` with `skip:true` returning empty as fatal in `include_tasks`
+   - Created empty/minimal stub files for both roles
 
-Playbook running — awaiting completion.
+6. **mlocate → plocate** (`roles/common/vars/Ubuntu_24.yml`)
+   - `mlocate` removed from Noble repos; `plocate` is the replacement
+
+7. **polkit pkla → JavaScript rules** (`roles/desktop/tasks/setup/default.yml`, `roles/desktop/files/config/*.rules`)
+   - Ubuntu 24.04 dropped `pklocalauthority` backend; `/var/lib/polkit-1/localauthority/` doesn't exist
+   - Created `.rules` equivalents for NetworkManager restrictions and root power-off permissions
+   - Deploy `.rules` on 24.04+, keep `.pkla` for pre-24.04
+
+### Playbook Runs
+
+| Run | ok | changed | failed | Failure |
+|-----|----|---------| -------|---------|
+| 1 | 36 | 11 | 1 | `first_found`+`skip:true` → empty include (no Ubuntu_24.yml) |
+| 2 | 28 | 2 | 1 | `mlocate` package not available on Noble |
+| 3 | 41 | 5 | 1 | polkit `localauthority` dir missing on 24.04 |
+| 4 | 58 | 12 | 1 | `desktop_shortcuts` loop on undefined var (not a list) |
+| 5 | 58 | 6 | 1 | Same as run 4 — `default([])` doesn't help when var is defined as `false` |
+| 6 | 75 | 20 | 1 | `/etc/xdg/menus/lxqt-applications.menu` missing (Lubuntu 24.04 uses lxde menu) |
+| 7 | 87 | 12 | 1 | `libreoffice-gtk` no install candidate (virtual pkg on Noble) |
+| 8 | 90 | 7 | 1 | Chrome repo uses `deb_mirror` — breaks when overridden to archive.ubuntu.com |
+| 9 | 89 | 5 | 1 | Chrome signing key HTTPS unreachable (dl.google.com blocked by firewall) |
+| 10 | 90 | 5 | 1 | Chrome mirror GPG key expired on apt.cttb (`EXPKEYSIG`) |
+| 11 | — | — | — | Running with `chrome=false` — skip Chrome, test remaining roles |
+
+12. **Chrome repo URLs reverted to apt.cttb** (`roles/desktop/tasks/sw-browser.yml`)
+    - HTTPS to dl.google.com blocked by campus firewall. apt.cttb has key + mirror.
+    - But apt.cttb's Chrome GPG key is **expired** — needs refresh on the mirror server
+    - Skipping Chrome for now (`-e chrome=false`) to test remaining roles
+13. **jc SSH key added to netinstall autoinstall** (`roles/netinstall-2404/`)
+    - Added `ni_jc_ssh_pubkey` to defaults/main.yml
+    - All 3 user-data templates (desktop, server, desktop-minimal) now inject both keys
+
+10. **libreoffice-gtk → libreoffice-gtk3** (`roles/desktop/tasks/sw-office.yml`)
+11. **Chrome repo decoupled from deb_mirror** (`roles/desktop/tasks/sw-browser.yml`)
+    - Repo URL was `{{deb_mirror}}/chrome` — broken when `deb_mirror` overridden
+    - Now uses `chrome_repo` var defaulting to `dl.google.com`
+    - Signing key URL also parameterized (was hardcoded `apt.cttb`)
+
+9. **lxqt menu guard** (`roles/desktop/tasks/app-menu.yml`)
+   - Lubuntu 24.04 uses `lxde-applications.menu`, not `lxqt-applications.menu`
+   - Added `stat` check, skip XML modifications when lxqt file absent
+
+### Additional Fix (Run 4 → 5)
+
+8. **desktop_shortcuts default fix** (`roles/desktop/defaults/main.yml`, `roles/desktop/tasks/lookandfeel.yml`)
+   - Ansible 2.20 evaluates `loop:` before `when:` — `desktop_shortcuts: false` (old default) isn't a list
+   - Changed default from `false` to `[]`; first attempt with `| default([])` failed because var was defined (as false)
+
+---
+
+## Backlog: Pre-Mass-Upgrade Checklist
+
+Issues discovered during dvgs-lab3 test deployment that must be resolved before rolling out to all lab machines.
+
+### Blockers (must fix)
+
+- [ ] **Autoinstall not triggering on PXE boot** — cloud-init doesn't fetch user-data from network URL. `ds="nocloud-net;s=URL"` + `cloud-config-url=URL` templated but not yet deployed/tested on PXE server (2026-04-23)
+- [ ] **Autoinstall hostname** — autoinstall sets hostname to `computer`. Need per-host user-data templates or a hostname-setting task in the playbook
+- [x] **apt.cttb mirror missing Noble** — noble added to debmirror, initial sync started 2026-04-30. Pending verification after sync completes.
+- [ ] **Chrome mirror GPG key expired on apt.cttb** — `EXPKEYSIG 4EB27DB2A3B88B8B`. Need to refresh `Google-linux_signing_key.pub` on the debmirror/apt server. Also: HTTPS to dl.google.com blocked by campus firewall — Chrome install depends entirely on local mirror
+- [ ] **Remaining playbook failures** — desktop role nearly complete (run 11 in progress with chrome=false). cups-client, ldap-client, nfs-home, cttb-ca-client not yet tested
+
+### Should fix
+
+- [ ] **`desktop_login_background` var missing from dvbs/drbu group_vars** — only dvgs has the new variable. Login screen background will be wrong at other sites
+- [ ] **Deploy autoinstall fix to PXE server** — rendered GRUB line with `ds="nocloud-net;s=URL"` + `cloud-config-url=` ready in templates but not rsynced to `/srv/netinstall/boot/grub/grub.cfg`
+- [ ] **Codify UEFI GRUB in netinstall-2404 role** — grub.cfg template + grubnetx64.efi deployment task not yet in Ansible (currently manual)
+- [ ] **USB autoinstall path** — `optional: true` added to wifi templates, but need a reliable USB drive (59GB Flash Disk has flaky I/O)
+- [ ] **IPv6 disable sysctl not applying** — `disable_ipv6` config deployed but `/proc/sys/net/ipv6/conf/all/disable_ipv6` still reads 0. May need reboot or explicit `sysctl -p`
+
+### Nice to have
+
+- [ ] **Add noble-backports and debian-installer sections to debmirror** — initial noble sync uses main/restricted/universe/multiverse without d-i variants or backports. Add these once the base sync completes and PXE netinstall needs d-i packages
+- [ ] **Trim debmirror: drop xenial** — xenial is EOL. Evaluate whether any machines still need it, then remove from sync to save disk and time
+- [ ] **Evaluate Ubuntu 26.04 LTS** — just released April 2026. All Ansible fixes use `>= 24` guards so they carry forward. Wait for 26.04.1 point release (~July 2026), then swap ISO + debmirror entry and re-test one machine. Gains 2 years of support (2031 vs 2029)
+- [ ] **Clone `ansible-new` from git.cttb** — compare with local repo to identify drift
+- [ ] **Fix gitolite hooks** — Perl `@INC` missing gitolite lib; `update` hook broken on push
+- [ ] **Investigate mon container** — running but no monitoring daemon detected
+- [ ] **Investigate metrics container** — stopped, may need restart or is decommissioned
