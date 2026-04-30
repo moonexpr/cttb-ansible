@@ -1,0 +1,9 @@
+// Disallow regular users from modifying networking; allow "administrator"
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0) {
+        if (subject.user === "administrator") {
+            return polkit.Result.YES;
+        }
+        return polkit.Result.NO;
+    }
+});

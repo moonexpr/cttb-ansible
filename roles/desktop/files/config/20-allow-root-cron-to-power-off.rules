@@ -1,0 +1,7 @@
+// Allow root to power off, suspend, etc. from crontab
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.login1.") === 0 &&
+        subject.user === "root") {
+        return polkit.Result.YES;
+    }
+});
