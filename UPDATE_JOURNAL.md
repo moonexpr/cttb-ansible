@@ -947,3 +947,55 @@ Generated `cttb-core-services.html` — interactive HTML dashboard showing all 2
 12. **Fix gitolite hooks** — Perl `@INC` missing gitolite lib; `update` hook broken on push
 13. **Investigate mon container** — running but no monitoring daemon detected
 14. **Investigate metrics container** — stopped, may need restart or is decommissioned
+
+---
+
+## 2026-04-30 — dvgs-lab3 Ansible Playbook Debugging
+
+### Changes Made
+
+1. **Inventory cleanup**: Fixed the IP address for `dvgs-lab3.cttb` to `10.11.9.23` in `inventory/hosts_os_upgrade.ini` and removed duplicate entries for dvgs-lab1 through dvgs-lab9.
+2. **Network config**: Connected `dvgs-lab3.cttb` to the `DRBU` WiFi network via SSH (`nmcli`) to provide WAN access for package downloads.
+3. **Ansible Playbook Fixes for Ubuntu 24.04 (Noble)**:
+   - Ran with `deb_mirror=http://archive.ubuntu.com` as the local `apt.cttb` mirror lacks noble packages.
+   - **time-server role**: Resolved `systemd-timesyncd` vs `ntp` conflict. Added tasks to explicitly stop and remove `systemd-timesyncd` before installing `ntp`.
+   - **common role (NetworkManager)**: Added a task to create `/etc/NetworkManager/conf.d` directory before attempting to write the `ethernet-wake-on-lan.conf` file.
+   - **common role (Packages)**: 
+     - Replaced deprecated `exfat-utils` with `exfatprogs`.
+     - Removed `hddtemp` as it is no longer available in the Ubuntu 24.04 repositories.
+     - Replaced `iptraf` with `iptraf-ng`.
+
+### Status
+
+- Phase 3 Ansible playbook (`cs-lab-2404.yml`) execution was started but is currently hanging at the `refresh the mirrors` (apt update) step. This needs to be investigated in the next session (it may be waiting for an interactive prompt or experiencing a network timeout). The background playbook process has been terminated.
+
+---
+
+## 2026-04-30 — Playbook Hang Root Cause & Fixes (Session 2)
+
+### Root Cause: Playbook Hang
+
+**`needrestart`** — installed by default on Ubuntu 24.04, hooks into apt's `DPkg::Post-Invoke`. After any package install/upgrade, it prompts interactively asking which services to restart. Ansible has no TTY → hangs forever. This is a known issue with 24.04 automation.
+
+### Fixes Applied
+
+1. **needrestart disabled for Ansible** (`roles/common/tasks/setup/default.yml`, `roles/common/files/conf/needrestart-auto.conf`)
+   - Deploys `/etc/needrestart/conf.d/50-autorestart.conf` with `$nrconf{restart} = 'a'` (auto-restart, no prompt)
+   - Task runs before any apt operations
+   - Also added `DEBIAN_FRONTEND=noninteractive` + `NEEDRESTART_MODE=a` as play-level environment in `plays/cs-lab-2404.yml`
+
+2. **apt sources deb822 format** (`roles/common/templates/ubuntu.sources.j2`, `roles/common/tasks/setup/default.yml`)
+   - Ubuntu 24.04 uses `/etc/apt/sources.list.d/ubuntu.sources` (deb822 format), not `/etc/apt/sources.list`
+   - Both files existed → duplicate repo warnings on every `apt update`
+   - New template `ubuntu.sources.j2` for 24.04+; legacy `sources.list.j2` for pre-24.04
+   - On 24.04+, `/etc/apt/sources.list` is blanked with a comment pointing to the deb822 file
+
+3. **jc SSH key deployed** (`roles/common/files/ssh_keys/jc.pub`)
+   - ed25519 pubkey added to `authorized_key` task in common role
+   - Only ansible RSA key was previously deployed; now both are managed
+
+4. **NOPASSWD sudo configured** on dvgs-lab3 (was missing after debootstrap install)
+
+### Status
+
+Playbook running — awaiting completion.
