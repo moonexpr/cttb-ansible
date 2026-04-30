@@ -11,7 +11,7 @@ ubuntu_default_keyring: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 ws_mirrors_link: /var/www/html/mirrors
 
 debmirrors:
-  - name: ubuntu
+  - name: ubuntu-16.04
     mirror: us.archive.ubuntu.com
     proto: http
     gpgkeys: "C0B21F32"
@@ -21,3 +21,28 @@ debmirrors:
     src_path: /ubuntu
     dst_path: /ubuntu
     source: False
+    nocleanup: True
+
+  - name: ubuntu-20.04
+    mirror: us.archive.ubuntu.com
+    proto: http
+    gpgkeys: "C0B21F32"
+    arch: amd64
+    sections: "main,restricted,universe,multiverse,main/debian-installer,restricted/debian-installer,universe/debian-installer,multiverse/debian-installer"
+    releases: "focal,focal-security,focal-updates,focal-backports"
+    src_path: /ubuntu
+    dst_path: /ubuntu
+    source: False
+    nocleanup: True
+
+  - name: ubuntu-24.04
+    mirror: us.archive.ubuntu.com
+    proto: http
+    gpgkeys: "871920D1991BC93C"
+    arch: amd64
+    sections: "main,restricted,universe,multiverse"
+    releases: "noble,noble-security,noble-updates"
+    src_path: /ubuntu
+    dst_path: /ubuntu
+    source: False
+    nocleanup: True
