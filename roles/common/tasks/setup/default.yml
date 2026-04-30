@@ -1,12 +1,47 @@
 ---
 
-- name: custom apt sources.list
+- name: disable needrestart interactive prompts
+  copy:
+    src: conf/needrestart-auto.conf
+    dest: /etc/needrestart/conf.d/50-autorestart.conf
+    mode: 0644
+    owner: root
+    group: root
+  ignore_errors: yes
+  tags:
+    - apt
+    - needrestart
+
+- name: custom apt sources (deb822 format, Ubuntu 24.04+)
+  template:
+    src: ubuntu.sources.j2
+    dest: /etc/apt/sources.list.d/ubuntu.sources
+    mode: 0644
+    owner: root
+    group: root
+  when: ansible_distribution_major_version | int >= 24
+  tags:
+    - apt
+
+- name: remove legacy sources.list on Ubuntu 24.04+
+  copy:
+    content: "# Managed by Ansible — see /etc/apt/sources.list.d/ubuntu.sources\n"
+    dest: /etc/apt/sources.list
+    mode: 0644
+    owner: root
+    group: root
+  when: ansible_distribution_major_version | int >= 24
+  tags:
+    - apt
+
+- name: custom apt sources.list (legacy format, pre-24.04)
   template:
     src: sources.list.j2
     dest: /etc/apt/sources.list
     mode: 0644
     owner: root
     group: root
+  when: ansible_distribution_major_version | int < 24
   tags:
     - apt
 
@@ -41,6 +76,11 @@
   authorized_key:
     user: administrator
     key: "{{ lookup('file', 'ssh_keys/ansible.pub') }}"
+
+- name: Set up jc authorized_key
+  authorized_key:
+    user: administrator
+    key: "{{ lookup('file', 'ssh_keys/jc.pub') }}"
 
 - name: set an explicit proxy if needed
   lineinfile:
@@ -92,6 +132,16 @@
   tags:
     - logging
 
+- name: ensure NetworkManager conf.d directory exists
+  file:
+    path: /etc/NetworkManager/conf.d
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  tags:
+    - wake_on_lan
+
 - name: enable Wake On LAN on Ethernet interfaces
   copy:
     src: conf/ethernet-wake-on-lan.conf
@@ -136,14 +186,13 @@
       - curl
       - ethtool
       - exfat-fuse
-      - exfat-utils
+      - exfatprogs
       - fio
       - git
-      - hddtemp
       - iftop
       - iotop
       - iperf
-      - iptraf
+      - iptraf-ng
       - mtr
       - nload
       - p11-kit-modules
