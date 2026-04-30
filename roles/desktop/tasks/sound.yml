@@ -17,6 +17,7 @@
     tags:
       - sound
 
+  # Ubuntu 24.04+ uses PipeWire/PulseAudio per-user; system-wide service not needed
   - name: add a system service for pulseaudio
     copy:
       src: "config/pulseaudio.service"
@@ -24,8 +25,8 @@
       mode: 0644
       owner: root
       group: root
-      # Copy it only it doesn't exist:
       force: no
+    when: ansible_distribution_major_version | int < 24
     tags:
       - sound
 
@@ -36,6 +37,7 @@
       state: started
       scope: system
     notify: restart pulseaudio
+    when: ansible_distribution_major_version | int < 24
     tags:
       - sound
 
