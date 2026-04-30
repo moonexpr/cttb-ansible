@@ -32,9 +32,8 @@
         mode: 0644
         owner: root
         group: root
-      loop: "{{desktop_shortcuts}}"
-
-      when: desktop_shortcuts
+      loop: "{{ desktop_shortcuts }}"
+      when: desktop_shortcuts | length > 0
       tags:
         - desktop
         - shortcuts
