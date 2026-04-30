@@ -13,24 +13,51 @@
       owner: root
       group: root
 
-  - name: Disallow regular user to disable/modify networking
+  - name: Disallow regular user to disable/modify networking (polkit rules, 24.04+)
+    copy:
+      src: "config/10-network-manager.rules"
+      dest: /etc/polkit-1/rules.d/10-network-manager.rules
+      mode: 0644
+      owner: root
+      group: root
+    when: ansible_distribution_major_version | int >= 24
+    tags:
+      - network_manager_permission
+
+  - name: Disallow regular user to disable/modify networking (pkla, pre-24.04)
     copy:
       src: "config/10-network-manager.pkla"
       dest: /var/lib/polkit-1/localauthority/50-local.d/10-network-manager.pkla
       mode: 0644
       owner: root
       group: root
+    when: ansible_distribution_major_version | int < 24
     tags:
       - network_manager_permission
 
-  - name: Allow root to power off/reboot/... in crontab
+  - name: Allow root to power off/reboot/... in crontab (polkit rules, 24.04+)
+    copy:
+      src: "config/20-allow-root-cron-to-power-off.rules"
+      dest: /etc/polkit-1/rules.d/20-allow-root-cron-to-power-off.rules
+      mode: 0644
+      owner: root
+      group: root
+    when:
+      - allow_root_crontab_power_off is defined
+      - ansible_distribution_major_version | int >= 24
+    tags:
+      - allow_root_crontab_power_off
+
+  - name: Allow root to power off/reboot/... in crontab (pkla, pre-24.04)
     copy:
       src: "config/20-allow-root-cron-to-power-off.pkla"
       dest: /var/lib/polkit-1/localauthority/50-local.d/20-allow-root-cron-to-power-off.pkla
       mode: 0644
       owner: root
       group: root
-    when: allow_root_crontab_power_off is defined
+    when:
+      - allow_root_crontab_power_off is defined
+      - ansible_distribution_major_version | int < 24
     tags:
       - allow_root_crontab_power_off
 
