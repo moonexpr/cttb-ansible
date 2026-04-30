@@ -1087,7 +1087,13 @@ All 24.04 playbook runs require `deb_mirror=http://archive.ubuntu.com` because t
 | 8 | 90 | 7 | 1 | Chrome repo uses `deb_mirror` — breaks when overridden to archive.ubuntu.com |
 | 9 | 89 | 5 | 1 | Chrome signing key HTTPS unreachable (dl.google.com blocked by firewall) |
 | 10 | 90 | 5 | 1 | Chrome mirror GPG key expired on apt.cttb (`EXPKEYSIG`) |
-| 11 | — | — | — | Running with `chrome=false` — skip Chrome, test remaining roles |
+| 11 | 89 | 5 | 1 | Firefox snap tries snap store for 30min, fails (no HTTPS egress) |
+| 12 | 90 | 5 | 1 | VS Code key HTTPS unreachable (same no-egress issue) |
+| 13 | 94 | 8 | 1 | pulseaudio system service fails on 24.04 (per-user mode now) |
+| 14 | 105 | 12 | 1 | `/etc/cups` dir missing — default printer task outside block |
+| 15 | 105 | 7 | 1 | `ldap_clients` group missing from inventory |
+| 16 | 122 | 22 | 1 | `ldap_group_acl_string` undefined — no site-level `[dvgs]` group |
+| **17** | **144** | **27** | **0** | **PASSED** — all 5 roles complete (browsers/vscode skipped) |
 
 12. **Chrome repo URLs reverted to apt.cttb** (`roles/desktop/tasks/sw-browser.yml`)
     - HTTPS to dl.google.com blocked by campus firewall. apt.cttb has key + mirror.
@@ -1124,8 +1130,8 @@ Issues discovered during dvgs-lab3 test deployment that must be resolved before 
 - [ ] **Autoinstall not triggering on PXE boot** — cloud-init doesn't fetch user-data from network URL. `ds="nocloud-net;s=URL"` + `cloud-config-url=URL` templated but not yet deployed/tested on PXE server (2026-04-23)
 - [ ] **Autoinstall hostname** — autoinstall sets hostname to `computer`. Need per-host user-data templates or a hostname-setting task in the playbook
 - [x] **apt.cttb mirror missing Noble** — noble added to debmirror, initial sync started 2026-04-30. Pending verification after sync completes.
-- [ ] **Chrome mirror GPG key expired on apt.cttb** — `EXPKEYSIG 4EB27DB2A3B88B8B`. Need to refresh `Google-linux_signing_key.pub` on the debmirror/apt server. Also: HTTPS to dl.google.com blocked by campus firewall — Chrome install depends entirely on local mirror
-- [ ] **Remaining playbook failures** — desktop role nearly complete (run 11 in progress with chrome=false). cups-client, ldap-client, nfs-home, cttb-ca-client not yet tested
+- [ ] **No HTTPS egress from campus LAN** — all external HTTPS downloads fail (dl.google.com, packages.microsoft.com, Canonical snap store). Affects Chrome (expired GPG key on mirror + can't fetch from Google), Firefox (snap wrapper contacts store), VS Code (Microsoft signing key). Options: (a) mirror all signing keys + repos on apt.cttb over HTTP, (b) configure squid proxy for HTTPS CONNECT, (c) firewall allowlist for specific domains. Currently skipping all three with `-e "chrome=false firefox=false vscode=false"`
+- [x] **Remaining playbook failures** — **RESOLVED run 17.** All 5 roles pass (ok=144, changed=27, failed=0). Browsers (Chrome/Firefox/VS Code) skipped due to no HTTPS egress — separate blocker above
 
 ### Should fix
 
