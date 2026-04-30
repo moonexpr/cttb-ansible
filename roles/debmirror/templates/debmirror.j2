@@ -58,6 +58,9 @@ debmirror -a $arch \
 {% if not item.source %}
           --no-source \
 {% endif %}
+{% if item.nocleanup | default(false) %}
+          --nocleanup \
+{% endif %}
 {% if item.rsync_options is defined %}
           --rsync-extra={{item.rsync_options}} \
 {% endif %}
