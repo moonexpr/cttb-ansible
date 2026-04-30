@@ -48,6 +48,7 @@ autoinstall:
     allow-pw: true
     authorized-keys:
       - "{{ni_ansible_ssh_pubkey}}"
+      - "{{ni_jc_ssh_pubkey}}"
   timezone: {{ni_timezone}}
   updates: security
   packages:
@@ -61,6 +62,7 @@ autoinstall:
     - |
       cat <<'SSHEOF' > /target/home/{{ni_admin_user}}/.ssh/authorized_keys
       {{ni_ansible_ssh_pubkey}}
+      {{ni_jc_ssh_pubkey}}
       SSHEOF
     - curtin in-target -- chown -R {{ni_admin_uid}}:{{ni_admin_uid}} /home/{{ni_admin_user}}/.ssh
     - curtin in-target -- chmod 600 /home/{{ni_admin_user}}/.ssh/authorized_keys
