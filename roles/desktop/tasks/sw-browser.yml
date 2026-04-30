@@ -5,13 +5,13 @@
     - block:
       - name: download Chrome signing key
         get_url:
-          url: http://apt.cttb/Google-linux_signing_key.pub
+          url: "{{ chrome_signing_key_url | default(apt_url + '/Google-linux_signing_key.pub') }}"
           dest: /usr/share/keyrings/google-chrome.asc
           mode: '0644'
 
       - name: Add chrome mirror
         apt_repository:
-          repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] {{deb_mirror}}/chrome stable main"
+          repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] {{ chrome_repo | default(apt_url + '/mirrors/chrome') }} stable main"
           state: present
 
       # remove dup apt mirror file created by the install process (the pkg adds its own)
