@@ -14,6 +14,12 @@
 
   # First, update the lxqt-applications.menu file itself;
   # Then, update the individual .desktop files.
+  # Note: Lubuntu 24.04 uses lxde-applications.menu, not lxqt-applications.menu.
+
+  - name: find lxqt applications menu file
+    stat:
+      path: /etc/xdg/menus/lxqt-applications.menu
+    register: lxqt_menu_file
 
   - name: hide 'Lock Screen' from top menu
     lineinfile:
@@ -21,6 +27,7 @@
       regexp: '^\s+<Menuname(.*)>Screensaver</Menuname>'
       line: '                        <!-- <Menuname\1>Screensaver</Menuname> -->'
       backrefs: yes
+    when: lxqt_menu_file.stat.exists
     tags:
       - app_menu
 
@@ -29,6 +36,7 @@
       path: /etc/xdg/menus/lxqt-applications.menu
       regexp: '^\s+<!-- Screensaver -->[^"]*<!-- End Screensaver -->\s+$'
       replace: ''
+    when: lxqt_menu_file.stat.exists
     tags:
       - app_menu
 
