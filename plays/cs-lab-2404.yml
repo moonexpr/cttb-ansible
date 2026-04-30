@@ -13,6 +13,9 @@
 
 - hosts: dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
   become: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+    NEEDRESTART_MODE: a
   roles:
     - desktop
     - cups-client

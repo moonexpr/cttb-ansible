@@ -1,6 +1,19 @@
 ---
 
   - block:
+        - name: disable systemd-timesyncd
+          systemd:
+            name: systemd-timesyncd
+            state: stopped
+            enabled: no
+          ignore_errors: yes
+
+        - name: remove systemd-timesyncd
+          apt:
+            state: absent
+            name: systemd-timesyncd
+          ignore_errors: yes
+
         - name: install ntp
           apt:
             state: present
@@ -19,14 +32,6 @@
           - restart ntp
           tags:
             - ntp_cfg
-
-        - name: disable systemd-timesyncd
-          systemd:
-            name: systemd-timesyncd
-            state: stopped
-            enabled: no
-          ignore_errors: yes
-          # When running ansible for post-installation of a new PC, there is no systemd-timesyncd, so ignore the errors.
     when: ansible_virtualization_type != "lxc"
 
   - block:
