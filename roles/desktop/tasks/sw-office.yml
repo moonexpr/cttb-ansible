@@ -20,7 +20,7 @@
       - libreoffice-writer
       - libreoffice-impress
       - libreoffice-calc
-      - libreoffice-gtk
+      - libreoffice-gtk3
       - libreoffice-help-en-us
     when: libreoffice == true
     tags:
