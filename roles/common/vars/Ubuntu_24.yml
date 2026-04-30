@@ -1,0 +1,6 @@
+---
+# Ubuntu 24.04 (Noble) specific variables for the common role.
+common_extra_install_sw:
+  - mlocate
+  - net-tools
+  - binutils

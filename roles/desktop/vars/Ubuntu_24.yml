@@ -1,0 +1,3 @@
+---
+# Ubuntu 24.04 (Noble) specific variables for desktop role.
+# WhiteSur theme is the default in defaults/main.yml — no overrides needed here.
