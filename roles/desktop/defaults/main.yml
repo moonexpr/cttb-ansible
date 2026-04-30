@@ -16,7 +16,7 @@ dropbox: false
 skype: false
 
 # look and feel
-desktop_shortcuts: false
+desktop_shortcuts: []
 desktop_theme: WhiteSur
 gtk_theme: WhiteSur
 icon_theme: WhiteSur
