@@ -111,6 +111,19 @@
       - desktop
       - fonts
 
+  - name: install SeriousShanns Nerd Font Mono
+    unarchive:
+      remote_src: yes
+      src: "{{ansible_assets_url}}/SeriousShannsNerdFontMono.tar.gz"
+      dest: /usr/share/fonts/opentype/serious-shanns/
+      creates: /usr/share/fonts/opentype/serious-shanns/SeriousShannsNerdFontMono-Regular.otf
+      owner: root
+      group: root
+    notify: rebuild font cache
+    tags:
+      - desktop
+      - fonts
+
   - name: deploy CTTB lotus icon for panel menu
     file:
       path: /usr/share/icons/cttb
