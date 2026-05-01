@@ -1274,3 +1274,18 @@ For future PPA use: GPG key imported on debmirror, `mozillateam` entry in `host_
 - `systemd-networkd-wait-online.service` disabled (NM manages network, was hanging boot)
 - `ansible_python_interpreter` fixed: `python3.13` → `python3` (host now on 24.04)
 - SSH access: direct IP unreachable from Mac, requires `-J administrator@srv-nas.cttb` jump host
+
+---
+
+## 2026-05-01 — Terminal Font: SeriousShanns Nerd Font Mono
+
+Switched terminal font from Ubuntu Mono to [Serious Shanns Nerd Font Mono](https://github.com/kaBeech/serious-shanns) — a legible monospace font with Nerd Font glyphs.
+
+| File | Change |
+|------|--------|
+| `roles/desktop/files/config/terminalrc` | `FontName=SeriousShanns Nerd Font Mono 12` (was Ubuntu Mono 12) |
+| `roles/desktop/tasks/lookandfeel.yml` | Added font install task — downloads `SeriousShannsNerdFontMono.tar.gz` from asset server to `/usr/share/fonts/opentype/serious-shanns/` |
+
+Asset: `SeriousShannsNerdFontMono.tar.gz` (19MB, 6 OTF weights: Regular, Bold, Italic, BoldItalic, Light, LightItalic). Needs upload to `pxe.cttb/ansible_assets/`.
+
+**Not yet tested** — dvgs-testmachine offline. Will verify after host is back online.
