@@ -1515,3 +1515,64 @@ Deployed to dvgs-testmachine.cttb, verified via remote screenshots:
 - Terminal: Man Page yellow background, Ubuntu Mono 12, black text
 
 **Note:** dvgs-lab3 went offline after session termination and did not recover. All subsequent testing done on dvgs-testmachine.
+
+---
+
+## 2026-05-01 — Desktop Session: Wallpaper, Thunderbird, Menu, Titlebar
+
+### Wallpaper rotation: cron+feh → xfdesktop native
+
+Replaced cron+feh wallpaper rotation with XFCE's built-in `xfdesktop` backdrop cycling. Key lesson: xfdesktop 4.18+ (Ubuntu 24.04) uses `backdrop-cycle-*` property names, not the older `image-show`/`image-period`. Monitor property must match xrandr output (e.g. `monitorHDMI-1`).
+
+| File | Change |
+|------|--------|
+| `roles/desktop/templates/xfce4-desktop.xml.j2` | xfdesktop config with `backdrop-cycle-enable/period/random-order` |
+| `roles/desktop/tasks/wallpaper.yml` | Deploy xfce4-desktop.xml, clean macOS `._*` files, remove legacy cron/feh |
+| `roles/desktop/defaults/main.yml` | `desktop_wallpaper_interval_hours: 6` → `desktop_wallpaper_interval_minutes: 360` |
+| `host_vars/dvgs-lab3.cttb` | `desktop_wallpaper_interval_minutes: 1` (testing) |
+
+### Wallpaper refresh
+
+Removed 12 old macOS defaults, added 22 Unsplash nature photos (35 total). Tarball rebuilt and uploaded to `pxe.cttb/ansible_assets/cttb-wallpapers.tar.gz` (216MB).
+
+### Thunderbird email client
+
+Ubuntu 24.04 `thunderbird` apt package is a snap wrapper (blocked on campus). Mozilla Team PPA also unreachable (`ppa.launchpad.net` blocked at network/firewall level). Solution: Mozilla tarball hosted on `pxe.cttb/ansible_assets/thunderbird-latest.tar.xz` (Thunderbird 150.0.1, 78MB).
+
+| File | Change |
+|------|--------|
+| `roles/desktop/tasks/sw-thunderbird.yml` | **NEW** — removes snap, extracts tarball to `/opt/thunderbird/`, symlinks, deploys .desktop |
+| `roles/desktop/tasks/sw.yml` | Added `include_tasks: sw-thunderbird.yml` |
+| `roles/desktop/defaults/main.yml` | Added `thunderbird: true` |
+
+For future PPA use: GPG key imported on debmirror, `mozillateam` entry in `host_vars/lxc-debmirror`, `launchpadcontent.net` added to e2guardian exceptions. Blocked until Launchpad IPs are allowed through srv-gw firewall.
+
+### Custom applications menu
+
+| File | Change |
+|------|--------|
+| `roles/desktop/templates/xfce-applications.menu.j2` | **NEW** — hostname+OS at top, category submenus, Sleep/Shut Down at bottom |
+| `roles/desktop/templates/cttb-hostname.desktop.j2` | **NEW** — non-clickable menu label showing `hostname — Ubuntu version` |
+| `roles/desktop/files/desktop-entries/cttb-sleep.desktop` | **NEW** — `xfce4-session-logout --suspend` (with confirmation) |
+| `roles/desktop/files/desktop-entries/cttb-shutdown.desktop` | **NEW** — `xfce4-session-logout --halt` (with confirmation) |
+| `roles/desktop/tasks/lookandfeel.yml` | Deploy tasks for menu, hostname entry, sleep/shutdown entries |
+
+### System titlebar for all apps
+
+| File | Change |
+|------|--------|
+| `roles/desktop/tasks/lookandfeel.yml` | `GTK_CSD=0`, `GTK_MODULES=appmenu-gtk-module`, `UBUNTU_MENUPROXY=1`, `MOZ_GTK_TITLEBAR_DECORATION=system` in `/etc/environment` |
+| `roles/desktop/tasks/lookandfeel.yml` | Chrome policy `UseSystemTitleBar: true` via `/etc/opt/google/chrome/policies/managed/cttb-titlebar.json` |
+
+### Other fixes
+
+- Window title font → `Inter Display Bold 12` (was 10, too small for window controls)
+- Global menu fixed: `GTK_MODULES=appmenu-gtk-module` was not set in environment
+- Thunar icon symlinked to WhiteSur Finder-style `file-manager.svg`
+- Lotus SVG icon added to repo with deploy task
+- `systemd-timesyncd`: added `apt install` before enabling (was removed in prior session)
+- `InterDisplay.tar.gz` uploaded to `pxe.cttb/ansible_assets/` (was 404)
+- `pulseaudio.service` system-mode disabled + masked (24.04 uses per-user PipeWire)
+- `systemd-networkd-wait-online.service` disabled (NM manages network, was hanging boot)
+- `ansible_python_interpreter` fixed: `python3.13` → `python3` (host now on 24.04)
+- SSH access: direct IP unreachable from Mac, requires `-J administrator@srv-nas.cttb` jump host
