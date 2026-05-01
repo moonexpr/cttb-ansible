@@ -204,6 +204,44 @@
     tags:
       - desktop
 
+  - name: force system window decorations for GTK apps
+    lineinfile:
+      path: /etc/environment
+      regexp: '^GTK_CSD='
+      line: 'GTK_CSD=0'
+    tags:
+      - desktop
+
+  - name: force system titlebar for Mozilla apps
+    lineinfile:
+      path: /etc/environment
+      regexp: '^MOZ_GTK_TITLEBAR_DECORATION='
+      line: 'MOZ_GTK_TITLEBAR_DECORATION=system'
+    tags:
+      - desktop
+
+  - name: ensure Chrome policy directory exists
+    file:
+      path: /etc/opt/google/chrome/policies/managed
+      state: directory
+      mode: '0755'
+      owner: root
+      group: root
+    when: chrome == true
+    tags:
+      - desktop
+
+  - name: force Chrome to use system titlebar
+    copy:
+      content: '{"UseSystemTitleBar": true}'
+      dest: /etc/opt/google/chrome/policies/managed/cttb-titlebar.json
+      mode: '0644'
+      owner: root
+      group: root
+    when: chrome == true
+    tags:
+      - desktop
+
   - name: configure xfce4 panel (top bar + dock with global menu)
     template:
       src: xfce4-panel.xml.j2
