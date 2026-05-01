@@ -145,6 +145,26 @@
     tags:
       - desktop
 
+  - name: ensure xfwm4 config directory exists
+    file:
+      path: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml
+      state: directory
+      mode: 0755
+      owner: root
+      group: root
+    tags:
+      - desktop
+
+  - name: configure xfwm4 window manager
+    template:
+      src: xfwm4.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+
   - name: configure openbox
     template:
       src: openbox-rc.j2
