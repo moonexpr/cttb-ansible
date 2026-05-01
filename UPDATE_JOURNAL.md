@@ -1,8 +1,10 @@
-# Update Journal: ubuntu22-upgrade deployment on dvgs-lab3
+# Update Journal: Ubuntu 24.04 Upgrade
 
-**Date:** 2026-04-16
 **Branch:** feature/ubuntu22-upgrade
-**Target:** dvgs-lab3.cttb (current IP: 10.11.30.32, WAN port)
+**Started:** 2026-04-16
+**Test machine:** dvgs-testmachine.cttb (formerly dvgs-lab3, IP: 10.11.9.23)
+
+> **See also:** [DEPLOYMENT.md](DEPLOYMENT.md) — full deployment pipeline & commands | [BACKLOG.md](BACKLOG.md) — consolidated task list
 
 ---
 
@@ -140,83 +142,6 @@ sudo ln -sf apt_inst.cpython-38-x86_64-linux-gnu.so \
 **Resolution:** Not a bug — the `cs-lab-2404.yml` playbook is designed for post-PXE-install configuration on 24.04, not for running on 20.04 hosts. Decision made to use PXE reinstall path instead of in-place upgrade.
 
 ---
-
-## Key Commands Reference
-
-### Ansible Operations
-
-```bash
-# Source environment (required before all ansible commands)
-source utils/setup-env
-
-# Ping a host
-ansible dvgs-lab3.cttb -m ping
-
-# Debug a variable
-ansible dvgs-lab3.cttb -m debug -a "var=deb_mirror"
-
-# Check group membership
-ansible dvgs-lab3.cttb -m debug -a "var=group_names"
-
-# View inventory graph
-ansible-inventory --graph
-
-# View all variables for a host
-ansible-inventory --host dvgs-lab3.cttb
-
-# Dry run (check mode) with diff
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --check --diff
-
-# Actual deployment
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff
-
-# Deploy with verbose output
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff -vvv
-```
-
-### Host Recovery
-
-```bash
-# Set up passwordless sudo (one-time, requires current password)
-ssh administrator@dvgs-lab3.cttb "echo PASSWORD | sudo -S sh -c 'echo \"administrator ALL=(ALL) NOPASSWD: ALL\" > /etc/sudoers.d/administrator && chmod 440 /etc/sudoers.d/administrator'"
-
-# GRUB recovery (at physical console)
-# 1. Hold Shift BEFORE POST screen finishes (timeout=0, window is instant)
-# 2. If GRUB CLI appears instead of menu, type: normal
-# 3. For manual boot:
-#    set root=(hd0,gpt7)
-#    linux /vmlinuz root=/dev/nvme0n1p7 ro single
-#    initrd /initrd.img
-#    boot
-# 4. In recovery root shell: mount -o remount,rw / && passwd administrator
-
-# Mac keyboard mapping for TTY switch
-# Ctrl+Option+F2 (or Ctrl+Option+Fn+F2 if F-keys are media keys)
-```
-
-### Remote Screenshot (no VNC needed)
-
-```bash
-# Screenshot the LightDM greeter (runs as root on :0)
-ssh administrator@HOST 'sudo DISPLAY=:0 XAUTHORITY=/var/run/lightdm/root/:0 scrot /tmp/screenshot.png'
-scp administrator@HOST:/tmp/screenshot.png .
-
-# Screenshot a logged-in user session
-ssh administrator@HOST 'sudo DISPLAY=:0 XAUTHORITY=/home/USER/.Xauthority scrot /tmp/screenshot.png'
-```
-
-Requires `scrot` (installed via lubuntu.yml). Works over SSH + ProxyJump.
-
-### Git Operations
-
-```bash
-# Revert inventory changes
-git checkout HEAD -- inventory/hosts_os_upgrade.ini
-
-# View what changed on the branch
-git log main..feature/ubuntu22-upgrade --oneline
-git diff main..feature/ubuntu22-upgrade --stat
-```
 
 ---
 
@@ -478,17 +403,6 @@ Rendered Jinja2 templates locally, rsynced to server, installed via sudo:
 
 ---
 
-## PXE Deployment Constraints
-
-- **PXE requires wired ethernet** — WiFi not available at boot time, no driver loaded
-- **Wired hosts lose WAN access** — campus LAN ports are on the internal network; WAN access requires WiFi
-- **Most cslab hosts are unwired** — USB autoinstall path needed for those; PXE only for hosts with ethernet
-- **After PXE install, host needs WiFi configured** to regain WAN access (or stay wired)
-- **DHCP server (dnsmasq.cttb at 10.11.1.19)** — PXE options were already present; updated to support UEFI (see 2026-04-22 entry)
-- **PXE server is an LXC container** (lxc-pxe) on the 10.11.0.0/16 network
-
----
-
 ## USB Autoinstall Issues Found and Fixed
 
 - **GRUB semicolon escaping:** `ds=nocloud;s=...` — GRUB treats `;` as command separator. Fixed by escaping as `\;` in grub.cfg. Used `perl -pi -e` because `sed` doesn't reliably preserve the backslash.
@@ -666,138 +580,6 @@ BOOT_IMAGE=/ubuntu/live-server-noble-amd64/casper/vmlinuz noprompt ip=dhcp ipv6.
 
 ---
 
-## Full Deployment Pipeline: Lab Machine Upgrade to 24.04
-
-End-to-end procedure for upgrading a lab machine from any state to Ubuntu 24.04 with full CTTB configuration.
-
-### Prerequisites
-
-- Machine connected via **wired ethernet** (PXE requires it; WiFi not available at boot)
-- PXE server deployed (see 2026-04-21 entry)
-- UEFI GRUB config deployed (see 2026-04-22 entry)
-- WhiteSur theme tarballs on asset server (uploaded 2026-04-22)
-- Ansible environment: `source utils/setup-env`
-
-### Phase 1: PXE Install (~20 min)
-
-#### Triggering PXE boot remotely (primary method)
-
-Use `efibootmgr` to set a one-time network boot — no physical access needed:
-
-```bash
-# Single machine
-ansible-playbook plays/pxe-reboot.yml -l dvgs-lab3.cttb
-
-# Dry run (shows what would happen without rebooting)
-ansible-playbook plays/pxe-reboot.yml -l dvgs-lab3.cttb --check
-
-# Batch: all DVGS lab machines
-ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab
-
-# All labs at all sites
-ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
-```
-
-The playbook installs `efibootmgr` if missing, finds the NIC(IPV4) boot entry automatically, sets it as one-shot next boot (`-n`), and reboots. Boot order reverts to disk after one boot.
-
-**Requirements:** Machine must be SSH-reachable and running a UEFI OS. Works on the existing 20.04 installs.
-
-#### Fallback: manual F12 boot
-
-If the machine is powered off or SSH is unreachable, boot manually:
-1. Power on → **F12** → **Onboard NIC (IPV4)**
-
-#### What happens after PXE boot
-
-1. **GRUB menu appears:** "Ubuntu 24.04 Desktop (CTTB)" auto-selects after 10s
-2. **Autoinstall runs unattended:**
-   - Wipes entire disk (`storage: layout: direct`)
-   - Installs Ubuntu 24.04 base + `lubuntu-desktop` + `openssh-server` + `python3` + `fish` + `network-manager`
-   - Creates `administrator` user (UID 999, password from vault, NOPASSWD sudo)
-   - Injects ansible SSH public key
-   - Sets graphical.target as default
-3. **Machine reboots** into fresh 24.04 desktop
-
-### Phase 2: Post-boot Setup (SSH, ~5 min)
-
-1. **Verify SSH access:**
-   ```bash
-   ansible dvgs-labN.cttb -m ping
-   ```
-2. **Hostname** — set automatically by common role (`ansible.builtin.hostname` task). No manual step needed.
-3. **Update inventory IP** if needed in `inventory/hosts_os_upgrade.ini`
-4. **Configure WiFi** (if machine needs WAN access and will be disconnected from ethernet):
-   ```bash
-   ssh administrator@dvgs-labN.cttb
-   nmcli dev wifi connect "DRBU" ifname wlan0   # open network
-   ```
-
-### Phase 3: Ansible Playbook (SSH, ~15-30 min)
-
-```bash
-source utils/setup-env
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs-labN.cttb --diff
-```
-
-This runs 5 roles in order:
-
-| Role | What it configures |
-|------|--------------------|
-| `desktop` | Lubuntu desktop: APT packages, WhiteSur GTK/icon/cursor themes, login avatar & background (per-site via group_vars), LightDM config, locale, language packs, browser (Chrome/Firefox), sound, wallpaper rotation |
-| `cups-client` | CUPS print client: removes local cupsd, configures remote print server (`cups_srv`), sets default queue |
-| `ldap-client` | LDAP authentication: installs `libnss-ldapd`/`nslcd`, configures PAM for LDAP login, NSS, access control via `access.conf` |
-| `nfs-home` | NFS home directories: installs `autofs` + `nfs-common`, configures auto.master/auto.nfs for network home dirs, `unburden-home-dir` for cache offloading |
-| `cttb-ca-client` | CA certificates: installs CTTB internal CA cert for HTTPS trust (apt mirror, internal services) |
-
-### Phase 4: Verification (manual, ~10 min)
-
-- [ ] Desktop loads (LightDM greeter with correct avatar/background)
-- [ ] LDAP login works (log in as an LDAP user, not just `administrator`)
-- [ ] Home directory mounts via NFS
-- [ ] Printing works (`lpstat -p` shows remote queues)
-- [ ] Theme correct (WhiteSur GTK, icons, cursors)
-- [ ] CA cert trusted (`curl https://apt.cttb` — no cert error)
-- [ ] WiFi connects after ethernet removed (if applicable)
-
-### Per-site Customization
-
-Avatar and background are set automatically via group_vars:
-
-| Group | Avatar | Background |
-|-------|--------|------------|
-| `dvgs` | `avatar-dvgs.png` | `bg-dvgs.jpg` |
-| `dvbs` | `avatar-dvbs.png` | `bg-dvbs.jpg` |
-| `drbu` | `avatar-drbu.png` | `bg-drbu.jpg` |
-
-Other per-site vars: `cups_srv`, `cups_default_queue`, `nfs_homes_host`, `nfs_homes_export`, LDAP server, DNS server.
-
-### Batch Rollout
-
-To deploy multiple machines at once:
-
-```bash
-# All DVGS lab machines
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs_cs_lab --diff
-
-# All labs at all sites
-ansible-playbook plays/cs-lab-2404.yml --diff
-
-# Specific machines
-ansible-playbook plays/cs-lab-2404.yml --limit "dvgs-lab1.cttb,dvgs-lab2.cttb" --diff
-```
-
-PXE install is per-machine (physical F12 boot), but Phase 3 (Ansible) can run against all machines in parallel once they're PXE'd and SSH-reachable.
-
-### Known Issues / Workarounds
-
-- **Hostname:** Autoinstall sets hostname to `computer` — corrected automatically by common role (`ansible.builtin.hostname` + `/etc/hosts` fixup)
-- **WiFi:** PXE install is wired-only. WiFi must be configured post-install if machine needs WAN access
-- **UID mismatch:** Autoinstall creates UID 999; debootstrap installs may get UID 1000. The desktop role should handle alignment
-- **apt mirror:** `apt.cttb` only has focal/xenial. Noble packages come from `archive.ubuntu.com` over WAN. Machines need internet access during playbook run
-- **GRUB semicolons:** `ds=nocloud-net;s=...` must use `\;` in GRUB configs (both PXE and USB)
-
----
-
 ## 2026-04-23 — Autoinstall Datasource Fix (Attempt 3)
 
 ### Problem
@@ -941,25 +723,6 @@ Generated `cttb-core-services.html` — interactive HTML dashboard showing all 2
 
 ---
 
-## Next Steps
-
-1. **Clone `ansible-new` from git.cttb** — compare with local repo to identify drift
-2. ~~**Monitor dvgs-lab3 autoinstall**~~ — N/A, installed via debootstrap (2026-04-21)
-3. ~~**Configure WiFi on dvgs-lab3**~~ — done via nmcli (2026-04-30)
-4. ~~**Upload WhiteSur tarballs** to asset server~~ — done 2026-04-22
-5. ~~**Post-install config**~~ — in progress (2026-04-30), playbook running (run 4)
-6. **Verify services** — CUPS, LDAP auth, NFS mounts, CA certs, desktop, theme
-7. **Fix USB autoinstall** — add `optional: true` to wifi in templates, get a reliable USB drive
-8. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
-9. **Codify UEFI GRUB in netinstall-2404 role** — add grub.cfg template, grubnetx64.efi deployment task
-10. ~~**Fix autoinstall hostname**~~ — done, added `ansible.builtin.hostname` task to common role
-11. **Add `desktop_login_background` to dvbs/drbu group_vars** — currently only dvgs has the new variable
-12. **Fix gitolite hooks** — Perl `@INC` missing gitolite lib; `update` hook broken on push
-13. **Investigate mon container** — running but no monitoring daemon detected
-14. **Investigate metrics container** — stopped, may need restart or is decommissioned
-
----
-
 ## 2026-04-30 — Add Noble to apt.cttb debmirror
 
 ### Context
@@ -996,32 +759,6 @@ All 24.04 playbook runs require `deb_mirror=http://archive.ubuntu.com` because t
 - **Sync running** on container PID 4677. Sections: `main,restricted,universe,multiverse`. Releases: `noble,noble-security,noble-updates`. No backports, no d-i sections.
 - Sync is incremental — was restarted twice (first with all sections + d-i + backports, then trimmed). Already-downloaded packages are skipped.
 - Expect several hours for initial sync to complete.
-
-### Next session checklist
-
-1. **Check if sync completed:**
-   ```bash
-   ssh administrator@srv-nas.cttb "lxc exec debmirror -- tail -10 /srv/debmirror/log/ubuntu-24.04.log"
-   ```
-   Look for "Debmirror ubuntu 24.04 Completed" at the end. If still running, `ps aux | grep dm-ubuntu-24.04`.
-
-2. **Verify noble dists served:**
-   ```bash
-   curl -sI http://apt.cttb/mirrors/ubuntu/dists/noble/Release | head -5
-   # Should return HTTP 200
-   ```
-
-3. **Test apt update from lab machine (no deb_mirror override):**
-   ```bash
-   source utils/setup-env
-   ansible dvgs-lab3.cttb -m apt -a "update_cache=yes" -e "ansible_ssh_pass=a ansible_become_pass=a ansible_python_interpreter=/usr/bin/python3"
-   ```
-
-4. **If working, run playbook without `deb_mirror` override** to confirm all packages resolve from apt.cttb.
-
-5. **Commit ansible role changes** — `roles/debmirror/defaults/main.yml` and `templates/debmirror.j2` were modified (added focal + noble entries, nocleanup support).
-
-6. **SSH access:** `ssh administrator@srv-nas.cttb` then `lxc exec debmirror -- bash`. Sudo password on container: `4m1t0f0`.
 
 ---
 
@@ -1194,45 +931,6 @@ debmirror uses `gpgv` for signature verification, which reads from `trustedkeys.
 ### Impact on Playbook
 
 The Chrome `EXPKEYSIG` blocker (run 10) is now resolved. The `sw-browser.yml` task that adds the Chrome repo and key from `apt.cttb` should now succeed. Chrome can be re-enabled in playbook runs (remove `-e "chrome=false"`).
-
----
-
-## Backlog: Pre-Mass-Upgrade Checklist
-
-Issues discovered during dvgs-lab3 test deployment that must be resolved before rolling out to all lab machines.
-
-### Blockers (must fix)
-
-- [ ] **Autoinstall not triggering on PXE boot** — cloud-init doesn't fetch user-data from network URL. `ds="nocloud-net;s=URL"` + `cloud-config-url=URL` templated but not yet deployed/tested on PXE server (2026-04-23)
-- [x] **Autoinstall hostname** — fixed 2026-04-30. Added `ansible.builtin.hostname` task in `roles/common/tasks/setup/default.yml` before the `/etc/hosts` fix. Sets system hostname from `inventory_hostname` via `hostnamectl`. Autoinstall still uses `computer` as placeholder; Ansible corrects it on first run.
-- [x] **apt.cttb mirror missing Noble** — noble added to debmirror, initial sync started 2026-04-30. Pending verification after sync completes.
-- [x] **Chrome GPG key expired on apt.cttb** — fixed 2026-04-30. Updated debmirror GPG keyring (`trustedkeys.gpg` + `pubring.gpg`), re-synced mirror, updated public key files. Chrome stable now 147.0.7727.137. Re-enable with `-e "chrome=true"` or remove the `chrome=false` override.
-- [x] **No HTTPS egress from campus LAN** — **RESOLVED.** Root cause: e2guardian:8080 blocked by `timed_internet.sh` cron schedule (not a firewall misconfiguration). HTTPS works through e2guardian→squid when internet is "on". VS Code installed via HTTPS through proxy. Chrome installed from apt.cttb mirror (HTTP, no WAN needed). Firefox still blocked (snap store issue — separate item).
-- [ ] **Firefox snap blocks on no snap store access** — Ubuntu 24.04 `firefox` apt package is a snap wrapper. `dpkg --unpack` contacts Canonical snap store for 30 min then fails. Options: (a) Mozilla Team PPA for real .deb Firefox, (b) pre-seed snap offline, (c) chromium-browser from apt (not snap)
-- [x] **Remaining playbook failures** — **RESOLVED run 17.** All 5 roles pass (ok=144, changed=27, failed=0). Post-playbook audit found additional fixes needed (see below).
-- [x] **LDAP nsswitch.conf version guard** — `when: ansible_distribution_version == '20.04'` excluded 24.04. Guard removed. nsswitch.conf now updated on all versions.
-- [x] **LightDM not set as default display manager** — playbook configured lightdm but never wrote `/etc/X11/default-display-manager`. Task added. Rebooted to test — awaiting physical console verification.
-
-### Should fix
-
-- [ ] **`desktop_login_background` var missing from dvbs/drbu group_vars** — only dvgs has the new variable. Login screen background will be wrong at other sites
-- [ ] **Deploy autoinstall fix to PXE server** — rendered GRUB line with `ds="nocloud-net;s=URL"` + `cloud-config-url=` ready in templates but not rsynced to `/srv/netinstall/boot/grub/grub.cfg`
-- [ ] **Codify UEFI GRUB in netinstall-2404 role** — grub.cfg template + grubnetx64.efi deployment task not yet in Ansible (currently manual)
-- [ ] **USB autoinstall path** — `optional: true` added to wifi templates, but need a reliable USB drive (59GB Flash Disk has flaky I/O)
-- [x] **IPv6 disable sysctl** — applied manually with `sysctl -p`. Config file was deployed but not loaded. Will apply automatically after reboot.
-- [ ] **dvgs-lab3 unreachable after reboot** — rebooted to test LightDM, host not responding via SSH. Possible: stuck at display manager, DHCP assigned different IP, or boot issue. Needs physical console check.
-- [ ] **WhiteSur theme not applied to desktop session** — GTK theme, icons, cursors installed and configured in lxqt.conf + gtk-3.0/settings.ini, but needs login/reboot to verify visual result
-- [x] **Wallpaper rotation script** — replaced cron+feh with xfdesktop native cycling (2026-05-01). No DISPLAY/headless issues.
-
-### Nice to have
-
-- [ ] **Add noble-backports and debian-installer sections to debmirror** — initial noble sync uses main/restricted/universe/multiverse without d-i variants or backports. Add these once the base sync completes and PXE netinstall needs d-i packages
-- [ ] **Trim debmirror: drop xenial** — xenial is EOL. Evaluate whether any machines still need it, then remove from sync to save disk and time
-- [ ] **Evaluate Ubuntu 26.04 LTS** — just released April 2026. All Ansible fixes use `>= 24` guards so they carry forward. Wait for 26.04.1 point release (~July 2026), then swap ISO + debmirror entry and re-test one machine. Gains 2 years of support (2031 vs 2029)
-- [ ] **Clone `ansible-new` from git.cttb** — compare with local repo to identify drift
-- [ ] **Fix gitolite hooks** — Perl `@INC` missing gitolite lib; `update` hook broken on push
-- [ ] **Investigate mon container** — running but no monitoring daemon detected
-- [ ] **Investigate metrics container** — stopped, may need restart or is decommissioned
 
 ---
 
