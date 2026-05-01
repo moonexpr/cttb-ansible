@@ -79,6 +79,11 @@
     tags:
       - browser
 
+  - include_tasks: sw-thunderbird.yml
+    when: thunderbird == true
+    tags:
+      - thunderbird
+
   - include_tasks: sw-vscode.yml
     tags:
       - vscode

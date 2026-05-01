@@ -10,3 +10,6 @@
     service:
       name: lightdm
       state: restarted
+
+  - name: rebuild font cache
+    command: fc-cache -f

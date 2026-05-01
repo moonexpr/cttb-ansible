@@ -1222,7 +1222,7 @@ Issues discovered during dvgs-lab3 test deployment that must be resolved before 
 - [x] **IPv6 disable sysctl** — applied manually with `sysctl -p`. Config file was deployed but not loaded. Will apply automatically after reboot.
 - [ ] **dvgs-lab3 unreachable after reboot** — rebooted to test LightDM, host not responding via SSH. Possible: stuck at display manager, DHCP assigned different IP, or boot issue. Needs physical console check.
 - [ ] **WhiteSur theme not applied to desktop session** — GTK theme, icons, cursors installed and configured in lxqt.conf + gtk-3.0/settings.ini, but needs login/reboot to verify visual result
-- [ ] **Wallpaper rotation script** — cron deployed but `rotate-wallpaper.sh` may not work headless (uses `DISPLAY=:0 feh --bg-fill`). Needs testing at physical console
+- [x] **Wallpaper rotation script** — replaced cron+feh with xfdesktop native cycling (2026-05-01). No DISPLAY/headless issues.
 
 ### Nice to have
 
@@ -1299,3 +1299,88 @@ Additional packages added to `lubuntu.yml`: `xfce4-pulseaudio-plugin`, `xfce4-no
 - `SSH_AUTH_SOCK=/var/run/com.apple.launchd.rwA60yzqH5/Listeners` — macOS default ssh-agent socket (Bitwarden had hijacked it via `launchctl setenv`)
 - `ssh -A -J cttb administrator@dvgs-lab3.cttb` — agent forwarding required; ProxyJump alone doesn't forward the key
 - `sudo XAUTHORITY=/var/run/lightdm/root/:0 DISPLAY=:0 import -window root /tmp/screenshot.png` — screenshot via ImageMagick (xfce4-screenshooter not installed)
+
+---
+
+## 2026-05-01 — Wallpaper Rotation: cron+feh → xfdesktop native
+
+### What changed
+
+Replaced the cron+feh wallpaper rotation with XFCE's built-in `xfdesktop` backdrop cycling. No external dependencies needed — xfdesktop handles image rotation natively.
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `roles/desktop/templates/xfce4-desktop.xml.j2` | **NEW** — xfdesktop config with wallpaper dir, cycling interval, random order |
+| `roles/desktop/tasks/wallpaper.yml` | Replaced feh install + cron deploy with xfce4-desktop.xml template deploy + legacy cleanup |
+| `roles/desktop/defaults/main.yml` | `desktop_wallpaper_interval_hours: 6` → `desktop_wallpaper_interval_minutes: 360` |
+| `host_vars/dvgs-lab3.cttb` | Added `desktop_wallpaper_interval_minutes: 1` (testing) |
+
+### How it works
+
+xfdesktop reads `/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml` and cycles through images in `desktop_wallpaper_dir` at the configured interval. Properties:
+
+- `last-image` → points to wallpaper directory (xfdesktop scans for images)
+- `image-show` → enables cycling
+- `image-period` → interval in minutes
+- `image-random-order` → randomize selection
+
+### Legacy cleanup
+
+The wallpaper task now removes:
+- `/etc/cron.d/wallpaper-rotation` (old cron job)
+- `/usr/local/bin/rotate-wallpaper.sh` (old feh script)
+
+`feh` package removed from dependencies (was only needed for wallpaper rotation).
+
+### Testing
+
+dvgs-lab3 set to 1-minute rotation for testing. All other hosts default to 360 minutes (6 hours).
+
+---
+
+## 2026-05-01 — Thunderbird Email Client (Mozilla tarball)
+
+### Problem
+
+Ubuntu 24.04's `thunderbird` apt package is a snap transition wrapper. Snap store is unreachable on campus. Mozilla Team PPA (`ppa.launchpad.net`) is also unreachable — blocked at the network/firewall level (not just e2guardian).
+
+### Solution
+
+Downloaded official Mozilla tarball, hosted on `pxe.cttb/ansible_assets/`.
+
+| Component | Detail |
+|-----------|--------|
+| Source | `https://download.mozilla.org/?product=thunderbird-latest-ssl&os=linux64&lang=en-US` |
+| Version | 150.0.1 |
+| Asset | `http://pxe.cttb/ansible_assets/thunderbird-latest.tar.xz` (78MB) |
+| Install path | `/opt/thunderbird/` |
+| Binary | `/usr/local/bin/thunderbird` (symlink) |
+
+### Files
+
+| File | Change |
+|------|--------|
+| `roles/desktop/tasks/sw-thunderbird.yml` | **NEW** — removes snap wrapper, extracts tarball, symlinks binary, deploys .desktop |
+| `roles/desktop/tasks/sw.yml` | Added `include_tasks: sw-thunderbird.yml` |
+| `roles/desktop/defaults/main.yml` | Added `thunderbird: true` |
+
+### Network investigation
+
+- `ppa.launchpad.net` resolves but IPv4 connections timeout from all campus hosts (debmirror container, dvgs-lab3, Mac)
+- `ppa.launchpadcontent.net` blocked by e2guardian (added to exceptions but still blocked at IP level)
+- `archive.mozilla.org` also blocked through campus proxy
+- Only internal hosts (`apt.cttb`, `pxe.cttb`) and whitelisted external hosts (`dl.google.com`, `archive.ubuntu.com`) are reachable
+- Downloaded on Mac bypassing proxy (`--noproxy '*'`), SCP'd to pxe.cttb
+
+### Updating Thunderbird
+
+To update: download new tarball from Mozilla, upload to `pxe.cttb/ansible_assets/thunderbird-latest.tar.xz` (overwrite), re-run playbook. The `creates:` guard checks for `/opt/thunderbird/thunderbird` — delete it first to force re-extract, or remove the `creates:` line.
+
+### Also done (for future PPA use)
+
+- Added `launchpadcontent.net` to e2guardian exception list on srv-gw
+- Added `mozillateam` entry to `host_vars/lxc-debmirror` debmirror config
+- Imported Mozilla Team PPA GPG key into debmirror keyrings on apt.cttb
+- These are ready for when the firewall is updated to allow Launchpad IPs
