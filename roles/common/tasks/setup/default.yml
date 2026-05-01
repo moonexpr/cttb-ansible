@@ -188,12 +188,14 @@
       - exfat-fuse
       - exfatprogs
       - fio
+      - fish
       - git
       - iftop
       - iotop
       - iperf
       - iptraf-ng
       - mtr
+      - neovim
       - nload
       - p11-kit-modules
       - quota
