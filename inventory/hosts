@@ -212,7 +212,7 @@ dvgs-art-room-pc2
 # dvgs computer lab
 dvgs-lab1
 dvgs-lab2
-dvgs-lab3
+dvgs-testmachine
 dvgs-lab4
 dvgs-lab5
 dvgs-lab6
@@ -409,7 +409,7 @@ dvgs-dorm-lenovo3
 [dvgs_cs_lab]
 dvgs-lab1
 dvgs-lab2
-dvgs-lab3
+dvgs-testmachine
 dvgs-lab4
 dvgs-lab5
 dvgs-lab6
