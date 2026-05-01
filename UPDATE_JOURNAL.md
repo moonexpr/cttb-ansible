@@ -194,6 +194,19 @@ ssh administrator@dvgs-lab3.cttb "echo PASSWORD | sudo -S sh -c 'echo \"administ
 # Ctrl+Option+F2 (or Ctrl+Option+Fn+F2 if F-keys are media keys)
 ```
 
+### Remote Screenshot (no VNC needed)
+
+```bash
+# Screenshot the LightDM greeter (runs as root on :0)
+ssh administrator@HOST 'sudo DISPLAY=:0 XAUTHORITY=/var/run/lightdm/root/:0 scrot /tmp/screenshot.png'
+scp administrator@HOST:/tmp/screenshot.png .
+
+# Screenshot a logged-in user session
+ssh administrator@HOST 'sudo DISPLAY=:0 XAUTHORITY=/home/USER/.Xauthority scrot /tmp/screenshot.png'
+```
+
+Requires `scrot` (installed via lubuntu.yml). Works over SSH + ProxyJump.
+
 ### Git Operations
 
 ```bash
