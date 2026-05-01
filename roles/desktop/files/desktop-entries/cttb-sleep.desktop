@@ -2,7 +2,7 @@
 Name=Sleep
 Comment=Suspend the computer
 Type=Application
-Exec=systemctl suspend
+Exec=xfce4-session-logout --suspend
 Icon=system-suspend
 Categories=X-Xfce-Toplevel;
 StartupNotify=false
