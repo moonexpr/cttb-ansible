@@ -1434,3 +1434,84 @@ Ubuntu 24.04 removed the `ntp` package. Updated `time-server` role to use `syste
 ### Content filter — temporary unrestricted
 
 Added `dvgs-testmachine` (10.11.9.23) to the `adult` e2guardian filter group in `host_vars/srv-gw` for testing. **Must revert before mass deployment** (tracked in backlog).
+
+---
+
+## 2026-05-01 — Desktop Polish: Shadows, Fonts, Panel, Terminal Theme
+
+### Desktop icon text shadows
+
+Added `show-icon-label-shadows` xfconf property to `xfce4-desktop.xml.j2`. Confirmed working via remote screenshot on dvgs-lab3 — subtle shadow behind icon labels improves readability on light wallpapers.
+
+Attempted bold via GTK CSS (`.xfdesktop-icon-view { font-weight: 700 }`), but xfdesktop 4.18 renders labels with Cairo/Pango, ignoring GTK CSS. Pivoted to system font weight: `desktop_font` → `Inter Display Semi-Bold 11`.
+
+### Panel config pulled from live machine
+
+Pulled xfconf panel config from dvgs-testmachine (dvgs-lab3 went offline mid-session). Major changes from previous template:
+
+| Setting | Before | After |
+|---------|--------|-------|
+| Panel count | 2 (top bar + dock) | 1 (top bar only) |
+| Size | 26px | 24px |
+| Autohide | off | on |
+| Background | default | semi-transparent dark (rgba 0.15/0.11/0.11/0.54) |
+| Appmenu | no options | bold-application-name, expand |
+| Clock font | default | Inter Display Semi-Bold 10 |
+| Tasklist | present | removed |
+| Plugin-1 title | hostname | hostname (via Jinja `inventory_hostname_short`) |
+
+### Window titles
+
+- `desktop_title_font` → `Inter Display Bold 10`
+- Added `title_alignment: left` to `xfwm4.xml.j2`
+- Confirmed working live via xfconf-query on dvgs-testmachine
+
+### Chrome rounded corners
+
+Added task in `sw-browser.yml` to patch `google-chrome-stable.desktop` with `--use-system-title-bar`, forcing Chrome to use xfwm4's WhiteSur-Dark window frame (which has rounded corners).
+
+### xfce4-terminal Man Page theme
+
+Translated macOS Terminal.app "Man Page" profile (`.terminal` plist) to xfce4-terminal `terminalrc`:
+
+| Setting | Value |
+|---------|-------|
+| Font | Ubuntu Mono 12 |
+| Background | `#f3eb8a` (warm yellow) |
+| Foreground | `#000000` (black) |
+| Cursor | `#8b8b8b` (gray) |
+| Selection | `#bfb875` (olive) |
+| Scrollbar | hidden |
+
+Full 16-color ANSI palette included. Deployed to `/etc/xdg/xfce4/terminal/terminalrc`. Added `xfce4-genmon-plugin` to package list in `lubuntu.yml`.
+
+### Wallpaper config
+
+- Changed monitor target from `monitorscreen` to `monitorHDMI-1` (matches Dell AIO hardware)
+- Updated wallpaper rotation to use `backdrop-cycle-*` properties
+- Added task to clean macOS resource fork files (`._*`) from wallpaper directory
+
+### Files changed
+
+| File | Change |
+|------|--------|
+| `roles/desktop/defaults/main.yml` | Font → Inter Display Semi-Bold 11, title → Inter Display Bold 10 |
+| `roles/desktop/templates/xfce4-panel.xml.j2` | Full rewrite from live config |
+| `roles/desktop/templates/xfwm4.xml.j2` | Added title_alignment=left |
+| `roles/desktop/templates/xfce4-desktop.xml.j2` | monitorHDMI-1, backdrop-cycle, icon shadows |
+| `roles/desktop/files/config/gtk-panel.css` | font-family → Inter Display |
+| `roles/desktop/files/config/terminalrc` | **NEW** — Man Page theme |
+| `roles/desktop/files/config/panel-hostname.sh` | **NEW** — genmon hostname script |
+| `roles/desktop/tasks/lookandfeel.yml` | Added terminal config + hostname script deploy tasks |
+| `roles/desktop/tasks/sw-browser.yml` | Chrome --use-system-title-bar |
+| `roles/desktop/tasks/lubuntu.yml` | Added xfce4-genmon-plugin |
+| `roles/desktop/tasks/wallpaper.yml` | Clean macOS resource forks |
+
+### Test deployment
+
+Deployed to dvgs-testmachine.cttb, verified via remote screenshots:
+- Panel: semi-transparent, autohide, lotus icon, clock working
+- Window titles: bold, left-aligned, WhiteSur-Dark traffic lights
+- Terminal: Man Page yellow background, Ubuntu Mono 12, black text
+
+**Note:** dvgs-lab3 went offline after session termination and did not recover. All subsequent testing done on dvgs-testmachine.
