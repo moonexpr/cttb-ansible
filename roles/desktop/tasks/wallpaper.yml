@@ -49,8 +49,9 @@
   - name: configure wallpaper rotation cron job
     copy:
       content: |
-        # Rotate desktop wallpaper every {{ desktop_wallpaper_interval // 60 }} minutes
-        */{{ desktop_wallpaper_interval // 60 }} * * * * root /usr/local/bin/rotate-wallpaper.sh
+        # Rotate desktop wallpaper every {{ desktop_wallpaper_interval_hours }} hours, random wallpaper on boot
+        @reboot root sleep 10 && /usr/local/bin/rotate-wallpaper.sh
+        0 */{{ desktop_wallpaper_interval_hours }} * * * root /usr/local/bin/rotate-wallpaper.sh
       dest: /etc/cron.d/wallpaper-rotation
       mode: '0644'
       owner: root

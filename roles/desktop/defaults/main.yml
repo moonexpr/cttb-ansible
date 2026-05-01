@@ -28,8 +28,8 @@ cursor_theme: WhiteSur-cursors
 # hardware
 dell_aio: true
 
-# wallpaper rotation (interval in seconds, converted to cron minutes)
-desktop_wallpaper_interval: 900
+# wallpaper rotation (interval in hours)
+desktop_wallpaper_interval_hours: 6
 desktop_wallpaper_dir: /usr/share/backgrounds/cttb
 
 # login background (defaults to pic_bg for backward compatibility)
