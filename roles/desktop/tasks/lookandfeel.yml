@@ -147,6 +147,16 @@
       - desktop
       - theme
 
+  - name: symlink Thunar icon to WhiteSur Finder-style file-manager icon
+    file:
+      src: file-manager.svg
+      dest: /usr/share/icons/WhiteSur/apps/scalable/org.xfce.thunar.svg
+      state: link
+      force: yes
+    tags:
+      - desktop
+      - theme
+
   # Lubuntu 24.04 only has lxde-applications.menu; LXQt panel expects lxqt-applications.menu
   - name: symlink lxqt-applications.menu for panel compatibility
     file:
