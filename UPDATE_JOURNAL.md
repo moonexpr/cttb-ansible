@@ -1384,3 +1384,47 @@ To update: download new tarball from Mozilla, upload to `pxe.cttb/ansible_assets
 - Added `mozillateam` entry to `host_vars/lxc-debmirror` debmirror config
 - Imported Mozilla Team PPA GPG key into debmirror keyrings on apt.cttb
 - These are ready for when the firewall is updated to allow Launchpad IPs
+
+---
+
+## 2026-05-01 — Hostname, Fonts, NTP, Content Filter
+
+### Hostname rename
+
+Renamed `dvgs-lab3` → `dvgs-testmachine` across all inventories and host_vars to distinguish the test machine from the production lab fleet.
+
+| File | Change |
+|------|--------|
+| `inventory/hosts` | Renamed both host entry and `dvgs_cs_lab` group member |
+| `inventory/hosts_os_upgrade.ini` | Renamed in MAC/IP list and `dvgs_cs_lab` group |
+| `host_vars/dvgs-lab3.cttb` → `host_vars/dvgs-testmachine.cttb` | File renamed |
+
+### Inter Display font
+
+Switched all desktop font references from Inter → Inter Display (better optical sizing for UI).
+
+| File | Change |
+|------|--------|
+| `roles/desktop/defaults/main.yml` | `desktop_font` and `desktop_title_font` → Inter Display |
+| `roles/desktop/templates/lightdm-gtk-greeter.j2` | Login screen font → Inter Display |
+| `roles/desktop/templates/lxqt-conf.j2` | Qt font → Inter Display |
+| `roles/desktop/files/config/gtk-panel.css` | Panel CSS font-family → Inter Display |
+| `roles/desktop/tasks/lookandfeel.yml` | **NEW task** — installs Inter Display TTFs from `pxe.cttb/ansible_assets/InterDisplay.tar.gz` |
+| `roles/desktop/handlers/main.yml` | Added `rebuild font cache` handler |
+
+Asset uploaded to PXE server: `/var/www/html/ansible_assets/InterDisplay.tar.gz` (3.5MB, 18 TTF files from Inter v4.1).
+
+### NTP / time-server role for Ubuntu 24.04
+
+Ubuntu 24.04 removed the `ntp` package. Updated `time-server` role to use `systemd-timesyncd` on 24.04+, keeping legacy `ntp` for older Ubuntu.
+
+| File | Change |
+|------|--------|
+| `roles/time-server/tasks/main.yml` | Added 24.04+ block (remove legacy ntp, install/configure timesyncd) |
+| `roles/time-server/templates/timesyncd.conf.j2` | **NEW** — configures NTP servers from `ntp_servers` var |
+| `roles/time-server/handlers/main.yml` | Added `restart timesyncd` handler |
+| `plays/cs-lab-2404.yml` | Added `time-server` role |
+
+### Content filter — temporary unrestricted
+
+Added `dvgs-testmachine` (10.11.9.23) to the `adult` e2guardian filter group in `host_vars/srv-gw` for testing. **Must revert before mass deployment** (tracked in backlog).
