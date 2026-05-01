@@ -60,6 +60,13 @@
     tags:
       - lightdm
 
+  - name: ensure lightdm is the active display manager
+    shell: echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager
+    args:
+      creates: /etc/X11/default-display-manager
+    tags:
+      - lightdm
+
   - name: copy lightdm avatar image
     copy:
       src: "pics/{{pic_avatar}}"
