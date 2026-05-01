@@ -18,6 +18,7 @@ skype: false
 # look and feel
 desktop_shortcuts: []
 desktop_theme: WhiteSur
+openbox_theme: Lubuntu Arc
 gtk_theme: WhiteSur
 icon_theme: WhiteSur
 pic_avatar: avatar-cttb.png
