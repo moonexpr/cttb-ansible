@@ -1,13 +1,5 @@
 ---
-# Wallpaper rotation setup — syncs images and configures cron + feh rotation
-
-  - name: install feh for wallpaper rotation
-    apt:
-      name: feh
-      state: present
-    tags:
-      - wallpaper
-      - packages
+# Wallpaper setup — syncs images and configures xfdesktop native rotation
 
   - name: create wallpaper directory
     file:
@@ -29,32 +21,26 @@
     tags:
       - wallpaper
 
-  - name: deploy wallpaper rotation script
-    copy:
-      content: |
-        #!/bin/bash
-        # Rotate wallpaper — picks a random image from the wallpaper directory
-        WALLPAPER_DIR="{{ desktop_wallpaper_dir }}"
-        IMAGE=$(find "$WALLPAPER_DIR" -type f \( -name '*.jpg' -o -name '*.png' -o -name '*.jpeg' \) | shuf -n 1)
-        if [ -n "$IMAGE" ]; then
-          DISPLAY=:0 feh --bg-fill "$IMAGE"
-        fi
-      dest: /usr/local/bin/rotate-wallpaper.sh
-      mode: '0755'
+  - name: configure xfdesktop wallpaper rotation
+    template:
+      src: xfce4-desktop.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+      mode: '0644'
       owner: root
       group: root
     tags:
       - wallpaper
 
-  - name: configure wallpaper rotation cron job
-    copy:
-      content: |
-        # Rotate desktop wallpaper every {{ desktop_wallpaper_interval_hours }} hours, random wallpaper on boot
-        @reboot root sleep 10 && /usr/local/bin/rotate-wallpaper.sh
-        0 */{{ desktop_wallpaper_interval_hours }} * * * root /usr/local/bin/rotate-wallpaper.sh
-      dest: /etc/cron.d/wallpaper-rotation
-      mode: '0644'
-      owner: root
-      group: root
+  - name: remove legacy feh wallpaper rotation cron
+    file:
+      path: /etc/cron.d/wallpaper-rotation
+      state: absent
+    tags:
+      - wallpaper
+
+  - name: remove legacy feh wallpaper rotation script
+    file:
+      path: /usr/local/bin/rotate-wallpaper.sh
+      state: absent
     tags:
       - wallpaper

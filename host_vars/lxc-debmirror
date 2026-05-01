@@ -131,3 +131,14 @@ debmirrors:
     dst_path: /dropbox
     source: False
     rsync_options: none
+  - name: mozillateam
+    mirror: ppa.launchpad.net
+    proto: http
+    gpgkeys: "CE49EC21"
+    arch: "amd64"
+    sections: "main"
+    releases: "noble"
+    src_path: /mozillateam/ppa/ubuntu/
+    dst_path: /mozillateam
+    source: False
+    rsync_options: none

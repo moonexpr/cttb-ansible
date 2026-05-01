@@ -3,3 +3,8 @@
   service:
     name: ntp
     state: restarted
+
+- name: restart timesyncd
+  systemd:
+    name: systemd-timesyncd
+    state: restarted

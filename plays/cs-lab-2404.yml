@@ -18,6 +18,7 @@
     NEEDRESTART_MODE: a
   roles:
     - desktop
+    - time-server
     - cups-client
     - ldap-client
     - nfs-home
