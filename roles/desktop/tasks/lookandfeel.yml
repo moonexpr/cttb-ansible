@@ -158,6 +158,42 @@
     tags:
       - desktop
 
+  - name: deploy custom XFCE applications menu
+    template:
+      src: xfce-applications.menu.j2
+      dest: /etc/xdg/menus/xfce-applications.menu
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+      - app_menu
+
+  - name: deploy hostname menu entry
+    template:
+      src: cttb-hostname.desktop.j2
+      dest: /usr/share/applications/cttb-hostname.desktop
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+      - app_menu
+
+  - name: deploy sleep and shutdown menu entries
+    copy:
+      src: "desktop-entries/{{ item }}"
+      dest: "/usr/share/applications/{{ item }}"
+      mode: 0644
+      owner: root
+      group: root
+    loop:
+      - cttb-sleep.desktop
+      - cttb-shutdown.desktop
+    tags:
+      - desktop
+      - app_menu
+
   - name: ensure xfwm4 config directory exists
     file:
       path: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml
