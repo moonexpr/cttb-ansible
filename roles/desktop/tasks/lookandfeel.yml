@@ -111,6 +111,28 @@
       - desktop
       - fonts
 
+  - name: deploy CTTB lotus icon for panel menu
+    file:
+      path: /usr/share/icons/cttb
+      state: directory
+      mode: 0755
+      owner: root
+      group: root
+    tags:
+      - desktop
+      - icons
+
+  - name: copy lotus icon
+    copy:
+      src: pics/lotus.svg
+      dest: /usr/share/icons/cttb/lotus.svg
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+      - icons
+
   - name: install WhiteSur GTK theme
     unarchive:
       remote_src: yes
