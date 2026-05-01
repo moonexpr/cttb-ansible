@@ -1322,9 +1322,15 @@ Replaced the cron+feh wallpaper rotation with XFCE's built-in `xfdesktop` backdr
 xfdesktop reads `/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml` and cycles through images in `desktop_wallpaper_dir` at the configured interval. Properties:
 
 - `last-image` → points to wallpaper directory (xfdesktop scans for images)
-- `image-show` → enables cycling
-- `image-period` → interval in minutes
-- `image-random-order` → randomize selection
+- `backdrop-cycle-enable` → enables cycling
+- `backdrop-cycle-period` → interval in minutes
+- `backdrop-cycle-random-order` → randomize selection
+
+**Note:** xfdesktop 4.18+ (Ubuntu 24.04) uses `backdrop-cycle-*` property names. The older `image-show`/`image-period` names do not work. Monitor property must match xrandr output name (e.g. `monitorHDMI-1`).
+
+### macOS tarball cleanup
+
+The `cttb-wallpapers.tar.gz` was created on macOS and contains `._` resource fork files. These are cleaned up by the wallpaper task (`rm -f ._*`).
 
 ### Legacy cleanup
 
