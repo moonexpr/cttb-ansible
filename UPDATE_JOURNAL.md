@@ -1095,29 +1095,17 @@ All 24.04 playbook runs require `deb_mirror=http://archive.ubuntu.com` because t
 | 16 | 122 | 22 | 1 | `ldap_group_acl_string` undefined — no site-level `[dvgs]` group |
 | **17** | **144** | **27** | **0** | **PASSED** — all 5 roles complete (browsers/vscode skipped) |
 
-12. **Chrome repo URLs reverted to apt.cttb** (`roles/desktop/tasks/sw-browser.yml`)
-    - HTTPS to dl.google.com blocked by campus firewall. apt.cttb has key + mirror.
-    - But apt.cttb's Chrome GPG key is **expired** — needs refresh on the mirror server
-    - Skipping Chrome for now (`-e chrome=false`) to test remaining roles
-13. **jc SSH key added to netinstall autoinstall** (`roles/netinstall-2404/`)
-    - Added `ni_jc_ssh_pubkey` to defaults/main.yml
-    - All 3 user-data templates (desktop, server, desktop-minimal) now inject both keys
+### All Fixes (in order)
 
-10. **libreoffice-gtk → libreoffice-gtk3** (`roles/desktop/tasks/sw-office.yml`)
-11. **Chrome repo decoupled from deb_mirror** (`roles/desktop/tasks/sw-browser.yml`)
-    - Repo URL was `{{deb_mirror}}/chrome` — broken when `deb_mirror` overridden
-    - Now uses `chrome_repo` var defaulting to `dl.google.com`
-    - Signing key URL also parameterized (was hardcoded `apt.cttb`)
-
-9. **lxqt menu guard** (`roles/desktop/tasks/app-menu.yml`)
-   - Lubuntu 24.04 uses `lxde-applications.menu`, not `lxqt-applications.menu`
-   - Added `stat` check, skip XML modifications when lxqt file absent
-
-### Additional Fix (Run 4 → 5)
-
-8. **desktop_shortcuts default fix** (`roles/desktop/defaults/main.yml`, `roles/desktop/tasks/lookandfeel.yml`)
-   - Ansible 2.20 evaluates `loop:` before `when:` — `desktop_shortcuts: false` (old default) isn't a list
-   - Changed default from `false` to `[]`; first attempt with `| default([])` failed because var was defined (as false)
+8. **desktop_shortcuts default** — changed `false` → `[]` in `roles/desktop/defaults/main.yml`. Ansible 2.20 evaluates `loop:` before `when:`.
+9. **lxqt menu guard** — `stat` check in `roles/desktop/tasks/app-menu.yml`. Lubuntu 24.04 uses `lxde-applications.menu`.
+10. **libreoffice-gtk → libreoffice-gtk3** — virtual package with no candidate on Noble.
+11. **Chrome repo/key URLs → apt.cttb** — decoupled from `deb_mirror` override, use `apt_url` for internal mirror. Key and repo both served over HTTP.
+12. **jc SSH key in netinstall** — added `ni_jc_ssh_pubkey` to all 3 autoinstall user-data templates.
+13. **pulseaudio system service skipped on 24.04+** — PipeWire/PulseAudio runs per-user now. `roles/desktop/tasks/sound.yml`.
+14. **cups-client block fix** — `set default printer` task was outside the `cups_srv` block, ran before `/etc/cups` was created.
+15. **`ldap_clients` inventory group** — ldap-client role asserts membership; group missing from `hosts_os_upgrade.ini`.
+16. **Site-level parent groups** (`[dvgs]`, `[dvbs]`, `[drbu]`) — needed for `group_vars/dvgs` etc. to load (provides `ldap_group_acl_string` and other site vars).
 
 ---
 
