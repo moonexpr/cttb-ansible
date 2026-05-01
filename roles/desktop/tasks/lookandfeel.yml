@@ -134,7 +134,17 @@
       - desktop
       - theme
 
-  # Lubuntu 20.04: mainly to configure 1 desktop only.
+  # Lubuntu 24.04 only has lxde-applications.menu; LXQt panel expects lxqt-applications.menu
+  - name: symlink lxqt-applications.menu for panel compatibility
+    file:
+      src: lxde-applications.menu
+      dest: /etc/xdg/menus/lxqt-applications.menu
+      state: link
+      force: yes
+    when: ansible_distribution_major_version | int >= 24
+    tags:
+      - desktop
+
   - name: configure openbox
     template:
       src: openbox-rc.j2
