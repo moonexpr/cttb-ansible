@@ -19,12 +19,13 @@
     tags:
       - wallpaper
 
-  - name: sync wallpaper images
-    synchronize:
-      src: wallpapers/
+  - name: download wallpaper images
+    unarchive:
+      src: "{{ ansible_assets_url }}/cttb-wallpapers.tar.gz"
       dest: "{{ desktop_wallpaper_dir }}/"
-      delete: no
-      recursive: yes
+      remote_src: yes
+      extra_opts:
+        - --strip-components=1
     tags:
       - wallpaper
 
