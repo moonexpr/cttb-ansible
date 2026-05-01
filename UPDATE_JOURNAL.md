@@ -711,10 +711,7 @@ If the machine is powered off or SSH is unreachable, boot manually:
    ```bash
    ansible dvgs-labN.cttb -m ping
    ```
-2. **Set hostname** (autoinstall sets it to `computer` by default):
-   ```bash
-   ansible dvgs-labN.cttb -m hostname -a "name=dvgs-labN"
-   ```
+2. **Hostname** — set automatically by common role (`ansible.builtin.hostname` task). No manual step needed.
 3. **Update inventory IP** if needed in `inventory/hosts_os_upgrade.ini`
 4. **Configure WiFi** (if machine needs WAN access and will be disconnected from ethernet):
    ```bash
@@ -780,7 +777,7 @@ PXE install is per-machine (physical F12 boot), but Phase 3 (Ansible) can run ag
 
 ### Known Issues / Workarounds
 
-- **Hostname:** Autoinstall sets hostname to `computer` — must be set manually or via Ansible before playbook run (playbook may depend on hostname for group membership)
+- **Hostname:** Autoinstall sets hostname to `computer` — corrected automatically by common role (`ansible.builtin.hostname` + `/etc/hosts` fixup)
 - **WiFi:** PXE install is wired-only. WiFi must be configured post-install if machine needs WAN access
 - **UID mismatch:** Autoinstall creates UID 999; debootstrap installs may get UID 1000. The desktop role should handle alignment
 - **apt mirror:** `apt.cttb` only has focal/xenial. Noble packages come from `archive.ubuntu.com` over WAN. Machines need internet access during playbook run
@@ -942,7 +939,7 @@ Generated `cttb-core-services.html` — interactive HTML dashboard showing all 2
 7. **Fix USB autoinstall** — add `optional: true` to wifi in templates, get a reliable USB drive
 8. **Roll out** to remaining lab hosts across DVGS, DVBS, DRBU
 9. **Codify UEFI GRUB in netinstall-2404 role** — add grub.cfg template, grubnetx64.efi deployment task
-10. **Fix autoinstall hostname** — template per-host user-data or add hostname task to playbook
+10. ~~**Fix autoinstall hostname**~~ — done, added `ansible.builtin.hostname` task to common role
 11. **Add `desktop_login_background` to dvbs/drbu group_vars** — currently only dvgs has the new variable
 12. **Fix gitolite hooks** — Perl `@INC` missing gitolite lib; `update` hook broken on push
 13. **Investigate mon container** — running but no monitoring daemon detected
@@ -1109,6 +1106,79 @@ All 24.04 playbook runs require `deb_mirror=http://archive.ubuntu.com` because t
 
 ---
 
+## 2026-04-30 — Fix Expired Chrome GPG Key on apt.cttb Mirror
+
+### Problem
+
+Chrome repo mirror at `http://apt.cttb/mirrors/chrome` had an expired GPG signing key (`EXPKEYSIG 4EB27DB2A3B88B8B`). The `InRelease` file was signed with subkey `A3B88B8B` (expired 2024-10-25). `apt-get update` failed on any machine with the Chrome repo configured. This was blocker #10 from the playbook debugging series (run 10: `EXPKEYSIG`).
+
+The mirror hadn't synced successfully since **Feb 2024** — packages were Chrome 121 stable.
+
+### Root Cause
+
+The debmirror GPG keyring (`/srv/debmirror/gpg/trustedkeys.gpg`) only had older subkeys for Google's signing key (`D38B4796`). The newest signing subkey `A6BC6E42` (valid 2024-01-30 → 2027-01-29) was not present, so `gpgv` rejected the fresh `InRelease` downloaded from Google and debmirror refused to promote files from `.temp/`.
+
+### Fixes Applied
+
+**On debmirror container** (10.11.1.22, via `lxc exec debmirror` on srv-nas):
+
+1. **Downloaded fresh Google signing key:**
+   ```bash
+   curl -s https://dl.google.com/linux/linux_signing_key.pub -o /tmp/google-key-new.pub
+   ```
+
+2. **Imported into debmirror GPG keyrings** — both `pubring.gpg` and `trustedkeys.gpg`:
+   ```bash
+   GNUPGHOME=/srv/debmirror/gpg gpg --import /tmp/google-key-new.pub
+   GNUPGHOME=/srv/debmirror/gpg gpg --no-default-keyring --keyring trustedkeys.gpg --import /tmp/google-key-new.pub
+   ```
+   Imported 4 new subkeys + 5 new signatures. Key subkeys now include:
+   - `A6BC6E42` (2024-01-30 → 2027-01-29) — **current signing key**
+   - `C264648F` (2025-01-07 → 2028-01-07)
+   - `006FEAB8` (2026-03-10 → 2029-03-09)
+
+3. **Fixed file ownership** — initial root import changed `pubring.gpg` to `root:root`, breaking debmirror user access:
+   ```bash
+   chown debmirror:debmirror /srv/debmirror/gpg/pubring.gpg
+   chown debmirror:debmirror /srv/debmirror/gpg/trustedkeys.gpg
+   ```
+
+4. **Re-ran Chrome mirror sync** (`/srv/debmirror/scripts/dm-chrome.sh` as debmirror user):
+   - Downloaded 492 MiB (4 new .deb packages)
+   - Chrome stable 121 → **147.0.7727.137**
+   - Chrome beta → **148.0.7778.96**
+   - Chrome canary → **149.0.7818.0**
+   - Chrome unstable → **149.0.7815.2**
+   - `InRelease` updated from Feb 1 2024 → Apr 30 2026
+
+5. **Updated public signing key files:**
+   ```bash
+   cp /tmp/google-key-new.pub /var/www/html/Google-linux_signing_key.pub
+   cp /tmp/google-key-new.pub /var/www/html/google.key
+   ```
+
+### Verification
+
+```
+$ curl -sI http://apt.cttb/mirrors/chrome/dists/stable/InRelease | head -5
+HTTP/1.1 200 OK
+Last-Modified: Thu, 30 Apr 2026 21:16:37 GMT
+
+$ curl -sI http://apt.cttb/Google-linux_signing_key.pub | head -5
+HTTP/1.1 200 OK
+Last-Modified: Fri, 01 May 2026 03:16:11 GMT
+```
+
+### Key Lesson: `trustedkeys.gpg` vs `pubring.gpg`
+
+debmirror uses `gpgv` for signature verification, which reads from `trustedkeys.gpg` — **not** `pubring.gpg`. Importing a key into `pubring.gpg` alone is insufficient. Both keyrings must be updated.
+
+### Impact on Playbook
+
+The Chrome `EXPKEYSIG` blocker (run 10) is now resolved. The `sw-browser.yml` task that adds the Chrome repo and key from `apt.cttb` should now succeed. Chrome can be re-enabled in playbook runs (remove `-e "chrome=false"`).
+
+---
+
 ## Backlog: Pre-Mass-Upgrade Checklist
 
 Issues discovered during dvgs-lab3 test deployment that must be resolved before rolling out to all lab machines.
@@ -1116,9 +1186,10 @@ Issues discovered during dvgs-lab3 test deployment that must be resolved before 
 ### Blockers (must fix)
 
 - [ ] **Autoinstall not triggering on PXE boot** — cloud-init doesn't fetch user-data from network URL. `ds="nocloud-net;s=URL"` + `cloud-config-url=URL` templated but not yet deployed/tested on PXE server (2026-04-23)
-- [ ] **Autoinstall hostname** — autoinstall sets hostname to `computer`. Need per-host user-data templates or a hostname-setting task in the playbook
+- [x] **Autoinstall hostname** — fixed 2026-04-30. Added `ansible.builtin.hostname` task in `roles/common/tasks/setup/default.yml` before the `/etc/hosts` fix. Sets system hostname from `inventory_hostname` via `hostnamectl`. Autoinstall still uses `computer` as placeholder; Ansible corrects it on first run.
 - [x] **apt.cttb mirror missing Noble** — noble added to debmirror, initial sync started 2026-04-30. Pending verification after sync completes.
-- [ ] **No HTTPS egress from campus LAN** — all external HTTPS downloads fail (dl.google.com, packages.microsoft.com, Canonical snap store). Affects Chrome (expired GPG key on mirror + can't fetch from Google), Firefox (snap wrapper contacts store), VS Code (Microsoft signing key). Options: (a) mirror all signing keys + repos on apt.cttb over HTTP, (b) configure squid proxy for HTTPS CONNECT, (c) firewall allowlist for specific domains. Currently skipping all three with `-e "chrome=false firefox=false vscode=false"`
+- [x] **Chrome GPG key expired on apt.cttb** — fixed 2026-04-30. Updated debmirror GPG keyring (`trustedkeys.gpg` + `pubring.gpg`), re-synced mirror, updated public key files. Chrome stable now 147.0.7727.137. Re-enable with `-e "chrome=true"` or remove the `chrome=false` override.
+- [ ] **No HTTPS egress from campus LAN** — all external HTTPS downloads fail (packages.microsoft.com, Canonical snap store). Affects Firefox (snap wrapper contacts store), VS Code (Microsoft signing key). Chrome is now fixed (served from apt.cttb over HTTP). Options: (a) mirror signing keys + repos on apt.cttb over HTTP, (b) configure squid proxy for HTTPS CONNECT, (c) firewall allowlist for specific domains. Currently skipping Firefox/VS Code with `-e "firefox=false vscode=false"`
 - [x] **Remaining playbook failures** — **RESOLVED run 17.** All 5 roles pass (ok=144, changed=27, failed=0). Browsers (Chrome/Firefox/VS Code) skipped due to no HTTPS egress — separate blocker above
 
 ### Should fix
