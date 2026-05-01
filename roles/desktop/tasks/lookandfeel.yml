@@ -98,6 +98,19 @@
       - desktop
       - icons
 
+  - name: install Inter Display font
+    unarchive:
+      remote_src: yes
+      src: "{{ansible_assets_url}}/InterDisplay.tar.gz"
+      dest: /usr/share/fonts/truetype/
+      creates: /usr/share/fonts/truetype/inter-display
+      owner: root
+      group: root
+    notify: rebuild font cache
+    tags:
+      - desktop
+      - fonts
+
   - name: install WhiteSur GTK theme
     unarchive:
       remote_src: yes
@@ -180,6 +193,16 @@
       src: xfce4-panel.xml.j2
       dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
       mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+
+  - name: deploy panel hostname script (genmon)
+    copy:
+      src: config/panel-hostname.sh
+      dest: /usr/local/bin/panel-hostname.sh
+      mode: '0755'
       owner: root
       group: root
     tags:
@@ -305,6 +328,26 @@
     tags:
       - desktop
       - lxterminal
+
+  - name: ensure xfce4-terminal config directory exists
+    file:
+      path: /etc/xdg/xfce4/terminal
+      state: directory
+      mode: '0755'
+      owner: root
+      group: root
+    tags:
+      - desktop
+
+  - name: configure xfce4-terminal (Man Page theme)
+    copy:
+      src: config/terminalrc
+      dest: /etc/xdg/xfce4/terminal/terminalrc
+      mode: '0644'
+      owner: root
+      group: root
+    tags:
+      - desktop
 
   - include_tasks: app-menu.yml
     tags:

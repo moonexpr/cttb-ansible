@@ -4,67 +4,63 @@
   <property name="panels" type="array">
     <value type="int" value="1"/>
     <property name="dark-mode" type="bool" value="true"/>
-    <!-- Top menu bar -->
+    <!-- Top menu bar (autohide, semi-transparent) -->
     <property name="panel-1" type="empty">
       <property name="position" type="string" value="p=6;x=0;y=0"/>
-      <property name="length" type="uint" value="100"/>
+      <property name="length" type="double" value="100"/>
+      <property name="length-adjust" type="bool" value="true"/>
       <property name="position-locked" type="bool" value="true"/>
-      <property name="icon-size" type="uint" value="16"/>
-      <property name="size" type="uint" value="26"/>
+      <property name="icon-size" type="uint" value="0"/>
+      <property name="size" type="uint" value="24"/>
+      <property name="nrows" type="uint" value="1"/>
+      <property name="autohide-behavior" type="uint" value="1"/>
+      <property name="enter-opacity" type="uint" value="100"/>
+      <property name="leave-opacity" type="uint" value="100"/>
+      <property name="background-style" type="uint" value="1"/>
+      <property name="background-rgba" type="array">
+        <value type="double" value="0.153333"/>
+        <value type="double" value="0.108356"/>
+        <value type="double" value="0.108356"/>
+        <value type="double" value="0.535461"/>
+      </property>
       <property name="plugin-ids" type="array">
+        <value type="int" value="34"/>
         <value type="int" value="1"/>
         <value type="int" value="25"/>
-        <value type="int" value="3"/>
-        <value type="int" value="2"/>
         <value type="int" value="5"/>
         <value type="int" value="6"/>
-        <value type="int" value="30"/>
         <value type="int" value="31"/>
-        <value type="int" value="32"/>
+        <value type="int" value="10"/>
         <value type="int" value="33"/>
+        <value type="int" value="13"/>
         <value type="int" value="12"/>
-        <value type="int" value="34"/>
-      </property>
-    </property>
-    <!-- Bottom dock (autohide) -->
-    <property name="panel-2" type="empty">
-      <property name="autohide-behavior" type="uint" value="1"/>
-      <property name="position" type="string" value="p=10;x=0;y=0"/>
-      <property name="length" type="uint" value="1"/>
-      <property name="position-locked" type="bool" value="true"/>
-      <property name="size" type="uint" value="48"/>
-      <property name="plugin-ids" type="array">
-        <value type="int" value="15"/>
-        <value type="int" value="16"/>
-        <value type="int" value="17"/>
-        <value type="int" value="18"/>
-        <value type="int" value="19"/>
-        <value type="int" value="21"/>
-        <value type="int" value="22"/>
+        <value type="int" value="9"/>
       </property>
     </property>
   </property>
   <property name="plugins" type="empty">
-    <!-- Top bar: lotus icon + hostname -->
+    <!-- Top bar: start separator -->
+    <property name="plugin-34" type="string" value="separator">
+      <property name="style" type="uint" value="0"/>
+    </property>
+    <!-- Top bar: lotus icon + app menu -->
     <property name="plugin-1" type="string" value="applicationsmenu">
       <property name="button-title" type="string" value="{{inventory_hostname_short}}"/>
       <property name="show-button-title" type="bool" value="true"/>
       <property name="button-icon" type="string" value="/usr/share/icons/cttb/lotus.svg"/>
       <property name="show-tooltips" type="bool" value="false"/>
+      <property name="show-generic-names" type="bool" value="true"/>
+      <property name="small" type="bool" value="true"/>
     </property>
     <!-- Top bar: global application menu -->
-    <property name="plugin-25" type="string" value="appmenu"/>
-    <!-- Top bar: expanding separator -->
-    <property name="plugin-3" type="string" value="separator">
+    <property name="plugin-25" type="string" value="appmenu">
+      <property name="bold-application-name" type="bool" value="true"/>
+      <property name="compact-mode" type="bool" value="false"/>
       <property name="expand" type="bool" value="true"/>
-      <property name="style" type="uint" value="0"/>
     </property>
-    <!-- Top bar: window list -->
-    <property name="plugin-2" type="string" value="tasklist">
-      <property name="grouping" type="uint" value="1"/>
-    </property>
-    <!-- Top bar: separator before systray -->
+    <!-- Top bar: expanding separator -->
     <property name="plugin-5" type="string" value="separator">
+      <property name="expand" type="bool" value="true"/>
       <property name="style" type="uint" value="0"/>
     </property>
     <!-- Top bar: system tray (wifi, fcitx, nm-applet) -->
@@ -79,11 +75,6 @@
         <value type="string" value="network"/>
       </property>
     </property>
-    <!-- Top bar: separator -->
-    <property name="plugin-30" type="string" value="separator">
-      <property name="style" type="uint" value="0"/>
-      <property name="expand" type="bool" value="false"/>
-    </property>
     <!-- Top bar: volume (pulseaudio) -->
     <property name="plugin-31" type="string" value="pulseaudio">
       <property name="enable-keyboard-shortcuts" type="bool" value="true"/>
@@ -91,43 +82,27 @@
       <property name="mixer-command" type="string" value="pavucontrol"/>
       <property name="show-notifications" type="bool" value="true"/>
     </property>
-    <!-- Top bar: power manager (battery) -->
-    <property name="plugin-32" type="string" value="power-manager-plugin"/>
-    <!-- Top bar: notification plugin -->
-    <property name="plugin-33" type="string" value="notification-plugin"/>
-    <!-- Top bar: clock (macOS-style: Wed 30 Apr 11:04 PM) -->
-    <property name="plugin-12" type="string" value="clock">
-      <property name="digital-format" type="string" value="%a %d %b %l:%M %p"/>
-    </property>
-    <!-- Top bar: end separator -->
-    <property name="plugin-34" type="string" value="separator">
+    <!-- Top bar: separator -->
+    <property name="plugin-10" type="string" value="separator">
       <property name="style" type="uint" value="0"/>
     </property>
-    <!-- Dock: show desktop -->
-    <property name="plugin-15" type="string" value="showdesktop"/>
-    <property name="plugin-16" type="string" value="separator"/>
-    <!-- Dock: terminal launcher -->
-    <property name="plugin-17" type="string" value="launcher">
-      <property name="items" type="array">
-        <value type="string" value="xfce4-terminal-emulator.desktop"/>
-      </property>
+    <!-- Top bar: notification plugin -->
+    <property name="plugin-33" type="string" value="notification-plugin"/>
+    <!-- Top bar: separator -->
+    <property name="plugin-13" type="string" value="separator">
+      <property name="style" type="uint" value="0"/>
     </property>
-    <!-- Dock: file manager launcher -->
-    <property name="plugin-18" type="string" value="launcher">
-      <property name="items" type="array">
-        <value type="string" value="xfce4-file-manager.desktop"/>
-      </property>
+    <!-- Top bar: clock -->
+    <property name="plugin-12" type="string" value="clock">
+      <property name="digital-format" type="string" value="%a %d %b %l:%M %p"/>
+      <property name="digital-layout" type="uint" value="3"/>
+      <property name="digital-time-font" type="string" value="Inter Display Semi-Bold 10"/>
+      <property name="digital-time-format" type="string" value="%a %d %b  %l:%M %p"/>
+      <property name="mode" type="uint" value="2"/>
     </property>
-    <!-- Dock: web browser launcher -->
-    <property name="plugin-19" type="string" value="launcher">
-      <property name="items" type="array">
-        <value type="string" value="xfce4-web-browser.desktop"/>
-      </property>
-    </property>
-    <property name="plugin-21" type="string" value="separator"/>
-    <!-- Dock: home directory menu -->
-    <property name="plugin-22" type="string" value="directorymenu">
-      <property name="base-directory" type="string" value="/home/administrator"/>
+    <!-- Top bar: end separator -->
+    <property name="plugin-9" type="string" value="separator">
+      <property name="style" type="uint" value="0"/>
     </property>
   </property>
 </channel>

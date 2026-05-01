@@ -24,6 +24,15 @@
     tags:
       - browser
 
+  - name: force Chrome to use system window decorations (rounded corners)
+    replace:
+      path: /usr/share/applications/google-chrome-stable.desktop
+      regexp: '^(Exec=/usr/bin/google-chrome-stable)(?! --use-system-title-bar)'
+      replace: '\1 --use-system-title-bar'
+    when: chrome == true
+    tags:
+      - browser
+
   - name: install firefox
     apt:
       name: firefox
