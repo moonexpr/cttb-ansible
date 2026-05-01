@@ -175,6 +175,26 @@
     tags:
       - desktop
 
+  - name: ensure xfce4 kiosk directory exists
+    file:
+      path: /etc/xdg/xfce4/kiosk
+      state: directory
+      mode: 0755
+      owner: root
+      group: root
+    tags:
+      - desktop
+
+  - name: lock panel customization (sudo group only)
+    copy:
+      src: config/kioskrc
+      dest: /etc/xdg/xfce4/kiosk/kioskrc
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+
   - name: configure openbox
     template:
       src: openbox-rc.j2
