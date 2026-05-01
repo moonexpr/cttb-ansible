@@ -99,6 +99,10 @@
   include_role:
     name: cttb-ca-client
 
+- name: set hostname from inventory
+  hostname:
+    name: "{{ inventory_hostname }}"
+
 - name: fix /etc/hosts
   replace:
     dest: /etc/hosts
