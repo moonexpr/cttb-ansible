@@ -1,6 +1,6 @@
 [SeatDefaults]
 greeter-session=lightdm-gtk-greeter
-user-session=gnome-fallback
+user-session={{desktop_session}}
 allow-guest=false
 greeter-hide-users={{lightdm_hide_users | lower}}
 {% if lightdm_autologin_user %}

@@ -17,8 +17,10 @@ skype: false
 
 # look and feel
 desktop_shortcuts: []
-desktop_theme: WhiteSur
-openbox_theme: Lubuntu Arc
+desktop_theme: WhiteSur-Dark
+desktop_session: xfce
+desktop_font: "Inter 11"
+desktop_title_font: "Inter 10"
 gtk_theme: WhiteSur
 icon_theme: WhiteSur
 pic_avatar: avatar-cttb.png
