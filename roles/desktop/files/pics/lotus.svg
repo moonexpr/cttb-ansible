@@ -1,8 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-  <ellipse cx="12" cy="10" rx="2.5" ry="6" />
-  <ellipse cx="12" cy="10" rx="2.5" ry="6" transform="rotate(-25 12 14)" />
-  <ellipse cx="12" cy="10" rx="2.5" ry="6" transform="rotate(-50 12 14)" />
-  <ellipse cx="12" cy="10" rx="2.5" ry="6" transform="rotate(25 12 14)" />
-  <ellipse cx="12" cy="10" rx="2.5" ry="6" transform="rotate(50 12 14)" />
-  <path d="M5 17 Q8 15 12 16 Q16 15 19 17 Q16 18 12 17.5 Q8 18 5 17z" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="white">
+  <!-- Solid lotus - center petal -->
+  <ellipse cx="256" cy="220" rx="45" ry="130"/>
+  <!-- inner left -->
+  <ellipse cx="256" cy="220" rx="45" ry="130" transform="rotate(-30 256 320)"/>
+  <!-- inner right -->
+  <ellipse cx="256" cy="220" rx="45" ry="130" transform="rotate(30 256 320)"/>
+  <!-- outer left -->
+  <ellipse cx="256" cy="220" rx="40" ry="120" transform="rotate(-55 256 320)"/>
+  <!-- outer right -->
+  <ellipse cx="256" cy="220" rx="40" ry="120" transform="rotate(55 256 320)"/>
+  <!-- mask bottom -->
+  <rect x="56" y="370" width="400" height="100" fill="black" fill-opacity="0"/>
+  <!-- lily pad -->
+  <ellipse cx="256" cy="400" rx="160" ry="30"/>
 </svg>
