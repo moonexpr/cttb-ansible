@@ -165,6 +165,16 @@
     tags:
       - desktop
 
+  - name: configure xfce4 panel (top bar + dock with global menu)
+    template:
+      src: xfce4-panel.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+
   - name: configure openbox
     template:
       src: openbox-rc.j2

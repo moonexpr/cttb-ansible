@@ -1233,3 +1233,69 @@ Issues discovered during dvgs-lab3 test deployment that must be resolved before 
 - [ ] **Fix gitolite hooks** — Perl `@INC` missing gitolite lib; `update` hook broken on push
 - [ ] **Investigate mon container** — running but no monitoring daemon detected
 - [ ] **Investigate metrics container** — stopped, may need restart or is decommissioned
+
+---
+
+## 2026-05-01 — Global Application Menu (macOS-style menu bar)
+
+### What was done
+
+Installed and configured `xfce4-appmenu-plugin` on dvgs-lab3 to add a macOS-style global application menu to the top panel. When an app is focused, its menu bar (File, Edit, View, etc.) appears in the top panel instead of the app's title bar — matching the SmallSur/macOS look.
+
+### Packages installed
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `xfce4-appmenu-plugin` | 0.7.6+dfsg1-4build4 | XFCE4 panel plugin for global menu |
+| `appmenu-gtk3-module` | 0.7.6-2.1ubuntu2 | GTK3 module that exports app menus to DBus |
+| `appmenu-registrar` | 0.7.6-2build2 | DBus service that registers app menus |
+| `vala-panel-appmenu-common` | 0.7.6+dfsg1-4build4 | Shared config/data files |
+| `appmenu-gtk-module-common` | 0.7.6-2.1ubuntu2 | Systemd user service for GTK module |
+| `libappmenu-gtk3-parser0` | 0.7.6-2.1ubuntu2 | Shared library for menu parsing |
+
+All from Ubuntu noble/universe. Installed via manual `.deb` download (proxy was down due to `timed_internet.sh` schedule).
+
+### Panel layout
+
+**Top bar** (panel-1, 26px, full width):
+- Lotus icon + hostname → **appmenu** (global menu) → expanding spacer → tasklist → systray → clock → actions
+
+**Bottom dock** (panel-2, 48px, autohide):
+- Show desktop → terminal → file manager → web browser → separator → home directory menu
+
+### Ansible role changes
+
+1. **`roles/desktop/tasks/lubuntu.yml`** — added `xfce4-panel`, `xfce4-appmenu-plugin`, `appmenu-gtk3-module`, `appmenu-registrar` to package list
+2. **`roles/desktop/templates/xfce4-panel.xml.j2`** — new template for XFCE4 panel config with global menu plugin, templatized hostname (`{{inventory_hostname_short}}`)
+3. **`roles/desktop/tasks/lookandfeel.yml`** — added task to deploy `xfce4-panel.xml.j2` to `/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/`
+
+### Notes
+
+- The `appmenu-gtk-module-common` package creates systemd user service symlinks for `xfce-session.target`, `mate-session.target`, and `gnome-session.target`. The xfce-session.target warning is cosmetic — the GTK module loads via environment variable, not systemd.
+- Global menu works for GTK3 apps out of the box. GTK2 apps need `appmenu-gtk2-module` (not installed — most apps are GTK3+ now). Qt5 apps need `appmenu-qt5` (recommend installing if KDE/Qt apps are used).
+- The panel XML is deployed to `/etc/xdg/` (system default). Per-user config in `~/.config/xfce4/` takes precedence — existing users won't see changes until their local config is removed or the panel is reset.
+- Temporary autologin was added to `/etc/lightdm/lightdm.conf` to bypass the greeter for testing, then removed after screenshot.
+
+### Right-side widgets (SmallSur-matching)
+
+Updated the top panel right side to match the [SmallSur](https://github.com/jothi-prasath/SmallSur) XFCE rice. Reference: `SmallSur/xfce4-panel/xfce4-panel.xml`.
+
+**Before:** systray → bare clock → actions (logout/power buttons)
+**After:** systray → separator → volume → power → notifications → clock → separator
+
+| Plugin | Type | Config |
+|--------|------|--------|
+| `pulseaudio` | Volume control | MPRIS enabled, keyboard shortcuts, pavucontrol mixer |
+| `power-manager-plugin` | Power/battery icon | Default config |
+| `notification-plugin` | Notification bell | Default config |
+| `clock` | Date + time | `%a %d %b %l:%M %p` (e.g. "Thu 01 May 6:30 AM") |
+
+Removed `actions` plugin — logout/shutdown accessible via the lotus (applications) menu.
+
+Additional packages added to `lubuntu.yml`: `xfce4-pulseaudio-plugin`, `xfce4-notifyd`.
+
+### SSH access notes
+
+- `SSH_AUTH_SOCK=/var/run/com.apple.launchd.rwA60yzqH5/Listeners` — macOS default ssh-agent socket (Bitwarden had hijacked it via `launchctl setenv`)
+- `ssh -A -J cttb administrator@dvgs-lab3.cttb` — agent forwarding required; ProxyJump alone doesn't forward the key
+- `sudo XAUTHORITY=/var/run/lightdm/root/:0 DISPLAY=:0 import -window root /tmp/screenshot.png` — screenshot via ImageMagick (xfce4-screenshooter not installed)

@@ -50,7 +50,13 @@
       - simple-scan
       - system-tools-backends
       - xdg-user-dirs
+      - xfce4-panel
       - xfce4-power-manager
+      - xfce4-appmenu-plugin
+      - xfce4-pulseaudio-plugin
+      - xfce4-notifyd
+      - appmenu-gtk3-module
+      - appmenu-registrar
       - xfwm4
       - xserver-xorg
       - xz-utils
