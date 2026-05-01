@@ -155,6 +155,16 @@
     tags:
       - desktop
 
+  - name: configure xfce4 xsettings (font, theme, cursor)
+    template:
+      src: xsettings.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - desktop
+
   - name: configure xfwm4 window manager
     template:
       src: xfwm4.xml.j2
@@ -180,6 +190,16 @@
       path: /etc/xdg/xfce4/kiosk
       state: directory
       mode: 0755
+      owner: root
+      group: root
+    tags:
+      - desktop
+
+  - name: deploy panel GTK CSS override (semibold font, icon spacing)
+    copy:
+      src: config/gtk-panel.css
+      dest: /etc/xdg/gtk-3.0/gtk.css
+      mode: 0644
       owner: root
       group: root
     tags:
