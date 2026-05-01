@@ -72,7 +72,7 @@
     tags:
       - nsswitch.conf
 
-  - name: configure ldap for nss, on Ubuntu 20.04
+  - name: configure ldap for nss
     lineinfile:
       path: /etc/nsswitch.conf
       regexp: "{{ item.From }}"
@@ -82,7 +82,6 @@
       - { From: '^passwd:.*files systemd', To: 'passwd:         files systemd ldap'}
       - { From: '^group:.*files systemd',  To: 'group:          files systemd ldap'}
       - { From: '^shadow:.*files',         To: 'shadow:         files ldap'}
-    when: ansible_distribution_version == '20.04'
     tags:
       - nsswitch.conf
 
