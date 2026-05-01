@@ -188,6 +188,22 @@
     tags:
       - desktop
 
+  - name: enable GTK global menu module in /etc/environment
+    lineinfile:
+      path: /etc/environment
+      regexp: '^GTK_MODULES='
+      line: 'GTK_MODULES=appmenu-gtk-module'
+    tags:
+      - desktop
+
+  - name: enable UBUNTU_MENUPROXY in /etc/environment
+    lineinfile:
+      path: /etc/environment
+      regexp: '^UBUNTU_MENUPROXY='
+      line: 'UBUNTU_MENUPROXY=1'
+    tags:
+      - desktop
+
   - name: configure xfce4 panel (top bar + dock with global menu)
     template:
       src: xfce4-panel.xml.j2
