@@ -1189,8 +1189,11 @@ Issues discovered during dvgs-lab3 test deployment that must be resolved before 
 - [x] **Autoinstall hostname** — fixed 2026-04-30. Added `ansible.builtin.hostname` task in `roles/common/tasks/setup/default.yml` before the `/etc/hosts` fix. Sets system hostname from `inventory_hostname` via `hostnamectl`. Autoinstall still uses `computer` as placeholder; Ansible corrects it on first run.
 - [x] **apt.cttb mirror missing Noble** — noble added to debmirror, initial sync started 2026-04-30. Pending verification after sync completes.
 - [x] **Chrome GPG key expired on apt.cttb** — fixed 2026-04-30. Updated debmirror GPG keyring (`trustedkeys.gpg` + `pubring.gpg`), re-synced mirror, updated public key files. Chrome stable now 147.0.7727.137. Re-enable with `-e "chrome=true"` or remove the `chrome=false` override.
-- [ ] **No HTTPS egress from campus LAN** — all external HTTPS downloads fail (packages.microsoft.com, Canonical snap store). Affects Firefox (snap wrapper contacts store), VS Code (Microsoft signing key). Chrome is now fixed (served from apt.cttb over HTTP). Options: (a) mirror signing keys + repos on apt.cttb over HTTP, (b) configure squid proxy for HTTPS CONNECT, (c) firewall allowlist for specific domains. Currently skipping Firefox/VS Code with `-e "firefox=false vscode=false"`
-- [x] **Remaining playbook failures** — **RESOLVED run 17.** All 5 roles pass (ok=144, changed=27, failed=0). Browsers (Chrome/Firefox/VS Code) skipped due to no HTTPS egress — separate blocker above
+- [x] **No HTTPS egress from campus LAN** — **RESOLVED.** Root cause: e2guardian:8080 blocked by `timed_internet.sh` cron schedule (not a firewall misconfiguration). HTTPS works through e2guardian→squid when internet is "on". VS Code installed via HTTPS through proxy. Chrome installed from apt.cttb mirror (HTTP, no WAN needed). Firefox still blocked (snap store issue — separate item).
+- [ ] **Firefox snap blocks on no snap store access** — Ubuntu 24.04 `firefox` apt package is a snap wrapper. `dpkg --unpack` contacts Canonical snap store for 30 min then fails. Options: (a) Mozilla Team PPA for real .deb Firefox, (b) pre-seed snap offline, (c) chromium-browser from apt (not snap)
+- [x] **Remaining playbook failures** — **RESOLVED run 17.** All 5 roles pass (ok=144, changed=27, failed=0). Post-playbook audit found additional fixes needed (see below).
+- [x] **LDAP nsswitch.conf version guard** — `when: ansible_distribution_version == '20.04'` excluded 24.04. Guard removed. nsswitch.conf now updated on all versions.
+- [x] **LightDM not set as default display manager** — playbook configured lightdm but never wrote `/etc/X11/default-display-manager`. Task added. Rebooted to test — awaiting physical console verification.
 
 ### Should fix
 
@@ -1198,7 +1201,10 @@ Issues discovered during dvgs-lab3 test deployment that must be resolved before 
 - [ ] **Deploy autoinstall fix to PXE server** — rendered GRUB line with `ds="nocloud-net;s=URL"` + `cloud-config-url=` ready in templates but not rsynced to `/srv/netinstall/boot/grub/grub.cfg`
 - [ ] **Codify UEFI GRUB in netinstall-2404 role** — grub.cfg template + grubnetx64.efi deployment task not yet in Ansible (currently manual)
 - [ ] **USB autoinstall path** — `optional: true` added to wifi templates, but need a reliable USB drive (59GB Flash Disk has flaky I/O)
-- [ ] **IPv6 disable sysctl not applying** — `disable_ipv6` config deployed but `/proc/sys/net/ipv6/conf/all/disable_ipv6` still reads 0. May need reboot or explicit `sysctl -p`
+- [x] **IPv6 disable sysctl** — applied manually with `sysctl -p`. Config file was deployed but not loaded. Will apply automatically after reboot.
+- [ ] **dvgs-lab3 unreachable after reboot** — rebooted to test LightDM, host not responding via SSH. Possible: stuck at display manager, DHCP assigned different IP, or boot issue. Needs physical console check.
+- [ ] **WhiteSur theme not applied to desktop session** — GTK theme, icons, cursors installed and configured in lxqt.conf + gtk-3.0/settings.ini, but needs login/reboot to verify visual result
+- [ ] **Wallpaper rotation script** — cron deployed but `rotate-wallpaper.sh` may not work headless (uses `DISPLAY=:0 feh --bg-fill`). Needs testing at physical console
 
 ### Nice to have
 
