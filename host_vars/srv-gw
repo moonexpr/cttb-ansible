@@ -256,7 +256,7 @@ filtering_groups:
   - name: adult # this is default if no other matching
     num: 1
     ips:
-      - 10.11.9.23  # dvgs-lab3 — temporary unrestricted for testing (revert before mass deployment)
+      - 10.11.9.23  # dvgs-testmachine — temporary unrestricted for testing (revert before mass deployment)
     naughtynesslimit: 400
     bypass: 300
     disablecontentscan: 'on'
