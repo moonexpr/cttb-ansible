@@ -51,6 +51,7 @@
       - system-tools-backends
       - xdg-user-dirs
       - xfce4-power-manager
+      - xfwm4
       - xserver-xorg
       - xz-utils
     tags:
