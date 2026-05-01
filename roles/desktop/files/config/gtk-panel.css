@@ -1,0 +1,21 @@
+/* XFCE panel styling — macOS-like appearance */
+
+/* Panel-wide font weight */
+#xfce4-panel-wrapper .xfce-panel-button,
+#xfce4-panel-wrapper label,
+#xfce4-panel-wrapper .clock-time {
+    font-weight: 600;
+    font-family: "Inter";
+}
+
+/* Clock: semibold, slight letter spacing */
+#xfce4-panel-wrapper #clock-button label {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Status area icon spacing */
+#xfce4-panel-wrapper .xfce-panel-button {
+    padding-left: 3px;
+    padding-right: 3px;
+}
