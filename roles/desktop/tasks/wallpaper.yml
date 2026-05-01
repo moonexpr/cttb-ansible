@@ -21,6 +21,12 @@
     tags:
       - wallpaper
 
+  - name: remove macOS resource fork files from wallpapers
+    shell: rm -f {{ desktop_wallpaper_dir }}/._*
+    changed_when: false
+    tags:
+      - wallpaper
+
   - name: configure xfdesktop wallpaper rotation
     template:
       src: xfce4-desktop.xml.j2
