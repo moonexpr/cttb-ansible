@@ -1116,6 +1116,11 @@ All 24.04 playbook runs require `deb_mirror=http://archive.ubuntu.com` because t
 14. **cups-client block fix** — `set default printer` task was outside the `cups_srv` block, ran before `/etc/cups` was created.
 15. **`ldap_clients` inventory group** — ldap-client role asserts membership; group missing from `hosts_os_upgrade.ini`.
 16. **Site-level parent groups** (`[dvgs]`, `[dvbs]`, `[drbu]`) — needed for `group_vars/dvgs` etc. to load (provides `ldap_group_acl_string` and other site vars).
+17. **lxqt-applications.menu symlink** — Lubuntu 24.04 only ships `lxde-applications.menu`; LXQt panel expects `lxqt-applications.menu`. Symlink on 24.04+.
+18. **Panel icon theme** — `lxpanel.j2` hardcoded `windos10-icons`; changed to `{{icon_theme}}` variable.
+19. **Window manager: openbox → xfwm4** — Openbox has no GTK theme integration (separate theme format, rarely supported by modern themes like WhiteSur). xfwm4 uses WhiteSur's native `xfwm4/` theme for consistent window decorations, includes a built-in compositor (shadows, transparency), and supports macOS-style button layout (close/min/max on left). ~15MB resident, mature since 2003.
+20. **Login backgrounds** — per-site wallpapers from 512pixels.net: High Sierra (dvgs), Sequoia Sunrise (dvbs), Yosemite (drbu).
+21. **xserver-xorg** — missing because `install_recommends: no` skips it. Added explicitly to lubuntu.yml.
 
 ---
 
