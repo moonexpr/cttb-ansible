@@ -1,0 +1,38 @@
+---
+# Upgrade to a single MediaWiki version.
+# Called in a loop by migrate.yml with mw_version set.
+
+- name: "extract mediawiki {{ mw_version }}"
+  unarchive:
+    src: "{{ mediawiki_data_dir }}/mediawiki-{{ mw_version }}.tar.gz"
+    dest: "/var/www/html/"
+    remote_src: yes
+    extra_opts:
+      - --transform
+      - "s/^mediawiki-{{ mw_version }}/w/"
+  tags:
+    - migrate-step
+
+- name: "deploy LocalSettings.php for {{ mw_version }}"
+  template:
+    src: LocalSettings.php.j2
+    dest: "{{ mediawiki_install_dir }}/LocalSettings.php"
+    owner: www-data
+    group: www-data
+    mode: "0640"
+  tags:
+    - migrate-step
+
+- name: "run update.php for {{ mw_version }}"
+  command: >
+    php {{ mediawiki_install_dir }}/maintenance/update.php --quick
+  register: update_result
+  changed_when: "'Done' in update_result.stdout"
+  tags:
+    - migrate-step
+
+- name: "show update.php output for {{ mw_version }}"
+  debug:
+    msg: "{{ update_result.stdout_lines[-10:] }}"
+  tags:
+    - migrate-step
