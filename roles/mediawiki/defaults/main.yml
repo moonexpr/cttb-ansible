@@ -1,0 +1,38 @@
+---
+
+# MediaWiki version stepping path (in order)
+mediawiki_target_version: "1.43.1"
+mediawiki_stepping_versions:
+  - "1.35.14"
+  - "1.39.11"
+  - "1.43.1"
+
+# Download base URL
+mediawiki_download_url: "https://releases.wikimedia.org/mediawiki"
+
+# Install paths
+mediawiki_install_dir: "/var/www/html/w"
+mediawiki_data_dir: "/var/lib/mediawiki"
+
+# Database
+mediawiki_db_name: "mediawiki"
+mediawiki_db_user: "mediawiki"
+mediawiki_db_password: "{{ vault_mediawiki_db_password }}"
+mediawiki_db_prefix: "mediawiki"
+
+# Site config
+mediawiki_site_name: "CTTB Wiki"
+mediawiki_server: "http://wikitest.cttb"
+mediawiki_script_path: "/w"
+
+# PHP
+mediawiki_php_version: "8.3"
+
+# Nginx
+mediawiki_server_name: "wikitest.cttb"
+
+# Migration (set to true when importing from old wiki)
+mediawiki_migration_mode: false
+mediawiki_migration_dump_file: "/tmp/wiki-dump.sql"
+mediawiki_migration_images_dir: "/tmp/wiki-images"
+mediawiki_migration_static_dir: "/tmp/wiki-static"
