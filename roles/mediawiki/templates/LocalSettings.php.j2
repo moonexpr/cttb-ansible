@@ -18,53 +18,22 @@ $wgDBprefix = "{{ mediawiki_db_prefix }}";
 $wgDBTableOptions = "ENGINE=InnoDB, DEFAULT CHARSET=utf8mb4";
 
 ## Paths
-$wgResourceBasePath = "{{ mediawiki_script_path }}";
 $wgUploadPath = "$wgScriptPath/images";
 $wgUploadDirectory = "{{ mediawiki_install_dir }}/images";
 $wgEnableUploads = true;
-
-## Logo
-$wgLogos = [
-    "1x" => "$wgResourceBasePath/resources/assets/cttb.png",
-    "icon" => "$wgResourceBasePath/resources/assets/cttb.png",
-];
 
 ## Caching — basic file cache for LXC
 $wgMainCacheType = CACHE_ACCEL;
 $wgCacheDirectory = "{{ mediawiki_install_dir }}/cache";
 
-## Skins — Vector 2022 with wider content for figures
+## Skins
 wfLoadSkin( 'Vector' );
-wfLoadSkin( 'MonoBook' );
-wfLoadSkin( 'Timeless' );
-wfLoadSkin( 'MinervaNeue' );
-$wgDefaultSkin = "vector-2022";
-$wgVectorDefaultSkinVersion = "2";
-$wgVectorDefaultSkinVersionForExistingAccounts = "2";
-$wgDefaultUserOptions["skin"] = "vector-2022";
-$wgDefaultUserOptions["VectorSkinVersion"] = "2";
+$wgDefaultSkin = "vector";
 
-## Extensions
+## Extensions (bundled with MediaWiki core)
 wfLoadExtension( 'ImageMap' );
 wfLoadExtension( 'Interwiki' );
 wfLoadExtension( 'WikiEditor' );
-wfLoadExtension( 'SyntaxHighlight_GeSHi' );
-wfLoadExtension( 'InputBox' );
-wfLoadExtension( 'ParserFunctions' );
-wfLoadExtension( 'CategoryTree' );
-wfLoadExtension( 'VisualEditor' );
-wfLoadExtension( 'MultimediaViewer' );
-wfLoadExtension( 'CodeEditor' );
-wfLoadExtension( 'Cite' );
-wfLoadExtension( 'CiteThisPage' );
-
-## VisualEditor config — single "Edit" tab using VisualEditor
-$wgDefaultUserOptions["visualeditor-editor"] = "visualeditor";
-$wgDefaultUserOptions["visualeditor-enable"] = 1;
-$wgVisualEditorUseSingleEditTab = true;
-$wgDefaultUserOptions["visualeditor-tabs"] = "prefer-ve";
-$wgVisualEditorEnableWikitext = false;
-$wgVisualEditorEnableWikitextEditor = false;
 
 ## Security
 $wgSecretKey = "{{ mediawiki_secret_key | default('GENERATE_ME_ON_FIRST_RUN') }}";
@@ -80,16 +49,3 @@ $wgEnableEmail = false;
 ## Misc
 $wgLanguageCode = "en";
 $wgLocaltimezone = "America/Los_Angeles";
-$wgParserEnableLegacyMediaDOM = true;
-
-## Tabs: rename "View history" to "History"
-$wgHooks["SkinTemplateNavigation::Universal"][] = function ( $skin, &$links ) {
-    if ( isset( $links["views"]["history"] ) ) {
-        $links["views"]["history"]["text"] = "History";
-    }
-};
-
-## Load City Lights dark theme CSS
-$wgHooks["BeforePageDisplay"][] = function ( $out ) {
-    $out->addStyle( $out->getConfig()->get( 'ScriptPath' ) . '/resources/assets/cttb-dark.css' );
-};
