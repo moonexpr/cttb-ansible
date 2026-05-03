@@ -80,10 +80,10 @@ $wgParserEnableLegacyMediaDOM = true;
 ## Rename edit tabs
 $wgHooks["SkinTemplateNavigation::Universal"][] = function ( $skin, &$links ) {
     if ( isset( $links["views"]["ve-edit"] ) ) {
-        $links["views"]["ve-edit"]["text"] = "Visual Edit";
+        $links["views"]["ve-edit"]["text"] = "Edit visual";
     }
     if ( isset( $links["views"]["edit"] ) ) {
-        $links["views"]["edit"]["text"] = "Source Edit";
+        $links["views"]["edit"]["text"] = "Edit source";
     }
 };
 
