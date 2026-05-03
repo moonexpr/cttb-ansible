@@ -33,18 +33,14 @@ $wgLogos = [
 $wgMainCacheType = CACHE_ACCEL;
 $wgCacheDirectory = "{{ mediawiki_install_dir }}/cache";
 
-## Skins
+## Skins — legacy Vector (full-width, figures float correctly)
 wfLoadSkin( 'Vector' );
 wfLoadSkin( 'MonoBook' );
 wfLoadSkin( 'Timeless' );
 wfLoadSkin( 'MinervaNeue' );
-$wgDefaultSkin = "vector-2022";
-$wgVectorDefaultSkinVersion = "2";
-$wgVectorDefaultSkinVersionForExistingAccounts = "2";
-$wgDefaultUserOptions["skin"] = "vector-2022";
-$wgDefaultUserOptions["VectorSkinVersion"] = "2";
+$wgDefaultSkin = "vector";
 
-## Extensions (bundled with MediaWiki core)
+## Extensions
 wfLoadExtension( 'ImageMap' );
 wfLoadExtension( 'Interwiki' );
 wfLoadExtension( 'WikiEditor' );
@@ -53,18 +49,17 @@ wfLoadExtension( 'InputBox' );
 wfLoadExtension( 'ParserFunctions' );
 wfLoadExtension( 'CategoryTree' );
 wfLoadExtension( 'VisualEditor' );
-$wgDefaultUserOptions["visualeditor-editor"] = "visualeditor";
-$wgDefaultUserOptions["visualeditor-enable"] = 1;
-$wgVisualEditorEnableWikitext = false;
-$wgDefaultUserOptions["visualeditor-hidesourcetab"] = 1;
-$wgVisualEditorEnableWikitextEditor = false;
-$wgHooks["BeforePageDisplay"][] = function ( $out ) {
-    $out->addInlineStyle( '.mw-editsection-divider, .mw-editsection a[href*="action=edit"]:not([href*="veaction"]) { display: none !important; }' );
-};
 wfLoadExtension( 'MultimediaViewer' );
 wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'Cite' );
 wfLoadExtension( 'CiteThisPage' );
+
+## VisualEditor config
+$wgDefaultUserOptions["visualeditor-editor"] = "visualeditor";
+$wgDefaultUserOptions["visualeditor-enable"] = 1;
+$wgVisualEditorEnableWikitext = false;
+$wgVisualEditorEnableWikitextEditor = false;
+$wgDefaultUserOptions["visualeditor-hidesourcetab"] = 1;
 
 ## Security
 $wgSecretKey = "{{ mediawiki_secret_key | default('GENERATE_ME_ON_FIRST_RUN') }}";
@@ -82,11 +77,6 @@ $wgLanguageCode = "en";
 $wgLocaltimezone = "America/Los_Angeles";
 $wgParserEnableLegacyMediaDOM = true;
 
-## Widen content area in Vector 2022
-$wgVectorMaxWidthOptions["exclude"]["mainpage"] = false;
-$wgVectorMaxWidthOptions["exclude"]["querystring"] = [];
-$wgVectorMaxWidthOptions["exclude"]["namespaces"] = [];
-
 ## Rename edit tabs
 $wgHooks["SkinTemplateNavigation::Universal"][] = function ( $skin, &$links ) {
     if ( isset( $links["views"]["ve-edit"] ) ) {
@@ -95,4 +85,11 @@ $wgHooks["SkinTemplateNavigation::Universal"][] = function ( $skin, &$links ) {
     if ( isset( $links["views"]["edit"] ) ) {
         $links["views"]["edit"]["text"] = "Source Edit";
     }
+};
+
+## Hide "edit source" on section links
+$wgHooks["BeforePageDisplay"][] = function ( $out ) {
+    $out->addInlineStyle(
+        '.mw-editsection-divider, .mw-editsection a[href*="action=edit"]:not([href*="veaction"]) { display: none !important; }'
+    );
 };
