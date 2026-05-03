@@ -18,9 +18,13 @@ $wgDBprefix = "{{ mediawiki_db_prefix }}";
 $wgDBTableOptions = "ENGINE=InnoDB, DEFAULT CHARSET=utf8mb4";
 
 ## Paths
+$wgResourceBasePath = "{{ mediawiki_script_path }}";
 $wgUploadPath = "$wgScriptPath/images";
 $wgUploadDirectory = "{{ mediawiki_install_dir }}/images";
 $wgEnableUploads = true;
+
+## Logo
+$wgLogos = [ "1x" => "$wgResourceBasePath/resources/assets/cttb.png" ];
 
 ## Caching — basic file cache for LXC
 $wgMainCacheType = CACHE_ACCEL;
