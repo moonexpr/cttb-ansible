@@ -1,54 +1,57 @@
 server {
     listen 80;
     server_name {{ mediawiki_server_name }};
-
     root /var/www/html;
     index index.php index.html;
-
     client_max_body_size 20M;
 
-    # Short URL: /wiki/Page_Name -> /w/index.php
     location /wiki/ {
         rewrite ^/wiki/(.*)$ /w/index.php?title=$1&$args last;
     }
 
-    # Redirect bare / to wiki main page
     location = / {
         return 301 /wiki/Main_Page;
     }
 
-    # MediaWiki PHP files
-    location ~ ^/w/(index|load|api|thumb|opensearch_desc|rest)\.php$ {
+    # PHP entry points
+    location ~ ^/w/(index|load|api|thumb|opensearch_desc|rest|img_auth)\.php(/|$) {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
         fastcgi_pass unix:/run/php/mediawiki.sock;
     }
 
+    # Thumbnail handler
+    location ~ ^/w/images/thumb/ {
+        try_files $uri $uri/ @thumb;
+    }
+
+    location @thumb {
+        rewrite ^/w/images/thumb/(.*)$ /w/thumb.php last;
+    }
+
     # Static assets
-    location ^~ /w/skins/   { }
+    location ^~ /w/skins/     { }
     location ^~ /w/resources/ { }
-    location ^~ /w/images/  { }
+    location ^~ /w/images/    { }
     location ^~ /w/extensions/ {
         location ~* \.php$ { return 403; }
     }
 
-    # Static files outside wiki (PDF, files/, etc.)
+    # Static files outside wiki
     location ^~ /files/ { }
     location ~* \.(pdf|jpg|jpeg|png|gif|ico|css|js)$ {
         expires 7d;
     }
 
-    # Block access to sensitive MediaWiki paths
+    # Block sensitive paths
     location ^~ /w/cache/       { return 403; }
     location ^~ /w/includes/    { return 403; }
     location ^~ /w/maintenance/ { return 403; }
     location ^~ /w/languages/   { return 403; }
-    location ^~ /w/serialized/  { return 403; }
     location ^~ /w/tests/       { return 403; }
     location ~* /w/LocalSettings\.php$ { return 403; }
 
     # Deny all other PHP
-    location ~ \.php$ {
-        return 403;
-    }
+    location ~ \.php$ { return 403; }
 }
