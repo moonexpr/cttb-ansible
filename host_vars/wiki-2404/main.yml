@@ -6,6 +6,7 @@
 
 mediawiki_server_name: "wikitest.cttb"
 mediawiki_server: "http://wikitest.cttb"
+ansible_host: 10.11.1.34
 
 # Secrets from vault
 mediawiki_secret_key: "{{ vault_mediawiki_secret_key }}"
