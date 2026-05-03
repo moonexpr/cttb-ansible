@@ -5,7 +5,7 @@ server {
     index index.php index.html;
     client_max_body_size 20M;
 
-    location /wiki/ {
+    location ^~ /wiki/ {
         rewrite ^/wiki/(.*)$ /w/index.php?title=$1&$args last;
     }
 
