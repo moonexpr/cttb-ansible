@@ -35,7 +35,11 @@ wfLoadSkin( 'Vector' );
 wfLoadSkin( 'MonoBook' );
 wfLoadSkin( 'Timeless' );
 wfLoadSkin( 'MinervaNeue' );
-$wgDefaultSkin = "vector";
+$wgDefaultSkin = "vector-2022";
+$wgVectorDefaultSkinVersion = "2";
+$wgVectorDefaultSkinVersionForExistingAccounts = "2";
+$wgDefaultUserOptions["skin"] = "vector-2022";
+$wgDefaultUserOptions["VectorSkinVersion"] = "2";
 
 ## Extensions (bundled with MediaWiki core)
 wfLoadExtension( 'ImageMap' );
@@ -50,6 +54,10 @@ $wgDefaultUserOptions["visualeditor-editor"] = "visualeditor";
 $wgDefaultUserOptions["visualeditor-enable"] = 1;
 $wgVisualEditorEnableWikitext = false;
 $wgDefaultUserOptions["visualeditor-hidesourcetab"] = 1;
+$wgVisualEditorEnableWikitextEditor = false;
+$wgHooks["BeforePageDisplay"][] = function ( $out ) {
+    $out->addInlineStyle( '.mw-editsection-divider, .mw-editsection a[href*="action=edit"]:not([href*="veaction"]) { display: none !important; }' );
+};
 wfLoadExtension( 'MultimediaViewer' );
 wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'Cite' );
