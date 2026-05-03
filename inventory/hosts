@@ -38,6 +38,7 @@ rui-test2
 
 ## production containers
 lxc-asterisk
+wiki-2404
 lxc-cups-dvbs
 lxc-cups-dvgs
 lxc-cups-cttb
