@@ -1,0 +1,54 @@
+---
+# Install WhiteSur GTK theme and icon theme from bundled source tarballs.
+# The GTK theme's release/ directory contains pre-built variants so no sassc
+# or glib-compile-resources is needed on target machines.
+
+- name: create whitesur build dir
+  file:
+    path: /tmp/whitesur-src
+    state: directory
+    mode: '0755'
+
+- name: extract WhiteSur gtk theme source
+  unarchive:
+    src: themes/WhiteSur-gtk-theme.tar.gz
+    dest: /tmp/whitesur-src
+    creates: /tmp/whitesur-src/WhiteSur-gtk-theme
+
+- name: install WhiteSur-Light gtk theme
+  unarchive:
+    src: /tmp/whitesur-src/WhiteSur-gtk-theme/release/WhiteSur-Light.tar.xz
+    dest: /usr/share/themes/
+    remote_src: yes
+    creates: /usr/share/themes/WhiteSur-Light
+
+- name: install WhiteSur-Dark gtk theme
+  unarchive:
+    src: /tmp/whitesur-src/WhiteSur-gtk-theme/release/WhiteSur-Dark.tar.xz
+    dest: /usr/share/themes/
+    remote_src: yes
+    creates: /usr/share/themes/WhiteSur-Dark
+
+- name: extract WhiteSur icon theme source
+  unarchive:
+    src: themes/WhiteSur-icon-theme.tar.gz
+    dest: /tmp/whitesur-src
+    creates: /tmp/whitesur-src/WhiteSur-icon-theme
+
+- name: install WhiteSur icon theme
+  command:
+    argv:
+      - bash
+      - install.sh
+      - --dest
+      - /usr/share/icons
+    chdir: /tmp/whitesur-src/WhiteSur-icon-theme
+    creates: /usr/share/icons/WhiteSur
+
+- name: update WhiteSur icon cache
+  command:
+    argv:
+      - gtk-update-icon-cache
+      - -f
+      - /usr/share/icons/WhiteSur
+  changed_when: false
