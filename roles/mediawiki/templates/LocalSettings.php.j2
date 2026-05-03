@@ -24,7 +24,10 @@ $wgUploadDirectory = "{{ mediawiki_install_dir }}/images";
 $wgEnableUploads = true;
 
 ## Logo
-$wgLogos = [ "1x" => "$wgResourceBasePath/resources/assets/cttb.png" ];
+$wgLogos = [
+    "1x" => "$wgResourceBasePath/resources/assets/cttb.png",
+    "icon" => "$wgResourceBasePath/resources/assets/cttb.png",
+];
 
 ## Caching — basic file cache for LXC
 $wgMainCacheType = CACHE_ACCEL;
