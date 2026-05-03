@@ -1,0 +1,107 @@
+---
+
+  #- name: Add canonical third-party mirror
+    #apt_repository:
+      #repo: "deb {{deb_mirror}}/canonical {{ansible_distribution_release}} partner"
+      #state: present
+    #tags:
+      #- deb_repo
+
+  - name: install additional software
+    apt:
+      state: latest
+      install_recommends: no
+      name:
+      - audacious
+      - audacity
+      - cups-client
+      - gimp
+      - imagemagick-6.q16hdri
+      - pavucontrol-qt
+      - python-is-python3
+      - python3-pip
+      - ubuntu-restricted-addons
+      - ubuntu-restricted-extras
+      - vlc
+
+  - name: install desktop sw requested for this box
+    apt:
+      name: "{{additional_desktop_sw | default([])}}"
+      state: latest
+    tags:
+      - additional_desktop_sw
+
+  # removing bunch of sw I don't need
+  - name: remove other apps
+    apt:
+      state: absent
+      purge: yes
+      name:
+      - cups-browsed
+      - deja-dup
+      - eog
+      - galculator
+      - gdb
+      - gnome-keyring
+      - gnome-logs
+      - midori      # a lightweight web browser in Ubuntu 20.04 minimal ISO.
+      - nautilus
+      - sylpheed*
+      - update-manager
+      - update-notifier
+      #- lubuntu-software-center    # Does not exist.
+      - update-notifier-common     # Will be installed by "ubuntu-restricted-extras".
+
+   # Purging failed at preseed time since it's removing a file /.../whoopsie-id is that'll be created until the 1st run.
+  - name: purge whoopsie
+    apt:
+      state: absent
+      purge: yes
+      name:
+      - whoopsie
+    ignore_errors: true
+
+  # Seems no need to have snap store.
+  - name: remove snap-store
+    snap:
+      name: snap-store
+      state: absent
+
+  - include: sw-office.yml
+    tags:
+      - office
+
+  - include: sw-browser.yml
+    tags:
+      - browser
+
+  - name: upgrade Zoom client
+    apt:
+      deb: "{{ansible_assets_url}}/zoom_amd64.deb"
+      only_upgrade: true
+    register: zoom_upgraded
+    tags:
+      - zoom
+
+  - name: install Zoom client for the 1st time
+    apt:
+      deb: "{{ansible_assets_url}}/zoom_amd64.deb"
+    when: zoom_upgraded == 0
+    tags:
+      - zoom
+
+  - name: upgrade Skype
+    apt:
+      deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
+      only_upgrade: true
+    register: skype_upgraded
+    when: skype == true
+    tags:
+      - skype
+
+  - name: install Skype for the 1st time
+    apt:
+      deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
+    when: (skype == true) and (skype_upgraded == 0)
+    tags:
+      - skype
