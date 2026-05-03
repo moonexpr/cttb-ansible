@@ -1289,3 +1289,68 @@ Switched terminal font from Ubuntu Mono to [Serious Shanns Nerd Font Mono](https
 Asset: `SeriousShannsNerdFontMono.tar.gz` (19MB, 6 OTF weights: Regular, Bold, Italic, BoldItalic, Light, LightItalic). Needs upload to `pxe.cttb/ansible_assets/`.
 
 **Not yet tested** — dvgs-testmachine offline. Will verify after host is back online.
+
+---
+
+## 2026-05-02 — MediaWiki Migration: 1.29.1 → 1.43.1 LTS
+
+Migrated `wiki.cttb` from a legacy container (Ubuntu 16.04, MW 1.29.1, Apache, PHP 7.0, MySQL 5.7) to a new container `wiki-2404` (Ubuntu 24.04, MW 1.43.1, nginx, PHP 8.3, MariaDB 10.11). Every component on the old wiki was years past end-of-life.
+
+### Migration
+
+| Step | Detail |
+|------|--------|
+| Container | `lxc launch ubuntu:24.04 wiki-2404` on srv-vm, IP 10.11.1.34 |
+| DB dump | 17.3 MB in `mediawiki`-prefixed tables (125 pages, 1,456 revisions) |
+| Stepping | MW 1.29 → 1.35 → 1.39 → 1.43, `maintenance/update.php` at each step |
+| Images | Copied from old `/var/www/html/w/uploads/` to new `/var/www/html/w/images/` |
+| DNS | dnsmasq entry updated: `00:16:3e:3c:bf:80,10.11.1.34,wiki` |
+| Old container | Stopped, preserved as rollback |
+
+### Stack Changes
+
+| Component | Old | New |
+|-----------|-----|-----|
+| OS | Ubuntu 16.04 | Ubuntu 24.04 |
+| MediaWiki | 1.29.1 | 1.43.1 LTS |
+| Web server | Apache + mod_php | nginx + PHP 8.3-FPM |
+| Database | MySQL 5.7 | MariaDB 10.11 |
+| PHP | 7.0 | 8.3 |
+
+### Configuration
+
+- **nginx:** Short URLs (`/wiki/` → `/w/index.php`), `thumb.php` + `rest.php` routing, sensitive path blocking
+- **VisualEditor:** Single edit tab with `$wgVisualEditorUseSingleEditTab = true`, `prefer-ve`
+- **Skin:** Vector 2022 with City Lights dark theme (`/w/resources/assets/cttb-dark.css`)
+- **Extensions:** ImageMap, Interwiki, WikiEditor, SyntaxHighlight_GeSHi, InputBox, ParserFunctions, CategoryTree, VisualEditor, MultimediaViewer, CodeEditor, Cite, CiteThisPage
+- **SVG uploads** enabled with ImageMagick converter
+- **Sitenotice:** Dismissable banner via `MediaWiki:Sitenotice` + `MediaWiki:Common.js` (localStorage)
+
+### Content Updates
+
+- Redesigned Main Page with categorized links to all 96 wiki pages and CTTB hero image
+- Created **System Overview** page from infrastructure diagram (no credentials)
+- Rewrote **IntroToLinux** with practical command-line guide
+- Strengthened **IT Member Onboarding & Network Guide** with network overview, first-week checklist, services table
+- Converted 18 pages from `<markdown>` tags to native wikitext (MarkdownExtraGeshiSyntax extension removed)
+- Updated **ManagingMediawiki** ops log with migration entry
+
+### Ansible
+
+- New role: `roles/mediawiki` (nginx, PHP-FPM, MariaDB, MW install, migration tasks)
+- Migration playbook: `plays/wiki-migrate.yml`
+- Host vars: `host_vars/wiki-2404/` with encrypted vault (`wiki_vault.yml`)
+- Dark theme CSS: `roles/mediawiki/files/cttb-dark.css`
+- Wiki API tools: `.claude/wikitools/` (local only, not committed)
+
+### Infrastructure Notes
+
+- Container networking: static IP via `systemd-networkd` (netplan `udevadm` fails in LXC)
+- MariaDB requires systemd sandbox override in LXC (`/etc/systemd/system/mariadb.service.d/lxc.conf`)
+- No internet access from container — uses local apt mirror at `10.11.1.22` (apt.cttb)
+- Tailscale subnet route `10.11.0.0/16` advertised from rui-desktop2 for remote access
+- macOS SOCKS proxy (`localhost:1080`) requires `*.cttb` and `10.11.0.0/16` in bypass list
+
+### Part of Sudhanix OS Initiative
+
+This migration is part of the broader effort to modernize all CTTB hosts to Ubuntu 24.04 under the Sudhanix OS umbrella.
