@@ -2,3 +2,10 @@ logs/
 tmp/
 *.pyc
 plays/autogen.yml
+
+
+# claude framework (personal methods)
+CLAUDE.md
+PROJECT.md
+WORKPLAN.md
+.claude/
