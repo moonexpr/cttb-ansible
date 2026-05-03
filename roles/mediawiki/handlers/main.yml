@@ -1,0 +1,11 @@
+---
+
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted
+
+- name: restart php-fpm
+  service:
+    name: "php{{ mediawiki_php_version }}-fpm"
+    state: restarted

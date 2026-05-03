@@ -1,0 +1,84 @@
+---
+# Migration tasks: import old wiki DB, step through MW versions, restore files.
+# Only runs when mediawiki_migration_mode: true
+
+# ── Import Database Dump ──────────────────────────────────────────────
+
+- name: check for database dump file
+  stat:
+    path: "{{ mediawiki_migration_dump_file }}"
+  register: dump_file
+
+- name: fail if dump file missing
+  fail:
+    msg: "Database dump not found at {{ mediawiki_migration_dump_file }}. Copy it from the old container first."
+  when: not dump_file.stat.exists
+
+- name: import database dump
+  mysql_db:
+    name: "{{ mediawiki_db_name }}"
+    state: import
+    target: "{{ mediawiki_migration_dump_file }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  tags:
+    - migrate-db
+
+# ── Step Through MediaWiki Versions ───────────────────────────────────
+
+- name: download stepping versions
+  get_url:
+    url: "{{ mediawiki_download_url }}/{{ item | regex_replace('^(\\d+\\.\\d+).*', '\\1') }}/mediawiki-{{ item }}.tar.gz"
+    dest: "{{ mediawiki_data_dir }}/mediawiki-{{ item }}.tar.gz"
+  loop: "{{ mediawiki_stepping_versions }}"
+  tags:
+    - migrate-step
+
+- name: step through each mediawiki version
+  include_tasks: migrate_step.yml
+  loop: "{{ mediawiki_stepping_versions }}"
+  loop_control:
+    loop_var: mw_version
+  tags:
+    - migrate-step
+
+# ── Restore Images ────────────────────────────────────────────────────
+
+- name: check for images directory
+  stat:
+    path: "{{ mediawiki_migration_images_dir }}"
+  register: images_dir
+
+- name: restore wiki images
+  synchronize:
+    src: "{{ mediawiki_migration_images_dir }}/"
+    dest: "{{ mediawiki_install_dir }}/images/"
+  delegate_to: "{{ inventory_hostname }}"
+  when: images_dir.stat.exists
+  tags:
+    - migrate-images
+
+- name: fix images ownership
+  file:
+    path: "{{ mediawiki_install_dir }}/images"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags:
+    - migrate-images
+
+# ── Restore Static Content ───────────────────────────────────────────
+
+- name: check for static content directory
+  stat:
+    path: "{{ mediawiki_migration_static_dir }}"
+  register: static_dir
+
+- name: restore static content (PDF, files, etc.)
+  synchronize:
+    src: "{{ mediawiki_migration_static_dir }}/"
+    dest: "/var/www/html/"
+  delegate_to: "{{ inventory_hostname }}"
+  when: static_dir.stat.exists
+  tags:
+    - migrate-static
