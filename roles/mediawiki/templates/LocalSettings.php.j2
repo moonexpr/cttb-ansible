@@ -32,12 +32,24 @@ $wgCacheDirectory = "{{ mediawiki_install_dir }}/cache";
 
 ## Skins
 wfLoadSkin( 'Vector' );
+wfLoadSkin( 'MonoBook' );
+wfLoadSkin( 'Timeless' );
+wfLoadSkin( 'MinervaNeue' );
 $wgDefaultSkin = "vector";
 
 ## Extensions (bundled with MediaWiki core)
 wfLoadExtension( 'ImageMap' );
 wfLoadExtension( 'Interwiki' );
 wfLoadExtension( 'WikiEditor' );
+wfLoadExtension( 'SyntaxHighlight_GeSHi' );
+wfLoadExtension( 'InputBox' );
+wfLoadExtension( 'ParserFunctions' );
+wfLoadExtension( 'CategoryTree' );
+wfLoadExtension( 'VisualEditor' );
+wfLoadExtension( 'MultimediaViewer' );
+wfLoadExtension( 'CodeEditor' );
+wfLoadExtension( 'Cite' );
+wfLoadExtension( 'CiteThisPage' );
 
 ## Security
 $wgSecretKey = "{{ mediawiki_secret_key | default('GENERATE_ME_ON_FIRST_RUN') }}";
