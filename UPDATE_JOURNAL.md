@@ -1354,3 +1354,48 @@ Migrated `wiki.cttb` from a legacy container (Ubuntu 16.04, MW 1.29.1, Apache, P
 ### Part of Sudhanix OS Initiative
 
 This migration is part of the broader effort to modernize all CTTB hosts to Ubuntu 24.04 under the Sudhanix OS umbrella.
+
+---
+
+## 2026-05-02 — Wiki Content Overhaul
+
+Comprehensive content pass across the entire wiki — new articles, enhancement of short pages, dead-end cleanup, and category consolidation.
+
+### New Articles (7)
+
+| Page | Content |
+|------|---------|
+| **NetworkBoot** | PXE pipeline architecture, boot sequence diagram, autoinstall profiles (desktop/server/minimal), TFTP file table, deployment commands, troubleshooting matrix |
+| **Ssh** | Key management lifecycle (install-time + Ansible), sshd_config changes (IPv4-only), authorized_keys deployment, security notes |
+| **Sudo** | Default Ubuntu policy, Ansible `become` usage, desktop panel/kiosk restrictions via sudo group, GTFOBins warnings, best practices |
+| **Introduction to Shell Environments** | sh/bash/fish comparison with syntax tables, POSIX standard and GNU coreutils overview, SVG decision guide diagram, common gotchas table |
+| **Introduction to Problem Solving** | Troubleshooting mindset (opens with Lao Tzu quote and shoshin/beginner's mind), man page anatomy and sections, `apropos`, GNU info pages, quick-ref tools (tldr, explainshell.com, cheat.sh, ArchWiki), technical literature formats, RFC reading guide with essential RFCs table, diagnostic tools (journalctl, dmesg, dig, nslookup, mtr, strace, lsof), troubleshooting checklist |
+| **User:Jchandara** | User page — role, responsibilities, tools |
+| **Template:Quotation** | Reusable blockquote with attribution — `{{quotation|text|author}}` |
+
+### Page Enhancement (54 pages)
+
+Enhanced the 54 shortest pages on the wiki. Each page received (preserving all original content):
+- Inline `<ref>` footnotes with external sources
+- `== See Also ==` sections with internal cross-links and external documentation URLs
+- ASCII diagrams for complex topics (PKI hierarchy, rsyslog centralized logging, Nagios NRPE architecture, tcpdump workflow, udev rule pipeline)
+- Wikitable command references (mdadm, rclone, tcpdump, VBoxManage, Nagios, NTP, unbound verbosity levels)
+- Proper `[[Category:...]]` tags
+
+### Dead-End Pages (77 → 0)
+
+All 77 dead-end pages received See Also cross-links and category tags. Every page on the wiki now links to at least one other page.
+
+### Category Consolidation (28 → 16)
+
+| Action | Detail |
+|--------|--------|
+| **Merged** | IT Documentation → Documentation; IT Procedures + HowTo + Onboarding + Support Notes → Procedures; Networking + Network Administration → Network; Sound → Desktop; UPS + LXC → Infrastructure; USB Wifi Dongles → Network; Phones → Telephony |
+| **Split** | Infrastructure → Servers (4 pages) + Backups (2 pages); Security → Physical Security (2 pages) |
+| **Deleted** | 12 empty categories after consolidation |
+
+Created description pages for all 16 remaining categories.
+
+### Main Page Updates
+
+Added to Getting Started: Introduction to Shell Environments, Introduction to Problem Solving. Updated sitenotice with Sudhanix OS mention and new content summary.
