@@ -22,6 +22,9 @@ $wgResourceBasePath = "{{ mediawiki_script_path }}";
 $wgUploadPath = "$wgScriptPath/images";
 $wgUploadDirectory = "{{ mediawiki_install_dir }}/images";
 $wgEnableUploads = true;
+$wgFileExtensions[] = "svg";
+$wgAllowTitlesInSVG = true;
+$wgSVGConverter = "ImageMagick";
 
 ## Logo
 $wgLogos = [
