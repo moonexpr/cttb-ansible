@@ -1,0 +1,14 @@
+---
+
+# MediaWiki on Ubuntu 24.04 — replacement for lxc-wiki (Ubuntu 16.04)
+# Staging hostname: wiki.cttb
+# Production hostname: wiki.cttb (swap after verification)
+
+mediawiki_server_name: "wiki.cttb"
+mediawiki_server: "http://wiki.cttb"
+ansible_host: 10.11.1.34
+
+# Secrets from vault
+mediawiki_secret_key: "{{ vault_mediawiki_secret_key }}"
+mediawiki_upgrade_key: "{{ vault_mediawiki_upgrade_key }}"
+mediawiki_db_password: "{{ vault_mediawiki_db_password }}"
