@@ -1,46 +1,118 @@
 ---
-# WhiteSur GTK theme (2025-07-24) + icon theme (2025-08-02)
-#
-# GTK theme:  pre-built Light/Dark variants live in release/ so no
-#             sassc or glib-compile-resources is needed on targets.
-# Icon theme: install.sh is pure file-copy; source is copied to a
-#             temp dir on the target and the script is run from there.
 
-# ── GTK theme ────────────────────────────────────────────────────────────────
+#  - name: debug variables
+#    debug: var=hostvars[inventory_hostname] verbosity=4
+#    tags:
+#      - debug
 
-- name: install WhiteSur-Light gtk theme
-  unarchive:
-    src: WhiteSur-gtk-theme/release/WhiteSur-Light.tar.xz
-    dest: /usr/share/themes/
-    creates: /usr/share/themes/WhiteSur-Light
+  #when installing mini stuff ends up there and network manager refuses to touch it
+  - name: fix network interfaces
+    copy:
+      content: |
+        auto lo
+        iface lo inet loopback
+      dest: /etc/network/interfaces
+      mode: 0644
+      owner: root
+      group: root
 
-- name: install WhiteSur-Dark gtk theme
-  unarchive:
-    src: WhiteSur-gtk-theme/release/WhiteSur-Dark.tar.xz
-    dest: /usr/share/themes/
-    creates: /usr/share/themes/WhiteSur-Dark
+  - name: Disallow regular user to disable/modify networking
+    copy:
+      src: "config/10-network-manager.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/10-network-manager.pkla
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - network_manager_permission
 
-# ── Icon theme ────────────────────────────────────────────────────────────────
+  - name: Allow root to power off/reboot/... in crontab
+    copy:
+      src: "config/20-allow-root-cron-to-power-off.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/20-allow-root-cron-to-power-off.pkla
+      mode: 0644
+      owner: root
+      group: root
+    when: allow_root_crontab_power_off is defined
+    tags:
+      - allow_root_crontab_power_off
 
-- name: copy WhiteSur icon theme source to temp dir
-  copy:
-    src: WhiteSur-icon-theme/
-    dest: /tmp/whitesur-icon-src/
+  # Add /bin/bash as GS "student" account shell
+  - name: Add /bin/bash as GS "student" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^student:x:2000:2000:Student:/home/student:.*"
+      replace: "student:x:2000:2000:Student:/home/student:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - gs_acct_shell
 
-- name: install WhiteSur icon theme
-  command:
-    argv:
-      - bash
-      - install.sh
-      - --dest
-      - /usr/share/icons
-    chdir: /tmp/whitesur-icon-src
-    creates: /usr/share/icons/WhiteSur
+  # Add /bin/bash as GS "teacher" account shell
+  - name: Add /bin/bash as GS "teacher" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^teacher:x:1999:1999:Teacher:/home/teacher:.*"
+      replace: "teacher:x:1999:1999:Teacher:/home/teacher:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - gs_acct_shell
 
-- name: update WhiteSur icon cache
-  command:
-    argv:
-      - gtk-update-icon-cache
-      - -f
-      - /usr/share/icons/WhiteSur
-  changed_when: false
+  # install all lubuntu core packages
+  - include: lubuntu.yml
+    tags:
+      - lubuntu
+
+  # install languages support. Moved before lookandfeel, since laf requires fcitx to be installed. Rui 2022-07-04.
+  - include: lang.yml
+    tags:
+      lang
+
+  # customize the desktop based on cttb/dvgs/dvbs etc
+  - include: lookandfeel.yml
+    tags:
+      - lookandfeel
+
+  - include: sw.yml
+    tags:
+      - sw_install
+
+  - include: sw-goldendict.yml
+    when: goldendict is defined
+
+  - include: sound.yml
+    tags:
+      sound
+
+  # Autoremove before upgrade, to avoid unnecessary upgrades.
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
+    args:
+      warn: false
+    tags:
+      - apt
+      - apt_autoremove
+
+  # upgrade to latest for release
+  - name: update system
+    apt:
+      upgrade: full
+      update_cache: yes
+      cache_valid_time: 3600
+      autoremove: yes
+    tags:
+      - os_upgrade
+
+  # Did this in app-menu.yml included in lookandfeel.yml, but "apt update" updated the snapd pkg and undid the change, so do it again.
+  #- name: hide Snap Store in the app menu
+    #lineinfile:
+      #dest: /var/lib/snapd/desktop/applications/snap-store_snap-store.desktop
+      #line: "NoDisplay=true"
+    #ignore_errors: yes
+
+  - name: apt autoremove before a fix is in
+    command: /usr/bin/apt-get autoremove -y
+    args:
+      warn: false
+    tags:
+      - apt
+      - apt_autoremove
