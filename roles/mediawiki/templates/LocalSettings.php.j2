@@ -89,10 +89,7 @@ $wgHooks["SkinTemplateNavigation::Universal"][] = function ( $skin, &$links ) {
     }
 };
 
-## Custom CSS: widen content area for figures, reset sidebar margin
+## Load City Lights dark theme CSS
 $wgHooks["BeforePageDisplay"][] = function ( $out ) {
-    $out->addInlineStyle(
-        '.mw-body { max-width: 80rem !important; } ' .
-        '.vector-column-start, .vector-column-end { margin-top: 0 !important; }'
-    );
+    $out->addStyle( $out->getConfig()->get( 'ScriptPath' ) . '/resources/assets/cttb-dark.css' );
 };
