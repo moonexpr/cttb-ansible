@@ -1,24 +1,54 @@
 ---
-# Install WhiteSur GTK theme (2025-07-24) and icon theme (2025-08-02).
-# Pre-built Light/Dark GTK variants are extracted from release/ — no
-# build tools (sassc, glib-compile-resources) required on targets.
+# Install WhiteSur GTK theme and icon theme.
+# Assets served from storehouse.cttb/ansible — downloaded on target, not copied from controller.
+
+- name: download WhiteSur-Light gtk theme
+  get_url:
+    url: "{{ ansible_assets_url }}/WhiteSur-Light.tar.xz"
+    dest: /tmp/WhiteSur-Light.tar.xz
+  tags:
+    - themes
 
 - name: install WhiteSur-Light gtk theme
   unarchive:
-    src: WhiteSur-gtk-theme/release/WhiteSur-Light.tar.xz
+    src: /tmp/WhiteSur-Light.tar.xz
     dest: /usr/share/themes/
+    remote_src: yes
     creates: /usr/share/themes/WhiteSur-Light
+  tags:
+    - themes
+
+- name: download WhiteSur-Dark gtk theme
+  get_url:
+    url: "{{ ansible_assets_url }}/WhiteSur-Dark.tar.xz"
+    dest: /tmp/WhiteSur-Dark.tar.xz
+  tags:
+    - themes
 
 - name: install WhiteSur-Dark gtk theme
   unarchive:
-    src: WhiteSur-gtk-theme/release/WhiteSur-Dark.tar.xz
+    src: /tmp/WhiteSur-Dark.tar.xz
     dest: /usr/share/themes/
+    remote_src: yes
     creates: /usr/share/themes/WhiteSur-Dark
+  tags:
+    - themes
 
-- name: copy WhiteSur icon theme source to temp dir
-  copy:
-    src: WhiteSur-icon-theme/
-    dest: /tmp/whitesur-icon-src/
+- name: download WhiteSur icon theme
+  get_url:
+    url: "{{ ansible_assets_url }}/WhiteSur-icon-theme.tar.gz"
+    dest: /tmp/WhiteSur-icon-theme.tar.gz
+  tags:
+    - themes
+
+- name: extract WhiteSur icon theme to temp dir
+  unarchive:
+    src: /tmp/WhiteSur-icon-theme.tar.gz
+    dest: /tmp/
+    remote_src: yes
+    creates: /tmp/whitesur-icon-src/install.sh
+  tags:
+    - themes
 
 - name: install WhiteSur icon theme
   command:
@@ -29,6 +59,8 @@
       - /usr/share/icons
     chdir: /tmp/whitesur-icon-src
     creates: /usr/share/icons/WhiteSur
+  tags:
+    - themes
 
 - name: update WhiteSur icon cache
   command:
@@ -37,3 +69,5 @@
       - -f
       - /usr/share/icons/WhiteSur
   changed_when: false
+  tags:
+    - themes
