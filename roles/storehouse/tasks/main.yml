@@ -19,6 +19,24 @@
   tags:
     - storehouse
 
+# ── SSH Keys ─────────────────────────────────────────────────────────
+
+- name: deploy ansible authorized key
+  authorized_key:
+    user: administrator
+    key: "{{ lookup('file', 'ssh_keys/ansible.pub') }}"
+    state: present
+  tags:
+    - ssh
+
+- name: deploy jc authorized key
+  authorized_key:
+    user: administrator
+    key: "{{ lookup('file', 'ssh_keys/jc.pub') }}"
+    state: present
+  tags:
+    - ssh
+
 # ── Directory Tree ───────────────────────────────────────────────────
 
 - name: create storehouse root
