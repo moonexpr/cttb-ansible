@@ -1,2 +1,88 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>storehouse.cttb</title></head><body></body></html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>storehouse.cttb — CTTB Asset Server</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="citylights.min.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">
+    <h1><span>storehouse</span>.cttb</h1>
+    <p class="subtitle">Ansible Asset Server — City of Ten Thousand Buddhas</p>
+  </div>
+  <div class="meta">
+    <span><span class="dot">&#x25CF;</span> 10.11.1.43</span>
+    <span>Ubuntu 22.04 LXC</span>
+    <span>srv-vm</span>
+  </div>
+</header>
+
+<main>
+
+<p class="notice">
+  <strong>Internal resource.</strong> This server is part of the CTTB campus
+  infrastructure and is intended for use by authorized IT personnel only.
+  If you've reached this page and aren't sure why, please contact the
+  IT department for guidance.
+</p>
+
+<article class="content-area">
+
+<fieldset class="file-group quick-ref">
+  <legend>⌨ Quick Reference</legend>
+  <table>
+    <tbody>
+      <tr><td>SSH in</td><td><code>ssh administrator@storehouse.cttb</code></td></tr>
+      <tr><td>Browse assets</td><td><code>http://storehouse.cttb/ansible/</code></td></tr>
+      <tr><td>Deploy assets</td><td><code>ansible-playbook plays/deploy-assets.yml</code></td></tr>
+      <tr><td>Web root</td><td><code>/srv/storehouse/</code></td></tr>
+      <tr><td>Ansible assets</td><td><code>/srv/storehouse/ansible/</code></td></tr>
+      <tr><td>Ansible role</td><td><code>roles/storehouse/</code></td></tr>
+    </tbody>
+  </table>
+</fieldset>
+
+<fieldset class="file-group">
+  <legend>Ansible Assets <a href="/ansible/">[browse]</a></legend>
+  <p>Served to lab machines via <code>ansible_assets_url</code> in <code>group_vars/all</code>.</p>
+  <div class="icon-grid">
+    <a href="/ansible/WhiteSur-Light.tar.xz" class="icon-tile"><span class="icon">🎨</span><span class="name">WhiteSur GTK Light</span></a>
+    <a href="/ansible/WhiteSur-Dark.tar.xz" class="icon-tile"><span class="icon">🎨</span><span class="name">WhiteSur GTK Dark</span></a>
+    <a href="/ansible/WhiteSur-icon-theme.tar.gz" class="icon-tile"><span class="icon">🎨</span><span class="name">WhiteSur Icons</span></a>
+    <a href="/ansible/cttb-wallpapers.tar.gz" class="icon-tile"><span class="icon">🖼</span><span class="name">CTTB Wallpapers</span></a>
+    <a href="/ansible/InterDisplay.tar.gz" class="icon-tile"><span class="icon">🔤</span><span class="name">Inter Display</span></a>
+    <a href="/ansible/SeriousShannsNerdFontMono.tar.gz" class="icon-tile"><span class="icon">🔤</span><span class="name">SeriousShanns</span></a>
+    <a href="/ansible/thunderbird-latest.tar.xz" class="icon-tile"><span class="icon">📦</span><span class="name">Thunderbird</span></a>
+    <a href="/ansible/isos/" class="icon-tile"><span class="icon">💿</span><span class="name">ISOs</span></a>
+  </div>
+</fieldset>
+
+</article>
+
+</main>
+
+<footer>
+  <p>
+    CTTB IT — Managed via <a href="http://wiki.cttb/wiki/IT:Ansible">Ansible</a>
+    — Container <code>storehouse</code> on <code>srv-vm</code> (10.11.1.3)
+    <br>Made with ❤️ by <a href="https://github.com/moonexpr/">jc</a>
+  </p>
+</footer>
+
+<script>
+document.querySelectorAll('.quick-ref code').forEach(el => {
+  el.title = 'click to copy';
+  el.addEventListener('click', () => {
+    navigator.clipboard.writeText(el.textContent);
+    el.classList.add('copied');
+    setTimeout(() => el.classList.remove('copied'), 1000);
+  });
+});
+</script>
+
+</body>
+</html>

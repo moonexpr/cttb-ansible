@@ -101,12 +101,35 @@
   tags:
     - copyparty_remove
 
-# ── Root index ───────────────────────────────────────────────────────
+# ── Root static files ────────────────────────────────────────────────
 
-- name: deploy blank root index.html
+- name: deploy root index.html
   copy:
     src: index.html
     dest: "{{ storehouse_root }}/index.html"
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0644"
+  tags:
+    - nginx
+
+- name: deploy citylights CSS
+  copy:
+    src: "{{ item }}"
+    dest: "{{ storehouse_root }}/{{ item }}"
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0644"
+  loop:
+    - citylights.min.css
+    - fonts.css
+  tags:
+    - nginx
+
+- name: deploy citylights fonts
+  copy:
+    src: fonts/
+    dest: "{{ storehouse_root }}/fonts/"
     owner: "{{ storehouse_user }}"
     group: "{{ storehouse_group }}"
     mode: "0644"
