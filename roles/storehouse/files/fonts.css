@@ -5,7 +5,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('fonts/sriracha-regular.ttf') format('truetype');
+  src: url('/fonts/sriracha-regular.ttf') format('truetype');
 }
 
 @font-face {
