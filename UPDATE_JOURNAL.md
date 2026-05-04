@@ -1495,6 +1495,67 @@ $ curl -s -o /dev/null -w '%{http_code}' --socks5-hostname localhost:1080 http:/
 
 ### Remaining
 
-- Add `vault_storehouse_admin_password` to `vars/jc_passwds.enc.yml` (currently temp `changeme`)
-- Copy assets from `pxe.cttb:/var/www/html/ansible_assets/` to `storehouse.cttb:/srv/storehouse/ansible/`
+- Add `vault_storehouse_admin_password` to `vars/jc_passwds.enc.yml` (admin password is set, vault entry pending)
+- Copy remaining assets from `pxe.cttb:/var/www/html/ansible_assets/` to `storehouse.cttb:/srv/storehouse/ansible/`
 - Remove `/var/www/html/ansible_assets/` from pxe.cttb after verification
+
+---
+
+## 2026-05-04 — Desktop-Distributed Assets Deployed to Storehouse
+
+### What changed
+
+Migrated WhiteSur theme assets from Ansible controller file copy to storehouse HTTP download.
+
+**Previous approach:** `themes.yml` used `unarchive: src: <local-file>` and `copy: src: WhiteSur-icon-theme/` — transferring files from the Ansible controller over SSH to each target machine. The icon theme directory (65 MB uncompressed) was copied in full per machine.
+
+**New approach:** Targets download assets from `storehouse.cttb/ansible/` via `get_url`. Assets are served once, fetched independently by each machine. No large file transfers from the controller.
+
+### Assets uploaded to storehouse
+
+| File | Size | Source |
+|------|------|--------|
+| `WhiteSur-Light.tar.xz` | 209 KB | `roles/desktop-distributed/files/WhiteSur-gtk-theme/release/` |
+| `WhiteSur-Dark.tar.xz` | 201 KB | `roles/desktop-distributed/files/WhiteSur-gtk-theme/release/` |
+| `WhiteSur-icon-theme.tar.gz` | 8.2 MB | Packaged from `roles/desktop-distributed/files/WhiteSur-icon-theme/` |
+
+Icon theme tarball packed on storehouse (Linux) via rsync + tar to preserve symlinks — macOS `cp` cannot follow the broken relative symlinks in the `links/` subdirectory.
+
+Tarball structure: `whitesur-icon-src/` root, matching the path `themes.yml` expects for `install.sh`.
+
+### How to deploy assets to storehouse
+
+For future assets (fonts, .deb packages, ISOs, tarballs):
+
+```bash
+# 1. SCP directly (for files you have locally)
+scp /path/to/asset.tar.gz administrator@10.11.1.43:/srv/storehouse/ansible/
+# Fix ownership after:
+ssh administrator@10.11.1.43 "sudo chown storehouse:storehouse /srv/storehouse/ansible/asset.tar.gz"
+
+# 2. For large dirs with symlinks — rsync to Linux first, then tar on target:
+rsync -a --links /local/dir/ administrator@10.11.1.43:/tmp/staging-dir/
+ssh administrator@10.11.1.43 "tar czf /srv/storehouse/ansible/asset.tar.gz -C /tmp staging-dir && rm -rf /tmp/staging-dir"
+ssh administrator@10.11.1.43 "sudo chown storehouse:storehouse /srv/storehouse/ansible/asset.tar.gz"
+
+# 3. Verify via SOCKS proxy
+curl -s -o /dev/null -w '%{http_code}' http://storehouse.cttb/ansible/asset.tar.gz
+```
+
+### Ansible changes
+
+| File | Change |
+|------|--------|
+| `roles/desktop-distributed/tasks/themes.yml` | Replaced local `copy`/`unarchive` with `get_url` + `remote_src: yes` unarchive |
+| `plays/desktop-distributed.yml` | **NEW** — playbook with per-site theme vars (DVGS/DVBS/DRBU), usage examples |
+
+### Verification
+
+```
+$ curl -s -o /dev/null -w '%{http_code}' http://storehouse.cttb/ansible/WhiteSur-Light.tar.xz
+200
+$ curl -s -o /dev/null -w '%{http_code}' http://storehouse.cttb/ansible/WhiteSur-Dark.tar.xz
+200
+$ curl -s -o /dev/null -w '%{http_code}' http://storehouse.cttb/ansible/WhiteSur-icon-theme.tar.gz
+200
+```
