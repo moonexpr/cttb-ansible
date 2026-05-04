@@ -1559,3 +1559,70 @@ $ curl -s -o /dev/null -w '%{http_code}' http://storehouse.cttb/ansible/WhiteSur
 $ curl -s -o /dev/null -w '%{http_code}' http://storehouse.cttb/ansible/WhiteSur-icon-theme.tar.gz
 200
 ```
+
+---
+
+## 2026-05-04 — Storehouse Homepage & h5ai File Browser
+
+### What changed
+
+Completed the storehouse.cttb web interface: a citylights-themed landing page and a working h5ai file browser scoped to `/ansible/`.
+
+### Homepage (`/`)
+
+- Citylights dark theme (self-hosted CSS + fonts — no external CDN except h5ai's own LXGW load)
+- Sriracha font deployed locally via `fonts.css` with absolute paths (`/fonts/...`)
+- `p31m-pattern.svg` added to role files (was missing, caused 404s in citylights CSS)
+- **Tagline:** "Internal File Server — City of Ten Thousand Buddhas" (changed from Ansible-specific wording)
+- **Message fieldset** (☸ Message): eighth consciousness pun — ālayavijñāna as storehouse mind
+- **Assets fieldset:** icon grid linking into `/ansible/`
+- Click-to-copy on all `<code>` elements in quick reference
+
+### h5ai file browser (`/ansible/`)
+
+**Root cause of empty listing:** The manti-X fork of h5ai (v0.33.0) removed the `_h5ai/` wrapper directory present in the original. h5ai's `class-setup.php` computes `ROOT_PATH` by going up N `dirname()` levels from `class-setup.php` — the original assumed `_h5ai/private/php/core/`, but manti-X uses `private/php/core/`. This made `ROOT_PATH` resolve to `/srv/` (parent of the web root) instead of `/srv/storehouse/`, so h5ai was scanning `/srv/ansible/` (nonexistent) instead of `/srv/storehouse/ansible/`.
+
+**Fix:** Patched `ROOT_PATH` computation in `class-setup.php` to not go up the extra level:
+```php
+// Before (broken for manti-X):
+$this->set('ROOT_PATH', Util::normalize_path(dirname($this->get('H5AI_PATH')), false));
+// After:
+$this->set('ROOT_PATH', Util::normalize_path($this->get('H5AI_PATH'), false));
+```
+Patch applied idempotently via Ansible `replace` task in `roles/storehouse/tasks/main.yml`.
+
+**Hidden patterns:** Added `^storehouse` to h5ai's `hidden` array to suppress the server root directory name appearing as a ghost entry in the sidebar.
+
+**PHP ownership:** Set `private/` and `public/` to `www-data:www-data` so PHP-FPM can write the cache.
+
+### Ansible changes
+
+| File | Change |
+|------|--------|
+| `roles/storehouse/files/index.html` | New homepage: citylights theme, ālaya pun, asset grid |
+| `roles/storehouse/files/fonts.css` | Absolute font paths (`/fonts/...`) |
+| `roles/storehouse/files/p31m-pattern.svg` | Added missing citylights background pattern |
+| `roles/storehouse/tasks/main.yml` | h5ai ownership, ROOT_PATH patch, hidden config, p31m-pattern deploy |
+| `roles/storehouse/templates/storehouse-nginx.conf.j2` | Added `/index.html` exact-match location |
+| `inventory/hosts` | Default inventory changed from `hosts_os_upgrade.ini` → `hosts` |
+| `inventory/host_vars/storehouse/main.yml` | Added `ansible_python_interpreter` to suppress discovery warning |
+| `ansible.cfg` | Added `./roles` to `roles_path`; changed default inventory to `./inventory/hosts` |
+| `plays/deploy-assets.yml` | Added wallpapers asset group |
+
+### deploy-assets.yml
+
+Assets now deployed via playbook (not manual SCP). Run:
+```bash
+ansible-playbook plays/deploy-assets.yml -i inventory/hosts --become
+# or per-group:
+ansible-playbook plays/deploy-assets.yml --tags themes
+ansible-playbook plays/deploy-assets.yml --tags wallpapers
+```
+
+### Wiki sidebar
+
+Added `storehouse.cttb` to `MediaWiki:Sidebar` under Other Services alongside PXE, APT, and Git.
+
+### Browser proxy note
+
+Zen browser requires **"Auto-detect proxy settings for this network"** to reach `.cttb` hosts via the SOCKS tunnel. "Use system proxy settings" and manual SOCKS5 both fail due to a Firefox/Zen CFNetwork relay issue.

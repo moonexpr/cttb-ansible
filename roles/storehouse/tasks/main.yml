@@ -123,6 +123,7 @@
   loop:
     - citylights.min.css
     - fonts.css
+    - p31m-pattern.svg
   tags:
     - nginx
 
@@ -157,11 +158,39 @@
 
 - name: set h5ai ownership
   file:
-    path: "{{ storehouse_root }}/_h5ai"
+    path: "{{ storehouse_root }}/private"
     state: directory
     owner: www-data
     group: www-data
     recurse: yes
+  tags:
+    - h5ai
+
+- name: set h5ai public ownership
+  file:
+    path: "{{ storehouse_root }}/public"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags:
+    - h5ai
+
+- name: patch h5ai root path (manti-X fork missing _h5ai/ wrapper — fix ROOT_PATH only)
+  replace:
+    path: "{{ storehouse_root }}/private/php/core/class-setup.php"
+    regexp: "Util::normalize_path\\(dirname\\(\\$this->get\\('H5AI_PATH'\\)\\), false\\)"
+    replace: "Util::normalize_path($this->get('H5AI_PATH'), false)"
+  tags:
+    - h5ai
+
+- name: configure h5ai hidden patterns
+  lineinfile:
+    path: "{{ storehouse_root }}/private/conf/options.json"
+    regexp: '"hidden":'
+    line: '        "hidden": ["^\\.", "^\\_", "^_h5ai", "robots.txt", "ads.txt", "^storehouse"],'
+    owner: www-data
+    group: www-data
   tags:
     - h5ai
 
