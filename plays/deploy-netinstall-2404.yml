@@ -94,8 +94,8 @@
     ni_staging_dir: "{{ lookup('env', 'TMPDIR') | default('/tmp') }}/netinstall-2404-stage"
     ni_root_dir: /srv/netinstall
     ni_www_path: /var/www/html/netinstall
-    ni_iso_url: "http://pxe.cttb/ansible_assets/isos/ubuntu-24.04.2-live-server-amd64.iso"
-    ni_iso_local: "/var/www/html/ansible_assets/isos/ubuntu-24.04.2-live-server-amd64.iso"
+    ni_iso_url: "http://storehouse.cttb/ansible/isos/ubuntu-24.04.2-live-server-amd64.iso"
+    ni_iso_local: "/srv/storehouse/ansible/isos/ubuntu-24.04.2-live-server-amd64.iso"
   tasks:
     # --- Package installation ---
     - name: install required packages
