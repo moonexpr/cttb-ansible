@@ -1,0 +1,19 @@
+---
+# Storehouse — internal file server for Ansible deployment assets
+#
+# Prerequisites — run manually before this playbook:
+#
+#   1. Create the container:
+#      ssh srv-vm "lxc launch images:debian/12 storehouse"
+#
+#   2. Set up DNS for storehouse.cttb pointing to the container's IP
+#
+#   3. Add vault_storehouse_admin_password to the vault:
+#      ansible-vault edit vars/jc_passwds.enc.yml
+#
+# Usage:
+#   ansible-playbook plays/storehouse.yml --ask-vault-pass
+
+- hosts: storehouse
+  roles:
+    - { role: storehouse, tags: storehouse }

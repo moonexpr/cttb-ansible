@@ -1399,3 +1399,102 @@ Created description pages for all 16 remaining categories.
 ### Main Page Updates
 
 Added to Getting Started: Introduction to Shell Environments, Introduction to Problem Solving. Updated sitenotice with Sudhanix OS mention and new content summary.
+
+---
+
+## 2026-05-03 — Storehouse: Internal File Server for Ansible Assets
+
+### Motivation
+
+The PXE server (`pxe.cttb`) has been accumulating non-boot assets — font tarballs, icon themes, ISOs, .deb packages, Thunderbird archives — alongside its TFTP/netinstall duties. This causes scope creep: the PXE host should handle boot and bootloader only. A dedicated file server keeps the PXE host focused and gives Ansible assets a permanent, purpose-built home.
+
+### What was done
+
+1. **Created LXC container** on srv-vm:
+   ```
+   lxc launch ubuntu:22.04 storehouse
+   ```
+   Attempted Debian 12 first but LXD 2.16 on srv-vm couldn't pull `images:debian/12`. Fell back to Ubuntu 22.04 (jammy) — proven on this host.
+
+2. **New Ansible role** (`roles/storehouse/`):
+
+   | File | Purpose |
+   |------|---------|
+   | `defaults/main.yml` | Copyparty version, paths, port, vault ref |
+   | `tasks/main.yml` | System user, directory tree, copyparty download, systemd, ufw |
+   | `handlers/main.yml` | Restart copyparty handler |
+   | `templates/copyparty.service.j2` | Systemd unit with `CAP_NET_BIND_SERVICE` for port 80 |
+
+   The role:
+   - Creates `storehouse` system user/group
+   - Creates `/srv/storehouse/ansible/isos/` directory tree
+   - Downloads [copyparty](https://github.com/9001/copyparty) single-file Python HTTP server
+   - Configures systemd service: anonymous read for all paths, write restricted to admin (vault credentials)
+   - Opens UFW port 80
+
+3. **Copyparty** chosen because: single Python file (no pip, no virtualenv), built-in directory browsing, upload support, ACL system, zero dependencies beyond Python 3.
+
+4. **Inventory/vars updates:**
+   - `inventory/hosts` — added `storehouse` to production containers
+   - `group_vars/all` — `ansible_assets_url` now points to `http://storehouse.cttb/ansible` (updated in prior commit)
+   - `host_vars/storehouse/main.yml` — vault password reference
+   - `plays/storehouse.yml` — playbook with LXC setup instructions
+
+### URL mapping
+
+| Filesystem | URL |
+|------------|-----|
+| `/srv/storehouse/` | `http://storehouse.cttb/` |
+| `/srv/storehouse/ansible/` | `http://storehouse.cttb/ansible` |
+| `/srv/storehouse/ansible/isos/` | `http://storehouse.cttb/ansible/isos` |
+
+### Migration plan
+
+Existing assets on `pxe.cttb:/var/www/html/ansible_assets/` need to be copied to `storehouse.cttb:/srv/storehouse/ansible/`. Known assets:
+
+| Asset | Size |
+|-------|------|
+| `cttb-wallpapers.tar.gz` | 216 MB |
+| `InterDisplay.tar.gz` | 3.5 MB |
+| `SeriousShannsNerdFontMono.tar.gz` | 19 MB |
+| `thunderbird-latest.tar.xz` | 78 MB |
+| `WhiteSur-gtk-theme.tar.gz` | 849 KB |
+| `WhiteSur-icon-theme.tar.gz` | 6.6 MB |
+| `WhiteSur-cursors.tar.gz` | 1.7 MB |
+
+### Deployment
+
+**Container provisioning** (manual, on srv-vm):
+- `lxc launch ubuntu:22.04 storehouse` — no network attached by default on LXD 2.16
+- `lxc config device add storehouse eth0 nic nictype=bridged parent=lxdbr0` — attach bridge
+- Created `administrator` user with SSH key + NOPASSWD sudo
+- Removed cloud-init apt proxy (`/etc/apt/apt.conf.d/80proxy`) that was routing through non-existent squid
+
+**dnsmasq** (10.11.1.19):
+- Added DHCP reservation: `00:16:3e:d9:57:cc,10.11.1.43,storehouse`
+- DNS auto-created from DHCP hostname — `storehouse.cttb → 10.11.1.43`
+- Verified: dnsmasq ✓, unbound ✓, SOCKS proxy ✓
+
+**Ansible playbook** (`ANSIBLE_ROLES_PATH=./roles ansible-playbook plays/storehouse.yml -i inventory/hosts --become`):
+
+| Run | ok | changed | failed | Issue |
+|-----|-----|---------|--------|-------|
+| 1 | 11 | 9 | 0 | All tasks passed, but copyparty crashed on start |
+| 2 | 11 | 2 | 0 | Fixed volume syntax — service running, HTTP 200 |
+
+**Fix:** Copyparty `-v` syntax uses one volume entry with combined permissions (`-v /path::r:rw,admin`), not two separate `-v` entries for the same path.
+
+### Verification
+
+```
+$ curl -s -o /dev/null -w '%{http_code}' --socks5-hostname localhost:1080 http://storehouse.cttb/
+200
+$ curl -s -o /dev/null -w '%{http_code}' --socks5-hostname localhost:1080 http://storehouse.cttb/ansible/
+200
+```
+
+### Remaining
+
+- Add `vault_storehouse_admin_password` to `vars/jc_passwds.enc.yml` (currently temp `changeme`)
+- Copy assets from `pxe.cttb:/var/www/html/ansible_assets/` to `storehouse.cttb:/srv/storehouse/ansible/`
+- Remove `/var/www/html/ansible_assets/` from pxe.cttb after verification
