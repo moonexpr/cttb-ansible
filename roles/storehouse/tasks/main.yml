@@ -42,44 +42,121 @@
   tags:
     - storehouse
 
-# ── Install Copyparty ────────────────────────────────────────────────
+# ── Packages ─────────────────────────────────────────────────────────
 
-- name: install python3
+- name: install nginx and php-fpm
   apt:
-    name: python3
+    name:
+      - nginx
+      - "php{{ storehouse_php_version }}-fpm"
+      - "php{{ storehouse_php_version }}-mbstring"
+      - "php{{ storehouse_php_version }}-gd"
+      - unzip
     state: present
     update_cache: yes
   tags:
     - packages
 
-- name: download copyparty standalone
-  get_url:
-    url: "https://github.com/9001/copyparty/releases/download/v{{ storehouse_copyparty_version }}/copyparty-sfx.py"
-    dest: "/usr/local/bin/copyparty"
-    mode: "0755"
-  notify: restart copyparty
-  tags:
-    - copyparty
+# ── Remove Copyparty (if present) ────────────────────────────────────
 
-# ── Systemd Service ──────────────────────────────────────────────────
-
-- name: deploy copyparty systemd unit
-  template:
-    src: copyparty.service.j2
-    dest: /etc/systemd/system/copyparty.service
-    mode: "0644"
-  notify: restart copyparty
-  tags:
-    - copyparty
-
-- name: enable and start copyparty
+- name: stop and disable copyparty if running
   systemd:
     name: copyparty
-    daemon_reload: yes
-    enabled: yes
-    state: started
+    state: stopped
+    enabled: no
+  failed_when: false
   tags:
-    - copyparty
+    - copyparty_remove
+
+- name: remove copyparty binary
+  file:
+    path: /usr/local/bin/copyparty
+    state: absent
+  tags:
+    - copyparty_remove
+
+- name: remove copyparty systemd unit
+  file:
+    path: /etc/systemd/system/copyparty.service
+    state: absent
+  notify: reload systemd
+  tags:
+    - copyparty_remove
+
+# ── h5ai ─────────────────────────────────────────────────────────────
+
+- name: download h5ai (manti-X fork)
+  get_url:
+    url: "https://github.com/manti-X/h5ai/releases/download/v{{ storehouse_h5ai_version }}/h5ai-{{ storehouse_h5ai_version }}.zip"
+    dest: "/tmp/h5ai-{{ storehouse_h5ai_version }}.zip"
+    mode: "0644"
+  tags:
+    - h5ai
+
+- name: extract h5ai to storehouse root
+  unarchive:
+    src: "/tmp/h5ai-{{ storehouse_h5ai_version }}.zip"
+    dest: "{{ storehouse_root }}"
+    remote_src: yes
+    creates: "{{ storehouse_root }}/_h5ai"
+  tags:
+    - h5ai
+
+- name: set h5ai ownership
+  file:
+    path: "{{ storehouse_root }}/_h5ai"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags:
+    - h5ai
+
+# ── Nginx ────────────────────────────────────────────────────────────
+
+- name: deploy nginx site config
+  template:
+    src: storehouse-nginx.conf.j2
+    dest: /etc/nginx/sites-available/storehouse.conf
+    mode: "0644"
+  notify: restart nginx
+  tags:
+    - nginx
+
+- name: remove default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+  tags:
+    - nginx
+
+- name: enable storehouse nginx site
+  file:
+    src: /etc/nginx/sites-available/storehouse.conf
+    dest: /etc/nginx/sites-enabled/storehouse.conf
+    state: link
+  notify: restart nginx
+  tags:
+    - nginx
+
+# ── Services ─────────────────────────────────────────────────────────
+
+- name: enable and start php-fpm
+  service:
+    name: "php{{ storehouse_php_version }}-fpm"
+    state: started
+    enabled: yes
+  tags:
+    - services
+
+- name: enable and start nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  tags:
+    - services
 
 # ── Firewall ─────────────────────────────────────────────────────────
 

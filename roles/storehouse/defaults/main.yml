@@ -1,7 +1,7 @@
 ---
 
-# Copyparty version (GitHub release tag)
-storehouse_copyparty_version: "1.16.15"
+# h5ai version — manti-X fork (https://github.com/manti-X/h5ai)
+storehouse_h5ai_version: "0.33.0"
 
 # Filesystem paths
 storehouse_root: "/srv/storehouse"
@@ -12,9 +12,9 @@ storehouse_subdirs:
 storehouse_user: "storehouse"
 storehouse_group: "storehouse"
 
+# PHP version (Ubuntu 22.04 ships 8.1)
+storehouse_php_version: "8.1"
+
 # Network
 storehouse_port: 80
-
-# Admin credentials (from vault)
-storehouse_admin_user: "admin"
-storehouse_admin_password: "{{ vault_storehouse_admin_password }}"
+storehouse_server_name: "storehouse.cttb"
