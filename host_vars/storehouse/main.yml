@@ -5,3 +5,4 @@
 # URL: http://storehouse.cttb/ansible
 
 ansible_host: 10.11.1.43
+ansible_python_interpreter: /usr/bin/python3
