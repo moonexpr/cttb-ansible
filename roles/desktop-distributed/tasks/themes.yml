@@ -1,0 +1,39 @@
+---
+# Install WhiteSur GTK theme (2025-07-24) and icon theme (2025-08-02).
+# Pre-built Light/Dark GTK variants are extracted from release/ — no
+# build tools (sassc, glib-compile-resources) required on targets.
+
+- name: install WhiteSur-Light gtk theme
+  unarchive:
+    src: WhiteSur-gtk-theme/release/WhiteSur-Light.tar.xz
+    dest: /usr/share/themes/
+    creates: /usr/share/themes/WhiteSur-Light
+
+- name: install WhiteSur-Dark gtk theme
+  unarchive:
+    src: WhiteSur-gtk-theme/release/WhiteSur-Dark.tar.xz
+    dest: /usr/share/themes/
+    creates: /usr/share/themes/WhiteSur-Dark
+
+- name: copy WhiteSur icon theme source to temp dir
+  copy:
+    src: WhiteSur-icon-theme/
+    dest: /tmp/whitesur-icon-src/
+
+- name: install WhiteSur icon theme
+  command:
+    argv:
+      - bash
+      - install.sh
+      - --dest
+      - /usr/share/icons
+    chdir: /tmp/whitesur-icon-src
+    creates: /usr/share/icons/WhiteSur
+
+- name: update WhiteSur icon cache
+  command:
+    argv:
+      - gtk-update-icon-cache
+      - -f
+      - /usr/share/icons/WhiteSur
+  changed_when: false
