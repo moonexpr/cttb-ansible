@@ -3,21 +3,27 @@ server {
     server_name {{ storehouse_server_name }};
 
     root {{ storehouse_root }};
-    index /public/index.php;
 
-    location / {
+    # Root — blank white page
+    location = / {
+        try_files /index.html =404;
+    }
+
+    # Ansible — h5ai directory browser
+    location /ansible {
+        index /public/index.php;
         try_files $uri $uri/ /public/index.php$is_args$args;
         autoindex off;
     }
 
+    # h5ai PHP
     location ~ \.php$ {
         include fastcgi_params;
         fastcgi_pass unix:/run/php/php{{ storehouse_php_version }}-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     }
 
-    # Block direct access to h5ai private config
-    location ~ ^/private/ {
-        deny all;
-    }
+    # Block direct browsing of h5ai internals and root clutter
+    location = /public/ { deny all; }
+    location ~ ^/(private|_h5ai/private|CHANGELOG|README) { deny all; }
 }

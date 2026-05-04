@@ -101,6 +101,18 @@
   tags:
     - copyparty_remove
 
+# ── Root index ───────────────────────────────────────────────────────
+
+- name: deploy blank root index.html
+  copy:
+    src: index.html
+    dest: "{{ storehouse_root }}/index.html"
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0644"
+  tags:
+    - nginx
+
 # ── h5ai ─────────────────────────────────────────────────────────────
 
 - name: download h5ai (manti-X fork)
