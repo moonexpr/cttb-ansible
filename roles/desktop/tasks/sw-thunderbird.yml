@@ -1,8 +1,8 @@
 ---
-# Install Thunderbird from Mozilla tarball hosted on ansible_assets
+# Install Thunderbird from Mozilla tarball hosted on storehouse.cttb/ansible
 # Ubuntu 24.04 ships a snap transition package — unusable on campus (no snap store access)
 # Mozilla Team PPA is unreachable (ppa.launchpad.net blocked by campus firewall)
-# Solution: host official Mozilla tarball on pxe.cttb/ansible_assets
+# Solution: host official Mozilla tarball on storehouse.cttb/ansible
 
   - name: remove thunderbird snap transition package
     apt:
