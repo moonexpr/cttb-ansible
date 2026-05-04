@@ -1,0 +1,92 @@
+---
+
+# ── System User ──────────────────────────────────────────────────────
+
+- name: create storehouse group
+  group:
+    name: "{{ storehouse_group }}"
+    system: yes
+  tags:
+    - storehouse
+
+- name: create storehouse system user
+  user:
+    name: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    system: yes
+    shell: /usr/sbin/nologin
+    create_home: no
+  tags:
+    - storehouse
+
+# ── Directory Tree ───────────────────────────────────────────────────
+
+- name: create storehouse root
+  file:
+    path: "{{ storehouse_root }}"
+    state: directory
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0755"
+  tags:
+    - storehouse
+
+- name: create storehouse subdirectories
+  file:
+    path: "{{ storehouse_root }}/{{ item }}"
+    state: directory
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0755"
+  loop: "{{ storehouse_subdirs }}"
+  tags:
+    - storehouse
+
+# ── Install Copyparty ────────────────────────────────────────────────
+
+- name: install python3
+  apt:
+    name: python3
+    state: present
+    update_cache: yes
+  tags:
+    - packages
+
+- name: download copyparty standalone
+  get_url:
+    url: "https://github.com/9001/copyparty/releases/download/v{{ storehouse_copyparty_version }}/copyparty-sfx.py"
+    dest: "/usr/local/bin/copyparty"
+    mode: "0755"
+  notify: restart copyparty
+  tags:
+    - copyparty
+
+# ── Systemd Service ──────────────────────────────────────────────────
+
+- name: deploy copyparty systemd unit
+  template:
+    src: copyparty.service.j2
+    dest: /etc/systemd/system/copyparty.service
+    mode: "0644"
+  notify: restart copyparty
+  tags:
+    - copyparty
+
+- name: enable and start copyparty
+  systemd:
+    name: copyparty
+    daemon_reload: yes
+    enabled: yes
+    state: started
+  tags:
+    - copyparty
+
+# ── Firewall ─────────────────────────────────────────────────────────
+
+- name: allow HTTP through ufw
+  ufw:
+    rule: allow
+    port: "{{ storehouse_port | string }}"
+    proto: tcp
+  tags:
+    - firewall

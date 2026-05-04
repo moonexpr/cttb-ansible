@@ -1,0 +1,20 @@
+---
+
+# Copyparty version (GitHub release tag)
+storehouse_copyparty_version: "1.16.15"
+
+# Filesystem paths
+storehouse_root: "/srv/storehouse"
+storehouse_subdirs:
+  - ansible/isos
+
+# System user
+storehouse_user: "storehouse"
+storehouse_group: "storehouse"
+
+# Network
+storehouse_port: 80
+
+# Admin credentials (from vault)
+storehouse_admin_user: "admin"
+storehouse_admin_password: "{{ vault_storehouse_admin_password }}"
