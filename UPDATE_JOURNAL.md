@@ -2127,3 +2127,17 @@ Each notifies the `update grub` handler. Gated by `ansible_virtualization_type !
 ### Note on `plymouth-set-default-theme`
 
 Doesn't exist on Ubuntu 24.04 — the `plymouth` package ships only `plymouth` (client) and `plymouthd` (daemon). Equivalent operations are already done by the role: `update-alternatives --install` + `--set` + `update-initramfs -u`.
+
+### CONFIRMED LIVE (post-reboot, 2026-05-05)
+
+User rebooted dvgs-testmachine after the GRUB visibility fix and clean Plymouth tarball deploy:
+
+- **GRUB menu** displays for 3 seconds with "Sudhanix GNU/Linux" entries ✓
+- **Plymouth splash** shows the lotus + progress bar between GRUB and login ✓
+- **lsb_release -a** post-login reports `Sudhanix 26 / storehouse / 26` ✓
+
+End-to-end branding chain verified: PXE → autoinstall → GRUB ('Sudhanix') → Plymouth (lotus) → login banner ('Sudhanix 26') → MOTD (wiki.cttb primary) → desktop session. Ready for mass rollout from a branding standpoint.
+
+### Side fix while at it: `/etc/resolver/cttb` on the Mac
+
+Stale macOS resolver was pointing at `10.11.1.5` (unreachable). Updated to `10.11.1.19` (dnsmasq.cttb). Now `dvgs-testmachine.cttb` and other `.cttb` names resolve from the Mac without needing IP overrides. The redundant `ansible_host=10.11.30.60` added earlier in the upgrade inventory could be reverted but is being kept as belt-and-suspenders.

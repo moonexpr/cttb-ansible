@@ -74,9 +74,9 @@ User-facing strings still say "Ubuntu" in many places. Goal: anywhere a non-admi
 
 ### Must Fix
 - [ ] **Persist `/etc/os-release` against `base-files` upgrades** — currently overwritten on apt upgrade. Use `dpkg-divert --rename --add /etc/os-release` before deploying template, or a daily cron/systemd-timer that re-applies the template
-- [ ] **GRUB menu strings** — `/boot/grub/grub.cfg` shows "Ubuntu, with Linux ...". Override via `GRUB_DISTRIBUTOR="Sudhanix"` in `/etc/default/grub` (already templatable in `roles/server/files/default-grub`), then `update-grub`
+- [x] ~~GRUB menu strings~~ — `GRUB_DISTRIBUTOR` auto-resolves via `/etc/os-release` (NAME=Sudhanix). Menu now shows 'Sudhanix GNU/Linux'. Also added `GRUB_TIMEOUT_STYLE=menu` + `GRUB_TIMEOUT=3` so menu is actually visible at boot. Verified live (2026-05-05)
 - [ ] **GRUB theme** — currently default Ubuntu purple. Build/deploy a Sudhanix-branded theme (logo + colors) at `/boot/grub/themes/sudhanix/` and reference in `/etc/default/grub`
-- [ ] **Plymouth boot splash** — replace `ubuntu-logo` plymouth theme with a Sudhanix theme. Asset: `sudhanix-plymouth.tar.gz` on storehouse → `/usr/share/plymouth/themes/sudhanix/`. Run `update-alternatives --set default.plymouth ...` then `update-initramfs -u`
+- [x] ~~Plymouth boot splash~~ — Sudhanix theme deployed: lotus PNG (FLUX render), macOS-style script with progress bar, registered via `update-alternatives`, baked into initrd. Required adding `quiet splash` to `GRUB_CMDLINE_LINUX_DEFAULT`. Cleanup task strips macOS `._*` forks. Verified visible at boot (2026-05-05)
 - [ ] **LightDM greeter banner/title** — currently shows "Ubuntu" via `lightdm-gtk-greeter` defaults. Set `indicators=...` and any visible string in `lightdm-gtk-greeter.j2` to Sudhanix branding. Logo asset already in role
 - [ ] **About-this-system in XFCE settings panel** — `xfce4-about` reads from `/etc/os-release` (covered by os-release.j2)
 - [ ] **`lsb_release -a` codename fallback** — verify on first deploy that it doesn't fall back to `/usr/share/distro-info/ubuntu.csv`. If it does, also override that file
