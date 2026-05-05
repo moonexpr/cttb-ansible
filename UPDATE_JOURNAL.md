@@ -450,7 +450,7 @@ After USB autoinstall failed due to SQUASHFS corruption, installed Ubuntu 24.04 
 2. **Identified UEFI vs BIOS mismatch** — Dell Inspiron 5400 AIO F12 boot menu is UEFI-only, but PXE server only had `pxelinux.0` (BIOS). Needed GRUB EFI bootloader.
 3. **Set up UEFI PXE boot** — extracted `grubx64.efi` from ISO (wrong one — no TFTP module), then got `grubnetx64.efi.signed` from `grub-efi-amd64-signed` package. Created GRUB config. Updated dnsmasq with architecture detection (`dhcp-match` for UEFI vs BIOS). GRUB menu appeared on dvgs-lab3.
 4. **Changed SSH_AUTH_SOCK** — Bitwarden SSH agent was blocking `ssh-add`. Switched to macOS launchd agent: `SSH_AUTH_SOCK=$(launchctl getenv SSH_AUTH_SOCK)`.
-5. **Hardened server access** — changed `jc` password to `a` on pxe.cttb and dnsmasq.cttb. Added `Match User jc` / `PasswordAuthentication no` to sshd_config on both servers. rui-desktop2 skipped (not a sudoer).
+5. **Hardened server access** — changed `jc` password to `a` on pxe.cttb and dnsmasq.cttb. Added `Match User jc` / `PasswordAuthentication no` to sshd_config on both servers. rui-desktop2 skipped at the time (now has sudo).
 6. **Built and uploaded WhiteSur theme tarballs** — cloned 3 GitHub repos, packaged GTK (Light+Dark), icons (from src/), cursors (from dist/). Uploaded to `pxe.cttb:/var/www/html/ansible_assets/`. All serving HTTP 200.
 7. **Verified avatar/background config** — group_vars correctly set per-site (`dvgs`, `dvbs`, `drbu`). Noted `desktop_login_background` var missing from dvbs/drbu group_vars (only have old `pic_bg`).
 8. **Documented full deployment pipeline** — PXE install → post-boot setup → Ansible playbook → verification checklist.
@@ -644,7 +644,7 @@ Performed a full audit of all CTTB core infrastructure to map services and estab
 
 **Access path discovered:**
 1. `~/.ssh/rui-desktop2` key is passphrase-protected (AES-256-CTR, bcrypt). Passphrase: `a` (loaded via `expect` + `ssh-add`).
-2. rui-desktop2 → `johnchandara` account → can see `/home/kit.chong` but can't sudo (password unknown).
+2. rui-desktop2 → `johnchandara` account → has sudo access. Can see `/home/kit.chong`.
 3. Added ed25519 pubkey directly to `administrator@srv-vm.cttb` and `administrator@srv-gw.cttb` (manually by user).
 4. Later added pubkey to `administrator@srv-nas.cttb`.
 
@@ -1626,3 +1626,374 @@ Added `storehouse.cttb` to `MediaWiki:Sidebar` under Other Services alongside PX
 ### Browser proxy note
 
 Zen browser requires **"Auto-detect proxy settings for this network"** to reach `.cttb` hosts via the SOCKS tunnel. "Use system proxy settings" and manual SOCKS5 both fail due to a Firefox/Zen CFNetwork relay issue.
+
+---
+
+## 2026-05-04 — Desktop UX Backlog Completion
+
+Completed all items from the May 4th upgrade backlog. Machine: dvgs-testmachine.cttb (10.11.30.60).
+
+### Changes
+
+| Task | Solution | Files |
+|------|----------|-------|
+| Terminal font 10pt | Changed SeriousShanns from 12→10 in terminalrc | `files/config/terminalrc` |
+| Window snapping | Already done (`snap_to_border/windows: true` in xfwm4.xml.j2) | — |
+| Center window spawn | Already done (`placement_mode: center` in xfwm4.xml.j2) | — |
+| Log Out menu entry | Created `cttb-signoff.desktop`, added to menu layout before Sleep/Shutdown | `files/desktop-entries/cttb-signoff.desktop`, `templates/xfce-applications.menu.j2`, `tasks/lookandfeel.yml` |
+| Thunar list view | Created `thunar.xml.j2` with `ThunarDetailsView` default | `templates/thunar.xml.j2`, `tasks/ux.yml` |
+| Meta key → app menu | Created `xfce4-keyboard-shortcuts.xml.j2` with Super_L binding + window tiling shortcuts | `templates/xfce4-keyboard-shortcuts.xml.j2`, `tasks/ux.yml` |
+| Zen Browser | Flatpak install from Flathub, new `zen_browser` variable | `tasks/sw-browser.yml`, `defaults/main.yml` |
+| Chrome default browser | `xdg-settings set default-web-browser` after Chrome install | `tasks/sw-browser.yml` |
+| Dark theme icons | Switched `icon_theme` from `WhiteSur` to `WhiteSur-dark` | `defaults/main.yml`, `tasks/lookandfeel.yml` |
+| Thunderbird proxy | Deploy `cttb-proxy.js` autoconfig to `/opt/thunderbird/defaults/pref/` | `tasks/sw-thunderbird.yml` |
+| App search (Spotlight) | `xfce4-appfinder` package + Super+Space shortcut | `tasks/lubuntu.yml`, `templates/xfce4-keyboard-shortcuts.xml.j2` |
+| Greeter wallpaper | Point lightdm-gtk-greeter background to wallpaper rotation dir (random on each login) | `templates/lightdm-gtk-greeter.j2`, `tasks/lookandfeel.yml` |
+| System sounds | Enabled `EnableEventSounds` in xsettings, installed `libcanberra-gtk3-module` + `sound-theme-freedesktop` | `templates/xsettings.xml.j2`, `tasks/sound.yml` |
+| Fonts to storehouse | Already done — all assets use `ansible_assets_url` (storehouse) | — |
+| Wallpaper archive | Rebuilt `cttb-wallpapers.tar.gz` (208MB) and uploaded to storehouse | storehouse:/srv/storehouse/ansible/ |
+| Panel in Plank dock | Deployed `devilspie2` with Lua rule to set `skip_tasklist` on xfce4-panel wrappers | `files/config/devilspie2/panel-skip-taskbar.lua`, `tasks/ux.yml`, `tasks/lubuntu.yml` |
+
+### New files
+
+- `roles/desktop/tasks/ux.yml` — Desktop UX tasks (keyboard shortcuts, Thunar, devilspie2)
+- `roles/desktop/templates/thunar.xml.j2` — Thunar xfconf defaults
+- `roles/desktop/templates/xfce4-keyboard-shortcuts.xml.j2` — XFCE keyboard shortcuts
+- `roles/desktop/files/desktop-entries/cttb-signoff.desktop` — Log Out menu entry
+- `roles/desktop/files/config/devilspie2/panel-skip-taskbar.lua` — Hide panel from Plank
+- `plays/util-screenshot.yml` — Remote screenshot utility for debugging
+
+### Architecture notes
+
+**ux.yml task file** — Extracted keyboard shortcuts and Thunar config from `lookandfeel.yml` into a dedicated `tasks/ux.yml` file, included from `setup/default.yml`. This separates UX behavior (shortcuts, window rules) from visual theming (fonts, icons, panel layout).
+
+**devilspie2** — Lightweight Lua-scripted window matching daemon. Runs as autostart for all users. Rules in `/etc/xdg/devilspie2/`. Can be extended with additional `.lua` files to control window behavior (always-on-top, workspace assignment, geometry, skip-taskbar). Useful for kiosk-like environments where window behavior needs to be enforced system-wide.
+
+**Thunderbird proxy** — Campus machines use HTTP proxy at `10.11.1.1:8080` (e2guardian → squid). Thunderbird's `defaults/pref/cttb-proxy.js` sets `network.proxy.type=1` (manual) with the campus proxy and bypass for `.cttb`/`10.11.0.0/16`. This runs at install time — existing user profiles are not affected (users would need to reset Thunderbird's proxy settings manually or delete their profile).
+
+### Remote access notes
+
+- dvgs-testmachine actual IP: `10.11.30.60` (not 10.11.9.23 from old inventory)
+- Direct SSH works: `ssh administrator@10.11.30.60`
+- Storehouse direct SSH: `ssh -o ProxyJump=none administrator@10.11.1.43`
+- ProxyJump via `cttb` Tailscale node (100.121.41.88) fails — key not authorized for `johnchandara`
+
+---
+
+## 2026-05-04 — Infrastructure Fixes & Desktop Polish
+
+### Wiki DNS Resolution Fixed
+- **Problem:** `wiki.cttb` was resolving to an old IP (10.11.1.31) or dynamic IP (10.11.13.133) due to a name conflict with the legacy container and stale static records.
+- **Fixes:**
+    - Stopped legacy `wiki` container on `srv-vm`.
+    - Updated `/etc/unbound/unbound.conf.d/cttb` on `ub-adult` and `ub-igdvs` to point to `10.11.1.34`.
+    - Flushed Unbound zone cache (`unbound-control flush_zone cttb.`).
+    - Resolved `dnsmasq` conflict on `10.11.1.19` by removing stale `lxc-cm` entry and adding `host-record` for `wiki.cttb`.
+- **Verification:** DNS now correctly resolves to `10.11.1.34` across all resolvers.
+
+### SSH & Proxy Access
+- **Problem:** SSH ProxyJump to `rui-desktop2` (for SOCKS tunnel) failed due to unauthorized key and passphrase prompts.
+- **Fixes:**
+    - Authorized `jc@cosmicbook` ECDSA key on `rui-desktop2` for `johnchandara` user.
+    - Loaded passphrase-protected key into local `ssh-agent`.
+    - Updated `~/.local/bin/cttb-proxy` to use direct LAN IP (`10.11.24.24`) as jump host for better reliability.
+- **Result:** SOCKS tunnel stable; `wiki.cttb` and `pxe.cttb` fully accessible via browser.
+
+### Desktop Assets Updated
+- **Icon Theme:** Rebuilt `WhiteSur-icon-theme` on `storehouse` to include `WhiteSur-dark` variant. Repackaged and deployed to `http://storehouse.cttb/ansible/`.
+- **Sound Theme:** Integrated `bigsur` sound theme.
+    - Downloaded and hosted `macos-bigsur-sound-theme.tar.gz` on `storehouse`.
+    - Updated `desktop` role (`defaults/main.yml`, `tasks/sound.yml`) to install and enable the theme.
+    - `xsettings.xml.j2` now correctly applies `SoundThemeName=bigsur`.
+
+---
+
+## 2026-05-04 — Deployment Fixes & Greeter Styling
+
+### Chrome Install & NFS Lock Fix
+- **Problem:** Chrome was never installed via apt — only the signing key and repo were added. The `.desktop` file was also referenced as `google-chrome-stable.desktop` but the package installs `google-chrome.desktop`.
+- **Fix:** Added `apt: name=google-chrome-stable` task in `sw-browser.yml`, corrected `.desktop` filename, guarded replace + xdg-settings with architecture check (amd64 only).
+- **Problem:** Chrome profile locked by stale NFS `SingletonLock` symlink from another machine (dvgs-lab3). Students with NFS homes will hit this whenever Chrome crashes or a machine reboots uncleanly.
+- **Fix:** Created `/usr/local/bin/clean-chrome-locks.sh` — on login, checks if the lock symlink points to a different hostname and removes it. Deployed as `/etc/xdg/autostart/clean-chrome-locks.desktop`.
+
+### Log Out Menu Duplicate
+- **Problem:** "Log Out" appeared twice in the app menu — once in the alphabetical category list and once at the bottom. The system `xfce4-session-logout.desktop` has `X-Xfce-Toplevel` category and showed up via `<Merge type="all"/>` in addition to our custom `cttb-signoff.desktop` in the Layout.
+- **Fix:** Added `<Exclude><Filename>xfce4-session-logout.desktop</Filename></Exclude>` at the top level of `xfce-applications.menu.j2`.
+
+### 24-Hour Clock
+- Changed panel clock format from `%l:%M %p` (12hr) to `%H:%M` (24hr) in `xfce4-panel.xml.j2`.
+
+### VSCode Repo Conflict
+- **Problem:** VSCode package auto-creates `vscode.sources` (deb822 format) with `microsoft.gpg`, conflicting with our `vscode.list` using `microsoft.asc`. Broke all apt operations.
+- **Fix:** Added tasks in `sw-vscode.yml` to remove `vscode.sources` and stale `microsoft.gpg` after install.
+
+### LightDM Greeter Improvements
+- **Wallpaper:** Greeter `background` now points to a specific file (`{{desktop_wallpaper_dir}}/{{desktop_login_background}}`) — lightdm-gtk-greeter doesn't support directory paths (was black screen).
+- **Default wallpaper:** Changed `pic_bg` from `bg-windos10.jpg` (missing) to `Big-Sur-Day.jpg`.
+- **Language indicator:** Removed `~language` from greeter indicators — was showing raw "[language_code]" text.
+- **Theme:** Added `theme-name = WhiteSur-Dark` to greeter conf.
+- **macOS-style CSS:** Created `config/lightdm-gtk-greeter.css` with dark semi-transparent login box, rounded corners, styled input fields, and blue accent buttons. Loaded via `@import` in WhiteSur-Dark's `gtk.css`.
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `tasks/sw-browser.yml` | Added Chrome apt install, fixed .desktop name, arch guards |
+| `tasks/sw-vscode.yml` | Added repo/key conflict cleanup tasks |
+| `tasks/ux.yml` | Added Chrome NFS lock cleanup script + autostart |
+| `tasks/lookandfeel.yml` | Added greeter CSS deploy + theme import task |
+| `templates/xfce-applications.menu.j2` | Excluded system logout entry |
+| `templates/xfce4-panel.xml.j2` | 24hr clock format |
+| `templates/lightdm-gtk-greeter.j2` | Added theme-name, fixed wallpaper path, removed ~language |
+| `files/config/lightdm-gtk-greeter.css` | NEW — macOS-style greeter login box |
+| `files/config/clean-chrome-locks.sh` | NEW — NFS Chrome lock cleanup |
+| `defaults/main.yml` | Changed pic_bg to Big-Sur-Day.jpg |
+| `PROJECT.md` | Added incremental testing docs, expanded role reference |
+
+### Deployment Status
+- **ok=134, changed=10, failed=1** (Zoom signature only — pre-existing, skip with `--skip-tags zoom`)
+- Chrome, Firefox, Zen Browser, Thunderbird, VSCode all installed and working
+- Greeter: Big Sur wallpaper, WhiteSur-Dark theme, macOS-style CSS, 24hr clock
+- Desktop: Chrome launches with system titlebar, NFS lock cleanup active
+
+## 2026-05-04 — Backlog Audit & Verification
+
+Five parallel verification tasks run against dvgs-testmachine.
+
+### Completed
+
+| Task | Result |
+|------|--------|
+| **srv-gw filter revert** | Removed stale `10.11.9.23` from adult e2guardian group in `host_vars/srv-gw`. Set ips to `[]`. |
+| **Wallpaper verification** | Big-Sur-Day.jpg present (10.8MB), 35 wallpapers total, tarball on storehouse (HTTP 200). |
+| **Unified wallpaper** | Changed all group_vars (dvgs, dvbs, drbu) to `pic_bg: Big-Sur-Day.jpg`. Removed per-school overrides. |
+
+### Diagnosed (needs further action)
+
+| Task | Finding |
+|------|---------|
+| **LDAP auth** | TLS/STARTTLS handshake failing. nscd running but `do_start_tls failed` in logs. LDAP server at ldap.cttb (10.11.1.25) reachable on port 389, port 636 (LDAPS) refused. PAM/NSS config is correct. 439 local users resolve, 0 LDAP. Fix needs LDAP server TLS config or disabling TLS in client config. |
+| **Zoom .deb** | Storehouse copy corrupted — 4.3KB HTML error page, not a .deb. Zoom 7.0.0.1666 currently installed. Fresh download from zoom.us succeeded (281MB valid .deb at `/tmp/zoom_new.deb`). Upload to storehouse needed. |
+| **devilspie2** | Not starting on login. XFCE session + Plank running, but devilspie2 absent from process list. Remote screenshot shows black desktop. Need to check autostart config and Lua script syntax. |
+
+---
+
+## 2026-05-05 — Plank Dock Apps & App Finder Config Pulled from Test Machine
+
+### What was done
+
+Pulled two user-modified configs from dvgs-testmachine.cttb (10.11.30.60) and codified them in the Ansible role.
+
+### 1. Plank dock launchers
+
+Pulled from `/home/administrator/.config/plank/dock1/launchers/`. These define the apps pinned to the bottom dock for all new users.
+
+**Dock order:** Chrome, Zoom, LibreOffice Writer, Calculator, App Finder, Thunar, gedit, Thunderbird, GIMP, LibreOffice Calc
+
+**Files created:** `roles/desktop/files/config/etc-skel/.config/plank/dock1/launchers/` — 10 `.dockitem` files. Deployed to `/etc/skel/` via the existing `setup default account files` task in `lookandfeel.yml`.
+
+### 2. xfce4-appfinder config
+
+Pulled from user's xfconf on dvgs-testmachine. Settings:
+
+| Property | Value | Effect |
+|----------|-------|--------|
+| `icon-view` | true | Grid of app icons (not list) |
+| `hide-category-pane` | true | No sidebar categories — cleaner launcher |
+| `always-center` | true | Opens centered on screen |
+| `sort-by-frecency` | true | Frequently-used apps rise to top |
+| `item-icon-size` | 4 | Larger icons in grid |
+
+**Files created:** `roles/desktop/templates/xfce4-appfinder.xml.j2`
+**Task added:** `roles/desktop/tasks/ux.yml` — deploys to `/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-appfinder.xml`
+
+### Note
+
+Plank launchers go to `/etc/skel/` — only affects **new** user accounts. Existing users keep their current dock. The appfinder config goes to `/etc/xdg/` — system default, overridden by per-user xfconf.
+
+---
+
+## 2026-05-05 — Sudhanix OS 26 Branding
+
+### What was done
+
+Rebranded the OS identity. `lsb_release -a` and `/etc/os-release` now report Sudhanix 26 instead of Ubuntu 24.04. MOTD on SSH/console login points users to wiki.cttb as primary documentation.
+
+| Field | Value |
+|-------|-------|
+| Distributor ID | sudhanix |
+| Description | Sudhanix 26 |
+| Release | 26 |
+| Codename | storehouse |
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `roles/common/templates/lsb-release.j2` | `/etc/lsb-release` — read by `lsb_release` command |
+| `roles/common/templates/os-release.j2` | `/etc/os-release` — read by systemd, gnome-info, login banners. `ID_LIKE=ubuntu` keeps tooling that probes for ubuntu happy. `UBUNTU_CODENAME` retained from `ansible_distribution_release` for compat. |
+| `roles/common/templates/motd-header.j2` | Replacement `/etc/update-motd.d/00-header` — points to wiki.cttb (primary), help.ubuntu.com + docs.xfce.org (secondary) |
+| `roles/common/defaults/main.yml` | Added `sudhanix_*` brand vars |
+| `roles/common/tasks/setup/default.yml` | 4 new tasks: deploy lsb-release, os-release, motd-header; disable Ubuntu's `10-help-text`, `50-motd-news`, `90-updates-available`, `91-release-upgrade`, `95-hwe-eol` (chmod -x) |
+
+Tag: `sudhanix_branding` (also `motd` for the welcome message tasks).
+
+### Caveats
+
+- `/etc/os-release` is owned by the `base-files` package. Any apt upgrade of `base-files` will overwrite our template. dpkg-divert would be more robust; for now, re-running the role after upgrades is the recovery path.
+- `lsb_release -a` reads from `/etc/lsb-release` first, but on some 24.04 builds it falls back to `/usr/share/distro-info/ubuntu.csv` for codename mapping. Test on first deploy.
+- The disabled MOTD scripts use `chmod 0644` (drop +x) rather than deletion — survives apt reinstalls without leaving empty files.
+
+### Strategic note: Do we make our own distro?
+
+**Decision: No fork. Brand and configure, don't fork.** Sudhanix OS is a brand + Ansible profile + `apt.cttb` debmirror layered on Ubuntu noble. The benefits we want (VM testing, greater control, identity) don't require a fork — Ansible + autoinstall already deliver them. The cost of a true fork (CVE patching, ABI curation, installer engineering, signing infra) is enormous and hidden, with no upside for CTTB at current scale. Revisit only when we ship 10+ packages we build ourselves or hit an Ubuntu requirement we can't meet.
+
+Path forward if more brand cohesion is wanted: Plymouth splash, GRUB theme, custom ISO via cubic/livecd-rootfs (pre-applies Ansible role at ISO build time, ~2 days of work). PXE pipeline + autoinstall already gives us most of this; an installer ISO would just be the same artifact, packaged for offline use.
+
+---
+
+## 2026-05-05 — Sudhanix Branding: Must-Fix Tasks + Role Rename
+
+### Must-Fix branding (codified in `roles/common`)
+
+| Item | Mechanism |
+|------|-----------|
+| `os-release` survives `base-files` upgrades | `dpkg-divert --local --rename --add /etc/os-release` (also for `lsb-release`). Idempotent via `creates: /etc/os-release.distrib`. |
+| GRUB menu shows "Sudhanix" | `DISTRIB_ID=Sudhanix` (capitalized) — existing `/etc/default/grub` already uses `\`lsb_release -i -s\`` for `GRUB_DISTRIBUTOR`. lsb-release task notifies `update grub` handler. |
+| GRUB theme | Scaffolded; gated by `sudhanix_grub_theme_enabled: false`. Asset URL: `{{ ansible_assets_url }}/sudhanix-grub-theme.tar.gz`. Sets `GRUB_THEME=` in `/etc/default/grub`. |
+| Plymouth splash | Scaffolded; gated by `sudhanix_plymouth_theme_enabled: false`. Asset URL: `{{ ansible_assets_url }}/sudhanix-plymouth.tar.gz`. Uses `update-alternatives --set default.plymouth ...` and notifies `update initramfs`. |
+| `/etc/issue` + `/etc/issue.net` | New templates; show `Sudhanix 26 \n \l` at TTY/SSH login banner. |
+| `/etc/legal` | Replaced Ubuntu's notice with one-line Sudhanix-derived text. |
+
+New handlers in `roles/common/handlers/main.yml`: `update grub`, `update initramfs` (both gated to skip in LXC).
+
+All branding tasks tagged `sudhanix_branding`. GRUB-theme + Plymouth subtags: `grub_theme`, `plymouth`.
+
+### Role rename
+
+| Old | New |
+|-----|-----|
+| `roles/desktop/` | `roles/sudhanix-core/` |
+| `roles/desktop-distributed/` | `roles/sudhanix-distributed/` |
+| `roles/sudhanix-core/tasks/ux.yml` | `roles/sudhanix-core/tasks/sudhanix-ux.yml` |
+| `plays/desktop-distributed.yml` | `plays/sudhanix-distributed.yml` |
+| Tag `desktop` | Tag `sudhanix-core` |
+| Tag `ux` | Tag `sudhanix-ux` |
+
+Updated all `- desktop` / `- ux` tag entries in renamed role's tasks; updated `role: desktop-distributed` → `role: sudhanix-distributed` in plays; updated `include_tasks: ux.yml` → `include_tasks: sudhanix-ux.yml`. README + var-file headers refreshed. Historical UPDATE_JOURNAL paths left untouched (record of what was true at the time).
+
+### Caveats
+
+- `git mv` of `desktop-distributed/` was blocked by a deleted-but-unstaged wallpaper (`robert-lukeman-_RBcxo9AU-U-unsplash.jpg`). Worked around with `mv` + `git add -A`; rename detection picked up 30,857 of the WhiteSur theme files as renames. Verify with `git status -s | awk '{print $1}' | sort | uniq -c`.
+- The Plymouth task uses `update-alternatives --set` with `changed_when: false` because `--set` is non-idempotent in its output; the actual change-tracking comes from the unarchive task notifying `update initramfs`.
+- Deploying GRUB theme + Plymouth requires the asset tarballs on storehouse first. Until then, leave the `*_enabled` flags `false` (default).
+
+---
+
+## 2026-05-05 — Sudhanix Branding Deployed to dvgs-testmachine
+
+### Pre-deploy fixes
+
+| Issue | Fix |
+|-------|-----|
+| `utils/setup-env` pointed at `${ANSIBLE_BASE}/hosts` (nonexistent) | Updated to `${ANSIBLE_BASE}/inventory/hosts` |
+| `--tags sudhanix_branding` matched 0 tasks | Changed `roles/common/tasks/main.yml` from `include_tasks` to `import_tasks` for `setup/default.yml`. Static import lets `--list-tasks` and tag filtering see nested tags. Platform-specific include kept as `include_tasks` (uses `first_found` + `skip:true`, which requires dynamic). |
+| `roles/sudhanix-distributed/meta/main.yml` depended on `common-20.04` (renamed/removed) | Changed to `- { role: common }`. This was a pre-existing breakage exposed by the syntax check. |
+
+### Deploy
+
+```
+ansible-playbook plays/cs-lab-2404.yml -l dvgs-testmachine \
+    --tags sudhanix_branding --diff --become
+```
+
+Result: `ok=11 changed=10 unreachable=0 failed=0 skipped=6 ignored=1`
+
+The 1 ignored failure is `file` module on absent MOTD scripts (`90-updates-available`, `95-hwe-eol`) — Ubuntu 24.04 doesn't ship all five. `ignore_errors: yes` handles it.
+
+### Verified post-deploy on dvgs-testmachine
+
+| Check | Result |
+|-------|--------|
+| `lsb_release -a` | `Distributor ID: Sudhanix`, `Description: Sudhanix 26`, `Release: 26`, `Codename: storehouse` ✓ |
+| `/etc/os-release` | `PRETTY_NAME="Sudhanix 26"`, `ID=sudhanix`, `ID_LIKE=ubuntu`, `HOME_URL="http://wiki.cttb/"` ✓ |
+| `/etc/issue` | `Sudhanix 26 \n \l` ✓ |
+| MOTD `/etc/update-motd.d/00-header` | Wiki.cttb primary, Ubuntu/XFCE secondary ✓ |
+| `/etc/legal` | Sudhanix-derived notice ✓ |
+| `dpkg-divert --list` | Both `/etc/lsb-release` and `/etc/os-release` diverted to `.distrib` ✓ |
+| GRUB menu strings | `menuentry 'Sudhanix GNU/Linux'` ✓ (was 'Ubuntu GNU/Linux') |
+
+### Known follow-ups
+
+- `roles/sudhanix-distributed/tasks/main.yml` still has bare `include:` (removed in ansible-core 2.20+). Fix when `sudhanix-distributed` play is next exercised.
+- `--tags sudhanix-ux` (and other tags inside `sudhanix-core`) still don't show in `--list-tasks` because `sudhanix-core/tasks/main.yml` uses `include_tasks` for `setup/default.yml`. Same fix as `common` would resolve it; deferred until needed.
+
+---
+
+## 2026-05-05 — Sudhanix Plymouth Boot Splash
+
+### Generated artwork
+
+Used FLUX.1 Krea-Dev (HuggingFace) to generate a high-quality bitmap render of a white lotus on pure black background — symmetrical, glowing edges, photographic studio render. Two prior attempts had spurious objects (Apple logo, hiking boot — model interpreting "boot logo aesthetic" too literally). Final prompt avoided trigger words: "Symmetrical white lotus flower, fully bloomed, viewed from directly above, twelve smooth pointed petals... soft glowing white silhouette on solid pure black background... ethereal serene mood, empty smooth flower center with no objects". Seed 89081076, 1024×1024 → resized to 800×800 PNG.
+
+### Theme structure
+
+`roles/sudhanix-core/files/plymouth/sudhanix/`:
+
+| File | Purpose |
+|------|---------|
+| `sudhanix.plymouth` | Theme metadata; `ModuleName=script` |
+| `sudhanix.script` | Plymouth script: black background, centered logo at 22% screen height, thin progress bar 6% below, password prompt + message handlers |
+| `lotus.png` | 800×800 lotus bitmap (FLUX render) |
+| `progress-bg.png` | 240×4 px, white at 25% alpha — progress bar track |
+| `progress-fill.png` | 240×4 px, opaque white — progress bar fill, cropped by `boot_progress_cb` |
+
+### Asset deployment
+
+- Tarball packaged via `tar czf sudhanix-plymouth.tar.gz sudhanix/` (260 KB)
+- Uploaded to `storehouse.cttb:/srv/storehouse/ansible/sudhanix-plymouth.tar.gz` (HTTP 200)
+- New `plumouth` tag block added to `plays/deploy-assets.yml` for future rebuilds: rsync source → tar → place
+
+### Ansible task fix
+
+The original `update-alternatives --set` task failed (`alternative not registered`). Split into two tasks:
+
+1. `register Sudhanix Plymouth theme as alternative` — `update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth 100`
+2. `select Sudhanix Plymouth theme via update-alternatives` — `update-alternatives --set ...`
+
+### Verified post-deploy on dvgs-testmachine
+
+| Check | Result |
+|-------|--------|
+| Theme files at `/usr/share/plymouth/themes/sudhanix/` | All 5 files present ✓ |
+| `/etc/alternatives/default.plymouth` symlink | → `/usr/share/plymouth/themes/sudhanix/sudhanix.plymouth` ✓ |
+| `apt install plymouth-themes` | Pulled in `plymouth-label` + `plymouth-theme-spinner` deps |
+| `update-initramfs -u` | Generated `/boot/initrd.img-6.8.0-111-generic` with new theme baked in |
+
+### Visual verification
+
+Plymouth runs at boot only — requires reboot of dvgs-testmachine to observe. Default `sudhanix_plymouth_theme_enabled: true` now in `roles/common/defaults/main.yml`. Re-running `cs-lab-2404.yml` with `--tags plymouth` is idempotent.
+
+### Caveats
+
+- The `update-initramfs` handler doesn't fire on idempotent re-runs (since `--install`/`--set` are `changed_when: false`). On the **first** deploy, run an explicit `ansible <host> -b -m command -a "update-initramfs -u"` to bake the theme. Subsequent deploys only need this if the source PNG changes.
+- Plymouth writes raw RGBA frames straight to KMS — only visible on the actual console at boot. Cannot be previewed over SSH.
+
+---
+
+## 2026-05-05 — End of Session Wrap-up
+
+### What shipped today
+
+1. **Plank dock launchers + xfce4-appfinder template** — pulled from `dvgs-testmachine` user mods, codified into `roles/sudhanix-core/files/config/etc-skel/` and a new system-wide appfinder XML.
+2. **Sudhanix OS 26 branding** — `lsb-release`, `os-release`, `motd-header`, `issue`, `issue.net`, `legal` templates; `dpkg-divert` for upgrade survival; `update-grub` and `update-initramfs` handlers; `import_tasks` fix in `common/tasks/main.yml` so tag filtering works through the role.
+3. **Role rename** — `desktop` → `sudhanix-core`, `desktop-distributed` → `sudhanix-distributed`, `ux.yml` → `sudhanix-ux.yml`. 15 plays + 5 task files + meta dep updated. Tags `desktop`/`ux` → `sudhanix-core`/`sudhanix-ux`.
+4. **Plymouth boot splash** — FLUX-rendered lotus on black, macOS-style script with progress bar, registered + selected via `update-alternatives`, baked into initrd.
+5. **Utils fix** — `setup-env` now points at `inventory/hosts` (was nonexistent `hosts` at repo root).
+
+### Outstanding
+
+- `roles/sudhanix-distributed/tasks/main.yml` still uses bare `include:` (deprecated in ansible-core 2.20). Fix when next exercising that play.
+- GRUB theme assets not yet built (gated `sudhanix_grub_theme_enabled: false`).
+- Must reboot `dvgs-testmachine` to visually verify Plymouth splash.
+- Wiki docs for Sudhanix 26 release (user + sysadmin) — next session.

@@ -2,4 +2,4 @@
 
 - hosts: dvgs-main-office
   roles:
-    - desktop
+    - sudhanix-core

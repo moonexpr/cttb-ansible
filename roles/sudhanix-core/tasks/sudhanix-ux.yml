@@ -1,0 +1,105 @@
+---
+# Sudhanix UX: keyboard shortcuts, window tiling, Thunar defaults, devilspie2
+
+  - name: configure keyboard shortcuts (Super key opens app menu, window tiling)
+    template:
+      src: xfce4-keyboard-shortcuts.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: configure Thunar file manager (list view default)
+    template:
+      src: thunar.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/thunar.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: create system-wide devilspie2 config directory
+    file:
+      path: /etc/xdg/devilspie2
+      state: directory
+      mode: 0755
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: deploy devilspie2 rule to hide panel from Plank dock
+    copy:
+      src: config/devilspie2/panel-skip-taskbar.lua
+      dest: /etc/xdg/devilspie2/panel-skip-taskbar.lua
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: deploy Chrome stale NFS lock cleanup script
+    copy:
+      src: config/clean-chrome-locks.sh
+      dest: /usr/local/bin/clean-chrome-locks.sh
+      mode: '0755'
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: autostart Chrome lock cleanup on login
+    copy:
+      content: |
+        [Desktop Entry]
+        Type=Application
+        Name=Clean Chrome Locks
+        Exec=/usr/local/bin/clean-chrome-locks.sh
+        Hidden=false
+        NoDisplay=true
+        X-GNOME-Autostart-enabled=true
+      dest: /etc/xdg/autostart/clean-chrome-locks.desktop
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: autostart devilspie2 for all users
+    copy:
+      content: |
+        [Desktop Entry]
+        Type=Application
+        Name=Devilspie2
+        Exec=devilspie2
+        Hidden=false
+        NoDisplay=true
+        X-GNOME-Autostart-enabled=true
+      dest: /etc/xdg/autostart/devilspie2.desktop
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: configure xfce4-appfinder (icon view, centered, no categories)
+    template:
+      src: xfce4-appfinder.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-appfinder.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - appfinder

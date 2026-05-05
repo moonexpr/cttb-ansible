@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Log Out
+Comment=Log out of the current session
+Type=Application
+Exec=xfce4-session-logout --logout
+Icon=system-log-out
+Categories=X-Xfce-Toplevel;
+StartupNotify=false
+Terminal=false

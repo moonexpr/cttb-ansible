@@ -2,7 +2,7 @@
 
 - hosts: dvgs-laptops
   roles:
-    - desktop
+    - sudhanix-core
     #- ldap-client
     #- nfs-home
     - cups-client

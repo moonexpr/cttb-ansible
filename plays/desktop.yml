@@ -2,4 +2,4 @@
 
 - hosts: substation
   roles:
-    - desktop
+    - sudhanix-core
