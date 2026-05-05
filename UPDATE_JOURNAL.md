@@ -2030,3 +2030,40 @@ Applied the same `include_tasks` → `import_tasks` fix to `roles/sudhanix-core/
 ### Investigate later
 
 - The `copy:` module not propagating deeply-nested new dotfile subtrees in a playbook run when the destination parent doesn't exist. Affected: `/etc/skel/.config/plank/dock1/launchers/`. Workaround: ad-hoc copy with absolute src path. Probably needs a stat-then-create-directory chain, or split the copy into multiple steps with explicit directory creation.
+
+---
+
+## 2026-05-05 — GRUB Menu + Plymouth Splash Visibility Fix
+
+### Issue
+
+After reboot of `dvgs-testmachine`, neither the GRUB menu nor the Plymouth splash were visible. Diagnosed via `/etc/default/grub`:
+
+| Setting | Default (Ubuntu install) | Effect |
+|---------|--------------------------|--------|
+| `GRUB_TIMEOUT_STYLE=hidden` | menu hidden | Have to hold Shift/Esc at boot to see GRUB |
+| `GRUB_TIMEOUT=0` | no countdown | GRUB jumps straight to default entry |
+| `GRUB_CMDLINE_LINUX_DEFAULT=""` | no `splash` flag | Plymouth runs in text mode, no graphical splash |
+
+### Fix
+
+Added 3 `lineinfile` tasks to `roles/sudhanix-core/tasks/sudhanix-ux.yml`:
+
+- `GRUB_TIMEOUT_STYLE=menu`
+- `GRUB_TIMEOUT=3`
+- `GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"`
+
+Each notifies the `update grub` handler. Gated by `ansible_virtualization_type != "lxc"`. Deployed via `--tags sudhanix-ux`.
+
+### Verified on dvgs-testmachine (post-deploy, pre-reboot)
+
+- `/etc/default/grub` shows the new values
+- `/boot/grub/grub.cfg` contains `linux ... ro quiet splash $vt_handoff` — splash flag baked into kernel cmdline
+
+### Why the server role isn't affected
+
+`roles/server/tasks/main.yml` deploys its own `default-grub` (with `nosplash debug`) for headless hosts. Servers don't use the `sudhanix-core` role, so the new `lineinfile` tasks don't run on them. Defaults remain headless-friendly.
+
+### Tag dispatch reminder
+
+`--tags grub` alone matches no tasks (because `setup/default.yml` includes `sudhanix-ux.yml` via `include_tasks`, which only exposes the `sudhanix-ux` tag at filter time). Use `--tags sudhanix-ux` to reach the GRUB tasks via the include.
