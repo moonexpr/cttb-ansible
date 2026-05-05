@@ -1,0 +1,25 @@
+---
+# Post-installation configuration for Computer Lab hosts running Sudhanix 26.
+#
+# Run this after PXE-installing Sudhanix 26 (Ubuntu 24.04 base) on lab machines.
+# Applies the sudhanix-core role plus lab-specific roles (CUPS, LDAP, NFS home,
+# CA certificates).
+#
+# Usage:
+#   ansible-playbook plays/install-sudhanix-cslabs.yml -l dvgs_cs_lab
+#   ansible-playbook plays/install-sudhanix-cslabs.yml -l dvbs_cs_lab
+#   ansible-playbook plays/install-sudhanix-cslabs.yml -l drbu_cs_lab
+#   ansible-playbook plays/install-sudhanix-cslabs.yml  # all labs
+
+- hosts: dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
+  become: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+    NEEDRESTART_MODE: a
+  roles:
+    - sudhanix-core
+    - time-server
+    - cups-client
+    - ldap-client
+    - nfs-home
+    - cttb-ca-client

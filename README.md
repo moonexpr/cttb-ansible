@@ -80,7 +80,7 @@ All playbooks live in `plays/`. Key categories:
 | `dvgs-cs-lab`          | Full DVGS lab: desktop, printing, LDAP, NFS, CA       |
 | `dvbs-3rd-9th`         | DVBS upper grades lab                                 |
 | `drbu-sw-cslab`        | DRBU CS lab switch configuration                      |
-| `cs-lab-2404`          | Apply Ubuntu 24.04 settings to all CS labs            |
+| `install-sudhanix-cslabs` | Apply Sudhanix 26 settings to all CS labs          |
 | `netinstall-2404`      | Deploy Ubuntu 24.04 PXE/autoinstall infrastructure    |
 
 ### Infrastructure
