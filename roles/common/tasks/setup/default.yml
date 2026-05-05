@@ -267,6 +267,17 @@
     - sudhanix_branding
     - plymouth
 
+# macOS-built tarballs may carry ._* AppleDouble forks; strip them post-extract.
+- name: clean macOS resource forks from Plymouth theme directory
+  shell: find /usr/share/plymouth/themes/sudhanix -name '._*' -delete
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  changed_when: false
+  notify:
+    - update initramfs
+  tags:
+    - sudhanix_branding
+    - plymouth
+
 - name: register Sudhanix Plymouth theme as alternative
   command: >
     update-alternatives --install
