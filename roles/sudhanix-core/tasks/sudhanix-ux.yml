@@ -102,4 +102,45 @@
     tags:
       - sudhanix-core
       - sudhanix-ux
+
+  # GRUB defaults for desktops: brief menu, graphical Plymouth splash.
+  # The server role overrides /etc/default/grub for headless hosts.
+  - name: GRUB — show menu briefly (timeout style)
+    lineinfile:
+      path: /etc/default/grub
+      regexp: '^#?GRUB_TIMEOUT_STYLE='
+      line: 'GRUB_TIMEOUT_STYLE=menu'
+    when: ansible_virtualization_type != "lxc"
+    notify:
+      - update grub
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - grub
+
+  - name: GRUB — 3-second menu timeout
+    lineinfile:
+      path: /etc/default/grub
+      regexp: '^#?GRUB_TIMEOUT='
+      line: 'GRUB_TIMEOUT=3'
+    when: ansible_virtualization_type != "lxc"
+    notify:
+      - update grub
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - grub
+
+  - name: GRUB — quiet splash for Plymouth
+    lineinfile:
+      path: /etc/default/grub
+      regexp: '^#?GRUB_CMDLINE_LINUX_DEFAULT='
+      line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"'
+    when: ansible_virtualization_type != "lxc"
+    notify:
+      - update grub
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - grub
       - appfinder
