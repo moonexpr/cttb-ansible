@@ -5,7 +5,7 @@ lightdm_hide_users: true
 
 # look and feel
 pic_avatar: avatar-drbu.png
-pic_bg: bg-drbu.jpg
+pic_bg: Big-Sur-Day.jpg
 
 # office
 libreoffice: true

@@ -1,0 +1,36 @@
+---
+
+  - block:
+    - name: download Microsoft signing key
+      get_url:
+        url: https://packages.microsoft.com/keys/microsoft.asc
+        dest: /usr/share/keyrings/microsoft.asc
+        mode: '0644'
+
+    - name: add VSCode repository
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.asc] https://packages.microsoft.com/repos/code stable main"
+        state: present
+        filename: vscode
+
+    # the code package auto-creates vscode.sources (deb822) with a different key — remove it
+    - name: remove duplicate VSCode repository (auto-created by package)
+      file:
+        path: /etc/apt/sources.list.d/vscode.sources
+        state: absent
+
+    - name: remove stale microsoft.gpg key (package ships its own)
+      file:
+        path: /usr/share/keyrings/microsoft.gpg
+        state: absent
+
+    - name: install Visual Studio Code
+      apt:
+        name: code
+        state: present
+        update_cache: yes
+
+    when: vscode == true
+    tags:
+      - packages
+      - vscode

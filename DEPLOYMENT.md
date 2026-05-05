@@ -8,7 +8,7 @@ End-to-end procedure for upgrading a CTTB lab machine from any state to Ubuntu 2
 
 - Machine connected via **wired ethernet** (PXE requires it; WiFi not available at boot)
 - PXE server deployed (UEFI GRUB + autoinstall profiles)
-- WhiteSur theme tarballs on asset server (`pxe.cttb/ansible_assets/`)
+- WhiteSur theme tarballs on asset server (`storehouse.cttb/ansible/`)
 - Ansible environment: `source utils/setup-env`
 
 ---

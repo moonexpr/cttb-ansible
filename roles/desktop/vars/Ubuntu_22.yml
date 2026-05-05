@@ -1,3 +1,0 @@
----
-# Ubuntu 22.04 / 24.04 specific variables for desktop role
-# WhiteSur theme is the default in defaults/main.yml — no overrides needed here.

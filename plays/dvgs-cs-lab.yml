@@ -2,7 +2,7 @@
 
 - hosts: dvgs-cs-lab
   roles:
-    - desktop
+    - sudhanix-core
     - cups-client
     - ldap-client
     - nfs-home

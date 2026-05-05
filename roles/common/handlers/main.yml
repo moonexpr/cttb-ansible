@@ -9,3 +9,11 @@
     service:
       name: ssh
       state: reloaded
+
+  - name: update grub
+    command: update-grub
+    when: ansible_virtualization_type != "lxc"
+
+  - name: update initramfs
+    command: update-initramfs -u
+    when: ansible_virtualization_type != "lxc"

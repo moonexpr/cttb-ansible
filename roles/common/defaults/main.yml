@@ -2,3 +2,19 @@
 
 disable_ipv6: True
 centralized_logging: false
+
+# Sudhanix OS branding (overrides Ubuntu /etc/lsb-release + /etc/os-release)
+# DISTRIB_ID is capitalized (Ubuntu convention) — also drives GRUB_DISTRIBUTOR
+# via `lsb_release -i -s` in /etc/default/grub.
+sudhanix_distrib_id: Sudhanix
+sudhanix_id: sudhanix
+sudhanix_name: "Sudhanix"
+sudhanix_release: "26"
+sudhanix_codename: storehouse
+sudhanix_description: "Sudhanix 26"
+
+# Optional brand assets. Enable once the asset is uploaded to storehouse.
+sudhanix_grub_theme_enabled: false
+sudhanix_plymouth_theme_enabled: true
+sudhanix_grub_theme_url: "{{ ansible_assets_url }}/sudhanix-grub-theme.tar.gz"
+sudhanix_plymouth_theme_url: "{{ ansible_assets_url }}/sudhanix-plymouth.tar.gz"

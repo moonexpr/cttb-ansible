@@ -1,0 +1,5 @@
+---
+# Ubuntu 20.04 specific variables for sudhanix-core role
+
+# 20.04 does not have VSCode by default
+vscode: false

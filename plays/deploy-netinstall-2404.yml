@@ -47,7 +47,7 @@
         dest: "{{ ni_staging_dir }}/autoinstall/ubuntu/{{ item }}/user-data"
         mode: "0644"
       loop:
-        - desktop
+        - sudhanix-core
         - server
         - desktop-minimal
       tags: ni_autoinstall
@@ -58,7 +58,7 @@
         dest: "{{ ni_staging_dir }}/autoinstall/ubuntu/{{ item }}/meta-data"
         mode: "0644"
       loop:
-        - desktop
+        - sudhanix-core
         - server
         - desktop-minimal
       tags: ni_autoinstall

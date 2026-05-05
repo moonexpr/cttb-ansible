@@ -1,0 +1,45 @@
+---
+# Remote screenshot utility
+# Takes a screenshot of the target machine's display using scrot and fetches it.
+#
+# Usage:
+#   utils/pb util-screenshot --limit <hostname>
+#   utils/pb util-screenshot --limit <hostname> -e output_dir=/tmp/screenshots
+#
+# Requires: scrot installed on target (included in desktop role packages)
+
+- hosts: all
+  gather_facts: false
+
+  vars:
+    output_dir: "{{ playbook_dir }}/../logs/screenshots"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+
+  tasks:
+    - name: take screenshot on remote machine
+      shell: DISPLAY=:0 scrot /tmp/ansible-screenshot.png
+      changed_when: false
+
+    - name: ensure local output directory exists
+      local_action:
+        module: file
+        path: "{{ output_dir }}"
+        state: directory
+      run_once: true
+      become: false
+
+    - name: fetch screenshot
+      fetch:
+        src: /tmp/ansible-screenshot.png
+        dest: "{{ output_dir }}/{{ inventory_hostname }}-{{ timestamp }}.png"
+        flat: true
+
+    - name: clean up remote screenshot
+      file:
+        path: /tmp/ansible-screenshot.png
+        state: absent
+      changed_when: false
+
+    - name: report screenshot location
+      debug:
+        msg: "Screenshot saved to {{ output_dir }}/{{ inventory_hostname }}-{{ timestamp }}.png"

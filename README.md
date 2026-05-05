@@ -110,6 +110,7 @@ All playbooks live in `plays/`. Key categories:
 | `util-wakeonlan`       | Send Wake-on-LAN packets to all hosts        |
 | `util-ssh-copy-id`     | Distribute SSH public keys                   |
 | `util-hardware-survey` | Collect hardware + OS info to CSV            |
+| `util-screenshot`      | Remote screenshot via scrot for debugging    |
 
 ## Roles
 
@@ -257,8 +258,10 @@ utils/pb gw --ask-vault-pass
 
 ## Notes
 
-- All hosts currently run **Ubuntu 20.04 LTS (focal)** on **x86_64**. Migration to 24.04 LTS is underway.
+- Hosts are migrating from **Ubuntu 20.04 LTS** to **24.04 LTS** (noble). Test machine (`dvgs-testmachine`) is on 24.04.
+- Desktop environment: **XFCE4** with WhiteSur-Dark theme, Plank dock, macOS-style greeter.
 - The `administrator` user is the default `remote_user` for all SSH connections.
 - Host key checking is disabled in `ansible.cfg` for ease of reprovisioning.
 - SSH agent forwarding and pipelining are enabled for performance.
 - Execution logs are written to `logs/runtime.log`.
+- Campus firewall blocks snap store, ppa.launchpad.net, and most external HTTPS repos. Software must be mirrored locally (`apt.cttb`, `storehouse.cttb`).

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ANSIBLE_BASE=`pwd`
-export ANSIBLE_HOSTS="${ANSIBLE_BASE}/hosts"
+export ANSIBLE_HOSTS="${ANSIBLE_BASE}/inventory/hosts"
 export ANSIBLE_LIBRARY="/usr/share/ansible:${ANSIBLE_BASE}/library"
 #export ANSIBLE_LIBRARY="/usr/share/ansible"
 export ANSIBLE_ROLES="${ANSIBLE_BASE}/roles"

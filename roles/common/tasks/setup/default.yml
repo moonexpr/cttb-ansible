@@ -103,6 +103,191 @@
   hostname:
     name: "{{ inventory_hostname }}"
 
+- name: divert /etc/lsb-release before override (survives base-files apt upgrades)
+  command: dpkg-divert --local --rename --add /etc/lsb-release
+  args:
+    creates: /etc/lsb-release.distrib
+  tags:
+    - sudhanix_branding
+
+- name: divert /etc/os-release before override (survives base-files apt upgrades)
+  command: dpkg-divert --local --rename --add /etc/os-release
+  args:
+    creates: /etc/os-release.distrib
+  tags:
+    - sudhanix_branding
+
+- name: brand /etc/lsb-release as Sudhanix
+  template:
+    src: lsb-release.j2
+    dest: /etc/lsb-release
+    mode: 0644
+    owner: root
+    group: root
+  notify:
+    - update grub
+  tags:
+    - sudhanix_branding
+
+- name: brand /etc/os-release as Sudhanix
+  template:
+    src: os-release.j2
+    dest: /etc/os-release
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+
+- name: brand /etc/issue (TTY login banner)
+  template:
+    src: issue.j2
+    dest: /etc/issue
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+
+- name: brand /etc/issue.net (network/SSH login banner)
+  template:
+    src: issue.net.j2
+    dest: /etc/issue.net
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+
+- name: replace MOTD header (CTTB wiki, Ubuntu/XFCE secondary)
+  template:
+    src: motd-header.j2
+    dest: /etc/update-motd.d/00-header
+    mode: 0755
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+    - motd
+
+- name: disable Ubuntu MOTD ads/news scripts
+  file:
+    path: "/etc/update-motd.d/{{ item }}"
+    mode: '0644'
+  loop:
+    - 10-help-text
+    - 50-motd-news
+    - 90-updates-available
+    - 91-release-upgrade
+    - 95-hwe-eol
+  ignore_errors: yes
+  tags:
+    - sudhanix_branding
+    - motd
+
+# /etc/legal — Ubuntu's "the programs included with the Ubuntu system" notice,
+# shown by pam_motd on first login. Replace with a one-line Sudhanix notice.
+- name: replace /etc/legal with Sudhanix notice
+  copy:
+    content: |
+      The programs included with {{ sudhanix_description }} are derived from
+      Ubuntu and free software; the exact distribution terms for each program
+      are described in the individual files in /usr/share/doc/*/copyright.
+    dest: /etc/legal
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+
+# GRUB theme — gated by sudhanix_grub_theme_enabled.
+# The existing /etc/default/grub already pulls GRUB_DISTRIBUTOR from
+# `lsb_release -i -s` so the menu strings auto-update; the theme is icing.
+- name: ensure GRUB themes directory exists
+  file:
+    path: /boot/grub/themes
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  when: sudhanix_grub_theme_enabled and ansible_virtualization_type != "lxc"
+  tags:
+    - sudhanix_branding
+    - grub_theme
+
+- name: install Sudhanix GRUB theme
+  unarchive:
+    remote_src: yes
+    src: "{{ sudhanix_grub_theme_url }}"
+    dest: /boot/grub/themes/
+    creates: /boot/grub/themes/sudhanix
+    owner: root
+    group: root
+  when: sudhanix_grub_theme_enabled and ansible_virtualization_type != "lxc"
+  notify:
+    - update grub
+  tags:
+    - sudhanix_branding
+    - grub_theme
+
+- name: set GRUB_THEME in /etc/default/grub
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?GRUB_THEME='
+    line: 'GRUB_THEME=/boot/grub/themes/sudhanix/theme.txt'
+  when: sudhanix_grub_theme_enabled and ansible_virtualization_type != "lxc"
+  notify:
+    - update grub
+  tags:
+    - sudhanix_branding
+    - grub_theme
+
+# Plymouth boot splash — gated by sudhanix_plymouth_theme_enabled.
+- name: install plymouth (Plymouth splash dependency)
+  apt:
+    name: plymouth-themes
+    state: present
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  tags:
+    - sudhanix_branding
+    - plymouth
+
+- name: install Sudhanix Plymouth theme
+  unarchive:
+    remote_src: yes
+    src: "{{ sudhanix_plymouth_theme_url }}"
+    dest: /usr/share/plymouth/themes/
+    creates: /usr/share/plymouth/themes/sudhanix
+    owner: root
+    group: root
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  notify:
+    - update initramfs
+  tags:
+    - sudhanix_branding
+    - plymouth
+
+- name: register Sudhanix Plymouth theme as alternative
+  command: >
+    update-alternatives --install
+    /usr/share/plymouth/themes/default.plymouth default.plymouth
+    /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth 100
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  changed_when: false
+  tags:
+    - sudhanix_branding
+    - plymouth
+
+- name: select Sudhanix Plymouth theme via update-alternatives
+  command: update-alternatives --set default.plymouth /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  changed_when: false
+  notify:
+    - update initramfs
+  tags:
+    - sudhanix_branding
+    - plymouth
+
 - name: fix /etc/hosts
   replace:
     dest: /etc/hosts
