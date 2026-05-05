@@ -2033,6 +2033,40 @@ Applied the same `include_tasks` → `import_tasks` fix to `roles/sudhanix-core/
 
 ---
 
+## 2026-05-05 — LDAP Auth Fix: Decision
+
+### Problem (recap from 2026-05-04 diagnosis)
+
+`dvgs-testmachine` (Ubuntu 24.04 / Sudhanix 26): `do_start_tls failed` in nscd; 0/439 LDAP users resolving. LDAP server `ldap-srv.cttb` (10.11.1.25, 16.04 OpenLDAP) reachable on 389; 636 refused. PAM/NSS config syntactically correct.
+
+### Root cause (localized)
+
+The CTTB private CA (`roles/ldap-client/files/cttb-cacert.pem`, issued 2016‑08‑16, expired 2017‑08‑17) was never deployed into `/etc/ssl/certs/ca-certificates.crt` on clients — `roles/ldap-client/tasks/main.yml` points `tls_cacertfile` and `TLS_CACERT` at the system bundle but contains no `update-ca-certificates` task. STARTTLS therefore can't validate the server cert. Compounded on 24.04 by OpenSSL 3 rejecting SHA1 sigs, RSA <2048, and expired CAs by default — the 2016 cert is unlikely to satisfy any of these even if shipped.
+
+### Decision: **Path C — re-issue server cert with modern CA, ship to clients**
+
+Considered:
+
+| Path | Why not |
+|---|---|
+| A. Disable TLS (`ssl off`) | Cleartext bind passwords on LAN — quick, but leaves the next admin to find it the hard way |
+| B. `tls_reqcert never` + ship CTTB CA | Encryption without identity check — half-measure, still fails on a SHA1/expired chain under OpenSSL 3 |
+| **C. Re-issue with modern CA, ship CA via `update-ca-certificates`** | **Chosen.** Proper fix; aligns with leaving 16.04 anyway |
+| D. Migrate ldap-srv to 24.04 first | Out of scope this session; tracked separately |
+
+### Plan outline
+
+1. Touch ldap-srv (16.04, GnuTLS-backed slapd) carefully:
+   - Generate new CA: SHA256, RSA 4096, 10-year validity
+   - Generate new server cert: SHA256, RSA 2048, SANs for `ldap-srv.cttb`, `ldap.cttb`, `10.11.1.25`, 5-year validity
+   - Replace under olcTLS* via `cn=config` (ldapmodify), keep originals as `.bak` so revert is `mv` + slapd restart
+2. Ship new CA via `roles/ldap-client/`: drop into `/usr/local/share/ca-certificates/cttb-cacert.crt`, run `update-ca-certificates`, then STARTTLS validates against the system bundle.
+3. Validate on `dvgs-testmachine` first (`ldapsearch -ZZ`, `getent passwd <ldap_user>`) before touching any other client.
+
+Rollback: `mv` cert files back, slapd restart on server; clients stay tolerant since old CA was never trusted anyway.
+
+---
+
 ## 2026-05-05 — GRUB Menu + Plymouth Splash Visibility Fix
 
 ### Issue
@@ -2067,3 +2101,29 @@ Each notifies the `update grub` handler. Gated by `ansible_virtualization_type !
 ### Tag dispatch reminder
 
 `--tags grub` alone matches no tasks (because `setup/default.yml` includes `sudhanix-ux.yml` via `include_tasks`, which only exposes the `sudhanix-ux` tag at filter time). Use `--tags sudhanix-ux` to reach the GRUB tasks via the include.
+
+---
+
+## 2026-05-05 — Plymouth: macOS forks + missing source
+
+### Issue 1: Source files never landed in repo
+
+`roles/sudhanix-core/files/plymouth/sudhanix/` was supposed to contain the theme source committed in `76f1ec05`. It wasn't there. The `mkdir -p` + `cp` from `/tmp/sudhanix-plymouth-build/` may have hit a cwd issue. Now actually committed: 5 files (lotus.png, progress-bg.png, progress-fill.png, sudhanix.plymouth, sudhanix.script).
+
+### Issue 2: macOS AppleDouble forks in initrd
+
+`lsinitramfs` on dvgs-testmachine showed `._lotus.png`, `._progress-bg.png`, etc. alongside the real files. The original tarball was built on macOS with plain `tar czf`, which writes `._*` AppleDouble sidecars. Plymouth ignores them but they bloat the initrd.
+
+### Fix
+
+1. Repacked tarball with `tar --no-xattrs --exclude='._*' --exclude='.DS_Store'`. Uploaded clean version to storehouse.
+2. Added defensive cleanup task in `roles/common/tasks/setup/default.yml`: `find /usr/share/plymouth/themes/sudhanix -name '._*' -delete`, notifies `update initramfs`.
+3. Cleaned the host, re-ran `--tags plymouth`, handler fired.
+
+### Verified post-fix
+
+`lsinitramfs /boot/initrd.img-$(uname -r) | grep sudhanix` shows only the 5 real files.
+
+### Note on `plymouth-set-default-theme`
+
+Doesn't exist on Ubuntu 24.04 — the `plymouth` package ships only `plymouth` (client) and `plymouthd` (daemon). Equivalent operations are already done by the role: `update-alternatives --install` + `--set` + `update-initramfs -u`.

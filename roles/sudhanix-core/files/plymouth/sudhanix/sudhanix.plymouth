@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Sudhanix
+Description=Sudhanix OS macOS-style boot splash with lotus logo
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/sudhanix
+ScriptFile=/usr/share/plymouth/themes/sudhanix/sudhanix.script
