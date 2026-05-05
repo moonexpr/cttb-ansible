@@ -1997,3 +1997,36 @@ Plymouth runs at boot only — requires reboot of dvgs-testmachine to observe. D
 - GRUB theme assets not yet built (gated `sudhanix_grub_theme_enabled: false`).
 - Must reboot `dvgs-testmachine` to visually verify Plymouth splash.
 - Wiki docs for Sudhanix 26 release (user + sysadmin) — next session.
+
+---
+
+## 2026-05-05 — Wiki Drafts + Backlog + Final Test Deploy
+
+### Wiki article drafts (not yet published)
+
+Drafted two wiki pages locally and saved to `.claude/wiki-pages/`:
+
+- `Sudhanix.txt` (~7.8 KB) — user-facing introduction. Sudhana's namesake, quick tour, keyboard shortcuts, getting help, what differs from stock Ubuntu
+- `IT_Sudhanix.txt` (~17 KB) — sysadmin reference. Architecture overview, identity/branding mechanics, role catalog, asset pipeline, deploy commands, customization vars, troubleshooting recipes
+
+Both gitignored under `.claude/`. Ready to publish via `wiki-edit.sh "Sudhanix" .claude/wiki-pages/Sudhanix.txt` etc.
+
+### Backlog: 12 future wiki articles
+
+Added "Wiki Documentation (before mass upgrade)" section to BACKLOG.md. Six critical sysadmin pages (Upgrade Procedure, Pre-Upgrade Checklist, Rollback Plan, Verification Checklist, Per-Site Customization, Asset Manifest), three user-facing (Release Notes, Migration, Common Tasks), one PXE deep-dive, one comms templates page, plus four stretch goals.
+
+### Final test-machine alignment
+
+Deployed pending bits to `dvgs-testmachine`:
+
+- `xfce4-appfinder.xml` (system-wide /etc/xdg) ✓
+- `lightdm-gtk-greeter.css` ✓
+- Plank dockitems in `/etc/skel/.config/plank/dock1/launchers/` (10 files) — needed ad-hoc copy with absolute `src` path; the playbook's `copy: src=config/etc-skel/ dest=/etc/skel/` task didn't propagate the new deeply-nested dotfile subtree
+
+### Repo change: import_tasks consistency
+
+Applied the same `include_tasks` → `import_tasks` fix to `roles/sudhanix-core/tasks/main.yml` as was done in `roles/common/tasks/main.yml` earlier. Tags inside `setup/default.yml` now visible at `--list-tasks` time. Nested includes inside `setup/default.yml` (lubuntu, lookandfeel, sudhanix-ux, sound, wallpaper) still use `include_tasks` per their existing pattern; tag filtering through them works at the include-line tag level (e.g. `--tags lookandfeel`, `--tags sudhanix-ux`).
+
+### Investigate later
+
+- The `copy:` module not propagating deeply-nested new dotfile subtrees in a playbook run when the destination parent doesn't exist. Affected: `/etc/skel/.config/plank/dock1/launchers/`. Workaround: ad-hoc copy with absolute src path. Probably needs a stat-then-create-directory chain, or split the copy into multiple steps with explicit directory creation.

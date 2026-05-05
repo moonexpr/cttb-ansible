@@ -32,6 +32,36 @@ Consolidated from dvgs-lab3/dvgs-testmachine test deployment. Must resolve befor
 
 ---
 
+## Wiki Documentation (before mass upgrade)
+
+[[Sudhanix]] (user) and [[IT:Sudhanix]] (sysadmin) are drafted. Below are the articles that need to be written or revised before rolling Sudhanix 26 to the rest of campus. Each is a self-contained wiki page; titles use the existing CamelCase + IT: namespace conventions.
+
+### User-facing (audience: students, teachers, staff)
+
+- [ ] **Sudhanix 26 Release Notes** — what changed for users vs. the previous Ubuntu 20.04 fleet: new desktop layout, dock, app finder, removed apps (snap Firefox), kept apps, default settings. Plain language; one screenshot per major change. Targets the moment of "wait, where did X go?"
+- [ ] **Migrating to Sudhanix 26** — first-login guide. What to expect when a user sits down at a freshly-upgraded machine: home directory follows them via NFS so files are intact; browser bookmarks/profile carry through Chrome sync, but Firefox profiles do not migrate from snap; how to find your local-only files if any; who to contact if something is missing. Roughly 800 words; reduces the IT support load during rollout
+- [ ] **Common Tasks on Sudhanix** — recipe-style page for the dozen most frequent things users do: printing, scanning, saving to Documents, connecting to Wi-Fi (where applicable), changing volume, adjusting display brightness, taking a screenshot, opening a terminal. Each in 2-3 lines
+
+### Sysadmin (audience: IT staff, school IT contacts, on-call)
+
+- [ ] **IT:Sudhanix Upgrade Procedure** — the canonical end-to-end upgrade workflow for a single host. PXE boot → autoinstall → first-boot validation → `cs-lab-2404.yml` → smoke test → handoff to user. Includes timing estimates per step. Step-by-step; written so a new IT student could execute it
+- [ ] **IT:Sudhanix Pre-Upgrade Checklist** — verifications to run *before* upgrading any host. Network reachability, apt.cttb has noble + recent packages, storehouse responding, LDAP server up, NFS export healthy, target host backed up if it has local data. Acts as a gate: if any item fails, do not proceed
+- [ ] **IT:Sudhanix Rollback Plan** — recovery procedures when an upgrade fails: boot from rescue USB, restore via PXE reinstall to last-known-good (or revert to 20.04 from snapshot), restore home dir from NFS backup, communicate downtime. Decision tree: "if X failed, do Y"
+- [ ] **IT:Sudhanix Verification Checklist** — post-deploy smoke tests, runnable in 5 minutes per host: `lsb_release -a` shows Sudhanix, GRUB menu correct, Plymouth shows lotus on boot, login as test user via LDAP, NFS home mounts, default printer reachable, Chrome opens to expected start page, time within 1s of NTP. Checklist is the deliverable; ties off the upgrade
+- [ ] **IT:Sudhanix Per-Site Customization** — what differs per school. Wallpaper now unified (Big-Sur-Day.jpg), but avatar, content filter group, default printer, NFS export source, and schedule windows differ between DVGS / DVBS / DRBU / DRBU CDorm / DVGS Dorm. Single table of differences plus "where this is configured in Ansible" pointers
+- [ ] **IT:Sudhanix Asset Manifest** — complete inventory of what lives on storehouse.cttb/ansible: each tarball, its source, when last rebuilt, who owns it. Plus the upload procedure and the "this needs a refresh" trigger conditions. Companion to the Asset Pipeline section in [[IT:Sudhanix]] but exhaustive
+- [ ] **IT:PXE Autoinstall** — current state of the PXE pipeline: what works, what's blocked (cloud-init `nocloud-net` issue), the kernel cmdline that's been tested, fallback (SSH debootstrap) when PXE fails. Folds in the [[NetworkBoot]] page where appropriate. Captures institutional knowledge that's currently spread across UPDATE_JOURNAL entries
+- [ ] **IT:Sudhanix Communication Template** — the email/announcement sent to teachers and lab supervisors before, during, and after a site rollout. Three pre-written templates: T-7 days advance notice, day-of disruption summary, T+1 day post-rollout report. Reduces ad-hoc writing during rollout weeks
+
+### Stretch (after rollout, useful but not blocking)
+
+- [ ] **IT:Sudhanix Variable Reference** — every `sudhanix_*`, `desktop_*`, `pic_*`, `icon_theme`, `desktop_theme` etc. variable: where it lives, default value, effect, where to override
+- [ ] **IT:Sudhanix Recovery Procedures** — single-user mode, root password reset, GRUB rescue, PAM/LDAP bypass, restoring `/etc/os-release` from `.distrib`. Beyond rollback: hands-on rescue
+- [ ] **IT:Sudhanix Boot Process** — UEFI → GRUB → kernel → initramfs (with Plymouth) → systemd → LightDM → XFCE. Where to look when boot hangs at each stage
+- [ ] **Sudhanix 28 Plan** — when Ubuntu 26.04 LTS ships (~April 2026 → CTTB rollout target ~early 2028), what we'd change. Ties off the release schedule rationale
+
+---
+
 ## Sudhanix OS Branding (remove Ubuntu references)
 
 User-facing strings still say "Ubuntu" in many places. Goal: anywhere a non-admin user sees the OS name, it should say Sudhanix. Internal `ID_LIKE=ubuntu` and apt repo URLs stay (technical compat, not user-visible).
