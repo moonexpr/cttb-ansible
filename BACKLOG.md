@@ -44,7 +44,7 @@ Consolidated from dvgs-lab3/dvgs-testmachine test deployment. Must resolve befor
 
 ### Sysadmin (audience: IT staff, school IT contacts, on-call)
 
-- [ ] **IT:Sudhanix Upgrade Procedure** — the canonical end-to-end upgrade workflow for a single host. PXE boot → autoinstall → first-boot validation → `cs-lab-2404.yml` → smoke test → handoff to user. Includes timing estimates per step. Step-by-step; written so a new IT student could execute it
+- [ ] **IT:Sudhanix Upgrade Procedure** — the canonical end-to-end upgrade workflow for a single host. PXE boot → autoinstall → first-boot validation → `install-sudhanix-cslabs.yml` → smoke test → handoff to user. Includes timing estimates per step. Step-by-step; written so a new IT student could execute it
 - [ ] **IT:Sudhanix Pre-Upgrade Checklist** — verifications to run *before* upgrading any host. Network reachability, apt.cttb has noble + recent packages, storehouse responding, LDAP server up, NFS export healthy, target host backed up if it has local data. Acts as a gate: if any item fails, do not proceed
 - [ ] **IT:Sudhanix Rollback Plan** — recovery procedures when an upgrade fails: boot from rescue USB, restore via PXE reinstall to last-known-good (or revert to 20.04 from snapshot), restore home dir from NFS backup, communicate downtime. Decision tree: "if X failed, do Y"
 - [ ] **IT:Sudhanix Verification Checklist** — post-deploy smoke tests, runnable in 5 minutes per host: `lsb_release -a` shows Sudhanix, GRUB menu correct, Plymouth shows lotus on boot, login as test user via LDAP, NFS home mounts, default printer reachable, Chrome opens to expected start page, time within 1s of NTP. Checklist is the deliverable; ties off the upgrade
@@ -89,7 +89,7 @@ User-facing strings still say "Ubuntu" in many places. Goal: anywhere a non-admi
 - [ ] **Login banner SSH (`/etc/issue.net`)** — visible before authentication if `Banner` directive set in sshd_config. Currently not set; consider setting to a Sudhanix banner for SSH brand consistency
 - [ ] **`/etc/legal`** — Ubuntu's "the programs included with the Ubuntu system" notice. Replace or remove
 - [x] ~~Ansible role rename~~ — `desktop` → `sudhanix-core`, `desktop-distributed` → `sudhanix-distributed`, `ux.yml` → `sudhanix-ux.yml`. Tags renamed in lockstep (2026-05-05)
-- [ ] **Playbook rename** — `cs-lab-2404.yml` → `cs-lab-sudhanix.yml` (still has Ubuntu version in name)
+- [x] ~~Playbook rename~~ — `cs-lab-2404.yml` → `install-sudhanix-cslabs.yml` (drops Ubuntu version, adds Sudhanix brand + "install" verb to clarify intent: CS-lab post-install configuration). Done 2026-05-05
 - [ ] **`UPDATE_JOURNAL.md` heading** — currently "Ubuntu 24.04 Upgrade." Rename to "Sudhanix OS 26 Migration" once project transitions from upgrade-mode to maintenance-mode
 
 ### Nice to Have

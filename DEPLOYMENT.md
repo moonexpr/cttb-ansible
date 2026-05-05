@@ -75,7 +75,7 @@ If the machine is powered off or SSH is unreachable:
 
 ```bash
 source utils/setup-env
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs-labN.cttb --diff
+ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs-labN.cttb --diff
 ```
 
 This runs 6 roles in order:
@@ -122,13 +122,13 @@ Other per-site vars: `cups_srv`, `cups_default_queue`, `nfs_homes_host`, `nfs_ho
 
 ```bash
 # All DVGS lab machines
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs_cs_lab --diff
+ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs_cs_lab --diff
 
 # All labs at all sites
-ansible-playbook plays/cs-lab-2404.yml --diff
+ansible-playbook plays/install-sudhanix-cslabs.yml --diff
 
 # Specific machines
-ansible-playbook plays/cs-lab-2404.yml --limit "dvgs-lab1.cttb,dvgs-lab2.cttb" --diff
+ansible-playbook plays/install-sudhanix-cslabs.yml --limit "dvgs-lab1.cttb,dvgs-lab2.cttb" --diff
 ```
 
 PXE install is per-machine (F12 or `pxe-reboot.yml`), but Phase 3 (Ansible) can run against all machines in parallel once they're PXE'd and SSH-reachable.
@@ -170,13 +170,13 @@ ansible-inventory --graph
 ansible-inventory --host dvgs-lab3.cttb
 
 # Dry run (check mode) with diff
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --check --diff
+ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs-lab3.cttb --check --diff
 
 # Actual deployment
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff
+ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs-lab3.cttb --diff
 
 # Deploy with verbose output
-ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff -vvv
+ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs-lab3.cttb --diff -vvv
 ```
 
 ### Host Recovery
