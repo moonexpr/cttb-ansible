@@ -11,7 +11,7 @@
   when: __desktop_vars_file is file
 
 - name: Run shared setup tasks
-  ansible.builtin.include_tasks: "{{ role_path }}/tasks/setup/default.yml"
+  ansible.builtin.import_tasks: setup/default.yml
 
 - name: Run platform-specific setup tasks
   ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
