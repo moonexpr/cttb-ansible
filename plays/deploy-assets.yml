@@ -39,14 +39,14 @@
 
     - name: upload WhiteSur-Light gtk theme
       copy:
-        src: "{{ playbook_dir }}/../roles/desktop-distributed/files/WhiteSur-gtk-theme/release/WhiteSur-Light.tar.xz"
+        src: "{{ playbook_dir }}/../roles/sudhanix-distributed/files/WhiteSur-gtk-theme/release/WhiteSur-Light.tar.xz"
         dest: "{{ assets_dir }}/WhiteSur-Light.tar.xz"
         mode: '0644'
       tags: [themes, gtk]
 
     - name: upload WhiteSur-Dark gtk theme
       copy:
-        src: "{{ playbook_dir }}/../roles/desktop-distributed/files/WhiteSur-gtk-theme/release/WhiteSur-Dark.tar.xz"
+        src: "{{ playbook_dir }}/../roles/sudhanix-distributed/files/WhiteSur-gtk-theme/release/WhiteSur-Dark.tar.xz"
         dest: "{{ assets_dir }}/WhiteSur-Dark.tar.xz"
         mode: '0644'
       tags: [themes, gtk]
@@ -55,7 +55,7 @@
 
     - name: sync WhiteSur icon theme source to storehouse
       synchronize:
-        src: "{{ playbook_dir }}/../roles/desktop-distributed/files/WhiteSur-icon-theme/"
+        src: "{{ playbook_dir }}/../roles/sudhanix-distributed/files/WhiteSur-icon-theme/"
         dest: "{{ staging_dir }}/whitesur-icon-src/"
         links: yes
         delete: yes
@@ -71,7 +71,7 @@
 
     - name: sync wallpaper images to storehouse
       synchronize:
-        src: "{{ playbook_dir }}/../roles/desktop-distributed/files/wallpapers/"
+        src: "{{ playbook_dir }}/../roles/sudhanix-distributed/files/wallpapers/"
         dest: "{{ staging_dir }}/cttb-wallpapers/"
         delete: yes
         rsync_opts:
@@ -82,6 +82,19 @@
     - name: package wallpapers tarball
       command: tar czf {{ assets_dir }}/cttb-wallpapers.tar.gz -C {{ staging_dir }} cttb-wallpapers
       tags: wallpapers
+
+    # ── Plymouth boot splash ─────────────────────────────────────────────
+
+    - name: sync Sudhanix Plymouth theme source to storehouse
+      synchronize:
+        src: "{{ playbook_dir }}/../roles/sudhanix-core/files/plymouth/sudhanix/"
+        dest: "{{ staging_dir }}/sudhanix-plymouth/sudhanix/"
+        delete: yes
+      tags: [plymouth]
+
+    - name: package Sudhanix Plymouth tarball
+      command: tar czf {{ assets_dir }}/sudhanix-plymouth.tar.gz -C {{ staging_dir }}/sudhanix-plymouth sudhanix
+      tags: [plymouth]
 
     # ── Cleanup and ownership ─────────────────────────────────────────────
 

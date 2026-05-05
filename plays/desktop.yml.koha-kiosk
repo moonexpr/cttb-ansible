@@ -2,6 +2,6 @@
 
 - hosts: dvgs-koha
   roles:
-    - desktop
+    - sudhanix-core
     - ldap-client
     - nfs-home

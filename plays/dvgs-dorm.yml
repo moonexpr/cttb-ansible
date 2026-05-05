@@ -2,7 +2,7 @@
 
 - hosts: dvgs-dorm-pc3 dvgs-dorm-pc12
   roles:
-    - desktop
+    - sudhanix-core
     - cups-client
     - ldap-client
     - nfs-home

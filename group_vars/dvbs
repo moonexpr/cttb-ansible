@@ -23,7 +23,7 @@ lightdm_hide_users: true
 
 # look and feel
 pic_avatar: avatar-dvbs.png
-pic_bg: bg-dvbs.jpg
+pic_bg: Big-Sur-Day.jpg
 
 # office
 libreoffice: true

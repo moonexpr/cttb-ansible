@@ -9,8 +9,9 @@ group_vars/.*
 .DS_Store
 
 
-# claude (confidential)
+# AI assistant artifacts (confidential)
 CLAUDE.md
+GEMINI.md
 PROJECT.md
 WORKPLAN.md
 .claude/

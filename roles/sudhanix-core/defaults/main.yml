@@ -1,0 +1,42 @@
+---
+
+# lightdm configuration
+lightdm_hide_users: false
+lightdm_autologin_user: ""
+lightdm_autologin_timeout: 0
+
+# sw install
+wpsoffice: false
+libreoffice: true
+openoffice: false
+firefox: true
+chrome: true
+thunderbird: true
+vscode: true
+dropbox: false
+skype: false
+zen_browser: true
+
+# look and feel
+desktop_shortcuts: []
+desktop_theme: WhiteSur-Dark
+desktop_session: xfce
+desktop_font: "Inter Display Semi-Bold 11"
+desktop_title_font: "Inter Display Bold 12"
+gtk_theme: WhiteSur
+icon_theme: WhiteSur-dark
+pic_avatar: avatar-cttb.png
+pic_bg: Big-Sur-Day.jpg
+start_icon: WhiteSur/scalable/places/start-here.svg
+cursor_theme: WhiteSur-cursors
+desktop_sound_theme: bigsur
+
+# hardware
+dell_aio: true
+
+# wallpaper rotation (native xfdesktop cycling, interval in minutes)
+desktop_wallpaper_interval_minutes: 360
+desktop_wallpaper_dir: /usr/share/backgrounds/cttb
+
+# login background (same wallpaper for all sites)
+desktop_login_background: "{{ pic_bg }}"

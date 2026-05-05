@@ -17,7 +17,7 @@
     DEBIAN_FRONTEND: noninteractive
     NEEDRESTART_MODE: a
   roles:
-    - desktop
+    - sudhanix-core
     - time-server
     - cups-client
     - ldap-client

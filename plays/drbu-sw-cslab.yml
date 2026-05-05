@@ -2,7 +2,7 @@
 
 - hosts: drbu-sw-cslab
   roles:
-    - desktop
+    - sudhanix-core
     - ldap-client
     - nfs-home
     - cups-client
