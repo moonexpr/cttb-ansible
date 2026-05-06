@@ -1,0 +1,54 @@
+---
+# Wiki — promote users into custom MediaWiki user groups (it, drbu, dvgs, etc.).
+#
+# Uses createAndPromote.php --force, which is idempotent: existing users keep
+# their password and just gain group membership; missing users are skipped
+# (the script errors but we ignore it).
+#
+# Usage:
+#   ansible-playbook plays/wiki-add-group-users.yml -l wiki-2404 -i inventory/hosts \
+#     --vault-password-file /tmp/vault-pw.sh
+#
+# Edit `wiki_group_members` below to change membership.
+
+- hosts: wiki-2404
+  become: yes
+  vars:
+    mediawiki_install_dir: /var/www/html/w
+    wiki_group_members:
+      it:
+        - Admin
+        - Holysquirrel24
+        - James Nguyen
+        - Jay Tobias
+        - Jchandara
+        - Jerry.hsu
+        - Kit Chong
+        - Rui Liu
+        - Spike Morelli
+      drbu: []
+      dvgs: []
+      dvbs: []
+      cttb: []
+
+  tasks:
+    - name: build flat list of {user, group} pairs
+      set_fact:
+        wiki_group_pairs: "{{ wiki_group_pairs | default([]) + [{'user': item.1, 'group': item.0.key}] }}"
+      loop: "{{ wiki_group_members | dict2items | subelements('value', skip_missing=True) }}"
+      loop_control:
+        label: "{{ item.1 }} → {{ item.0.key }}"
+
+    - name: promote users into their groups (createAndPromote --force)
+      command: >
+        sudo -u www-data php
+        {{ mediawiki_install_dir }}/maintenance/run.php createAndPromote
+        --force --custom-groups={{ item.group }} {{ item.user | quote }}
+      loop: "{{ wiki_group_pairs | default([]) }}"
+      loop_control:
+        label: "{{ item.user }} → {{ item.group }}"
+      register: promote
+      changed_when: promote.rc == 0
+      failed_when: false
+      tags:
+        - groups

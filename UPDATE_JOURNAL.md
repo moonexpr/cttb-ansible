@@ -2409,3 +2409,37 @@ Anonymous write stays anonymous because gating it on credentials would mean ship
 **Wiki.** `IT:Storehouse` updated with a full "Coredump drop-zone" section: motivating cairo segfault story, architecture (read/write URL split, why anonymous write is safe), the validator's accept-rule table, retention policy, and how to fetch + analyze a dump (including the `ddebs.ubuntu.com` `libcairo2-dbgsym` quirk). Published 2026-05-06 via `wikitools/wiki-edit.sh`.
 
 
+
+### Wiki access control: AccessControl out, Lockdown in (with custom namespaces)
+
+The wiki had `Extension:AccessControl` 6.0 plumbing (per-page `<accesscontrol>IT</accesscontrol>` tags + group pages in `MediaWiki:Group-IT`) but it was effectively dead on MW 1.43. AccessControl's primary hook is `ParserBeforeStrip`, which was retired from `HookRunner` in modern MediaWiki — only `ParserBeforeInternalParse` remains. The fallback path through `getUserPermissionsErrors → onUserCan → userVerify()` never sets `$result = false`; protection only "worked" as a side-effect of `doRedirect()` issuing `header(Location)` + `exit()`. Setting `$wgAccessControlRedirect = false` (to get an in-place deny instead of a URL change) therefore disabled protection entirely — anonymous users got the full page body. We confirmed this with a logging-injected `onParserBeforeStrip` that never fired on actual page views.
+
+Switched to **Extension:Lockdown** (REL1_43, commit `120d6fd`). Lockdown restricts whole namespaces by MediaWiki user group, doesn't depend on dead hooks, and produces a clean "Login required" page (URL stays put, body is the standard MW login prompt). The model is coarser than per-page tags but a much better fit for how the IT pages were already organized — every page that needed protection already used an `IT:` title prefix that was being interpreted as a literal in NS_MAIN.
+
+**Role changes** (`roles/mediawiki/`):
+- `defaults/main.yml` got three new generic vars: `mediawiki_extra_namespaces`, `mediawiki_user_groups`, `mediawiki_lockdown` (rules dict shaped as `{ namespace_name: { action: [groups...] } }`).
+- `templates/LocalSettings.php.j2` now generates the namespace defines, custom group permissions, and `$wgNamespacePermissionLockdown` rules from those vars. AccessControl-specific config (`$wgAccessControlRedirect`) and the AccessControl extension's source patches were dropped. A new `remove stale AccessControl extension` task deletes the on-disk extension folder.
+- New play `plays/wiki-add-group-users.yml` promotes users into the custom groups via `createAndPromote.php --force --custom-groups`.
+
+**Pre-emptive admin namespaces** (`host_vars/wiki-2404/main.yml`):
+
+| ID   | Name      | Group  |
+|------|-----------|--------|
+| 3000 | IT        | it     |
+| 3001 | IT_talk   | it     |
+| 3010 | DRBU      | drbu   |
+| 3011 | DRBU_talk | drbu   |
+| 3020 | DVGS      | dvgs   |
+| 3021 | DVGS_talk | dvgs   |
+| 3030 | DVBS      | dvbs   |
+| 3031 | DVBS_talk | dvbs   |
+| 3040 | CTTB      | cttb   |
+| 3041 | CTTB_talk | cttb   |
+
+Each non-talk namespace gets `read/edit/create/move = [<group>]`; talk gets `read/edit = [<group>]`. The 9 IT users from the old `MediaWiki:Group-IT` page (Admin, Holysquirrel24, James Nguyen, Jay Tobias, Jchandara, Jerry.hsu, Kit Chong, Rui Liu, Spike Morelli) were promoted into `it` via the new playbook. DRBU/DVGS/DVBS/CTTB groups are empty until membership lists are filled in.
+
+**Page migration.** 53 legacy `IT:`-prefixed pages were sitting in NS_MAIN with the colon as a literal title character. Once `NS_IT=3000` was registered, `/wiki/IT:Foo` resolved to NS_IT (empty + locked), orphaning the actual content. The MW move API (and `MovePage::moveIfAllowed`) no-op when the source's prefixed-text matches the target's, which they did here because legacy `NS_MAIN:"IT:Foo"` and new `NS_IT:"Foo"` both display as `"IT:Foo"`. Switched to a one-off `Maintenance` script (`/tmp/move_to_ns_it.php`) that does a direct `UPDATE page SET page_namespace=3000, page_title=ucfirst(rest)` — bypasses the same-prefix check, refreshLinks job-queue catches up the link tables. 53 canonical `IT:Foo` pages migrated, 37 `IT:_Foo` / `IT: Foo` underscore/space-variant duplicates left in NS_MAIN as orphans for separate cleanup.
+
+**Verified.** Anonymous `GET /wiki/IT:Ansible` returns HTTP 200 with `<title>Login required - CTTB Wiki</title>`; `Special:AllPages?namespace=3000` shows "(IT namespace)" header. Database state: `SELECT COUNT(*) FROM page WHERE page_namespace=3000` → 54 (53 migrated + 1 seed `IT:Welcome`).
+
+**Mbox infrastructure imported earlier in the session is unaffected** — Module:Message_box, the 9 meta-templates (Ambox/Cmbox/…/Dmbox), 24 supporting Lua modules, 6 TemplateStyles CSS pages, and 10 Commons SVG icons all still work; they just no longer have AccessControl's notice as a direct caller. `MediaWiki:Accesscontrol-info`, `CTTB Wiki:Deny user`, `CTTB Wiki:Deny anonymous`, `MediaWiki:Group-IT`, and `[[IT]]` (the legacy access-list page) are now orphaned artifacts and can be deleted in a follow-up cleanup.

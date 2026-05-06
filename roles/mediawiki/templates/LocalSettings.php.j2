@@ -48,6 +48,14 @@ $wgVectorDefaultSkinVersionForExistingAccounts = "2";
 $wgDefaultUserOptions["skin"] = "vector-2022";
 $wgDefaultUserOptions["VectorSkinVersion"] = "2";
 
+{% if mediawiki_extra_namespaces %}
+## Custom namespaces — define before extensions load so Lockdown sees them
+{% for ns in mediawiki_extra_namespaces %}
+define( "NS_{{ ns.name | upper | replace('_TALK', '_TALK') }}", {{ ns.id }} );
+$wgExtraNamespaces[{{ ns.id }}] = "{{ ns.name }}";
+{% endfor %}
+
+{% endif %}
 ## Extensions
 {% for ext in mediawiki_extensions %}
 wfLoadExtension( "{{ ext }}" );
@@ -59,9 +67,6 @@ wfLoadExtension( "{{ ext.name }}" );
 ## Scribunto — use the standalone Lua interpreter (LuaSandbox PHP module not packaged for 8.3)
 $wgScribuntoDefaultEngine = "luastandalone";
 $wgScribuntoEngineConf["luastandalone"]["luaPath"] = "{{ mediawiki_scribunto_lua_path }}";
-
-## AccessControl — replace page body in-place rather than HTTP-redirecting to deny page
-$wgAccessControlRedirect = {{ mediawiki_accesscontrol_redirect | string | lower }};
 
 ## VisualEditor config — single "Edit" tab using VisualEditor
 $wgDefaultUserOptions["visualeditor-editor"] = "visualeditor";
@@ -79,6 +84,27 @@ $wgUpgradeKey = "{{ mediawiki_upgrade_key }}";
 $wgGroupPermissions['*']['edit'] = false;
 $wgGroupPermissions['*']['createaccount'] = false;
 
+{% if mediawiki_user_groups %}
+## Custom user groups — only need read; explicit grant for edit so Lockdown can layer
+{% for grp in mediawiki_user_groups %}
+$wgGroupPermissions['{{ grp }}']['read']  = true;
+$wgGroupPermissions['{{ grp }}']['edit']  = true;
+$wgGroupPermissions['{{ grp }}']['move']  = true;
+$wgGroupPermissions['{{ grp }}']['createpage'] = true;
+$wgAddGroups['sysop'][] = '{{ grp }}';
+$wgRemoveGroups['sysop'][] = '{{ grp }}';
+{% endfor %}
+
+{% endif %}
+{% if mediawiki_lockdown %}
+## Lockdown — per-namespace read/edit/move restrictions
+{% for ns_name, actions in mediawiki_lockdown.items() %}
+{% for action, groups in actions.items() %}
+$wgNamespacePermissionLockdown[NS_{{ ns_name | upper }}]['{{ action }}'] = [{% for g in groups %}'{{ g }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+{% endfor %}
+{% endfor %}
+
+{% endif %}
 ## Email (disabled — internal wiki)
 $wgEnableEmail = false;
 
