@@ -1,0 +1,20 @@
+[Unit]
+Description=Validate magic bytes on staged coredumps and move to public dropzone
+Documentation=http://wiki.cttb/wiki/IT:Storehouse
+ConditionPathIsDirectory=/var/lib/nginx/coredumps-staging
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/coredumps-validate-mover
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=600
+
+# Tighten the surface: this script reads/writes only inside two well-known
+# directories and writes syslog. No network, no other users' homes.
+ProtectSystem=strict
+ReadWritePaths=/var/lib/nginx/coredumps-staging /srv/storehouse/public/coredumps /srv/storehouse/private/coredumps-rejected
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_UNIX

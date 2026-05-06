@@ -62,6 +62,43 @@
   </div>
 </fieldset>
 
+<fieldset class="file-group">
+  <legend>Coredumps <a href="/public/coredumps/">[browse]</a></legend>
+  <p>
+    Crash dump drop-zone for lab hosts. Each Sudhanix machine ships its
+    <code>systemd-coredump</code> output here every 10&nbsp;minutes via the
+    <code>cttb-coredump-upload.timer</code> unit. Files are organized
+    per-host under <code>/public/coredumps/&lt;hostname&gt;/</code> and pruned
+    after 90&nbsp;days.
+  </p>
+  <p>
+    <strong>Read access</strong> (browse, download at
+    <code>/public/coredumps/</code>) is locked behind HTTP basic auth —
+    sign in as <code>[DATA REFDACTED]</code> with the campus admin password.
+    Coredumps can contain passwords, session tokens, and browser secrets
+    in raw memory, so we don't want every device on the lab network
+    enumerating other hosts' dumps.
+  </p>
+  <p>
+    <strong>Write access</strong> goes to a separate URL,
+    <code>/public/coredumps-in/&lt;hostname&gt;/&lt;file&gt;</code>, which
+    maps to a staging directory. A server-side validator
+    (<code>coredumps-validate-mover.timer</code>) sniffs the first bytes of
+    every uploaded file every 30 seconds and only promotes real coredumps
+    (zstd, xz, lz4, or raw ELF) into the readable dropzone — anything
+    else is quarantined and logged. Anonymous upload is safe because
+    random content can't end up at <code>/public/coredumps/</code>.
+  </p>
+  <p>
+    Manual upload from any host (no auth needed):
+    <code>curl -T core.zst http://storehouse.cttb/public/coredumps-in/$(hostname -s)/core.zst</code>
+  </p>
+  <div class="icon-grid">
+    <a href="/public/coredumps/" class="icon-tile"><span class="icon">💥</span><span class="name">Browse all dumps</span></a>
+    <a href="http://wiki.cttb/wiki/IT:Storehouse" class="icon-tile"><span class="icon">📖</span><span class="name">IT:Storehouse</span></a>
+  </div>
+</fieldset>
+
 </article>
 
 </main>

@@ -1,0 +1,113 @@
+#!/bin/sh
+# /usr/local/sbin/coredumps-validate-mover
+#
+# Sweep the WebDAV upload staging directory for new files, sniff the
+# first bytes for a known coredump magic number, and either move the
+# file into the public-readable coredump dropzone or quarantine/discard
+# it as a likely garbage upload.
+#
+# Triggered every 30 seconds by coredumps-validate-mover.timer (and on
+# demand by `systemctl start coredumps-validate-mover.service`).
+#
+# Background. The /public/coredumps-in/ nginx location accepts anonymous
+# WebDAV PUT so lab hosts can ship dumps without baked-in credentials.
+# That same anonymous-write surface is also exploitable by anything on
+# the .cttb network — so we never let an upload land directly in the
+# public dropzone. nginx writes everything to a staging area first;
+# this script promotes only what passes a magic-byte sniff. The READ
+# side (/public/coredumps/) is gated by HTTP basic auth, but defence in
+# depth: we still don't want garbage cluttering the dropzone or fooling
+# someone scanning filenames for "core.*.zst".
+
+set -u
+
+STAGING=/var/lib/nginx/coredumps-staging
+PUBLIC=/srv/storehouse/public/coredumps
+QUARANTINE=/srv/storehouse/private/coredumps-rejected
+LOGTAG=coredumps-validate
+
+[ -d "${STAGING}" ] || exit 0
+mkdir -p "${PUBLIC}" "${QUARANTINE}"
+
+# Read first 8 bytes of $1 as lower-case hex, no separators. POSIX-friendly:
+# od and tr are in coreutils on every Ubuntu host.
+file_magic() {
+    od -An -tx1 -N 8 "$1" 2>/dev/null | tr -d ' \n' | tr 'A-F' 'a-f'
+}
+
+# Accepted compression / format magics. systemd-coredump defaults to zstd
+# on 24.04+; xz is the older default; lz4 is rare but supported. Raw ELF
+# (uncompressed) is allowed for hosts where Compress=no in coredump.conf.
+#   zstd  : 28 b5 2f fd
+#   xz    : fd 37 7a 58 5a 00
+#   lz4   : 04 22 4d 18
+#   ELF   : 7f 45 4c 46
+is_acceptable_magic() {
+    case "$1" in
+        28b52ffd*)        return 0 ;;  # zstd frame magic
+        fd377a585a00*)    return 0 ;;  # xz
+        04224d18*)        return 0 ;;  # lz4 frame magic
+        7f454c46*)        return 0 ;;  # ELF (uncompressed core)
+        *)                return 1 ;;
+    esac
+}
+
+promoted=0
+rejected=0
+skipped=0
+
+# Walk every file in staging. Per-host subdirectories are created lazily
+# by nginx's create_full_put_path on first PUT, so we use -mindepth 2 to
+# skip the staging root and any per-host dir entries themselves.
+find "${STAGING}" -mindepth 2 -type f 2>/dev/null | while IFS= read -r src; do
+    rel="${src#"${STAGING}/"}"      # e.g. dvgs-testmachine/core.foo.zst
+    host="${rel%%/*}"
+    base="$(basename "${src}")"
+
+    # Defend against a half-uploaded file: if size is changing under us,
+    # skip this round and try again next tick. Fast and stable.
+    sz1=$(stat -c %s "${src}" 2>/dev/null || echo 0)
+    sleep 1
+    sz2=$(stat -c %s "${src}" 2>/dev/null || echo 0)
+    if [ "${sz1}" != "${sz2}" ]; then
+        skipped=$((skipped + 1))
+        continue
+    fi
+
+    magic=$(file_magic "${src}")
+    if is_acceptable_magic "${magic}"; then
+        # Promote: ensure the per-host parent exists in the public tree
+        # with www-data ownership so autoindex can list it, then mv.
+        dst_dir="${PUBLIC}/${host}"
+        mkdir -p "${dst_dir}"
+        chown www-data:www-data "${dst_dir}"
+        chmod 0775 "${dst_dir}"
+        if mv -f "${src}" "${dst_dir}/${base}" 2>/dev/null; then
+            chown www-data:www-data "${dst_dir}/${base}"
+            chmod 0644 "${dst_dir}/${base}"
+            logger -t "${LOGTAG}" -p daemon.info "promoted ${rel} (magic=${magic%%????????????????*}…)"
+            promoted=$((promoted + 1))
+        else
+            logger -t "${LOGTAG}" -p daemon.warning "promote-mv FAILED for ${rel}"
+        fi
+    else
+        ts=$(date -u +%Y%m%dT%H%M%SZ)
+        q_dir="${QUARANTINE}/${host}"
+        mkdir -p "${q_dir}"
+        if mv -f "${src}" "${q_dir}/${ts}-${base}" 2>/dev/null; then
+            logger -t "${LOGTAG}" -p daemon.warning \
+                "REJECTED ${rel} (bad magic=${magic%%????????????????*}…) → ${q_dir}/${ts}-${base}"
+            rejected=$((rejected + 1))
+        fi
+    fi
+done
+
+# Tidy: remove any per-host directory in staging that's empty as a
+# result of this run.
+find "${STAGING}" -mindepth 1 -type d -empty -delete 2>/dev/null || true
+
+# Summary line for journalctl. Always exit 0; a transient mv failure
+# should not put the timer's last-run state into "failed".
+logger -t "${LOGTAG}" -p daemon.info \
+    "sweep summary: promoted=${promoted} rejected=${rejected} skipped=${skipped}"
+exit 0

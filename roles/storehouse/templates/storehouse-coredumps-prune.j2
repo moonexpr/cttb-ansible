@@ -1,0 +1,19 @@
+#!/bin/sh
+# /etc/cron.daily/storehouse-coredumps-prune
+#
+# Age out old coredumps in /srv/storehouse/public/coredumps/ and remove
+# any per-host subdirectories that end up empty as a result. Retention
+# window is set by storehouse_coredumps_retention_days in the storehouse
+# role (default 90 days).
+
+set -e
+
+ROOT=/srv/storehouse/public/coredumps
+DAYS={{ storehouse_coredumps_retention_days }}
+
+[ -d "${ROOT}" ] || exit 0
+
+# Files first, then empty directories. -mindepth 1 keeps the dropzone
+# root from being rmdir'd if we ever drain it completely.
+find "${ROOT}" -type f -mtime +"${DAYS}" -delete 2>/dev/null || true
+find "${ROOT}" -mindepth 1 -type d -empty -delete 2>/dev/null || true

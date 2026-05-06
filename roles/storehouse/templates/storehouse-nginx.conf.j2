@@ -27,7 +27,57 @@ server {
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     }
 
-    # Block direct browsing of h5ai internals and root clutter
+    # Coredump drop-zone — split read/write, magic-byte validation.
+    #
+    # SECURITY POSTURE (2026-05-06, second pass):
+    #   * READ (browse + download) — basic auth at /public/coredumps/.
+    #     Coredumps leak raw memory; we don't want every device on .cttb
+    #     enumerating other hosts' dumps.
+    #   * WRITE (PUT) — anonymous at a SEPARATE URL /public/coredumps-in/
+    #     that maps to a staging directory, never to the public-readable
+    #     dropzone. A systemd timer (coredumps-validate-mover) checks the
+    #     first bytes of every staged file against zstd / xz / lz4 magic
+    #     and only moves valid coredumps into the readable dropzone.
+    #     Anything else gets logged via syslog and deleted.
+    #
+    # Layout enforced by clients:
+    #     PUT  /public/coredumps-in/<hostname>/<filename>
+    #     GET  /public/coredumps/<hostname>/<filename>     (after validator)
+
+    # ── coredump dropzone (READ) ────────────────────────────────────
+    location /public/coredumps/ {
+        autoindex on;
+        autoindex_exact_size off;
+        autoindex_localtime on;
+
+        auth_basic           "CTTB Coredumps — administrator";
+        auth_basic_user_file /etc/nginx/coredumps.htpasswd;
+
+        # Read-only. PUT/MKCOL/etc. → 405. Use /public/coredumps-in/ to upload.
+        limit_except GET HEAD { deny all; }
+    }
+
+    # ── coredump staging (WRITE) ────────────────────────────────────
+    location /public/coredumps-in/ {
+        # alias strips the /public/coredumps-in/ prefix, so a PUT to
+        # /public/coredumps-in/foo/bar.zst lands at
+        # /var/lib/nginx/coredumps-staging/foo/bar.zst
+        alias /var/lib/nginx/coredumps-staging/;
+
+        client_max_body_size {{ storehouse_coredumps_max_upload }};
+        client_body_temp_path /var/lib/nginx/coredumps-tmp;
+
+        dav_methods PUT MKCOL;
+        dav_access user:rw group:rw all:r;
+        create_full_put_path on;
+
+        # Anonymous write only. No GET — this dir is not for reading;
+        # validated dumps appear at /public/coredumps/ a few seconds later.
+        limit_except PUT MKCOL { deny all; }
+    }
+
+    # Block direct browsing of h5ai internals and root clutter, but keep
+    # /public/coredumps/ reachable (its location block above wins).
     location = /public/ { deny all; }
     location ~ ^/(private|_h5ai/private|CHANGELOG|README) { deny all; }
 }
