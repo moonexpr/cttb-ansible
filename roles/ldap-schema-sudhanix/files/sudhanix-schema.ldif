@@ -1,0 +1,14 @@
+dn: cn=sudhanix,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: sudhanix
+olcAttributeTypes: ( 1.3.6.1.4.1.99999.1.1.1
+  NAME 'sudhanixWelcomeDismissed'
+  DESC 'User has dismissed the Sudhanix welcome window and does not want it shown again'
+  EQUALITY booleanMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+  SINGLE-VALUE )
+olcObjectClasses: ( 1.3.6.1.4.1.99999.1.2.1
+  NAME 'sudhanixUser'
+  DESC 'Auxiliary class for Sudhanix-specific per-user state'
+  AUXILIARY
+  MAY ( sudhanixWelcomeDismissed ) )

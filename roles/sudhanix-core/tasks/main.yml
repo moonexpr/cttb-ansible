@@ -14,11 +14,16 @@
   ansible.builtin.import_tasks: setup/default.yml
 
 - name: Run platform-specific setup tasks
-  ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
+  ansible.builtin.include_tasks: "{{ item }}"
+  loop: "{{ q('ansible.builtin.first_found', params, errors='ignore') }}"
   vars:
     params:
       files:
         - "{{ ansible_facts['distribution'] }}_{{ ansible_facts['distribution_major_version'] }}.yml"
       paths:
         - "{{ role_path }}/tasks/setup"
-      skip: true
+
+- name: Sudhanix welcome window
+  ansible.builtin.import_tasks: sudhanix-welcome.yml
+  tags:
+    - sudhanix_welcome

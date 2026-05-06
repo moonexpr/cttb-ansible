@@ -4,3 +4,9 @@ common_extra_install_sw:
   - plocate
   - net-tools
   - binutils
+
+# Codename used by the apt sources template. On vanilla Ubuntu 24.04
+# this matches ansible_distribution_release; the explicit pin is here
+# so Sudhanix-branded hosts (which override the codename to "storehouse"
+# in /etc/os-release) still write a working noble-pointing apt source.
+apt_codename: noble

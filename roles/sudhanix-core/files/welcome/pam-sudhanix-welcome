@@ -1,0 +1,11 @@
+#
+# /etc/pam.d/sudhanix-welcome — included by graphical login services
+# (lightdm, sddm) to capture the user's cleartext password into a
+# tmpfs-only file readable by the user. Read by /usr/local/bin/sudhanix-welcome
+# at session start so it can bind to LDAP without re-prompting.
+#
+# Caveats: caches cleartext password in /run for the session lifetime.
+# Removed by pam_exec on session close.
+#
+auth     optional  pam_exec.so  expose_authtok  /usr/local/sbin/sudhanix-cache-token
+session  optional  pam_exec.so  /usr/local/sbin/sudhanix-shred-token

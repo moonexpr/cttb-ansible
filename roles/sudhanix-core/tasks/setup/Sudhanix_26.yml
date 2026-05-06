@@ -1,0 +1,3 @@
+---
+# Sudhanix 26 = Ubuntu 24 base. Reuse the upstream setup.
+- ansible.builtin.import_tasks: Ubuntu_24.yml

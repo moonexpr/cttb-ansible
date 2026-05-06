@@ -1,0 +1,14 @@
+---
+# Apply Sudhanix-specific schema additions and ACL to slapd's cn=config
+# on the LDAP server. Idempotent — re-running is a no-op once installed.
+#
+# Usage:
+#   ansible-playbook plays/install-ldap-schema-sudhanix.yml -l lxc-ldap
+#
+# Requires SASL EXTERNAL via ldapi:/// — the play must run as root on the
+# slapd host, which is what `become: true` + a working sudo path provides.
+
+- hosts: lxc-ldap
+  become: true
+  roles:
+    - ldap-schema-sudhanix
