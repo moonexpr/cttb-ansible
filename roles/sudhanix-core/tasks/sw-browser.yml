@@ -64,6 +64,14 @@
           name: io.github.zen_browser.zen
           state: present
           method: system
+
+      # Flatpak sandbox blocks writes outside the sandbox. Without these
+      # filesystem grants, dragging an image from a webpage onto the desktop
+      # (or into ~/Downloads) fails with "The specified location is not
+      # supported". --system applies the override to all users on the host.
+      - name: grant Zen Browser write access to ~/Desktop and ~/Downloads
+        command: flatpak override --system --filesystem=xdg-desktop --filesystem=xdg-download io.github.zen_browser.zen
+        changed_when: false
     when: zen_browser | default(false)
     tags:
       - browser
