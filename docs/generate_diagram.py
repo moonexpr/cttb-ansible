@@ -712,7 +712,7 @@ def draw_poster():
     qr = [
         ('Debug internet/firewall',  'srv-gw',           '10.11.1.1',   C['gw']),
         ('Manage LXD containers',    'srv-vm/srv-nas',    '.1.3/.1.5',   C['vm']),
-        ('Reset user password',       'lxc-ldap',         '.1.25',       C['auth']),
+        ('Manage LDAP accounts',      'lxc-ldap',         '.1.25',       C['auth']),
         ('Fix DNS',                   'lxc-ub-adult/igdvs','.1.29/.28',  C['dns']),
         ('Fix printing',              'lxc-cups-*',       '.1.36-38',    C['print']),
         ('PXE boot machine',          'lxc-pxe',          '.1.23',       C['deploy']),
