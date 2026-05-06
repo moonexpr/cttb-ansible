@@ -1,0 +1,13 @@
+[Unit]
+Description=Periodically upload coredumps to storehouse
+
+[Timer]
+# Fire 5 minutes after boot, then every 10 minutes thereafter.
+# Persistent=true catches up after a host that was offline.
+OnBootSec=5min
+OnUnitActiveSec=10min
+Persistent=true
+Unit=cttb-coredump-upload.service
+
+[Install]
+WantedBy=timers.target

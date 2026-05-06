@@ -17,3 +17,7 @@
   - name: update initramfs
     command: update-initramfs -u
     when: ansible_virtualization_type != "lxc"
+
+  - name: reload systemd
+    systemd:
+      daemon_reload: true
