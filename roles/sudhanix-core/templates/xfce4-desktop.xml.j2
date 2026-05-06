@@ -1,4 +1,24 @@
+{# xfce4-desktop.xml.j2
+
+   Wallpaper rotation + desktop-icons policy. xfdesktop 4.18+ exposes the
+   timer in two parts:
+     backdrop-cycle-period (uint) : time-unit selector — 0=seconds, 1=minutes,
+                                    2=hours, 3=days
+     backdrop-cycle-timer (uint)  : numeric value in those units
+   We rotate every {{ desktop_wallpaper_interval_minutes }} minutes by setting
+   period=1 (minutes) + timer={{ desktop_wallpaper_interval_minutes }}.
+
+   workspace1-3 are intentionally absent: leaving them unset means xfdesktop
+   inherits workspace0's settings, so the rotation runs across all four
+   workspaces uniformly. (Admin's exported XML pinned them to xfce-shapes,
+   but that was testing residue — discarded here.)
+
+   Desktop icons: hide $HOME and root-fs from the desktop, keep Trash, single
+   monitor (primary=false renders icons on whichever monitor xfdesktop attaches
+   to first — fine for single-display lab machines).
+#}
 <?xml version="1.0" encoding="UTF-8"?>
+
 <channel name="xfce4-desktop" version="1.0">
   <property name="backdrop" type="empty">
     <property name="screen0" type="empty">
@@ -9,15 +29,24 @@
           <property name="last-image" type="string" value="{{ desktop_wallpaper_dir }}"/>
           <property name="backdrop-cycle-enable" type="bool" value="true"/>
           <property name="backdrop-cycle-random-order" type="bool" value="true"/>
-          <property name="backdrop-cycle-period" type="int" value="{{ desktop_wallpaper_interval_minutes }}"/>
+          <property name="backdrop-cycle-period" type="uint" value="1"/>
+          <property name="backdrop-cycle-timer" type="uint" value="{{ desktop_wallpaper_interval_minutes }}"/>
         </property>
       </property>
     </property>
   </property>
   <property name="desktop-icons" type="empty">
-    <property name="use-custom-font-size" type="bool" value="true"/>
-    <property name="font-size" type="double" value="11"/>
-    <property name="show-tooltips" type="bool" value="true"/>
-    <property name="show-icon-label-shadows" type="bool" value="true"/>
+    <property name="primary" type="bool" value="false"/>
+    <property name="show-hidden-files" type="bool" value="false"/>
+    <property name="single-click" type="bool" value="false"/>
+    <property name="file-icons" type="empty">
+      <property name="show-home" type="bool" value="false"/>
+      <property name="show-filesystem" type="bool" value="false"/>
+      <property name="show-trash" type="bool" value="true"/>
+    </property>
+  </property>
+  <property name="windowlist-menu" type="empty">
+    <property name="show-submenus" type="bool" value="true"/>
+    <property name="show-sticky-once" type="bool" value="true"/>
   </property>
 </channel>

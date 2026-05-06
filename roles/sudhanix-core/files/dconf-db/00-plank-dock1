@@ -1,0 +1,15 @@
+# /etc/dconf/db/site.d/00-plank-dock1
+#
+# System default for the Plank dock. The launcher order matches the
+# administrator account on dvgs-testmachine (canonical Sudhanix-26 layout
+# captured 2026-05-06). Plank reads dock-items from dconf, NOT from the
+# /etc/skel-seeded ~/.config/plank/dock1/launchers/*.dockitem files alone —
+# without this dconf default, fresh users get an empty dock even when the
+# .dockitem files are correctly seeded.
+#
+# Per-user writes still take precedence (user-db:user beats system-db:site
+# in /etc/dconf/profile/user), so a user can rearrange or remove launchers
+# and the change persists in their own dconf store.
+
+[net/launchpad/plank/docks/dock1]
+dock-items=['xfce4-appfinder.dockitem', 'thunar.dockitem', 'thunderbird.dockitem', 'com.google.Chrome.dockitem', 'Zoom.dockitem', 'org.gnome.gedit.dockitem', 'org.gnome.Calculator.dockitem', 'libreoffice-writer.dockitem', 'libreoffice-calc.dockitem', 'gimp.dockitem']

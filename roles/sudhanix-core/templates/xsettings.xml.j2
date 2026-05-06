@@ -1,4 +1,15 @@
+{# xsettings.xml.j2
+
+   Captured from administrator@dvgs-testmachine on 2026-05-06. Theme/icon/
+   cursor/font kept as Jinja vars (defaults/main.yml). Highlights of admin's
+   additions:
+     - DecorationLayout="close,minimize,maximize:" : macOS button order
+     - MonospaceFontName="Ubuntu Mono 11"          : terminal-grade mono
+     - DialogsUseHeader=true                       : modern GTK dialogs
+     - ButtonImages, MenuImages, CanChangeAccels   : classic GTK affordances
+#}
 <?xml version="1.0" encoding="UTF-8"?>
+
 <channel name="xsettings" version="1.0">
   <property name="Net" type="empty">
     <property name="ThemeName" type="string" value="{{gtk_theme}}"/>
@@ -11,5 +22,11 @@
     <property name="CursorThemeName" type="string" value="{{cursor_theme}}"/>
     <property name="CursorThemeSize" type="int" value="24"/>
     <property name="FontName" type="string" value="{{desktop_font}}"/>
+    <property name="MonospaceFontName" type="string" value="Ubuntu Mono 11"/>
+    <property name="DecorationLayout" type="string" value="close,minimize,maximize:"/>
+    <property name="ButtonImages" type="bool" value="true"/>
+    <property name="MenuImages" type="bool" value="true"/>
+    <property name="CanChangeAccels" type="bool" value="true"/>
+    <property name="DialogsUseHeader" type="bool" value="true"/>
   </property>
 </channel>

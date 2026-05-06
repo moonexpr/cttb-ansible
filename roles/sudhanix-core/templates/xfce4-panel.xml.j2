@@ -1,10 +1,32 @@
+{# xfce4-panel.xml.j2
+
+   Captured from administrator@dvgs-testmachine on 2026-05-06 as the
+   canonical Sudhanix-26 top panel layout. The single substitution is the
+   lotus icon path, which differs only in deployment location
+   (/usr/share/icons/cttb/lotus.png) from where the admin authored it
+   (~/Downloads/lotus.png).
+
+   Plugin layout (left-to-right):
+     34 separator         start spacer
+      1 applicationsmenu  lotus icon + apps
+     25 appmenu           global application menu (compact-mode false, bold)
+      5 separator         expanding (pushes everything right of it)
+      2 actions           "Log Off" button
+      6 systray           Zoom, Fcitx, nm-applet
+     31 pulseaudio        volume + mpris
+     10 separator
+     33 notification-plugin
+     13 separator
+     12 clock             custom 24h "%a %d %b  %H:%M"
+      9 separator
+#}
 <?xml version="1.0" encoding="UTF-8"?>
+
 <channel name="xfce4-panel" version="1.0">
   <property name="configver" type="int" value="2"/>
   <property name="panels" type="array">
     <value type="int" value="1"/>
     <property name="dark-mode" type="bool" value="true"/>
-    <!-- Top menu bar (autohide, semi-transparent) -->
     <property name="panel-1" type="empty">
       <property name="position" type="string" value="p=6;x=0;y=0"/>
       <property name="length" type="double" value="100"/>
@@ -18,16 +40,17 @@
       <property name="leave-opacity" type="uint" value="100"/>
       <property name="background-style" type="uint" value="1"/>
       <property name="background-rgba" type="array">
-        <value type="double" value="0.153333"/>
-        <value type="double" value="0.108356"/>
-        <value type="double" value="0.108356"/>
-        <value type="double" value="0.535461"/>
+        <value type="double" value="0.15333333333333335"/>
+        <value type="double" value="0.10835555555555557"/>
+        <value type="double" value="0.10835555555555557"/>
+        <value type="double" value="1"/>
       </property>
       <property name="plugin-ids" type="array">
         <value type="int" value="34"/>
         <value type="int" value="1"/>
         <value type="int" value="25"/>
         <value type="int" value="5"/>
+        <value type="int" value="2"/>
         <value type="int" value="6"/>
         <value type="int" value="31"/>
         <value type="int" value="10"/>
@@ -39,34 +62,37 @@
     </property>
   </property>
   <property name="plugins" type="empty">
-    <!-- Top bar: start separator -->
     <property name="plugin-34" type="string" value="separator">
-      <property name="style" type="uint" value="0"/>
+      <property name="style" type="int" value="0"/>
     </property>
-    <!-- Top bar: lotus icon + app menu -->
     <property name="plugin-1" type="string" value="applicationsmenu">
-      <property name="button-title" type="string" value="{{inventory_hostname_short}}"/>
+      <property name="button-title" type="string" value=" "/>
       <property name="show-button-title" type="bool" value="true"/>
-      <property name="button-icon" type="string" value="/usr/share/icons/cttb/lotus.svg"/>
+      <property name="button-icon" type="string" value="/usr/share/icons/cttb/lotus.png"/>
       <property name="show-tooltips" type="bool" value="false"/>
       <property name="show-generic-names" type="bool" value="true"/>
       <property name="small" type="bool" value="true"/>
     </property>
-    <!-- Top bar: global application menu -->
     <property name="plugin-25" type="string" value="appmenu">
-      <property name="bold-application-name" type="bool" value="true"/>
-      <property name="compact-mode" type="bool" value="false"/>
-      <property name="expand" type="bool" value="true"/>
+      <property name="bold-application-name" type="empty"/>
+      <property name="compact-mode" type="empty"/>
+      <property name="expand" type="empty"/>
+      <property name="plugins" type="empty">
+        <property name="plugin-25" type="empty">
+          <property name="compact-mode" type="bool" value="false"/>
+          <property name="bold-application-name" type="bool" value="true"/>
+          <property name="expand" type="bool" value="false"/>
+        </property>
+      </property>
     </property>
-    <!-- Top bar: expanding separator -->
     <property name="plugin-5" type="string" value="separator">
       <property name="expand" type="bool" value="true"/>
       <property name="style" type="uint" value="0"/>
     </property>
-    <!-- Top bar: system tray (wifi, fcitx, nm-applet) -->
     <property name="plugin-6" type="string" value="systray">
       <property name="square-icons" type="bool" value="true"/>
       <property name="known-items" type="array">
+        <value type="string" value="zoom"/>
         <value type="string" value="Fcitx"/>
         <value type="string" value="nm-applet"/>
       </property>
@@ -75,34 +101,41 @@
         <value type="string" value="network"/>
       </property>
     </property>
-    <!-- Top bar: volume (pulseaudio) -->
     <property name="plugin-31" type="string" value="pulseaudio">
       <property name="enable-keyboard-shortcuts" type="bool" value="true"/>
       <property name="enable-mpris" type="bool" value="true"/>
       <property name="mixer-command" type="string" value="pavucontrol"/>
       <property name="show-notifications" type="bool" value="true"/>
     </property>
-    <!-- Top bar: separator -->
     <property name="plugin-10" type="string" value="separator">
       <property name="style" type="uint" value="0"/>
     </property>
-    <!-- Top bar: notification plugin -->
     <property name="plugin-33" type="string" value="notification-plugin"/>
-    <!-- Top bar: separator -->
     <property name="plugin-13" type="string" value="separator">
       <property name="style" type="uint" value="0"/>
     </property>
-    <!-- Top bar: clock -->
     <property name="plugin-12" type="string" value="clock">
-      <property name="digital-format" type="string" value="%a %d %b  %H:%M"/>
+      <property name="digital-format" type="string" value="%a %d %b %l:%M %p"/>
       <property name="digital-layout" type="uint" value="3"/>
       <property name="digital-time-font" type="string" value="Inter Display Semi-Bold 10"/>
       <property name="digital-time-format" type="string" value="%a %d %b  %H:%M"/>
       <property name="mode" type="uint" value="2"/>
     </property>
-    <!-- Top bar: end separator -->
     <property name="plugin-9" type="string" value="separator">
       <property name="style" type="uint" value="0"/>
+    </property>
+    <property name="plugin-22" type="string" value="directorymenu">
+      <property name="base-directory" type="string" value="/home/administrator"/>
+    </property>
+    <property name="plugin-23" type="empty">
+      <property name="command" type="string" value="/usr/local/bin/panel-hostname.sh"/>
+      <property name="update-period" type="uint" value="30000"/>
+      <property name="use-label" type="bool" value="false"/>
+    </property>
+    <property name="plugin-2" type="string" value="actions">
+      <property name="button-title" type="uint" value="3"/>
+      <property name="custom-title" type="string" value="Log Off"/>
+      <property name="appearance" type="uint" value="0"/>
     </property>
   </property>
 </channel>

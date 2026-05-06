@@ -1,5 +1,83 @@
 ---
-# Sudhanix UX: keyboard shortcuts, window tiling, Thunar defaults, devilspie2
+# Sudhanix UX: keyboard shortcuts, window tiling, Thunar defaults, devilspie2,
+# system dconf defaults (Plank dock layout)
+
+  - name: ensure dconf site db directory exists
+    file:
+      path: /etc/dconf/db/site.d
+      state: directory
+      mode: '0755'
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - dconf
+
+  - name: deploy plank dock1 system dconf default
+    copy:
+      src: dconf-db/00-plank-dock1
+      dest: /etc/dconf/db/site.d/00-plank-dock1
+      mode: '0644'
+      owner: root
+      group: root
+    register: plank_dconf
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - dconf
+
+  - name: deploy light-locker idle/lock policy dconf default
+    copy:
+      src: dconf-db/05-light-locker
+      dest: /etc/dconf/db/site.d/05-light-locker
+      mode: '0644'
+      owner: root
+      group: root
+    register: lightlocker_dconf
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - dconf
+
+  - name: deploy GNOME interface (theme + monospace font) dconf default
+    copy:
+      src: dconf-db/10-gnome-interface
+      dest: /etc/dconf/db/site.d/10-gnome-interface
+      mode: '0644'
+      owner: root
+      group: root
+    register: gnome_iface_dconf
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - dconf
+
+  - name: deploy dconf user profile (user-db + system-db:site)
+    copy:
+      src: dconf-db/profile-user
+      dest: /etc/dconf/profile/user
+      mode: '0644'
+      owner: root
+      group: root
+    register: dconf_profile
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - dconf
+
+  - name: regenerate dconf system db
+    command: dconf update
+    when: >
+      plank_dconf is changed or
+      dconf_profile is changed or
+      lightlocker_dconf is changed or
+      gnome_iface_dconf is changed
+    changed_when: false
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+      - dconf
 
   - name: configure keyboard shortcuts (Super key opens app menu, window tiling)
     template:
@@ -96,6 +174,39 @@
     template:
       src: xfce4-appfinder.xml.j2
       dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-appfinder.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: configure xfce4-notifyd (notification policy)
+    template:
+      src: xfce4-notifyd.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: configure xfce4-power-manager (brightness-switch policy)
+    template:
+      src: xfce4-power-manager.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: configure xfce4-session (SaveOnExit, default session)
+    template:
+      src: xfce4-session.xml.j2
+      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml
       mode: 0644
       owner: root
       group: root
