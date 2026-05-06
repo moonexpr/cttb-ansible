@@ -23,6 +23,11 @@
       paths:
         - "{{ role_path }}/tasks/setup"
 
+- name: Sudhanix first-login bootstrap + migration
+  ansible.builtin.import_tasks: sudhanix-firstlogin.yml
+  tags:
+    - sudhanix_firstlogin
+
 - name: Sudhanix welcome window
   ansible.builtin.import_tasks: sudhanix-welcome.yml
   tags:

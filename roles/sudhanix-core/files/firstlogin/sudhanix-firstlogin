@@ -1,0 +1,19 @@
+#!/bin/sh
+# sudhanix-firstlogin — first-login home-directory bootstrap.
+#
+# Triggered by /etc/xdg/autostart/sudhanix-firstlogin.desktop on every XFCE
+# graphical session. Idempotent: a user who has already been bootstrapped
+# (marker file present) sees no work and the process exits 0 silently.
+#
+# This script intentionally never exits non-zero. A failure inside the
+# bootstrap must not break a user's login.
+
+set +e
+
+if [ "${1:-}" = "--dry-run" ] || [ "${1:-}" = "-n" ]; then
+    export SFL_DRY_RUN=1
+fi
+
+. /usr/local/lib/sudhanix-firstlogin-lib.sh 2>/dev/null || exit 0
+sfl_run_bootstrap
+exit 0
