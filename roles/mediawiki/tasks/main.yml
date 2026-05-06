@@ -17,6 +17,8 @@
       - imagemagick
       - mariadb-server
       - python3-pymysql
+      # Standalone Lua interpreter for the Scribunto extension.
+      - lua5.1
     state: present
     update_cache: yes
   tags:
@@ -125,6 +127,32 @@
   tags:
     - mediawiki
     - extensions
+
+# AccessControl prints its protected-page banner using wfMessage()->text(), which
+# returns raw message text without parsing. That breaks any template invocation
+# (e.g. {{Mbox|...}}) inside MediaWiki:Accesscontrol-info. Switch to ->parse() so
+# wikitext in the message gets rendered, and replace the hardcoded inline-style
+# <p> wrapper with a class-bearing <div> for CSS hooks.
+- name: 'patch AccessControl: open <p> wrapper -> <div class="accesscontrol-info">'
+  lineinfile:
+    path: "{{ mediawiki_install_dir }}/extensions/AccessControl/src/AccessControlHooks.php"
+    regexp: '^\s*\$style = "<p id='
+    line: "\t\t$style = \"<div id=\\\"accesscontrol\\\" class=\\\"accesscontrol-info\\\">\";"
+  tags: [mediawiki, extensions, accesscontrol-patch]
+
+- name: 'patch AccessControl: text() -> parse() so wikitext templates render'
+  replace:
+    path: "{{ mediawiki_install_dir }}/extensions/AccessControl/src/AccessControlHooks.php"
+    regexp: "wfMessage\\( 'accesscontrol-info' \\)->text\\(\\);"
+    replace: "wfMessage( 'accesscontrol-info' )->parse();"
+  tags: [mediawiki, extensions, accesscontrol-patch]
+
+- name: 'patch AccessControl: close </p> -> </div>'
+  replace:
+    path: "{{ mediawiki_install_dir }}/extensions/AccessControl/src/AccessControlHooks.php"
+    regexp: '\$style_end = "</p>";'
+    replace: '$style_end = "</div>";'
+  tags: [mediawiki, extensions, accesscontrol-patch]
 
 # ── LocalSettings.php ─────────────────────────────────────────────────
 

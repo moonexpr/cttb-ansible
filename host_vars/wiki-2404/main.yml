@@ -25,6 +25,9 @@ mediawiki_extdist_extensions:
   - name: AccessControl
     mw_branch: REL1_43
     commit: "68e2f45"
+  - name: TemplateStyles
+    mw_branch: REL1_43
+    commit: "5e7e462"
 
 # Secrets from vault
 mediawiki_secret_key: "{{ vault_mediawiki_secret_key }}"

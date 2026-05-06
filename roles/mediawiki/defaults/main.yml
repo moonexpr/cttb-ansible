@@ -56,6 +56,10 @@ mediawiki_extensions:
   - CodeEditor
   - Cite
   - CiteThisPage
+  - Scribunto
+
+# Path to the standalone Lua interpreter. Installed by the role from the lua5.1 apt package.
+mediawiki_scribunto_lua_path: "/usr/bin/lua5.1"
 
 # Third-party extensions installed from the ExtensionDistributor.
 # Each entry: { name, mw_branch } — fetched from extdist.wmflabs.org tarballs.
