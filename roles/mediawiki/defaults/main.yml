@@ -61,17 +61,21 @@ mediawiki_extensions:
 # Path to the standalone Lua interpreter. Installed by the role from the lua5.1 apt package.
 mediawiki_scribunto_lua_path: "/usr/bin/lua5.1"
 
-# Whether AccessControl's deny path should HTTP-redirect to the deny page.
-# Must stay TRUE on MW 1.43+: AccessControl 6.0's ParserBeforeStrip hook is
-# inactive on modern MediaWiki, leaving only onUserCan, whose userVerify()
-# does not set $result=false to actually deny the action — it only triggers
-# the redirect. Setting this to false therefore disables protection entirely
-# (anonymous users see the full page content).
-mediawiki_accesscontrol_redirect: true
-
 # Third-party extensions installed from the ExtensionDistributor.
-# Each entry: { name, mw_branch } — fetched from extdist.wmflabs.org tarballs.
+# Each entry: { name, mw_branch, commit } — fetched from extdist.wmflabs.org tarballs.
 mediawiki_extdist_extensions: []
+
+# Custom namespaces — list of {id, name} entries deployed before extensions load
+# so Lockdown sees them at config time. Even IDs only (talk = id+1 by convention).
+mediawiki_extra_namespaces: []
+
+# Custom MediaWiki user groups. Created with read+edit+move+createpage so they
+# can be layered with Lockdown (which restricts further by namespace).
+mediawiki_user_groups: []
+
+# Lockdown rules: { namespace_name: { action: [group, ...], ... }, ... }
+# namespace_name must match a NS_<NAME> constant defined in mediawiki_extra_namespaces.
+mediawiki_lockdown: {}
 
 # Migration (set to true when importing from old wiki)
 mediawiki_migration_mode: false

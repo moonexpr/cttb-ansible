@@ -19,15 +19,53 @@ ansible_ssh_common_args: "-o ProxyJump=srv-vm -o StrictHostKeyChecking=accept-ne
 ansible_timeout: 30
 
 # Third-party extensions to install from extdist.wmflabs.org
-# AccessControl: restrict pages to LDAP groups (drbu-faculty, IT, etc.).
-# Pin commit when MW 1.43 stops getting updates; latest works while branch is current.
 mediawiki_extdist_extensions:
-  - name: AccessControl
-    mw_branch: REL1_43
-    commit: "68e2f45"
   - name: TemplateStyles
     mw_branch: REL1_43
     commit: "5e7e462"
+  - name: Lockdown
+    mw_branch: REL1_43
+    commit: "120d6fd"
+
+# Custom namespaces — one per administrative audience. Pages titled "IT:Foo",
+# "DRBU:Foo", etc. (currently in NS_MAIN with literal colons) move into the
+# matching namespace so Lockdown can read-protect them as a group.
+# Convention: even ID = content NS, odd ID = corresponding talk NS.
+mediawiki_extra_namespaces:
+  - { id: 3000, name: "IT" }
+  - { id: 3001, name: "IT_talk" }
+  - { id: 3010, name: "DRBU" }
+  - { id: 3011, name: "DRBU_talk" }
+  - { id: 3020, name: "DVGS" }
+  - { id: 3021, name: "DVGS_talk" }
+  - { id: 3030, name: "DVBS" }
+  - { id: 3031, name: "DVBS_talk" }
+  - { id: 3040, name: "CTTB" }
+  - { id: 3041, name: "CTTB_talk" }
+
+# Custom MediaWiki user groups granted access to the locked-down namespaces.
+# Members are added via the addUserToGroup maintenance script — see
+# plays/wiki-add-group-users.yml.
+mediawiki_user_groups:
+  - it
+  - drbu
+  - dvgs
+  - dvbs
+  - cttb
+
+# Lockdown rules: per-namespace, per-action lists of allowed user groups.
+# Format mirrors $wgNamespacePermissionLockdown[NS_<NAME>][action] = [...].
+mediawiki_lockdown:
+  IT:        { read: [it],   edit: [it],   create: [it],   move: [it] }
+  IT_talk:   { read: [it],   edit: [it] }
+  DRBU:      { read: [drbu], edit: [drbu], create: [drbu], move: [drbu] }
+  DRBU_talk: { read: [drbu], edit: [drbu] }
+  DVGS:      { read: [dvgs], edit: [dvgs], create: [dvgs], move: [dvgs] }
+  DVGS_talk: { read: [dvgs], edit: [dvgs] }
+  DVBS:      { read: [dvbs], edit: [dvbs], create: [dvbs], move: [dvbs] }
+  DVBS_talk: { read: [dvbs], edit: [dvbs] }
+  CTTB:      { read: [cttb], edit: [cttb], create: [cttb], move: [cttb] }
+  CTTB_talk: { read: [cttb], edit: [cttb] }
 
 # Secrets from vault
 mediawiki_secret_key: "{{ vault_mediawiki_secret_key }}"
