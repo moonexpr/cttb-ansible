@@ -1,0 +1,67 @@
+#!/bin/sh
+# /usr/local/sbin/cttb-coredump-upload
+#
+# Walk /var/lib/systemd/coredump/ for any compressed core file we have not
+# yet shipped to storehouse, and upload each via WebDAV PUT to
+#   http://storehouse.cttb/public/coredumps-in/<hostname>/<basename>
+#
+# The /public/coredumps-in/ URL maps server-side to a staging directory.
+# A validator on storehouse (coredumps-validate-mover.timer) sniffs the
+# magic bytes of each staged file every 30 seconds and only promotes
+# real coredumps (zstd / xz / lz4 / ELF) into the public-readable
+# /public/coredumps/ tree. Anything that doesn't match a known coredump
+# magic is quarantined and logged. The split is what makes anonymous
+# upload safe — random content can't pollute the dropzone.
+#
+# Triggered by a systemd timer every 10 minutes (cttb-coredump-upload.timer)
+# and on-demand when invoked from a shell. Idempotent: a sentinel file
+# `<core>.uploaded` next to each dump records what's already shipped, so
+# repeated runs touch the network only for new dumps.
+#
+# Failure handling: any upload error is logged to journald via systemd's
+# StandardOutput=journal and the loop continues with the next file. We do
+# NOT delete local dumps after upload — coredumpctl handles its own LRU,
+# and keeping the local copy lets a sysadmin run `coredumpctl info` on
+# the same host without round-tripping through storehouse.
+
+set -u
+
+URL="${CTTB_COREDUMP_URL:-http://storehouse.cttb/public/coredumps-in}"
+DUMPDIR=/var/lib/systemd/coredump
+HOST="$(hostname -s 2>/dev/null || hostname)"
+[ -n "${HOST}" ] || HOST=unknown
+
+[ -d "${DUMPDIR}" ] || exit 0
+
+# Make sure the per-host parent exists on storehouse. nginx's
+# create_full_put_path handles this lazily on the first PUT but an
+# explicit MKCOL keeps the failure mode obvious if storehouse is down.
+curl -sS --fail --max-time 10 -X MKCOL "${URL}/${HOST}/" >/dev/null 2>&1 || true
+
+uploaded=0
+failed=0
+skipped=0
+
+for f in "${DUMPDIR}"/core.*.zst "${DUMPDIR}"/core.*.xz "${DUMPDIR}"/core.*.lz4; do
+    [ -f "${f}" ] || continue
+    sentinel="${f}.uploaded"
+    if [ -f "${sentinel}" ]; then
+        skipped=$((skipped + 1))
+        continue
+    fi
+    base="$(basename "${f}")"
+    if curl -sS --fail --max-time 600 -T "${f}" "${URL}/${HOST}/${base}"; then
+        : > "${sentinel}"
+        uploaded=$((uploaded + 1))
+        printf 'uploaded: %s\n' "${base}"
+    else
+        failed=$((failed + 1))
+        printf 'fail (will retry next run): %s\n' "${base}" >&2
+    fi
+done
+
+# Always exit 0; the journal output is the audit trail. Non-zero would
+# put the timer's service into a "failed" state for transient network
+# blips, which doesn't help anyone.
+printf 'summary: uploaded=%d failed=%d skipped=%d\n' "${uploaded}" "${failed}" "${skipped}"
+exit 0
