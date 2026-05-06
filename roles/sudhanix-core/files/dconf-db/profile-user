@@ -1,0 +1,8 @@
+# /etc/dconf/profile/user
+#
+# dconf lookup chain for graphical sessions. user-db comes first so per-
+# user writes win; system-db:site holds Sudhanix-26 lab defaults (Plank
+# dock layout etc.).
+
+user-db:user
+system-db:site

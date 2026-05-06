@@ -1,0 +1,13 @@
+# /etc/dconf/db/site.d/10-gnome-interface
+#
+# GTK4 / libadwaita apps (gedit, gnome-calculator, etc.) read theme + font
+# settings from org.gnome.desktop.interface, NOT from xsettings. This file
+# extends our XFCE-side theme to those apps so the lab feels consistent
+# across the GTK3+GTK4 mix.
+#
+# Captured from administrator@dvgs-testmachine on 2026-05-06.
+
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+gtk-theme='WhiteSur-Dark'
+monospace-font-name='Ubuntu Mono 11'
