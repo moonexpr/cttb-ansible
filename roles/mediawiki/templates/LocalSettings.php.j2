@@ -56,6 +56,10 @@ wfLoadExtension( "{{ ext }}" );
 wfLoadExtension( "{{ ext.name }}" );
 {% endfor %}
 
+## Scribunto — use the standalone Lua interpreter (LuaSandbox PHP module not packaged for 8.3)
+$wgScribuntoDefaultEngine = "luastandalone";
+$wgScribuntoEngineConf["luastandalone"]["luaPath"] = "{{ mediawiki_scribunto_lua_path }}";
+
 ## VisualEditor config — single "Edit" tab using VisualEditor
 $wgDefaultUserOptions["visualeditor-editor"] = "visualeditor";
 $wgDefaultUserOptions["visualeditor-enable"] = 1;
