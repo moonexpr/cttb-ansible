@@ -2504,3 +2504,23 @@ ansible-playbook plays/wiki-upgrade-patch.yml -l wiki-2404 -i inventory/hosts \
 ```
 
 Verified post-upgrade: Main_Page loads, Lockdown still enforces (`/wiki/IT:Ansible` → "Login required"), the lock-prefix hook still runs, the search patch survived (we re-applied via `--tags search-patch`).
+
+### Wiki: lock-prefix per-user — parser-cache-safe two-pass design
+
+The first cut at the lock-prefix link decorator computed visibility per user inside `HtmlPageLinkRendererBegin`, which runs at parse time. MediaWiki's parser cache is shared across users; whoever's render filled the cache decided what every other viewer saw. Result: the user reported the opposite of intended behavior — IT members saw 🔒 on links they could read, anon viewers saw clean links to pages they couldn't.
+
+Refactored to a two-pass design:
+
+**Pass 1 — at parse, identical for everyone (cache-safe).** `HtmlPageLinkRendererBegin` hook stamps every link to a Lockdown-protected namespace with:
+- `class="cttb-restricted-link"`
+- `data-restrict-groups="<space-list of allowed groups>"`
+- `<span class="cttb-lock" aria-hidden="true">🔒 </span>` wrapping the prefix
+- A `title` tooltip listing the required groups
+
+The output is identical regardless of who triggered the parse, so cache hits are correct.
+
+**Pass 2 — at render, per-request (uncached).** `OutputPageBodyAttributes` hook adds `cttb-user-in-<group>` body classes for each effective group of the current viewer (skipping pseudo-groups like `*` whose name strips to empty).
+
+**CSS in `MediaWiki:Common.css`** — default state shows the lock and dims the link; group-keyed rules hide `.cttb-lock` and restore normal blue link colour when the body class matches one of the link's required groups. Five rules cover IT / DRBU / DVGS / DVBS / CTTB.
+
+Verified: anon `GET /wiki/Main_Page` returns 5 `cttb-restricted-link` anchors and a body class with no `cttb-user-in-*` token. Logged-in IT viewer's render produces identical HTML but the body picks up `cttb-user-in-it`, hiding the locks and restoring normal styling via CSS.

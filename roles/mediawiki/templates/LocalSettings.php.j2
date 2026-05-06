@@ -126,10 +126,16 @@ $wgHooks["BeforePageDisplay"][] = function ( $out ) {
 
 {% if mediawiki_lockdown %}
 ## Decorate links to read-restricted pages with a lock prefix.
-## Driven by $wgNamespacePermissionLockdown; only the current user's
-## effective groups are checked, so the lock disappears once they're
-## granted access. Title::getNamespace() never triggers a DB lookup, so
-## this is cheap on link-heavy pages.
+## Parser-cache-safe two-pass design:
+##   pass 1 — HtmlPageLinkRendererBegin (cached): mark every link to a
+##     locked-down namespace with class="cttb-restricted-link", a
+##     data-restrict-groups attribute listing required groups, and a
+##     <span class="cttb-lock"> wrapper around the 🔒 prefix. The output
+##     is identical for everyone, so parser cache hits are correct.
+##   pass 2 — BeforePageDisplay (per-request): stamp the <body> with one
+##     `cttb-user-in-<group>` class per group the current viewer is in.
+##     CSS in MediaWiki:Common.css then hides .cttb-lock and restores
+##     normal link colour when the body class matches a required group.
 $wgHooks["HtmlPageLinkRendererBegin"][] = function ( $linkRenderer, $target, &$text, &$customAttribs, &$query, &$ret ) {
     global $wgNamespacePermissionLockdown;
     $ns = $target->getNamespace();
@@ -137,27 +143,34 @@ $wgHooks["HtmlPageLinkRendererBegin"][] = function ( $linkRenderer, $target, &$t
         return true;
     }
     $allowed = $wgNamespacePermissionLockdown[$ns]["read"];
-    $user = MediaWiki\Context\RequestContext::getMain()->getUser();
-    $userGroups = MediaWiki\MediaWikiServices::getInstance()
-        ->getUserGroupManager()
-        ->getUserEffectiveGroups( $user );
-    if ( array_intersect( $userGroups, $allowed ) ) {
-        return true;
-    }
     $customAttribs["class"] = trim( ( $customAttribs["class"] ?? "" ) . " cttb-restricted-link" );
+    $customAttribs["data-restrict-groups"] = implode( " ", $allowed );
     $customAttribs["title"] = ( isset( $customAttribs["title"] ) ? $customAttribs["title"] . " — " : "" )
         . "Restricted: requires membership in " . implode( ", ", $allowed );
-    $lock = "\u{1F512} ";
+    $lockSpan = '<span class="cttb-lock" aria-hidden="true">&#x1F512; </span>';
     if ( $text === null ) {
-        // MW will fall back to the title's prefixedText; do that ourselves so
-        // we can prepend the lock.
-        $text = $lock . $target->getPrefixedText();
+        $text = new HtmlArmor( $lockSpan . htmlspecialchars( $target->getPrefixedText() ) );
     } elseif ( is_string( $text ) ) {
-        $text = $lock . $text;
+        $text = new HtmlArmor( $lockSpan . htmlspecialchars( $text ) );
     } elseif ( class_exists( "HtmlArmor" ) && $text instanceof HtmlArmor ) {
-        $text = new HtmlArmor( $lock . HtmlArmor::getHtml( $text ) );
+        $text = new HtmlArmor( $lockSpan . HtmlArmor::getHtml( $text ) );
     }
     return true;
+};
+
+## Per-request body class: cttb-user-in-<group> for each effective group.
+## The lock-prefix CSS keys on this to hide locks for permitted users.
+$wgHooks["OutputPageBodyAttributes"][] = function ( $out, $skin, &$bodyAttrs ) {
+    $userGroupManager = MediaWiki\MediaWikiServices::getInstance()->getUserGroupManager();
+    $groups = $userGroupManager->getUserEffectiveGroups( $out->getUser() );
+    $extra = [];
+    foreach ( $groups as $g ) {
+        $clean = preg_replace( "/[^a-z0-9_-]/i", "", $g );
+        if ( $clean !== "" ) {
+            $extra[] = "cttb-user-in-" . $clean;
+        }
+    }
+    $bodyAttrs["class"] = trim( ( $bodyAttrs["class"] ?? "" ) . " " . implode( " ", $extra ) );
 };
 
 {% endif %}
