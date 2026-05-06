@@ -2466,3 +2466,13 @@ All three use `{{Ambox|type=content|text=...}}` so they pick up the same border 
 - `Test:AccessControl` — the smoke-test page from earlier session
 
 Drafts kept in `.claude/wiki-pages/` for the three new messages so future edits go through `wikitools/wiki-edit.sh` rather than the wiki UI.
+
+### Mbox border on Lockdown deny pages — TemplateStyles scoping fix
+
+The "Login required" / `MediaWiki:Loginreqpagetext` page rendered the Ambox table classes correctly but with no border or background. Cause: Module:Message_box's TemplateStyles sheet scopes every selector to `.mw-parser-output .ombox{...}` (TemplateStyles' default isolation behavior — keeps article CSS from leaking site-wide). Special pages like `Special:Userlogin` don't wrap body content in `.mw-parser-output`, so none of those rules match. Same problem affects `MediaWiki:Badaccess-groups` and `MediaWiki:Badaccess-group0` when Lockdown surfaces them.
+
+Fixed in `MediaWiki:Common.css` by re-stating the table border, background, and per-type accent colours unscoped (`table.ambox`, `.ambox-content`, etc.), plus the cell layout (`.mbox-image`, `.mbox-text`, `.mbox-empty-cell`) the parser-output-scoped sheet would otherwise supply. Stuck to upstream values — only the base border colour swaps `#a2a9b1` (almost invisible on white) for `var(--border-color-base, #c8ccd1)`.
+
+Also tightened `MediaWiki:Loginreqpagetext` — dropped the "Members of the Administration would like to ask that you do not share this media" sentence since it doesn't make sense on a login prompt; it stays on `Badaccess-groups` where the visitor *has* logged in and is being denied membership-wise.
+
+Verified anonymously: `GET /wiki/IT:Ansible` body now contains both the unscoped border declaration (`border-color:#f28500` for ambox-content) and the trimmed copy.
