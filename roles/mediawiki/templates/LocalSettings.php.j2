@@ -60,6 +60,9 @@ wfLoadExtension( "{{ ext.name }}" );
 $wgScribuntoDefaultEngine = "luastandalone";
 $wgScribuntoEngineConf["luastandalone"]["luaPath"] = "{{ mediawiki_scribunto_lua_path }}";
 
+## AccessControl — replace page body in-place rather than HTTP-redirecting to deny page
+$wgAccessControlRedirect = {{ mediawiki_accesscontrol_redirect | string | lower }};
+
 ## VisualEditor config — single "Edit" tab using VisualEditor
 $wgDefaultUserOptions["visualeditor-editor"] = "visualeditor";
 $wgDefaultUserOptions["visualeditor-enable"] = 1;
