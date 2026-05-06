@@ -153,3 +153,18 @@
         mode: 0644
     tags:
         - acl
+
+  - name: grant sudo to LDAP "it" group
+    copy:
+      dest: /etc/sudoers.d/it-group
+      owner: root
+      group: root
+      mode: '0440'
+      content: |
+        # Members of the LDAP cn=it group (gidNumber 2001) get full sudo.
+        # Password required, matching the default %sudo policy.
+        %it ALL=(ALL:ALL) ALL
+      validate: 'visudo -cf %s'
+    tags:
+      - sudoers
+      - acl
