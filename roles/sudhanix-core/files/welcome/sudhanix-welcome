@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""
+sudhanix-welcome — first-login welcome window with LDAP-persisted dismissal.
+
+Behavior:
+  * On launch, check /run/sudhanix-tokens/<uid>.tok exists (cleartext password
+    cached at login by the pam_exec hook in /etc/pam.d/lightdm).
+  * Use the OpenLDAP CLI (ldapsearch / ldapmodify), passing the token file via
+    -y so the password never lands on argv. This keeps the cleartext on tmpfs
+    only.
+  * Read sudhanixWelcomeDismissed on the user's own entry. If TRUE, exit
+    silently — user already opted out.
+  * Otherwise, show a GTK3 window with a welcome message, a "Don't show this
+    again" checkbox, and an OK button.
+  * If the box was ticked when the user dismissed the window, modify the user
+    entry (add objectClass sudhanixUser if missing, set the flag).
+
+Failure handling: if anything goes wrong (no token, no ldap-srv, schema not
+present, network down) we log to stderr and exit 0. The welcome window is
+optional UX and must never block login.
+"""
+
+from __future__ import annotations
+
+import os
+import pwd
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, GLib  # noqa: E402
+
+LDAP_URI = "ldap://ldap-srv.cttb"
+LDAP_DN_TEMPLATE = "uid={uid},ou=People,dc=cttb"
+WELCOME_FLAG_ATTR = "sudhanixWelcomeDismissed"
+SUDHANIX_USER_OC = "sudhanixUser"
+
+WELCOME_TITLE = "Welcome to Sudhanix"
+WELCOME_BODY = (
+    "Welcome to Sudhanix 26\n\n"
+    "This computer is part of the City of Ten Thousand Buddhas lab network.\n\n"
+    "• Your home directory follows you across lab machines (NFS).\n"
+    "• Sign-in uses your CTTB account.\n"
+    "• Need help or have feedback? Visit http://wiki.cttb\n"
+)
+
+
+def log(msg: str) -> None:
+    print(f"[sudhanix-welcome] {msg}", file=sys.stderr)
+
+
+def token_path(uid: int) -> Path | None:
+    p = Path(f"/run/sudhanix-tokens/{uid}.tok")
+    try:
+        st = p.stat()
+    except FileNotFoundError:
+        return None
+    if st.st_uid != uid:
+        log(f"refusing token: owner uid {st.st_uid} != session uid {uid}")
+        return None
+    if st.st_mode & 0o077:
+        log(f"refusing token: mode {st.st_mode:o} too permissive")
+        return None
+    return p
+
+
+def already_dismissed(user_dn: str, tok: Path) -> bool | None:
+    """Returns True/False/None (None = couldn't query)."""
+    cmd = [
+        "ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
+        "-D", user_dn, "-y", str(tok),
+        "-b", user_dn, "-s", "base",
+        "(objectClass=*)", WELCOME_FLAG_ATTR,
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
+        log(f"ldapsearch failed: {exc}")
+        return None
+    if proc.returncode != 0:
+        log(f"ldapsearch rc={proc.returncode}: {proc.stderr.strip()}")
+        return None
+    for line in proc.stdout.splitlines():
+        if line.lower().startswith(f"{WELCOME_FLAG_ATTR.lower()}:"):
+            _, _, value = line.partition(":")
+            return value.strip().upper() == "TRUE"
+    return False
+
+
+def write_dismissal(user_dn: str, tok: Path) -> None:
+    # Probe current objectClasses; only add sudhanixUser if absent.
+    proc = subprocess.run(
+        ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
+         "-D", user_dn, "-y", str(tok),
+         "-b", user_dn, "-s", "base", "(objectClass=*)", "objectClass"],
+        capture_output=True, text=True, timeout=10,
+    )
+    needs_oc = SUDHANIX_USER_OC.lower() not in proc.stdout.lower()
+
+    parts = [f"dn: {user_dn}", "changetype: modify"]
+    if needs_oc:
+        parts += ["add: objectClass", f"objectClass: {SUDHANIX_USER_OC}", "-"]
+    parts += [f"replace: {WELCOME_FLAG_ATTR}",
+              f"{WELCOME_FLAG_ATTR}: TRUE"]
+    ldif = "\n".join(parts) + "\n"
+
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".ldif") as fh:
+        fh.write(ldif)
+        ldif_path = fh.name
+    try:
+        os.chmod(ldif_path, 0o600)
+        proc = subprocess.run(
+            ["ldapmodify", "-x", "-ZZ", "-H", LDAP_URI,
+             "-D", user_dn, "-y", str(tok), "-f", ldif_path],
+            capture_output=True, text=True, timeout=10,
+        )
+        if proc.returncode != 0:
+            log(f"ldapmodify rc={proc.returncode}: {proc.stderr.strip()}")
+    finally:
+        try:
+            os.unlink(ldif_path)
+        except FileNotFoundError:
+            pass
+
+
+class WelcomeWindow(Gtk.Window):
+    def __init__(self) -> None:
+        super().__init__(title=WELCOME_TITLE)
+        self.set_default_size(520, 320)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_border_width(24)
+        self.set_resizable(False)
+        self.dont_show_again = False
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
+        self.add(outer)
+
+        title = Gtk.Label()
+        title.set_markup(
+            f"<span size='xx-large' weight='bold'>{GLib.markup_escape_text(WELCOME_TITLE)}</span>"
+        )
+        title.set_xalign(0)
+        outer.pack_start(title, False, False, 0)
+
+        body = Gtk.Label(label=WELCOME_BODY)
+        body.set_xalign(0)
+        body.set_line_wrap(True)
+        body.set_selectable(True)
+        outer.pack_start(body, True, True, 0)
+
+        self.checkbox = Gtk.CheckButton(label="Don't show this again")
+        outer.pack_start(self.checkbox, False, False, 0)
+
+        button_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        button_row.set_halign(Gtk.Align.END)
+        outer.pack_start(button_row, False, False, 0)
+
+        ok = Gtk.Button(label="OK")
+        ok.connect("clicked", self.on_close)
+        button_row.pack_start(ok, False, False, 0)
+
+        self.connect("destroy", self.on_close)
+
+    def on_close(self, *args) -> None:
+        self.dont_show_again = self.checkbox.get_active()
+        Gtk.main_quit()
+
+
+def main() -> int:
+    if "DISPLAY" not in os.environ and "WAYLAND_DISPLAY" not in os.environ:
+        return 0
+
+    uid = os.getuid()
+    try:
+        username = pwd.getpwuid(uid).pw_name
+    except KeyError:
+        log(f"no passwd entry for uid {uid}")
+        return 0
+
+    user_dn = LDAP_DN_TEMPLATE.format(uid=username)
+
+    tok = token_path(uid)
+    if tok is None:
+        log("no cached PAM token; can't reach LDAP this session")
+        return 0
+
+    state = already_dismissed(user_dn, tok)
+    if state is True:
+        return 0
+    if state is None:
+        # Couldn't query LDAP — don't pester the user since we can't
+        # remember their dismissal anyway.
+        return 0
+
+    win = WelcomeWindow()
+    win.show_all()
+    Gtk.main()
+
+    if win.dont_show_again:
+        write_dismissal(user_dn, tok)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
