@@ -1,0 +1,5 @@
+---
+# Sudhanix 26 is the CTTB rebrand of Ubuntu 24.04 (noble).
+# Reuse the upstream Ubuntu 24 setup tasks so Sudhanix hosts stay in sync
+# whenever Ubuntu_24.yml gains version-specific work.
+- ansible.builtin.import_tasks: Ubuntu_24.yml
