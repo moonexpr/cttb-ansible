@@ -1,0 +1,20 @@
+---
+# Wiki Configuration Playbook
+#
+# Manages the live wiki.cttb container post-migration. Idempotent — covers
+# LocalSettings.php, branding assets, nginx vhost, and third-party extensions.
+#
+# Usage:
+#   ansible-playbook plays/wiki-config.yml -l wiki-2404 --vault-password-file /tmp/vault-pw.sh
+#
+# Useful tag subsets:
+#   --tags localsettings         only LocalSettings.php
+#   --tags assets                only logo + dark CSS
+#   --tags extensions            only third-party extensions
+#   --tags nginx                 only nginx vhost
+#   --tags localsettings,update  also runs maintenance/update.php (schema)
+
+- hosts: wiki-2404
+  become: yes
+  roles:
+    - { role: mediawiki, tags: mediawiki }

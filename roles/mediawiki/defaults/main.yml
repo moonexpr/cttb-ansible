@@ -22,14 +22,44 @@ mediawiki_db_prefix: "mediawiki"
 
 # Site config
 mediawiki_site_name: "CTTB Wiki"
-mediawiki_server: "http://wikitest.cttb"
+mediawiki_server: "http://wiki.cttb"
 mediawiki_script_path: "/w"
 
 # PHP
 mediawiki_php_version: "8.3"
+# PHP-FPM socket the wiki nginx vhost talks to. Default pool ships at this path.
+mediawiki_php_fpm_socket: "/run/php/php{{ mediawiki_php_version }}-fpm.sock"
 
 # Nginx
-mediawiki_server_name: "wikitest.cttb"
+mediawiki_server_name: "wiki.cttb"
+# Optional aliases that resolve to the same vhost (e.g. legacy wikitest.cttb)
+mediawiki_server_aliases: []
+
+# Cache type — CACHE_NONE | CACHE_ACCEL | CACHE_ANYTHING
+mediawiki_main_cache_type: "CACHE_NONE"
+
+# Sitenotice dismiss key — bump to re-show banner after edits
+mediawiki_site_notice_id: 1
+
+# Extensions to load via wfLoadExtension. Order preserved.
+# Bundled with MW 1.43 unless noted otherwise.
+mediawiki_extensions:
+  - ImageMap
+  - Interwiki
+  - WikiEditor
+  - SyntaxHighlight_GeSHi
+  - InputBox
+  - ParserFunctions
+  - CategoryTree
+  - VisualEditor
+  - MultimediaViewer
+  - CodeEditor
+  - Cite
+  - CiteThisPage
+
+# Third-party extensions installed from the ExtensionDistributor.
+# Each entry: { name, mw_branch } — fetched from extdist.wmflabs.org tarballs.
+mediawiki_extdist_extensions: []
 
 # Migration (set to true when importing from old wiki)
 mediawiki_migration_mode: false

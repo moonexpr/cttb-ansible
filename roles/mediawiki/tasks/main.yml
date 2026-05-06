@@ -86,6 +86,68 @@
   tags:
     - mediawiki
 
+# ── Branding Assets ───────────────────────────────────────────────────
+
+- name: deploy site logo
+  copy:
+    src: resources/assets/cttb.png
+    dest: "{{ mediawiki_install_dir }}/resources/assets/cttb.png"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  tags:
+    - mediawiki
+    - assets
+
+- name: deploy dark theme stylesheet
+  copy:
+    src: resources/assets/cttb-dark.css
+    dest: "{{ mediawiki_install_dir }}/resources/assets/cttb-dark.css"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  tags:
+    - mediawiki
+    - assets
+
+# ── Third-party Extensions ────────────────────────────────────────────
+
+- name: install extdist extensions
+  unarchive:
+    src: "extensions/{{ item.name }}-{{ item.mw_branch }}-{{ item.commit }}.tar.gz"
+    dest: "{{ mediawiki_install_dir }}/extensions/"
+    creates: "{{ mediawiki_install_dir }}/extensions/{{ item.name }}/extension.json"
+    owner: www-data
+    group: www-data
+  loop: "{{ mediawiki_extdist_extensions }}"
+  loop_control:
+    label: "{{ item.name }}"
+  tags:
+    - mediawiki
+    - extensions
+
+# ── LocalSettings.php ─────────────────────────────────────────────────
+
+- name: deploy LocalSettings.php
+  template:
+    src: LocalSettings.php.j2
+    dest: "{{ mediawiki_install_dir }}/LocalSettings.php"
+    owner: www-data
+    group: www-data
+    mode: "0640"
+    backup: yes
+  tags:
+    - mediawiki
+    - localsettings
+
+- name: run mediawiki schema update
+  command: sudo -u www-data php "{{ mediawiki_install_dir }}/maintenance/update.php" --quick
+  changed_when: true
+  tags:
+    - mediawiki
+    - update
+    - never  # opt-in via --tags update — runs only when invoked explicitly
+
 # ── Nginx Configuration ──────────────────────────────────────────────
 
 - name: deploy nginx site config
@@ -113,25 +175,6 @@
   notify: restart nginx
   tags:
     - nginx
-
-# ── PHP-FPM Tuning ───────────────────────────────────────────────────
-
-- name: configure php-fpm pool
-  template:
-    src: php-fpm-mediawiki.conf.j2
-    dest: /etc/php/{{ mediawiki_php_version }}/fpm/pool.d/mediawiki.conf
-    mode: "0644"
-  notify: restart php-fpm
-  tags:
-    - php
-
-- name: remove default php-fpm pool
-  file:
-    path: /etc/php/{{ mediawiki_php_version }}/fpm/pool.d/www.conf
-    state: absent
-  notify: restart php-fpm
-  tags:
-    - php
 
 # ── Services ──────────────────────────────────────────────────────────
 

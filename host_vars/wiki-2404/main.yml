@@ -1,12 +1,30 @@
 ---
 
 # MediaWiki on Ubuntu 24.04 — replacement for lxc-wiki (Ubuntu 16.04)
-# Staging hostname: wiki.cttb
-# Production hostname: wiki.cttb (swap after verification)
+# Production hostname: wiki.cttb (DNS swap completed 2026-05-02)
 
 mediawiki_server_name: "wiki.cttb"
 mediawiki_server: "http://wiki.cttb"
+# Legacy alias kept on the vhost so old links keep working
+mediawiki_server_aliases:
+  - "wikitest.cttb"
+
+# Container is reachable from the Mac controller through srv-vm (LXC host).
+# An ed25519 pubkey was deployed to /home/ubuntu/.ssh/authorized_keys via
+# `lxc exec wiki-2404 -- bash -c "..."`. The ubuntu user has NOPASSWD sudo.
 ansible_host: 10.11.1.34
+ansible_user: ubuntu
+ansible_ssh_common_args: "-o ProxyJump=srv-vm -o StrictHostKeyChecking=accept-new -o ControlMaster=auto -o ControlPersist=60s"
+# ProxyJump path is slow on first hop — give privilege-escalation extra room.
+ansible_timeout: 30
+
+# Third-party extensions to install from extdist.wmflabs.org
+# AccessControl: restrict pages to LDAP groups (drbu-faculty, IT, etc.).
+# Pin commit when MW 1.43 stops getting updates; latest works while branch is current.
+mediawiki_extdist_extensions:
+  - name: AccessControl
+    mw_branch: REL1_43
+    commit: "68e2f45"
 
 # Secrets from vault
 mediawiki_secret_key: "{{ vault_mediawiki_secret_key }}"
