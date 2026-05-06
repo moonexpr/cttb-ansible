@@ -2266,3 +2266,22 @@ Added `roles/ldap-client/tasks/main.yml` task: deploy `/etc/sudoers.d/it-group` 
 
 While probing identity options, found `it.dvgs` (uid=6194, gid=2006/dvgs-students) and `it.dvbs` (uid=5179, gid=2005/dvbs-students) created 2025-12-10. Both have userPasswords set ({crypt}$6$ = SHA-512). Useful as shared role accounts where audit traceability isn't required. Not modified this session.
 
+### Sudhanix welcome window with LDAP-persisted dismissal
+
+End-to-end first-login welcome flow. The app shows once per user (across every CTTB lab machine) until the user ticks "Don't show this again", which writes a flag into LDAP that all hosts read on subsequent logins.
+
+**Server side (live + captured in `roles/ldap-schema-sudhanix`):** new schema entry under `cn=sudhanix,cn=schema,cn=config` defines `sudhanixWelcomeDismissed` (BOOLEAN, single-valued, OID `1.3.6.1.4.1.99999.1.1.1`) and the auxiliary objectClass `sudhanixUser` (OID `1.3.6.1.4.1.99999.1.2.1`) which MAY hold it. New ACL `{0}to attrs=sudhanixWelcomeDismissed by self write by * read` on `olcDatabase={1}mdb,cn=config` lets each user toggle their own flag and nobody else's. Both LDIFs are idempotent; the ansible role probes for presence before applying.
+
+**Client side (`roles/sudhanix-core/files/welcome/` + `tasks/sudhanix-welcome.yml`):**
+- `sudhanix-welcome` — Python+GTK3. Reads the user's cleartext password from a per-uid token file in `/run/sudhanix-tokens/`, calls `ldapsearch -y <token>` to read the flag (the password never lands on argv), and on dismissal calls `ldapmodify` to add `objectClass: sudhanixUser` if missing and set `sudhanixWelcomeDismissed: TRUE`. Fail-soft on every error path (logs to stderr, exits 0) so the welcome UX can never block a login.
+- `sudhanix-cache-token` — pam_exec hook with `expose_authtok=1`, writes the password into `/run/sudhanix-tokens/<uid>.tok` mode 0600 owned by the user.
+- `sudhanix-shred-token` — pam_exec session-close hook that `shred -uz` removes the file.
+- `/etc/tmpfiles.d/sudhanix-tokens.conf` — declares `/run/sudhanix-tokens` as `1733 root:root` so the dir exists at boot and only owners can read their own files.
+- `/etc/xdg/autostart/sudhanix-welcome.desktop` — XDG autostart for XFCE/LXQt/LXDE.
+- PAM hooks added directly to `/etc/pam.d/lightdm` (and `sddm`/`gdm-password` if those files exist on a host) AFTER `@include common-auth`, so SSH and sudo do not cache passwords. Hooks via `lineinfile`, idempotent.
+- Switched away from python3-ldap apt dep — apt.cttb's mirror does not carry the package, AND the deb822 sources file was broken anyway after Sudhanix branding (see next section). Subprocess + ldap-utils CLI is the right call here regardless.
+
+**Apt codename fix.** Sudhanix branding rewrites `/etc/os-release` with `VERSION_CODENAME=storehouse`. On every subsequent ansible run, fact-gathering reports `ansible_distribution_release=storehouse`, and `roles/common/templates/ubuntu.sources.j2` rendered a deb822 file pointing at `apt.cttb/mirrors/ubuntu storehouse,storehouse-updates,...` — none of which the mirror carries. `apt update` then 404'd on every suite. Fix: introduced an `apt_codename` variable in both `roles/common/vars/Ubuntu_24.yml` and `roles/common/vars/Sudhanix_26.yml`, both pinning to `noble`; the template now substitutes it instead of the rebrand-affected fact. Vanilla Ubuntu 24 hosts get `noble` from `Ubuntu_24.yml`, Sudhanix-branded hosts get `noble` from `Sudhanix_26.yml` (auto-loaded via the role's `include_vars` loop).
+
+**Verified on dvgs-testmachine:** files deployed at expected paths (`/usr/local/bin/sudhanix-welcome`, `/usr/local/sbin/sudhanix-{cache,shred}-token`); PAM hooks present in `/etc/pam.d/lightdm`; `/run/sudhanix-tokens` exists with mode 1733; `python3 -m py_compile` clean on the welcome app; `ldapsearch -y <token-file>` smoke test as john.chandara reading `sudhanixWelcomeDismissed` returns rc 0. The full GUI flow (window pops → checkbox → write back → second login is silent) needs a real graphical login to exercise; the plumbing is all in place.
+
