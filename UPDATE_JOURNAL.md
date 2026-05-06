@@ -2054,16 +2054,77 @@ Considered:
 | **C. Re-issue with modern CA, ship CA via `update-ca-certificates`** | **Chosen.** Proper fix; aligns with leaving 16.04 anyway |
 | D. Migrate ldap-srv to 24.04 first | Out of scope this session; tracked separately |
 
-### Plan outline
+### Original Path C plan ABANDONED — see live diagnosis below
 
-1. Touch ldap-srv (16.04, GnuTLS-backed slapd) carefully:
-   - Generate new CA: SHA256, RSA 4096, 10-year validity
-   - Generate new server cert: SHA256, RSA 2048, SANs for `ldap-srv.cttb`, `ldap.cttb`, `10.11.1.25`, 5-year validity
-   - Replace under olcTLS* via `cn=config` (ldapmodify), keep originals as `.bak` so revert is `mv` + slapd restart
-2. Ship new CA via `roles/ldap-client/`: drop into `/usr/local/share/ca-certificates/cttb-cacert.crt`, run `update-ca-certificates`, then STARTTLS validates against the system bundle.
-3. Validate on `dvgs-testmachine` first (`ldapsearch -ZZ`, `getent passwd <ldap_user>`) before touching any other client.
+The original plan (re-issue server cert with new CA, ship via `update-ca-certificates`) was based on the 2026-05-04 ad-hoc diagnosis. Live verification on 2026-05-05 invalidated nearly every premise. Nothing on lxc-ldap was modified.
 
-Rollback: `mv` cert files back, slapd restart on server; clients stay tolerant since old CA was never trusted anyway.
+### Live diagnosis on 2026-05-05 (what's actually true)
+
+Reached lxc-ldap via: ssh `kit.chong@rui-desktop2.cttb -i ~/.ssh/id_ed25519`, `source ~/tt` (live agent has `cttb-os` RSA key loaded), then `ssh ldap` lands as `administrator@ldap-srv`. Sudo password = ansible vault password `4m1t0f0`.
+
+| Earlier assumption | Live reality |
+|---|---|
+| CA private key on lxc-ldap | **Not present** at `/etc/ssl/private/cakey.pem`. Offline CA. Self-issued cert rotation impossible from this host. |
+| 2016 CA cert in `roles/ldap-client/files/cttb-cacert.pem` reflects production | **Stale.** Production CA = `CTTB Root CA` (CN=`CTTB Root CA`, RSA-4096, SHA256, valid Jun 21 2017 → **Jun 21 2047**), 7347 bytes. Already in repo at `roles/cttb-ca-client/files/CTTB-Root-CA.crt` (identical SHA1 fingerprint `BE:68:55:C5:E0:0C:0E:1E:9C:43:1E:C1:3E:FB:BF:85:7D:03:88:0D`). |
+| Server cert weak (RSA-1024 / SHA1) | **False.** Server cert = RSA-2048, SHA256, valid Jun 24 2019 → **Dec 31 9999**. Subject `CN=ldap-srv.cttb,OU=IT,O=City of Ten Thousand Buddhas,L=Ukiah,ST=CA,C=US`. Signed by CTTB Root CA. |
+| SAN missing dNSName breaks OpenSSL 3 hostname check | **Mostly false.** Server cert SAN contains only `email:cttb-it@drba.org`. Per RFC 2818/6125, if SAN has zero `dNSName` entries, CN-fallback applies. OpenSSL 3 `s_client -starttls ldap -connect 10.11.1.25:389 -CAfile <CA> -verify_hostname ldap-srv.cttb -verify_return_error </dev/null` returns **`Verification: OK`** and **`Verify return code: 0 (ok)`**. |
+| CA-trust gap on clients (root cause per 2026-05-04) | **False.** `cttb-ca-client` role exists in `plays/install-sudhanix-cslabs.yml` (after `ldap-client`). On dvgs-testmachine: `/usr/local/share/ca-certificates/CTTB-Root-CA.crt` is present, `grep -c "City of Ten Thousand Buddhas" /etc/ssl/certs/ca-certificates.crt` = 2 (CA in trust bundle). |
+| STARTTLS handshake failing (`do_start_tls failed`) | **NOT FAILING right now.** From dvgs-testmachine: `ldapsearch -x -ZZ -H ldap://ldap-srv.cttb -b dc=cttb -s base` returns rc 0 with valid LDIF. `openssl s_client -starttls ldap -connect 10.11.1.25:389 -verify_return_error -verify_hostname ldap-srv.cttb </dev/null` returns OK. The 2026-05-04 `do_start_tls failed` from nscd may have been before `cttb-ca-client` ran on this host, or from a different code path — `journalctl -u nscd --since "1 hour ago"` shows **no recent entries**. |
+
+### Real problem (working theory, not yet pinned)
+
+`getent passwd | wc -l` on dvgs-testmachine = **439** (still local only). `getent passwd | awk -F: '$3 >= 10000'` = **1 entry** (likely `nobody`/65534, not LDAP). NSS is **not pulling from LDAP**, but **not because of TLS**. STARTTLS works.
+
+Likely culprits, in order:
+1. **`/etc/nsswitch.conf` not actually configured for LDAP** on this host (the `lineinfile` task in `roles/ldap-client/tasks/main.yml` may not have matched the default Ubuntu 24.04 nsswitch lines).
+2. **libnss-ldap (legacy PADL, 2009-vintage) deprecated/broken on 24.04.** Package `libnss-ldap 265-5ubuntu3` is installed but is in-process and may not work with current glibc/NSS. Maintained replacement: `libnss-ldapd` + `nslcd`.
+3. **`/etc/ldap.conf` (or `/etc/libnss-ldap.conf`) missing `base`, `uri`, or bind config.**
+4. **nscd not invalidating its empty cache** for `passwd` after install (`nscd -i passwd` clears).
+
+### Repo changes this session (kept; consistent with reality)
+
+- `roles/ldap-client/files/cttb-cacert.crt` — pulled `CTTB Root CA` cert from server. Identical to `roles/cttb-ca-client/files/CTTB-Root-CA.crt` (verified by SHA1 fp). Redundant but harmless.
+- `roles/ldap-client/tasks/main.yml` — added `install CTTB private CA into local trust source` task (copy + `update ca certificates` handler). **Redundant** with `cttb-ca-client` role; safe to revert in cleanup.
+- `roles/ldap-client/handlers/main.yml` — created with `update ca certificates` handler.
+- Deleted `roles/ldap-client/files/cttb-cacert.pem` (1480 bytes, expired 2017, never deployed).
+
+### Capability acquired this session (use next session)
+
+```bash
+# Reach lxc-ldap as root:
+ssh -i ~/.ssh/id_ed25519 kit.chong@rui-desktop2.cttb
+source ~/tt              # attaches to live agent (PID 110862, socket /tmp/ssh-U7NQ8zGQ2Mfb/agent.110861)
+ssh ldap                 # lands as administrator@ldap-srv
+echo 4m1t0f0 | sudo -S -p '' <command>   # sudo password
+```
+
+The cttb-os key passphrase remains unknown; don't need it because kit.chong's running ssh-agent on rui-desktop2 has the key loaded.
+
+### Resume next session — concrete next steps
+
+Goal recap: make `getent passwd | wc -l` on dvgs-testmachine ≫ 439 (LDAP users resolving via NSS).
+
+```bash
+# from /Users/jc/Garden/external/cttb-ansible:
+ANSIBLE_VAULT_PASSWORD_FILE=<(security find-generic-password -s CTTB_VAULT_PASS -w) \
+    ansible -i inventory/hosts_os_upgrade.ini dvgs-testmachine.cttb -b -m shell -a '
+echo "--- nsswitch ---";  cat /etc/nsswitch.conf | grep -E "^passwd|^group|^shadow"
+echo "--- ldap.conf ---"; cat /etc/ldap.conf 2>/dev/null | grep -vE "^#|^$"
+echo "--- libnss-ldap.conf ---"; ls -la /etc/libnss-ldap.conf 2>&1; cat /etc/libnss-ldap.conf 2>/dev/null | grep -vE "^#|^$"
+echo "--- direct uid lookup test ---"; getent -s ldap passwd | wc -l
+echo "--- nscd flush + retry ---"; nscd -i passwd 2>&1; sleep 1; getent passwd | wc -l
+'
+```
+
+Decision tree based on output:
+- `nsswitch.conf` lacks `ldap` on passwd/group/shadow → fix the `lineinfile` regexes in `roles/ldap-client/tasks/main.yml` to match 24.04's defaults.
+- `ldap.conf` missing `base`/`uri` → debconf-driven write didn't take; fix the `debconf` tasks or template the file directly.
+- `libnss-ldap` is the structural problem on 24.04 → migrate to `libnss-ldapd` + `nslcd` (separate daemon, modern, supported). Add new tasks to `roles/ldap-client/`, gate by Ubuntu version.
+
+Validators (no specific user needed):
+- V1: `getent passwd | awk -F: '$3 >= 10000' | wc -l` ≥ 1 (real one; today returns 1 for `nobody` only).
+- V2: `getent -s ldap passwd | head -1` returns a non-empty entry (specifically queries the LDAP NSS source).
+- V3: `ldapsearch -x -ZZ -H ldap://ldap-srv.cttb -b dc=cttb -s base` returns rc 0 (already passing today).
 
 ---
 
@@ -2141,3 +2202,58 @@ End-to-end branding chain verified: PXE → autoinstall → GRUB ('Sudhanix') �
 ### Side fix while at it: `/etc/resolver/cttb` on the Mac
 
 Stale macOS resolver was pointing at `10.11.1.5` (unreachable). Updated to `10.11.1.19` (dnsmasq.cttb). Now `dvgs-testmachine.cttb` and other `.cttb` names resolve from the Mac without needing IP overrides. The redundant `ansible_host=10.11.30.60` added earlier in the upgrade inventory could be reverted but is being kept as belt-and-suspenders.
+
+---
+
+## 2026-05-05 (continued) — LDAP Auth: Already Working, Reframe + Cleanup
+
+### Outcome
+
+**Nothing was broken.** NSS+LDAP auth on `dvgs-testmachine` is functioning end-to-end. Prior session's "0/439 LDAP users resolving" finding was an artefact of a wrong validator threshold (`uid >= 10000`). Real LDAP `uidNumber`s are 2001–9999, all of them already populated through `getent`.
+
+### Live evidence
+
+- `getent passwd | wc -l` = 439 = **40 local + 399 LDAP**. The 399 figure is an exact match against `ldapsearch -x -ZZ -b dc=cttb '(objectClass=posixAccount)' dn | grep -c '^dn:'` on `ldap-srv.cttb` → 399.
+- 399 entries have `/nfs/home/<name>` paths (LDAP-sourced telltale).
+- `getent passwd frank.liu` → `frank.liu:*:2001:2001:Frank Liu:/nfs/home/frank.liu:/bin/bash` ✓
+- `getent passwd 2001` → same record (lookup by uidNumber works).
+- `su -c id frank.liu` → `uid=2001(frank.liu) gid=2001(it) groups=2001(it)` (NSS resolves primary group "it" from LDAP).
+- `ldapsearch -x -ZZ -H ldap://ldap-srv.cttb` → rc 0 (STARTTLS clean).
+- Real SSH attempt as `john.chandara` from `cosmicbook` (10.11.24.24) — wrong password, but auth.log shows full LDAP bind round-trip:
+
+  ```
+  sshd[11085]: pam_unix(sshd:auth): authentication failure ... user=john.chandara
+  sshd[11085]: pam_ldap: error trying to bind as user "uid=john.chandara,ou=People,dc=cttb" (Invalid credentials)
+  sshd[11085]: Failed password for john.chandara from 10.11.24.24 port 56167 ssh2
+  ```
+
+  LDAP error 49 ("Invalid credentials") is the **server** rejecting the password — meaning pam_ldap loaded, resolved DN, opened connection, completed STARTTLS, sent bind, and got a clean wrong-password rejection. Auth path is green.
+
+### Validators (revised — V1 from prior session was wrong threshold)
+
+| ID | Check | Result |
+|----|-------|--------|
+| VR1 | `getent passwd \| grep -c "/nfs/home/"` ≥ 50 | **399** ✓ |
+| VR2 | `getent passwd frank.liu` non-empty with uid 2001 | ✓ |
+| VR3 | `id frank.liu` returns LDAP `it` group | ✓ |
+| VR4 | `ldapsearch -x -ZZ -H ldap://ldap-srv.cttb -b dc=cttb -s base` rc 0 | ✓ |
+| VR5 | sshd journal logs `pam_ldap: ... bind ... Invalid credentials` for failed login (proves bind round-trip) | ✓ |
+
+### Repo cleanup landed this session
+
+The 2026-05-05 (earlier) ad-hoc patch to `roles/ldap-client` was based on the wrong premise. Reverted:
+
+- `plays/install-sudhanix-cslabs.yml` — swapped `cttb-ca-client` to run **before** `ldap-client`. This makes the trust anchor present at the moment ldap-client configures `tls_cacertfile`, removing the need for ldap-client to ship its own copy of the CA. Order is now: `sudhanix-core, time-server, cups-client, cttb-ca-client, ldap-client, nfs-home`.
+- `roles/ldap-client/tasks/main.yml` — dropped the `install CTTB private CA into local trust source` task (and its `ldap_c_tls`/`cttb_ca` tags).
+- `roles/ldap-client/handlers/main.yml` — deleted (the `update ca certificates` handler lived only to support the dropped task; cttb-ca-client owns CA install + refresh).
+- `roles/ldap-client/files/cttb-cacert.crt` — deleted (was identical SHA1 to `roles/cttb-ca-client/files/CTTB-Root-CA.crt`).
+- `roles/ldap-client/files/cttb-cacert.pem` — deleted (was the **2016 expired** stub from the original repo state, never deployed; no longer reachable from any task).
+
+`roles/ldap-client/` is now back to the role responsibility it advertises: configure libnss-ldap/pam_ldap, write `/etc/ldap.conf`, point `tls_cacertfile` at the system bundle. Trust anchor is `cttb-ca-client`'s job.
+
+### Open follow-ups
+
+- **NFS export ACL gap** — `fileserver:/nethomes` exports to `10.11.16.0/24,10.11.10.0/24,10.11.9.0/24`; `10.11.30.0/24` (dvgs lab) is **not** in the ACL, so home-dir autofs mount denies on dvgs hosts. LDAP auth still succeeds (pam_unix → pam_ldap chain doesn't require home), but logged-in users land at `/`. Server-side fix: add `10.11.30.0/24` to `/etc/exports` on `fileserver` (10.11.1.18) + `exportfs -ra`. Out of scope this session.
+- **common role include bug** — `roles/common/tasks/main.yml:16` fails during `--check` with `"No include file was specified to the include"`. Pre-existing, blocks playbook idempotency runs. Investigate `import_tasks: setup/<…>.yml` path resolution on Sudhanix 26.
+- **john.chandara forgot LDAP password** — operator concern, not system. `ldappasswd -x -ZZ -H ldap://ldap-srv.cttb -D 'cn=admin,dc=cttb' -W -S 'uid=john.chandara,ou=People,dc=cttb'` to reset.
+

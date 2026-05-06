@@ -20,6 +20,6 @@
     - sudhanix-core
     - time-server
     - cups-client
+    - cttb-ca-client
     - ldap-client
     - nfs-home
-    - cttb-ca-client
