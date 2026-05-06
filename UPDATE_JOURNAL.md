@@ -2476,3 +2476,31 @@ Fixed in `MediaWiki:Common.css` by re-stating the table border, background, and 
 Also tightened `MediaWiki:Loginreqpagetext` — dropped the "Members of the Administration would like to ask that you do not share this media" sentence since it doesn't make sense on a login prompt; it stays on `Badaccess-groups` where the visitor *has* logged in and is being denied membership-wise.
 
 Verified anonymously: `GET /wiki/IT:Ansible` body now contains both the unscoped border declaration (`border-color:#f28500` for ambox-content) and the trimmed copy.
+
+### Wiki: lock-prefix on restricted links + Special:Search 500 fix + MW 1.43.8
+
+Two adjacent issues, both surfaced after the AccessControl→Lockdown migration:
+
+**1. Lock-prefix on restricted links.** Added a `HtmlPageLinkRendererBegin` hook to the role's `LocalSettings.php.j2` that walks the link target's namespace, looks up `$wgNamespacePermissionLockdown[$ns]['read']`, intersects with the current user's effective groups, and — if the user is not in any allowed group — prepends `🔒 ` to the link text and stamps the anchor with `class="cttb-restricted-link"` plus a `title="Restricted: requires membership in <groups>"` tooltip. Handles all three text shapes the hook can receive (plain string, `null` fallback, `HtmlArmor`). `MediaWiki:Common.css` got matching muted-grey styling so locked links read as visually subdued. Verified end-to-end: `[[IT:Ansible]]` from a public page renders as `🔒 IT:Ansible` for anon, normal for IT-group members.
+
+**2. `Special:Search` HTTP 500 (`PreconditionException`).** Every search query died on `RevisionStore::ensureRevisionRowMatchesPage` → `Title::getId()` → `assertProperPage()` ("This Title instance does not represent a proper page, but merely a link target."). Root cause in `includes/search/SqlSearchResultSet.php` (line ~60):
+
+```php
+$result = new SqlSearchResult(
+    Title::makeTitle( $row->page_namespace, $row->page_title ),
+    $terms
+);
+```
+
+`Title::makeTitle()` returns a Title flagged as link-target-only; the new strict-mode `assertProperPage` check rejects every `getId()` call on it. Fixed via a one-line role-managed `replace` task that swaps `Title::makeTitle(...)` for `Title::newFromRow($row)`, which uses the page-table row to construct a proper page-bearing Title. Tagged `search-patch` so it can be re-applied after every MW upgrade. Verified: search for `splash` and `ansible` both return 200 with results lists.
+
+**MW upgrade 1.43.1 → 1.43.8.** Initially attempted as a fix for the search bug (the precondition check was added in 1.43 and we hoped a patch fix had landed). It hadn't — the `makeTitle`-vs-`newFromRow` issue is still in 1.43.8 — but the upgrade was independently worth it (8 patch releases of bug fixes). Wrote `plays/wiki-upgrade-patch.yml`: stages a locally-downloaded tarball onto the container, extracts over the install with `--exclude=LocalSettings.php --exclude=images --exclude=cache`, re-extracts our extdist extensions on top (Lockdown / TemplateStyles, neither of which are in the core tarball), runs `update.php --quick`, and prints the new `MW_VERSION` for confirmation. Run with:
+
+```
+ansible-playbook plays/wiki-upgrade-patch.yml -l wiki-2404 -i inventory/hosts \
+  --vault-password-file /tmp/vault-pw.sh \
+  -e mw_upgrade_local_tarball=/tmp/mw_upgrade/mediawiki-1.43.8.tar.gz \
+  -e mw_upgrade_target_version=1.43.8
+```
+
+Verified post-upgrade: Main_Page loads, Lockdown still enforces (`/wiki/IT:Ansible` → "Login required"), the lock-prefix hook still runs, the search patch survived (we re-applied via `--tags search-patch`).

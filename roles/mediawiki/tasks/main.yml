@@ -140,6 +140,22 @@
     - mediawiki
     - extensions
 
+# MW 1.43 SqlSearchResultSet builds Title objects via Title::makeTitle( ns, title ),
+# which produces a link-target-only Title. RevisionStore::ensureRevisionRowMatchesPage
+# then calls Title::getId(), which assertProperPage() rejects with
+#   "PreconditionException: This Title instance does not represent a proper page,
+#    but merely a link target."
+# Result: every Special:Search query returns HTTP 500. Title::newFromRow($row)
+# yields a proper page-bearing Title and the assertion passes.
+- name: 'patch SqlSearchResultSet: use Title::newFromRow so getId() asserts cleanly'
+  replace:
+    path: "{{ mediawiki_install_dir }}/includes/search/SqlSearchResultSet.php"
+    regexp: 'Title::makeTitle\(\s*\$row->page_namespace,\s*\$row->page_title\s*\)'
+    replace: 'Title::newFromRow( $row )'
+  tags:
+    - mediawiki
+    - search-patch
+
 # ── LocalSettings.php ─────────────────────────────────────────────────
 
 - name: deploy LocalSettings.php

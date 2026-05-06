@@ -124,5 +124,42 @@ $wgHooks["BeforePageDisplay"][] = function ( $out ) {
     $out->addStyle( $out->getConfig()->get( 'ScriptPath' ) . '/resources/assets/cttb-dark.css' );
 };
 
+{% if mediawiki_lockdown %}
+## Decorate links to read-restricted pages with a lock prefix.
+## Driven by $wgNamespacePermissionLockdown; only the current user's
+## effective groups are checked, so the lock disappears once they're
+## granted access. Title::getNamespace() never triggers a DB lookup, so
+## this is cheap on link-heavy pages.
+$wgHooks["HtmlPageLinkRendererBegin"][] = function ( $linkRenderer, $target, &$text, &$customAttribs, &$query, &$ret ) {
+    global $wgNamespacePermissionLockdown;
+    $ns = $target->getNamespace();
+    if ( !isset( $wgNamespacePermissionLockdown[$ns]["read"] ) ) {
+        return true;
+    }
+    $allowed = $wgNamespacePermissionLockdown[$ns]["read"];
+    $user = MediaWiki\Context\RequestContext::getMain()->getUser();
+    $userGroups = MediaWiki\MediaWikiServices::getInstance()
+        ->getUserGroupManager()
+        ->getUserEffectiveGroups( $user );
+    if ( array_intersect( $userGroups, $allowed ) ) {
+        return true;
+    }
+    $customAttribs["class"] = trim( ( $customAttribs["class"] ?? "" ) . " cttb-restricted-link" );
+    $customAttribs["title"] = ( isset( $customAttribs["title"] ) ? $customAttribs["title"] . " — " : "" )
+        . "Restricted: requires membership in " . implode( ", ", $allowed );
+    $lock = "\u{1F512} ";
+    if ( $text === null ) {
+        // MW will fall back to the title's prefixedText; do that ourselves so
+        // we can prepend the lock.
+        $text = $lock . $target->getPrefixedText();
+    } elseif ( is_string( $text ) ) {
+        $text = $lock . $text;
+    } elseif ( class_exists( "HtmlArmor" ) && $text instanceof HtmlArmor ) {
+        $text = new HtmlArmor( $lock . HtmlArmor::getHtml( $text ) );
+    }
+    return true;
+};
+
+{% endif %}
 ## Sitenotice — bump $wgSiteNoticeId to force re-display after dismiss
 $wgSiteNoticeId = {{ mediawiki_site_notice_id }};
