@@ -9,6 +9,8 @@
   vars:
     __common_vars_file: "{{ role_path }}/vars/{{ __common_vars_file_item }}"
   when: __common_vars_file is file
+  tags:
+    - always
 
 - name: Run shared setup tasks
   ansible.builtin.import_tasks: setup/default.yml
