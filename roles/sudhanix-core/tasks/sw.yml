@@ -88,9 +88,14 @@
     tags:
       - vscode
 
+  # Zoom releases monthly; pull directly from upstream rather than
+  # caching a (rapidly-staling) copy on storehouse. The lab proxy
+  # (e2guardian → squid on srv-gw, http_proxy is set in global_proxy)
+  # carries this through. Override zoom_deb_url to point at an
+  # internal mirror if WAN egress is unavailable.
   - name: upgrade Zoom client
     apt:
-      deb: "{{ansible_assets_url}}/zoom_amd64.deb"
+      deb: "{{ zoom_deb_url | default('https://zoom.us/client/latest/zoom_amd64.deb') }}"
       only_upgrade: true
     register: zoom_upgraded
     tags:
@@ -98,7 +103,7 @@
 
   - name: install Zoom client for the 1st time
     apt:
-      deb: "{{ansible_assets_url}}/zoom_amd64.deb"
+      deb: "{{ zoom_deb_url | default('https://zoom.us/client/latest/zoom_amd64.deb') }}"
     when: zoom_upgraded is not changed
     tags:
       - zoom
