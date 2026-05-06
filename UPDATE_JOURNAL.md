@@ -2443,3 +2443,26 @@ Each non-talk namespace gets `read/edit/create/move = [<group>]`; talk gets `rea
 **Verified.** Anonymous `GET /wiki/IT:Ansible` returns HTTP 200 with `<title>Login required - CTTB Wiki</title>`; `Special:AllPages?namespace=3000` shows "(IT namespace)" header. Database state: `SELECT COUNT(*) FROM page WHERE page_namespace=3000` → 54 (53 migrated + 1 seed `IT:Welcome`).
 
 **Mbox infrastructure imported earlier in the session is unaffected** — Module:Message_box, the 9 meta-templates (Ambox/Cmbox/…/Dmbox), 24 supporting Lua modules, 6 TemplateStyles CSS pages, and 10 Commons SVG icons all still work; they just no longer have AccessControl's notice as a direct caller. `MediaWiki:Accesscontrol-info`, `CTTB Wiki:Deny user`, `CTTB Wiki:Deny anonymous`, `MediaWiki:Group-IT`, and `[[IT]]` (the legacy access-list page) are now orphaned artifacts and can be deleted in a follow-up cleanup.
+
+### Wiki access control: deny-message migration + orphan cleanup
+
+Follow-up to the AccessControl→Lockdown switch. With AccessControl gone, the friendly Mbox-styled deny notices (`MediaWiki:Accesscontrol-info`, `CTTB Wiki:Deny user`, `CTTB Wiki:Deny anonymous`) were dead weight — Lockdown bypasses them entirely and routes through MediaWiki's standard permission-error pipeline. Carried the same Audience-controlled-content notice into the three messages that pipeline actually renders:
+
+| Message | Triggered by | What it shows |
+|---|---|---|
+| `MediaWiki:Loginreqpagetext` | Anonymous visitor — MW's `loginrequired` flow | Friendly Mbox: "Audience controlled content … log in with your campus account" |
+| `MediaWiki:Badaccess-groups` | Logged-in user lacking the required group(s) — Lockdown returns this from `userCan` (Hooks.php:154) with `$1` = comma-listed allowed groups, `$2` = group count | Same Mbox + the explicit allowed-group list |
+| `MediaWiki:Badaccess-group0` | Logged-in user, namespace explicitly locked to no groups (Hooks.php:135) | Same Mbox, "contact IT — likely misconfigured" wording |
+
+All three use `{{Ambox|type=content|text=...}}` so they pick up the same border + warning-triangle icon used by the rest of the wiki's notice system. Verified end-to-end: anonymous `GET /wiki/IT:Ansible` now returns HTTP 200 with `<title>Login required - CTTB Wiki</title>` and a body containing one `ombox` table, one `Ambox_important.svg` reference, and the "Audience controlled" copy.
+
+**Deleted as orphans** (via API `action=delete`):
+- `MediaWiki:Accesscontrol-info` — old in-page notice (parser-tag handler is gone)
+- `MediaWiki:Accesscontrol-info-box` — older variant of same
+- `CTTB Wiki:Deny user` — AccessControl's full-deny page
+- `CTTB Wiki:Deny anonymous` — AccessControl's anon-deny page
+- `MediaWiki:Group-IT` — AccessControl group display message
+- `IT` (NS_MAIN) — the AccessControl access list created during debugging
+- `Test:AccessControl` — the smoke-test page from earlier session
+
+Drafts kept in `.claude/wiki-pages/` for the three new messages so future edits go through `wikitools/wiki-edit.sh` rather than the wiki UI.
