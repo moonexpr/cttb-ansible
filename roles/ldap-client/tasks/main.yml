@@ -49,10 +49,16 @@
       vtype: boolean
 
   - name: debconf libpam-runtime/profiles multiselect
+    # mkhomedir copies /etc/skel into $HOME on first login for users whose
+    # home directory does not yet exist. Required for LDAP users on lab
+    # machines so Sudhanix dotfiles (Plank dock launchers, fcitx config,
+    # autostart entries) land in the user's home. Existing NFS homes are
+    # untouched — pam_mkhomedir is a no-op when $HOME already exists; those
+    # users are handled by sudhanix-firstlogin (sudhanix-core role).
     debconf:
       name: libpam-runtime
       question: libpam-runtime/profiles
-      value: unix, ldap, systemd
+      value: unix, ldap, systemd, mkhomedir
       vtype: multiselect
 
   - name: install ldap/nss/pam pkgs

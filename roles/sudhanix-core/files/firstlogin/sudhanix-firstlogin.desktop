@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Sudhanix First-Login Bootstrap
+Comment=Quarantines stale 20.04 configs and seeds Sudhanix defaults on first login
+Exec=/usr/local/sbin/sudhanix-firstlogin
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Phase=Initialization
+OnlyShowIn=XFCE;
