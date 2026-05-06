@@ -1,0 +1,78 @@
+---
+# Patch-level MediaWiki upgrade (1.43.x → 1.43.y).
+# Extracts a fresh MW tarball over the existing install. Skips images/,
+# LocalSettings.php, custom extensions/, and the cache/ dir so the wiki's
+# state and our Ansible-managed config are preserved. Runs maintenance/
+# update.php at the end.
+#
+# Usage:
+#   ansible-playbook plays/wiki-upgrade-patch.yml -l wiki-2404 -i inventory/hosts \
+#     --vault-password-file /tmp/vault-pw.sh \
+#     -e mw_upgrade_local_tarball=/tmp/mw_upgrade/mediawiki-1.43.8.tar.gz \
+#     -e mw_upgrade_target_version=1.43.8
+
+- hosts: wiki-2404
+  become: yes
+  vars:
+    mediawiki_install_dir: /var/www/html/w
+    mediawiki_data_dir: /var/lib/mediawiki
+    mw_upgrade_local_tarball: ""  # absolute path on the controller
+    mw_upgrade_target_version: ""
+
+  tasks:
+    - name: assert tarball + version supplied
+      assert:
+        that:
+          - mw_upgrade_local_tarball | length > 0
+          - mw_upgrade_target_version | length > 0
+        fail_msg: "Pass -e mw_upgrade_local_tarball=... -e mw_upgrade_target_version=..."
+
+    - name: stage tarball on the container
+      copy:
+        src: "{{ mw_upgrade_local_tarball }}"
+        dest: "{{ mediawiki_data_dir }}/mediawiki-{{ mw_upgrade_target_version }}.tar.gz"
+        mode: "0644"
+
+    - name: extract over existing install (skip user data)
+      command:
+        argv:
+          - tar
+          - -xzf
+          - "{{ mediawiki_data_dir }}/mediawiki-{{ mw_upgrade_target_version }}.tar.gz"
+          - -C
+          - "/var/www/html/"
+          - --transform
+          - "s/^mediawiki-{{ mw_upgrade_target_version }}/w/"
+          - --exclude=mediawiki-{{ mw_upgrade_target_version }}/LocalSettings.php
+          - --exclude=mediawiki-{{ mw_upgrade_target_version }}/images
+          - --exclude=mediawiki-{{ mw_upgrade_target_version }}/cache
+
+    - name: re-fix ownership (tar restores tar-stored uids that may not exist)
+      file:
+        path: "{{ mediawiki_install_dir }}"
+        owner: www-data
+        group: www-data
+        recurse: yes
+
+    - name: re-extract extdist extensions on top (Lockdown, TemplateStyles, etc.)
+      unarchive:
+        src: "{{ playbook_dir }}/../roles/mediawiki/files/extensions/{{ item.name }}-{{ item.mw_branch }}-{{ item.commit }}.tar.gz"
+        dest: "{{ mediawiki_install_dir }}/extensions/"
+        owner: www-data
+        group: www-data
+      loop: "{{ mediawiki_extdist_extensions }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: run mediawiki schema update
+      command: sudo -u www-data php "{{ mediawiki_install_dir }}/maintenance/update.php" --quick
+      changed_when: true
+
+    - name: report installed version
+      command: grep -m1 MW_VERSION "{{ mediawiki_install_dir }}/includes/Defines.php"
+      register: ver
+      changed_when: false
+
+    - name: show new version
+      debug:
+        msg: "{{ ver.stdout }}"
