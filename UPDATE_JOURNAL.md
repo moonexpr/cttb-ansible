@@ -2285,3 +2285,127 @@ End-to-end first-login welcome flow. The app shows once per user (across every C
 
 **Verified on dvgs-testmachine:** files deployed at expected paths (`/usr/local/bin/sudhanix-welcome`, `/usr/local/sbin/sudhanix-{cache,shred}-token`); PAM hooks present in `/etc/pam.d/lightdm`; `/run/sudhanix-tokens` exists with mode 1733; `python3 -m py_compile` clean on the welcome app; `ldapsearch -y <token-file>` smoke test as john.chandara reading `sudhanixWelcomeDismissed` returns rc 0. The full GUI flow (window pops → checkbox → write back → second login is silent) needs a real graphical login to exercise; the plumbing is all in place.
 
+
+## 2026-05-06 — LDAP login: Sudhanix overrides not applied + first-login bootstrap
+
+**Symptom (reported by JC after first LDAP login as `john.chandara` on dvgs-testmachine):** desktop comes up vanilla XFCE — no top panel customization, no Plank dock, theme not WhiteSur-Dark, wallpaper points at `/usr/share/wallpaper` with no rotation. NFS home export works (re-login on the same machine returns the same `$HOME`). First login showed a black screen briefly (lightdm died and respawned); second login painted normally.
+
+### Side observations from the same login attempt
+
+1. **lightdm-gtk-greeter segfault in `libcairo.so.2.11800.0`** — `kernel: lightdm-gtk-gre[10669]: segfault at 10 ip 00007bcc8323eb14 sp 00007ffcea7cf8a8 error 4 in libcairo.so.2.11800.0[7bcc831d5000+f1000]`. PAM session for `lightdm` is then closed, `session-c3.scope` deactivated. Not blocking — lightdm respawns.
+2. **PAM noise** that's normal-but-loud:
+   - `pam_succeed_if(lightdm:auth): requirement "user ingroup nopasswdlogin" not met by user "john.chandara"` — expected; only the `nopasswdlogin` group bypasses prompts.
+   - `pam_unix(lightdm:auth): authentication failure ... user=john.chandara` — expected; LDAP user not in `/etc/passwd`, falls through to `pam_ldap`.
+   - `pam_ldap: error trying to bind as user "uid=john.chandara,ou=People,dc=cttb" (Invalid credentials)` — typo on first attempt (or `Caps Lock` from the Logitech Mac-layout keyboard from the 04-16 session).
+   - `Error getting user list from org.freedesktop.Accounts: GDBus.Error:org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.Accounts was not provided by any .service` — `accountsservice` not installed (or masked) on Sudhanix-26 lab images. Means LightDM has no per-user session memory; the system-wide `user-session=xfce` in `lightdm.conf` is what's binding the session.
+3. **`nfs4: Deprecated parameter 'intr'`** spammed in dmesg — Ubuntu 24.04 kernel dropped `intr`; auto.master / auto.nfs.j2 still pass it.
+4. **Zen Browser → desktop drag-and-drop fails** with "The specified location is not supported" (screenshot 5). Zen is a Flatpak (`io.github.zen_browser.zen`); its sandbox has no write access to `xdg-desktop`, so xfdesktop's drop target rejects the operation.
+
+### Root-cause analysis of the missing Sudhanix overrides
+
+System defaults are deployed correctly by `roles/sudhanix-core/tasks/lookandfeel.yml` + `sudhanix-ux.yml` + `wallpaper.yml`:
+- `/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/{xsettings,xfwm4,xfce4-panel,xfce4-desktop,xfce4-keyboard-shortcuts,thunar,xfce4-appfinder}.xml`
+- `/etc/skel/.config/{plank/dock1/launchers/*.dockitem, lxqt/globalkeyshortcuts.conf, autostart/LXTerminal.desktop, fcitx/*, Kingsoft/Office.conf}`
+- `/etc/xdg/autostart/{devilspie2,clean-chrome-locks,sudhanix-welcome}.desktop`
+- LightDM seat config forces `user-session=xfce` so `~/.dmrc` absence doesn't matter.
+
+Two failures combine to break the first-login experience for LDAP users:
+
+1. **`pam_mkhomedir` is not enabled** on lab machines. `roles/ldap-client/tasks/main.yml` sets `libpam-runtime/profiles = "unix, ldap, systemd"` and runs `pam-auth-update`, but `mkhomedir` is **not in the multiselect**, so `/etc/pam.d/common-session` does not include `pam_mkhomedir.so`. Result: `/etc/skel` is **never** copied into LDAP user homes. Plank launchers, fcitx config, autostart `LXTerminal.desktop`, etc. simply do not exist in `~/.config/`.
+2. **Stale 20.04 LXQt configs persist on the NFS home.** john.chandara's home was created on the NFS server during a previous Ubuntu 20.04 / Lubuntu (LXQt) deployment. That home contains `~/.config/xfce4/xfconf/xfce-perchannel-xml/*.xml` (and possibly `~/.config/lxqt/`, `~/.config/openbox/`, `~/.gtkrc-2.0`, `~/.dmrc`) from the legacy session. XFCE 4.18 reads user-level perchannel-xml *in preference to* `/etc/xdg`, so our system defaults are silently shadowed.
+
+This explains every concrete symptom: no Plank dock (no skel-copied launchers + no system dconf for the launcher order), wrong theme (stale `~/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml` overrides `WhiteSur` / `WhiteSur-dark`), wrong wallpaper (stale user-level `xfce4-desktop.xml` points at `/usr/share/wallpaper` from the old install), no rotation (no `backdrop-cycle-enable=true` in the user override).
+
+### Fix design — three parts
+
+**A. Enable `pam_mkhomedir`** in `roles/ldap-client/tasks/main.yml`: change the `libpam-runtime/profiles` debconf value from `unix, ldap, systemd` to `unix, ldap, systemd, mkhomedir`, then re-run `pam-auth-update` non-interactively. After this, every fresh LDAP user gets `/etc/skel` copied into `$HOME` on first login. (Existing users with pre-populated NFS homes still need part B — mkhomedir does nothing if the home dir exists.)
+
+**B. First-login bootstrap script (`/usr/local/sbin/sudhanix-firstlogin`)** wired in via a new role file `roles/sudhanix-core/tasks/sudhanix-firstlogin.yml` and an XDG autostart entry. The script:
+   - Checks marker `~/.config/sudhanix/v26-bootstrapped`. If present → exit 0 silently.
+   - Quarantines pre-Sudhanix-26 user configs by moving any existing `~/.config/xfce4`, `~/.config/lxqt`, `~/.config/openbox`, `~/.gtkrc-2.0` aside to `~/.config/.pre-sudhanix-26.<timestamp>/`. Preserves user data (Documents, Desktop, Downloads, browser profiles) untouched.
+   - Copies plank launchers from `/etc/skel/.config/plank/` if absent in the user home.
+   - Sets `~/.dmrc` to `[Desktop]\nSession=xfce` so even if a host re-introduces accountsservice the session preference is correct.
+   - Writes the marker (`<version>\n<timestamp>\n<hostname>\n`) and exits 0.
+   - Fail-soft: every step wrapped, failures logged to `~/.cache/sudhanix-firstlogin.log`, exit 0 always so a buggy bootstrap can never block login.
+
+   The autostart entry (`/etc/xdg/autostart/sudhanix-firstlogin.desktop`) runs *before* `sudhanix-welcome.desktop` (lower-cased name sorts first; explicit `X-GNOME-Autostart-Phase=Initialization` for systems that honor it). After it runs once, xfsettingsd picks up the now-cleared user dotfiles + system defaults from `/etc/xdg`.
+
+**C. System dconf for Plank** at `/etc/dconf/db/site.d/00-plank-dock1` declaring the canonical launcher list, plus `/etc/dconf/profile/user` with `user-db:user / system-db:site`, then `dconf update`. Plank reads the launcher order from dconf, not from the `.dockitem` files alone — without this layer the launchers exist on disk but the dock comes up empty.
+
+### Side fixes bundled into this entry
+
+- **NFS `intr` deprecation:** drop `intr` from `roles/nfs-home/files/auto.master` and `templates/auto.nfs.j2`. The kernel ignores it on 24.04 and the deprecation warning floods dmesg / makes real NFS errors hard to spot.
+- **Zen Browser drag-to-desktop:** add `flatpak override --system --filesystem=xdg-desktop --filesystem=xdg-download io.github.zen_browser.zen` task in `roles/sudhanix-core/tasks/sw-browser.yml` after the `flatpak install` step. `xdg-download` included so users can drag-save into `~/Downloads` too.
+- **Greeter cairo segfault:** captured for follow-up. Hypothesis is that `lightdm-gtk-greeter.css`'s `box-shadow: inset 0 1px alpha(white, 0.08)` + alpha-blended backgrounds trip a known cairo 1.18 regression on cold-cache greeter start. Mitigation deferred until reproduced under `coredumpctl` — workaround in the meantime is "log in twice", which is what JC already observed. Not in critical path; not blocking rollout because the greeter recovers.
+
+### Validators
+
+| Fix | Check |
+|-----|-------|
+| pam_mkhomedir | `grep -q pam_mkhomedir /etc/pam.d/common-session` returns 0 after deploy. Fresh `useradd --skel /etc/skel testldapnew` then login → `~/.config/plank/dock1/launchers/com.google.Chrome.dockitem` exists. |
+| First-login bootstrap | Login as `john.chandara` post-deploy → `[ -f ~/.config/sudhanix/v26-bootstrapped ]`. Pre-existing `~/.config/xfce4` quarantined under `~/.config/.pre-sudhanix-26.*/`. Top panel + WhiteSur-Dark + rotating wallpaper all visible after re-login. |
+| Plank dconf | As fresh user: `dconf read /net/launchpad/plank/docks/dock1/launchers` returns the canonical launcher list with no per-user write needed. |
+| NFS intr | `dmesg | grep -i 'Deprecated parameter'` empty after re-mount of `/home/...`. |
+| Zen drag-drop | `flatpak info --show-permissions io.github.zen_browser.zen | grep filesystems` includes `xdg-desktop;xdg-download`. Manual: drag image from Zen → desktop, file appears with no error dialog. |
+| Greeter segfault | Cold boot 5×; `journalctl -u lightdm --since boot | grep -E 'segfault|cairo'` zero hits across all five. (Deferred; hypothesis only.) |
+
+### Greeter cairo segfault — found in journal, narrowed, partial fix
+
+`journalctl --no-pager | grep -iE 'lightdm-gtk-gre.*(segfault|cairo)'` confirms the crash:
+
+```
+May 04 15:23:28 dvgs-testmachine kernel: lightdm-gtk-gre[3594]:  segfault at 10 ip 000076d11863eb14 sp 00007ffd1cfdf328 error 4 in libcairo.so.2.11800.0[76d1185d5000+f1000]
+May 06 08:47:56 dvgs-testmachine kernel: lightdm-gtk-gre[10669]: segfault at 10 ip 00007bcc8323eb14 sp 00007ffcea7cf8a8 error 4 in libcairo.so.2.11800.0[7bcc831d5000+f1000]
+```
+
+Both crashes hit the same offset within `libcairo.so.2.11800.0` (`ip - mapping_base = 0x69b14` in both cases) — deterministic, not a race. `error 4` = user-mode read fault; `at 10` = NULL+0x10 dereference, characteristic of a NULL struct/surface pointer being passed into a draw routine.
+
+Same boot logs show GTK CSS parse errors immediately preceding each crash:
+
+```
+xfce4-notifyd[*]: Theme parsing error: lightdm-gtk-greeter.css:16:14: not a number
+xfce4-notifyd[*]: Theme parsing error: lightdm-gtk-greeter.css:16:14: Expected a string.
+xfce4-notifyd[*]: Theme parsing error: lightdm-gtk-greeter.css:71:14: not a number
+xfce4-notifyd[*]: Theme parsing error: lightdm-gtk-greeter.css:71:14: Expected a string.
+```
+
+Lines 16 and 71 of `roles/sudhanix-core/files/config/lightdm-gtk-greeter.css` were both `font: bold;`. The GTK CSS `font` shorthand wants the full `<style> <variant> <weight> <size> <family>` form — a bare keyword is rejected. Fix: `font-weight: bold;` (replaced both occurrences).
+
+**Honest scope of the fix.** The CSS parse errors are real bugs and worth fixing on their own merits. They are *not* proven to cause the libcairo crash — GTK's CSS parser doesn't call into libcairo, and the rules with the bad `font` shorthand may be silently dropped before they ever reach the renderer. The cairo crash sits in a different code path and matches the signature of known cairo 1.18 box-shadow + alpha-blend regressions — our greeter CSS uses `box-shadow: inset 0 1px alpha(white, 0.08)` and `box-shadow: inset 0 -1px alpha(black, 0.4)`, which are exactly the cases reported upstream. If first-login still segfaults after the parse-error fix, the next move is to strip the `box-shadow` rules. With `systemd-coredump` now installed + the `cttb-coredump-upload` pipeline (below), the next reproduction will land in `/public/coredumps/<host>/` automatically and we can analyze the actual frame instead of guessing.
+
+### Coredump capture pipeline (storehouse + clients)
+
+To stop guessing on next-time crashes:
+
+**Server (`storehouse.cttb`)** — added `/public/coredumps/` as a WebDAV drop-zone. nginx `location /public/coredumps/` provides anonymous read (autoindex) + anonymous PUT/MKCOL with an 8 GB body cap and per-host `create_full_put_path`. WebDAV verbs limited to `GET HEAD PUT MKCOL` — no DELETE or MOVE, so cleanup is filesystem-side only. A `/etc/cron.daily/storehouse-coredumps-prune` script ages files out at 90 days. Switched from `nginx` to `nginx-extras` to pick up `dav-ext` (the basic `nginx-core` package on 22.04 has the dav module but the manti-X h5ai listing leans on the extras for nice rendering). Bumped `storehouse_subdirs` to include `public/coredumps`.
+
+**Client (`common` role, every host)** — added `systemd-coredump` to `basic_software` so the kernel `core_pattern` re-points to the systemd handler. Verified on dvgs-testmachine: `core_pattern = |/usr/lib/systemd/systemd-coredump %P %u %g %s %t ...`. Added `/usr/local/sbin/cttb-coredump-upload` (POSIX sh, scans `/var/lib/systemd/coredump/core.*.{zst,xz,lz4}`, drops a `<core>.uploaded` sentinel after each successful PUT, exits 0 on any failure so transient network hiccups don't poison the timer's last-run state). Wrapped in `cttb-coredump-upload.{service,timer}` — `OnBootSec=5min OnUnitActiveSec=10min Persistent=true`. End-to-end PUT/GET round-trip verified from dvgs-testmachine: `mkcol HTTP=201 → put HTTP=201 → get returns content`. Timer is active, `summary: uploaded=0 failed=0 skipped=0` on first run (clean state, no dumps yet).
+
+**Homepage** — added a "Coredumps" section to `roles/storehouse/files/index.html` with a one-paragraph description, the manual-upload `curl` recipe, and a browse link to `/public/coredumps/`. Cross-link to `IT:Storehouse` for the wiki write-up.
+
+### Coredump pipeline — second pass: auth + magic-byte validation
+
+The "wide open within .cttb" first cut had two real risks: (a) any device on the campus network could enumerate other hosts' dumps, and dumps capture raw process memory at the moment of crash; (b) anonymous PUT meant anyone could pollute the dropzone with arbitrary files. Both addressed in a follow-up:
+
+**Read auth.** `nginx-extras` `location /public/coredumps/` now requires HTTP basic auth (`administrator` / campus admin password). The htpasswd is bcrypt-hashed via `community.general.htpasswd` (`python3-passlib` added as a dep on storehouse). Test passes: anon GET → 401, authed GET → 200, anon PUT → 201 (no auth), wrong-password GET → 401.
+
+**Anonymous-write split.** PUT no longer goes to `/public/coredumps/`. Instead, `/public/coredumps-in/<host>/<file>` aliases to a staging directory (`/var/lib/nginx/coredumps-staging/`) that is NOT public-readable. A small POSIX script (`/usr/local/sbin/coredumps-validate-mover`) wrapped in a 30-second systemd timer reads the first 8 bytes of every staged file, matches against an allowlist of known coredump compression / format magics:
+
+| Format | Magic | Source |
+|---|---|---|
+| zstd | `28 b5 2f fd` | systemd-coredump default on 24.04+ |
+| xz   | `fd 37 7a 58 5a 00` | systemd-coredump default on older |
+| lz4  | `04 22 4d 18` | rare |
+| ELF  | `7f 45 4c 46` | `Compress=no` in coredump.conf |
+
+Promoted files land at `/srv/storehouse/public/coredumps/<host>/<file>` with `www-data` ownership; rejected files move to `/srv/storehouse/private/coredumps-rejected/<host>/<ts>-<file>` and a `coredumps-validate` syslog tag captures the audit trail.
+
+Anonymous write stays anonymous because gating it on credentials would mean shipping the credential to every lab host — credentials baked into a hundred student machines are effectively public. The magic-byte gate provides most of what auth would (rejecting garbage uploads) without that operational cost. The split is what makes it safe.
+
+**Adversarial smoke-test from dvgs-testmachine.** Three PUTs (good zstd / HTML garbage / synthetic), wait 35s for the validator timer, authed GET of the host's dropzone. Result: only the legitimate zstd appeared in `/public/coredumps/dvgs-testmachine/`; HTML and synthetic-but-not-coredump went to quarantine; staging emptied. End-to-end with the actual `cttb-coredump-upload.service` and a synthesized dump in `/var/lib/systemd/coredump/` also worked: client uploads via `/public/coredumps-in/`, validator promotes within 30s, authed read shows the dump.
+
+**Client URL switch.** `/usr/local/sbin/cttb-coredump-upload` now PUTs to `/public/coredumps-in/<host>/<basename>` instead of `/public/coredumps/<host>/<basename>`.
+
+**Wiki.** `IT:Storehouse` updated with a full "Coredump drop-zone" section: motivating cairo segfault story, architecture (read/write URL split, why anonymous write is safe), the validator's accept-rule table, retention policy, and how to fetch + analyze a dump (including the `ddebs.ubuntu.com` `libcairo2-dbgsym` quirk). Published 2026-05-06 via `wikitools/wiki-edit.sh`.
+
+
