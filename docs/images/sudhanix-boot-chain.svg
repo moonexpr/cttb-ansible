@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <!-- Background -->
+  
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Inter Display, sans-serif" font-size="24" font-weight="bold" fill="#1e293b" text-anchor="middle">Sudhanix 26 Boot Chain &amp; Visuals</text>
+
+  <!-- Flow Boxes -->
+  <!-- 1. Firmware -->
+  <rect x="50" y="100" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#00b4d8" stroke-width="2" />
+  <text x="140" y="135" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#00b4d8" text-anchor="middle">1. UEFI Firmware</text>
+  <text x="140" y="155" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Dell F12 Boot Menu</text>
+
+  <!-- 2. Bootloader -->
+  <rect x="310" y="100" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#fb923c" stroke-width="2" />
+  <text x="400" y="135" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#fb923c" text-anchor="middle">2. GRUB Menu</text>
+  <text x="400" y="155" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">"Sudhanix GNU/Linux"</text>
+
+  <!-- 3. Kernel -->
+  <rect x="570" y="100" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#34d399" stroke-width="2" />
+  <text x="660" y="135" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#34d399" text-anchor="middle">3. Kernel &amp; Plymouth</text>
+  <text x="660" y="155" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Lotus Splash + Progress</text>
+
+  <!-- 4. Systemd -->
+  <rect x="180" y="250" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#67e8f9" stroke-width="2" />
+  <text x="270" y="285" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#67e8f9" text-anchor="middle">4. systemd Units</text>
+  <text x="270" y="305" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Services &amp; Mounts</text>
+
+  <!-- 5. Display Manager -->
+  <rect x="440" y="250" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#818cf8" stroke-width="2" />
+  <text x="530" y="285" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#818cf8" text-anchor="middle">5. LightDM Greeter</text>
+  <text x="530" y="305" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">LDAP Login Prompt</text>
+
+  <!-- Arrows -->
+  <path d="M 230 140 L 310 140" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <path d="M 490 140 L 570 140" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <path d="M 660 180 L 660 215 L 530 215 L 530 250" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <path d="M 270 215 L 270 250" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <path d="M 360 290 L 440 290" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+
+  <!-- Markers -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
+    </marker>
+  </defs>
+
+</svg>

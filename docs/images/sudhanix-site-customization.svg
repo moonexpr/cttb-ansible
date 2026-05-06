@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <!-- Background -->
+  
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Inter Display, sans-serif" font-size="24" font-weight="bold" fill="#1e293b" text-anchor="middle">Sudhanix Per-Site Variable Mapping</text>
+
+  <!-- Ansible Controller -->
+  <rect x="50" y="150" width="180" height="150" rx="10" fill="#f1f5f9" stroke="#00b4d8" stroke-width="2" />
+  <text x="140" y="185" font-family="Inter Display, sans-serif" font-size="16" font-weight="bold" fill="#00b4d8" text-anchor="middle">Ansible Logic</text>
+  <text x="60" y="220" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">group_vars/dvgs</text>
+  <text x="60" y="240" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">group_vars/dvbs</text>
+  <text x="60" y="260" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">group_vars/drbu</text>
+
+  <!-- The "Switch" -->
+  <rect x="310" y="180" width="180" height="100" rx="5" fill="#301808" stroke="#fb923c" stroke-width="1" />
+  <text x="400" y="215" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#fb923c" text-anchor="middle">Variable Injection</text>
+  <text x="400" y="240" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Site-specific templates</text>
+
+  <!-- Targets -->
+  <!-- 1. DVGS -->
+  <rect x="570" y="80" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#67e8f9" stroke-width="2" />
+  <text x="660" y="115" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#67e8f9" text-anchor="middle">Girls' School</text>
+  <text x="660" y="135" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Avatar: Lotus-Pink</text>
+
+  <!-- 2. DVBS -->
+  <rect x="570" y="185" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#34d399" stroke-width="2" />
+  <text x="660" y="220" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#34d399" text-anchor="middle">Boys' School</text>
+  <text x="660" y="240" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Avatar: Lotus-Blue</text>
+
+  <!-- 3. DRBU -->
+  <rect x="570" y="290" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#f472b6" stroke-width="2" />
+  <text x="660" y="325" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#f472b6" text-anchor="middle">DRBU</text>
+  <text x="660" y="345" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Avatar: Lotus-Gold</text>
+
+  <!-- Flow Arrows -->
+  <path d="M 230 225 L 310 225" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+  <path d="M 490 230 L 570 130" stroke="#67e8f9" stroke-width="2" marker-end="url(#arrow-dvgs)" fill="none" />
+  <path d="M 490 230 L 570 225" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-dvbs)" fill="none" />
+  <path d="M 490 230 L 570 320" stroke="#f472b6" stroke-width="2" marker-end="url(#arrow-drbu)" fill="none" />
+
+  <!-- Markers -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
+    </marker>
+    <marker id="arrow-dvgs" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#67e8f9" />
+    </marker>
+    <marker id="arrow-dvbs" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+    </marker>
+    <marker id="arrow-drbu" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f472b6" />
+    </marker>
+  </defs>
+
+</svg>
