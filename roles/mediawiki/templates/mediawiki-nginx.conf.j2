@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name {{ mediawiki_server_name }};
+    server_name {{ mediawiki_server_name }}{% for alias in mediawiki_server_aliases %} {{ alias }}{% endfor %};
     root /var/www/html;
     index index.php index.html;
     client_max_body_size 20M;
@@ -18,7 +18,7 @@ server {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_pass unix:/run/php/mediawiki.sock;
+        fastcgi_pass unix:{{ mediawiki_php_fpm_socket }};
     }
 
     # Thumbnail handler
