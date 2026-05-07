@@ -1,0 +1,81 @@
+---
+# h5ai (manti-X fork) for browseable /netinstall/ listings.
+# Modeled on roles/storehouse/tasks/main.yml.
+# Runs only when ni_webserver == 'nginx' and ni_h5ai_enabled is truthy.
+
+- name: install php-fpm and h5ai prerequisites
+  apt:
+    name:
+      - "php{{ ni_php_version }}-fpm"
+      - "php{{ ni_php_version }}-mbstring"
+      - "php{{ ni_php_version }}-gd"
+      - unzip
+    state: present
+    update_cache: yes
+  tags:
+    - ni_h5ai
+    - packages
+
+- name: download h5ai (manti-X fork)
+  get_url:
+    url: "https://github.com/manti-X/h5ai/releases/download/v{{ ni_h5ai_version }}/h5ai-{{ ni_h5ai_version }}.zip"
+    dest: "/tmp/h5ai-{{ ni_h5ai_version }}.zip"
+    mode: "0644"
+  tags:
+    - ni_h5ai
+
+- name: extract h5ai into the web root
+  unarchive:
+    src: "/tmp/h5ai-{{ ni_h5ai_version }}.zip"
+    dest: /var/www/html
+    remote_src: yes
+    creates: /var/www/html/_h5ai
+  tags:
+    - ni_h5ai
+
+- name: own h5ai private as www-data
+  file:
+    path: /var/www/html/private
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags:
+    - ni_h5ai
+
+- name: own h5ai public as www-data
+  file:
+    path: /var/www/html/public
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags:
+    - ni_h5ai
+
+- name: patch h5ai root path (manti-X fork — fix ROOT_PATH only)
+  replace:
+    path: /var/www/html/private/php/core/class-setup.php
+    regexp: "Util::normalize_path\\(dirname\\(\\$this->get\\('H5AI_PATH'\\)\\), false\\)"
+    replace: "Util::normalize_path($this->get('H5AI_PATH'), false)"
+  tags:
+    - ni_h5ai
+
+- name: configure h5ai hidden patterns (skip _h5ai itself in listing)
+  lineinfile:
+    path: /var/www/html/private/conf/options.json
+    regexp: '"hidden":'
+    line: '        "hidden": ["^\\.", "^\\_", "^_h5ai", "robots.txt", "ads.txt"],'
+    owner: www-data
+    group: www-data
+  tags:
+    - ni_h5ai
+
+- name: enable and start php-fpm
+  service:
+    name: "php{{ ni_php_version }}-fpm"
+    state: started
+    enabled: yes
+  tags:
+    - ni_h5ai
+    - services

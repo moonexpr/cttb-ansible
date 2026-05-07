@@ -1,0 +1,66 @@
+# Managed by Ansible (role: netinstall-2404)
+# Default site for the PXE/netinstall HTTP server.
+# Modeled on roles/storehouse/templates/storehouse-nginx.conf.j2 when ni_h5ai_enabled.
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name {{ ni_server_name }} _;
+
+    root /var/www/html;
+    index index.html;
+
+    # Tuning for serving large ISOs (~3 GB) to autoinstall clients.
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    server_tokens off;
+
+    # Health check for cutover scripts.
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Root — serve static homepage; prevent directory listing of webroot itself.
+    location = / {
+        try_files /index.html =404;
+    }
+
+    location = /index.html {
+        try_files /index.html =404;
+    }
+
+{% if ni_h5ai_enabled | bool %}
+    # /netinstall — h5ai directory browser (PHP backend at /public/index.php).
+    location /netinstall {
+        index /public/index.php;
+        try_files $uri $uri/ /public/index.php$is_args$args;
+        autoindex off;
+    }
+
+    # h5ai PHP backend.
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php/php{{ ni_php_version }}-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    # Block direct browsing of h5ai internals and root clutter.
+    location = /public/ { deny all; }
+    location ~ ^/(private|_h5ai/private|CHANGELOG|README) { deny all; }
+{% else %}
+    # /netinstall — plain nginx autoindex (no PHP).
+    location /netinstall/ {
+        autoindex on;
+        autoindex_exact_size off;
+        autoindex_localtime on;
+    }
+{% endif %}
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
