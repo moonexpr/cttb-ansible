@@ -1,6 +1,13 @@
 ---
 # Shared desktop setup tasks — included from main.yml via dispatch.
 # Based on desktop-22.04 task ordering (lang before lookandfeel).
+#
+# Tag strategy:
+#   install — apt, tarballs, binary deploys, PAM hooks (one-off / rarely changes)
+#   config  — xfconf, dconf, polkit rules, JSONs, theme settings (frequent updates)
+#   Mixed files (lookandfeel, sound) carry BOTH so they run on either filter and
+#   their config bits stay current; their install bits are idempotent and no-op
+#   on re-runs.
 
   #when installing mini stuff ends up there and network manager refuses to touch it
   - name: fix network interfaces
@@ -12,6 +19,8 @@
       mode: 0644
       owner: root
       group: root
+    tags:
+      - install
 
   - name: Disallow regular user to disable/modify networking (polkit rules, 24.04+)
     copy:
@@ -22,6 +31,7 @@
       group: root
     when: ansible_distribution_major_version | int >= 24
     tags:
+      - config
       - network_manager_permission
 
   - name: Disallow regular user to disable/modify networking (pkla, pre-24.04)
@@ -33,6 +43,7 @@
       group: root
     when: ansible_distribution_major_version | int < 24
     tags:
+      - config
       - network_manager_permission
 
   - name: Allow root to power off/reboot/... in crontab (polkit rules, 24.04+)
@@ -46,6 +57,7 @@
       - allow_root_crontab_power_off is defined
       - ansible_distribution_major_version | int >= 24
     tags:
+      - config
       - allow_root_crontab_power_off
 
   - name: Allow root to power off/reboot/... in crontab (pkla, pre-24.04)
@@ -59,6 +71,7 @@
       - allow_root_crontab_power_off is defined
       - ansible_distribution_major_version | int < 24
     tags:
+      - config
       - allow_root_crontab_power_off
 
   # Add /bin/bash as GS "student" account shell
@@ -69,6 +82,7 @@
       replace: "student:x:2000:2000:Student:/home/student:/bin/bash"
     when: '"dvgs" in group_names'
     tags:
+      - install
       - gs_acct_shell
 
   # Add /bin/bash as GS "teacher" account shell
@@ -79,40 +93,76 @@
       replace: "teacher:x:1999:1999:Teacher:/home/teacher:/bin/bash"
     when: '"dvgs" in group_names'
     tags:
+      - install
       - gs_acct_shell
 
   # install all lubuntu core packages
-  - include_tasks: lubuntu.yml
+  - include_tasks:
+      file: lubuntu.yml
+      apply:
+        tags: [install]
     tags:
+      - install
       - lubuntu
 
   # install languages support. Moved before lookandfeel, since laf requires fcitx to be installed.
-  - include_tasks: lang.yml
+  - include_tasks:
+      file: lang.yml
+      apply:
+        tags: [install]
     tags:
-      lang
+      - install
+      - lang
 
-  # customize the desktop based on cttb/dvgs/dvbs etc
-  - include_tasks: lookandfeel.yml
+  # MIXED: themes/fonts/gnome-shell-removal/netplan-removal install + xfconf/lightdm/panel config
+  # Per-task tags inside the file disambiguate; no apply propagation here.
+  - include_tasks:
+      file: lookandfeel.yml
     tags:
+      - install
+      - config
       - lookandfeel
 
-  - include_tasks: sw.yml
+  - include_tasks:
+      file: sw.yml
+      apply:
+        tags: [install]
     tags:
+      - install
       - sw_install
 
-  - include_tasks: sw-goldendict.yml
+  - include_tasks:
+      file: sw-goldendict.yml
+      apply:
+        tags: [install]
     when: goldendict is defined
-
-  - include_tasks: sudhanix-ux.yml
     tags:
+      - install
+      - sw_install
+
+  - include_tasks:
+      file: sudhanix-ux.yml
+      apply:
+        tags: [config]
+    tags:
+      - config
       - sudhanix-ux
 
-  - include_tasks: sound.yml
+  # All install — modprobe, apt deps, sound-theme tarball, legacy PulseAudio service
+  - include_tasks:
+      file: sound.yml
+      apply:
+        tags: [install]
     tags:
-      sound
+      - install
+      - sound
 
-  - include_tasks: wallpaper.yml
+  - include_tasks:
+      file: wallpaper.yml
+      apply:
+        tags: [config]
     tags:
+      - config
       - wallpaper
 
   # Autoremove before upgrade, to avoid unnecessary upgrades.
@@ -121,6 +171,7 @@
       autoremove: yes
       purge: yes
     tags:
+      - install
       - apt
       - apt_autoremove
 
@@ -132,6 +183,7 @@
       cache_valid_time: 3600
       autoremove: yes
     tags:
+      - install
       - os_upgrade
 
   - name: apt autoremove after upgrade
@@ -139,5 +191,6 @@
       autoremove: yes
       purge: yes
     tags:
+      - install
       - apt
       - apt_autoremove
