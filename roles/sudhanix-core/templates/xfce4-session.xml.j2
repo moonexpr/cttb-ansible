@@ -1,39 +1,71 @@
 {# xfce4-session.xml.j2
 
-   Captured from administrator@dvgs-testmachine 2026-05-06. SaveOnExit=true
-   means xfce4-session will remember running apps and restore them on next
-   login. SessionName="Default" is the canonical session bucket. The empty
-   "Failsafe" entries below are the upstream defaults — kept verbatim so
-   xfce4-session doesn't substitute its own (potentially stale) factory set.
+   xfce4-session reads this from /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/.
+   The Ubuntu 24.04 xfce4-session package installs a placeholder where every
+   property is `type="empty"` — SessionName="Default" with no Default block
+   defined, falling back to a Failsafe block whose Client commands are also
+   unset, producing the "Unable to determine failsafe session name" dialog
+   on first login (no autosaved cache to fall back on; cttb-ansible#7).
+
+   This template populates the Failsafe block with the five clients a fresh
+   user needs to land at a working desktop:
+     xfwm4         — window manager
+     xfsettingsd   — applies XSETTINGS (theme, icons, fonts)
+     xfce4-panel   — top panel
+     Thunar        — file manager + thumbnail daemon (--daemon)
+     xfdesktop     — wallpaper + desktop icons
+
+   SessionName="Failsafe" forces this block to be loaded; SaveOnExit=false
+   keeps Failsafe stable across logout/login cycles (a saved Default would
+   not exist on first login anyway).
 #}
 <?xml version="1.0" encoding="UTF-8"?>
 
 <channel name="xfce4-session" version="1.0">
   <property name="general" type="empty">
-    <property name="FailsafeSessionName" type="empty"/>
+    <property name="FailsafeSessionName" type="string" value="Failsafe"/>
+    <property name="SessionName" type="string" value="Failsafe"/>
+    <property name="SaveOnExit" type="bool" value="false"/>
     <property name="LockCommand" type="empty"/>
-    <property name="SessionName" type="string" value="Default"/>
-    <property name="SaveOnExit" type="bool" value="true"/>
   </property>
   <property name="sessions" type="empty">
     <property name="Failsafe" type="empty">
-      <property name="IsFailsafe" type="empty"/>
-      <property name="Count" type="empty"/>
-      <property name="Client0_Command" type="empty"/>
-      <property name="Client0_Priority" type="empty"/>
-      <property name="Client0_PerScreen" type="empty"/>
-      <property name="Client1_Command" type="empty"/>
-      <property name="Client1_Priority" type="empty"/>
-      <property name="Client1_PerScreen" type="empty"/>
-      <property name="Client2_Command" type="empty"/>
-      <property name="Client2_Priority" type="empty"/>
-      <property name="Client2_PerScreen" type="empty"/>
-      <property name="Client3_Command" type="empty"/>
-      <property name="Client3_Priority" type="empty"/>
-      <property name="Client3_PerScreen" type="empty"/>
-      <property name="Client4_Command" type="empty"/>
-      <property name="Client4_Priority" type="empty"/>
-      <property name="Client4_PerScreen" type="empty"/>
+      <property name="IsFailsafe" type="bool" value="true"/>
+      <property name="Count" type="int" value="5"/>
+      <property name="Client0_Command" type="array">
+        <value type="string" value="xfwm4"/>
+      </property>
+      <property name="Client0_Priority" type="int" value="15"/>
+      <property name="Client0_PerScreen" type="bool" value="false"/>
+      <property name="Client1_Command" type="array">
+        <value type="string" value="xfsettingsd"/>
+      </property>
+      <property name="Client1_Priority" type="int" value="20"/>
+      <property name="Client1_PerScreen" type="bool" value="false"/>
+      <property name="Client2_Command" type="array">
+        <value type="string" value="xfce4-panel"/>
+      </property>
+      <property name="Client2_Priority" type="int" value="25"/>
+      <property name="Client2_PerScreen" type="bool" value="false"/>
+      <property name="Client3_Command" type="array">
+        <value type="string" value="Thunar"/>
+        <value type="string" value="--daemon"/>
+      </property>
+      <property name="Client3_Priority" type="int" value="30"/>
+      <property name="Client3_PerScreen" type="bool" value="false"/>
+      <property name="Client4_Command" type="array">
+        <value type="string" value="xfdesktop"/>
+      </property>
+      <property name="Client4_Priority" type="int" value="35"/>
+      <property name="Client4_PerScreen" type="bool" value="false"/>
     </property>
+  </property>
+  <property name="splash" type="empty">
+    <property name="Engine" type="string" value=""/>
+  </property>
+  <property name="shutdown" type="empty">
+    <property name="LockScreen" type="bool" value="false"/>
+    <property name="ShowHibernate" type="bool" value="true"/>
+    <property name="ShowSuspend" type="bool" value="true"/>
   </property>
 </channel>
