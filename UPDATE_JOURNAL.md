@@ -4,7 +4,7 @@
 **Started:** 2026-04-16
 **Test machine:** dvgs-testmachine.cttb (formerly dvgs-lab3, IP: 10.11.9.23)
 
-> **See also:** [DEPLOYMENT.md](DEPLOYMENT.md) — full deployment pipeline & commands | [BACKLOG.md](BACKLOG.md) — consolidated task list
+> **See also:** [DEPLOYMENT.md](DEPLOYMENT.md) — full deployment pipeline & commands | [GitHub milestones](https://github.com/moonexpr/cttb-ansible/milestones) — forward-looking work (BACKLOG.md migrated 2026-05-07)
 
 ---
 
@@ -2611,3 +2611,107 @@ The log output picks the next branch on the decision tree. Expected outcomes:
 - `invoked` from an unexpected `PAM_SERVICE` → lineinfile landed in the wrong PAM file.
 
 Plan and decision tree captured in `.claude/plans/inherited-prancing-bubble.md`.
+
+---
+
+## 2026-05-07 — BACKLOG → GitHub milestones migration
+
+`BACKLOG.md` retired. Forward-looking work now lives in seven GitHub milestones with agent-pickup-style issues. Three labels capture the BACKLOG categories: `Blocker`, `Release`, `Unscheduled`.
+
+Milestones: https://github.com/moonexpr/cttb-ansible/milestones
+
+| # | Milestone | Issues |
+|---|-----------|--------|
+| 1 | P1 Autoinstaller | #8 (Blocker), #9, #10 |
+| 2 | P2a Bootstrap & Migration | #11, #12, #13, #14, #15, #16, #17, #18, #19, #20, #21, #22 |
+| 3 | P2b Vajra Multitool | #23 |
+| 4 | P3a Release Documentation | #24, #25, #26 |
+| 5 | P3b Release SysAdmin Manual | #27 |
+| 6 | SP Wiki Upgrade | #28 |
+| 7 | SP PXE Upgrade | #29 |
+| — | Unmilestoned (NTH) | #30, #31, #32 |
+
+### Completed during the upgrade (record from retired BACKLOG.md)
+
+Captured here for posterity since the items contributed to the Sudhanix 26 release outcome.
+
+**Infrastructure / install**
+
+- Autoinstall hostname — fixed 2026-04-30 (common role `ansible.builtin.hostname` task)
+- apt.cttb mirror missing Noble — sync started 2026-04-30, verified 2026-05-04 (noble + noble-security + noble-backports)
+- Chrome GPG key expired — fixed 2026-04-30 (`trustedkeys.gpg` updated, mirror re-synced)
+- No HTTPS egress from campus LAN — root cause: e2guardian `timed_internet.sh` cron schedule
+- LDAP `nsswitch.conf` version guard — removed `== '20.04'` guard
+- LightDM not set as default DM — task added to write `/etc/X11/default-display-manager`
+- IPv6 disable sysctl — config deployed
+- All playbook failures — resolved at run 17 (ok=144, changed=27, failed=0)
+- WiFi on dvgs-lab3 — connected to DRBU via `nmcli` (2026-04-30)
+- dvgs-testmachine unreachable after reboot — actual IP is `10.11.30.60` not `10.11.9.23`; reachable via direct SSH (2026-05-04)
+
+**Desktop / UX**
+
+- Wallpaper rotation — replaced cron+feh with `xfdesktop` native cycling (2026-05-01)
+- Desktop icon text shadow — `show-icon-label-shadows` + Semi-Bold font (2026-05-01)
+- WhiteSur tarballs uploaded — 2026-04-22
+- Window snapping + center spawn — already in `xfwm4.xml.j2` (snap_to_border/windows, placement_mode=center) (2026-05-04)
+- Terminal font size — 12 → 10pt in `terminalrc` (2026-05-04)
+- Log Out menu entry — `cttb-signoff.desktop` above Sleep/Shutdown (2026-05-04)
+- Log Out menu duplicate — excluded system `xfce4-session-logout.desktop` from top-level menu (2026-05-04)
+- Thunar list view — `thunar.xml.j2` with `ThunarDetailsView` default (2026-05-04)
+- Meta key → app menu — `xfce4-keyboard-shortcuts.xml.j2` (2026-05-04)
+- Application search — `xfce4-appfinder` + Super+Space shortcut (2026-05-04)
+- Greeter wallpaper — LightDM points to `Big-Sur-Day.jpg` (directory paths don't work) (2026-05-04)
+- Greeter black background — `lightdm-gtk-greeter` needs file path not directory (2026-05-04)
+- Greeter `[language_code]` — removed `~language` indicator (2026-05-04)
+- Greeter macOS styling — WhiteSur-Dark theme + custom CSS, dark rounded login box (2026-05-04)
+- Dark theme icons — switched `icon_theme` to WhiteSur-dark (2026-05-04)
+- System sounds — bigsur theme installed from storehouse, enabled in xsettings (2026-05-04)
+- 24-hour clock — panel clock format `%H:%M` (2026-05-04)
+- Per-site wallpapers — unified to `Big-Sur-Day.jpg` across all sites (2026-05-04)
+- Verify wallpapers deployed — Big-Sur-Day.jpg (10.8MB) in `/usr/share/backgrounds/cttb/`, 35 wallpapers, tarball on storehouse (2026-05-04)
+- Panel in Plank dock — devilspie2 `skip_tasklist` rule (2026-05-04)
+- Remote screenshot utility — `plays/util-screenshot.yml` (2026-05-04)
+- Fonts/assets to storehouse — done, all assets use `ansible_assets_url` (2026-05-04)
+
+**Apps**
+
+- Chrome — apt install task added, `.desktop` filename fixed to `google-chrome.desktop` (2026-05-04)
+- Chrome NFS lock — login script removes stale `SingletonLock` from other hostnames (2026-05-04)
+- Chrome default browser — `xdg-settings` in `sw-browser.yml` (2026-05-04)
+- Firefox — apt package with `install_recommends: no` (2026-05-04)
+- Firefox snap blocker — resolved: apt `.deb`, not snap wrapper. Snap-store removed (2026-05-04)
+- Zen Browser — Flatpak from Flathub (2026-05-04)
+- Thunderbird proxy — campus proxy autoconfig pref deployed (2026-05-04)
+- VSCode repo conflict — cleanup tasks for auto-generated `vscode.sources` + stale `.gpg` key (2026-05-04)
+- Zoom .deb diagnosed — storehouse copy corrupted; fresh `.deb` from zoom.us valid; refresh of storehouse deferred to issue #18 (2026-05-04)
+
+**Security / filtering**
+
+- Revert dvgs-testmachine unrestricted filter — removed stale `10.11.9.23` from `adult` group; `ips: []` (2026-05-04)
+- CA certs — CTTB Root CA at `/usr/local/share/ca-certificates/CTTB-Root-CA.crt`, symlinked in `/etc/ssl/certs/` (2026-05-04)
+
+**System services**
+
+- CUPS running — `lpstat -r` confirmed (2026-05-04)
+- NFS mounts — autofs at `/nfs/home` (2026-05-04)
+- WhiteSur-dark icon archive — `/usr/share/icons/WhiteSur-dark` deployed (2026-05-04)
+- macOS sound theme sourced — bigsur tarball on storehouse (614KB), installed to `/usr/share/sounds/bigsur` (2026-05-04)
+
+**Sudhanix branding (first pass, 2026-05-05)**
+
+- `/etc/lsb-release` — `DISTRIB_ID=sudhanix`, `Sudhanix 26`, codename `storehouse` via `roles/common/templates/lsb-release.j2`
+- `/etc/os-release` — `PRETTY_NAME="Sudhanix 26"`, `NAME=Sudhanix`, `HOME_URL` → wiki.cttb via `roles/common/templates/os-release.j2`
+- MOTD `/etc/update-motd.d/00-header` — wiki.cttb primary, Ubuntu/XFCE secondary
+- Disabled Ubuntu MOTD scripts (`10-help-text`, `50-motd-news`, `90-updates-available`, `91-release-upgrade`, `95-hwe-eol`)
+- GRUB menu strings — `GRUB_DISTRIBUTOR` auto-resolves via `/etc/os-release` → "Sudhanix GNU/Linux"; added `GRUB_TIMEOUT_STYLE=menu` + `GRUB_TIMEOUT=3`
+- Plymouth boot splash — Sudhanix theme deployed (lotus PNG, macOS-style script with progress bar, registered via `update-alternatives`, baked into initrd; required `quiet splash` in `GRUB_CMDLINE_LINUX_DEFAULT`)
+- Ansible role rename — `desktop` → `sudhanix-core`, `desktop-distributed` → `sudhanix-distributed`, `ux.yml` → `sudhanix-ux.yml`
+- Playbook rename — `cs-lab-2404.yml` → `install-sudhanix-cslabs.yml`
+
+**Wiki documentation**
+
+- 31 articles fully prose-passed in lecture-notes voice (rounds 1-8, 2026-05-06).
+- Test/Test1 sandbox pages deleted (2026-05-06).
+- HelpfulWebSitesForContentFiltering merged into Content Filtering FAQ; old title now redirects (2026-05-06).
+- Remaining wiki work tracked in #24, #25, #26.
+
