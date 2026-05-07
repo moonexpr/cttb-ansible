@@ -8,7 +8,7 @@
 vajra_ldap_uri: "ldap://ldap-srv.cttb"
 vajra_ldap_base_dn: "dc=cttb"
 vajra_ldap_people_ou: "ou=People,{{ vajra_ldap_base_dn }}"
-vajra_ldap_group_ou: "ou=Group,{{ vajra_ldap_base_dn }}"
+vajra_ldap_group_ou: "ou=Groups,{{ vajra_ldap_base_dn }}"
 
 # Quick-links rendered by the quick_links tool's flow grid. The Lua source
 # (in ~/Garden/app/vajra) ships its own defaults baked into the .deb;
