@@ -4,24 +4,57 @@
 # `xfce4-popup-applicationsmenu` only opens the menu — pressing the bound
 # Super key a second time has no effect and `--help` exposes no dismiss
 # option (verified on xfce4-panel 4.18, Ubuntu 24.04). When the popup is
-# already showing, the menu window holds keyboard focus and identifies
-# itself with WM_CLASS = "xfce4-panel"; sending Escape to that window
-# dismisses the GTK popup cleanly. Otherwise we fall through to invoke
-# the popup as normal.
+# showing, send Escape to dismiss it; otherwise invoke the popup.
+#
+# Detection: xdotool searches for any visible window whose class or name
+# matches the panel's popup. Logs each invocation to /tmp/sudhanix-toggle-
+# appmenu.<uid>.log for easy debugging when the heuristic misfires.
 
 set -u
 
-if command -v xdotool >/dev/null 2>&1; then
+LOG="/tmp/sudhanix-toggle-appmenu.$(id -u).log"
+log() { printf '[%s] %s\n' "$(date '+%F %T.%3N')" "$*" >> "$LOG" 2>/dev/null; }
+
+log "invoked"
+
+dismiss_if_open() {
+    command -v xdotool >/dev/null 2>&1 || { log "no xdotool"; return 1; }
+
+    local active cls name
     active=$(xdotool getactivewindow 2>/dev/null || true)
     if [[ -n "${active}" ]]; then
         cls=$(xdotool getwindowclassname "${active}" 2>/dev/null || true)
-        case "${cls}" in
-            Xfce4-panel|xfce4-panel)
-                xdotool key Escape
-                exit 0
-                ;;
-        esac
+        name=$(xdotool getwindowname "${active}" 2>/dev/null || true)
+        log "active=${active} class=[${cls}] name=[${name}]"
+    else
+        log "no active window"
     fi
+
+    # Search for any visible window matching panel popup hints.
+    local hits
+    hits=$(xdotool search --onlyvisible --class 'xfce4-popup-applicationsmenu|Xfce4-popup|whiskermenu' 2>/dev/null | head -1)
+    if [[ -n "${hits}" ]]; then
+        log "popup detected via class search: ${hits}"
+        xdotool key Escape
+        return 0
+    fi
+
+    # Fall back: if active window class/name itself looks like the panel's popup.
+    case "${cls}" in
+        Xfce4-panel|xfce4-panel|Xfce4-popup*|xfce4-popup*|whiskermenu*)
+            log "popup detected via active class match"
+            xdotool key Escape
+            return 0
+            ;;
+    esac
+
+    return 1
+}
+
+if dismiss_if_open; then
+    log "dismissed"
+    exit 0
 fi
 
+log "opening menu"
 exec xfce4-popup-applicationsmenu
