@@ -1,0 +1,17 @@
+---
+# login-testbed — opt-in tooling for hosts that double as PAM/login test rigs.
+#
+# Hosts in the cttb_login_testbeds inventory group get diagnostic packages
+# that are NOT installed on production lab desktops. Today: pamtester, used
+# by utils/run-pam-test to drive the lightdm PAM stack from SSH (no physical
+# user at the seat needed).
+#
+# See cttb-ansible#3 for the broader harness design and rationale.
+
+- name: install pamtester (Tier-1 PAM stack driver — no graphical session)
+  apt:
+    name: pamtester
+    state: present
+    install_recommends: false
+  tags:
+    - login_testbed

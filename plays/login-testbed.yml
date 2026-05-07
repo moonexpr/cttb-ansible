@@ -1,0 +1,8 @@
+---
+# Apply the login-testbed role to opt-in hosts (group cttb_login_testbeds).
+# Run: ansible-playbook plays/login-testbed.yml --diff
+
+- hosts: cttb_login_testbeds
+  become: true
+  roles:
+    - login-testbed
