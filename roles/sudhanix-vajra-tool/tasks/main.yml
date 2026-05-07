@@ -67,6 +67,29 @@
     - vajra-install
     - install
 
+# ---------- testing tools ---------- #
+# Drop-in Lua tools that exercise the local PAM/welcome/LDAP stack from
+# the GUI. Counterpart to utils/run-pam-test (cttb-ansible#3) for IT staff
+# at the seat. See monogarden#7 for design notes; depends on monogarden#2
+# (Vajra LDAP TLS) for the LDAP-write paths.
+- name: deploy Vajra Testing-category tools
+  copy:
+    src: "tools/{{ item }}"
+    dest: "/usr/local/lib/vajra/tools/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - test_pam_auth.lua
+    - test_token_state.lua
+    - test_welcome_preview.lua
+    - test_ldap_dismissal.lua
+  tags:
+    - vajra
+    - vajra-config
+    - vajra-testing
+    - config
+
 # ---------- config path ---------- #
 
 - name: deploy host-overridable configs (override .deb defaults)
