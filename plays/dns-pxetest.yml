@@ -1,0 +1,76 @@
+---
+# Add the pxetest.cttb DNS entry to both unbound resolvers (ub-adult, ub-igdvs)
+# by delegating to the LXD host (srv-vm) and using `lxc exec` to update
+# /etc/unbound/unbound.conf.d/cttb inside each container.
+#
+# Why this play exists separately from plays/unbound.yml:
+#   - plays/unbound.yml targets `[unbound]` (lxc-ub-adult, lxc-ub-igdvs) directly.
+#     SSH into those containers from outside the LAN is not configured (no
+#     authorized key for the workstation user from the ansible control host
+#     used in this sprint).
+#   - srv-vm IS reachable, has lxc admin access to both unbound containers,
+#     and `lxc exec` runs as root in the container without an SSH bootstrap.
+#
+# Idempotent: `lineinfile` with `state: present` keys off the regexp.
+# Triggers `unbound -t` syntax check + `systemctl reload unbound` when the
+# file changes; rolls back the line on syntax failure.
+
+- name: pxetest DNS entry on unbound resolvers
+  hosts: srv-vm
+  gather_facts: false
+  vars:
+    unbound_containers:
+      - ub-adult
+      - ub-igdvs
+    unbound_zone_file: /etc/unbound/unbound.conf.d/cttb
+    pxetest_a: 'local-data: "pxetest.cttb. IN A 10.11.13.27"'
+    pxetest_ptr: 'local-data-ptr: "10.11.13.27 pxetest.cttb."'
+
+  # raw: avoids Python on the target (srv-vm is Ubuntu 16.04 / Python 3.5 — too old for
+  # modern ansible's command module which uses f-strings).
+  tasks:
+    # Clean any malformed pxetest fragments left from prior shell-quoting accidents
+    # (a previous run truncated the records across newlines). Then append the clean
+    # entries in a single sed transaction. unbound-checkconf gates the reload.
+    - name: ensure clean pxetest.cttb records
+      ansible.builtin.raw: |
+        lxc exec {{ item }} -- bash <<'OUTER'
+        set -e
+        ZF={{ unbound_zone_file }}
+        TMP=$(mktemp)
+        # 1. Strip any prior pxetest references AND the orphan tokens (IN, A, 10.11.13.27,
+        #    or a half-formed `local-data-ptr: 10.11.13.27` with no rdata) that earlier
+        #    shell-quoting accidents broke onto separate lines.
+        sed -E '/pxetest/d; /^(IN|A|10\.11\.13\.27)$/d; /^local-data-ptr: [0-9.]+$/d' "$ZF" > "$TMP"
+        # 2. Append the canonical 2-line record (must NOT have leading whitespace —
+        #    bash heredocs with the body indented would prefix every line).
+        printf '\nlocal-data: "pxetest.cttb. IN A 10.11.13.27"\nlocal-data-ptr: "10.11.13.27 pxetest.cttb."\n' >> "$TMP"
+        if cmp -s "$ZF" "$TMP"; then
+          echo ALREADY_CLEAN
+          rm -f "$TMP"
+        else
+          cp "$ZF" "$ZF.pxetest-bak"
+          mv "$TMP" "$ZF"
+          if unbound-checkconf > /tmp/unbound-check.log 2>&1; then
+            systemctl reload unbound 2>&1 || systemctl restart unbound
+            echo UPDATED
+          else
+            mv "$ZF.pxetest-bak" "$ZF"
+            cat /tmp/unbound-check.log
+            echo CHECKCONF_FAILED
+            exit 1
+          fi
+        fi
+        systemctl is-active unbound
+        OUTER
+      register: dns_append
+      changed_when: "'UPDATED' in dns_append.stdout"
+      loop: "{{ unbound_containers }}"
+
+    - name: report
+      ansible.builtin.debug:
+        msg: "{{ item.item }}: {{ 'ADDED' if (item.stdout | default('') is search('APPENDED')) else 'ALREADY_PRESENT' }}"
+      loop: "{{ dns_append.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: dns_append is defined and dns_append.results is defined
