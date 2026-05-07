@@ -17,7 +17,10 @@
     <property name="theme" type="string" value="{{desktop_theme}}"/>
     <property name="title_font" type="string" value="{{desktop_title_font}}"/>
     <property name="title_alignment" type="string" value="left"/>
-    <property name="button_layout" type="empty"/>
+    {# macOS-style: close (red), hide-minimize (yellow), maximize (green) on the LEFT.
+       Single chars: O=window-menu, C=close, H=hide(minimize), M=maximize, S=shade, T=stick.
+       Pipe separates left-of-title from right-of-title. #}
+    <property name="button_layout" type="string" value="CHM|"/>
     <property name="use_compositing" type="empty"/>
     <property name="shadow_opacity" type="empty"/>
     <property name="show_frame_shadow" type="empty"/>
