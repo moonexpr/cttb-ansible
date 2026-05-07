@@ -22,7 +22,9 @@ SKEL_DIR="/etc/skel"
 # performs no filesystem mutations. Set by --dry-run on the entry points.
 SFL_DRY_RUN="${SFL_DRY_RUN:-0}"
 
-# Stale dotfiles that XFCE 4.18 reads in preference to /etc/xdg defaults.
+# Stale dotfiles that XFCE 4.18 reads in preference to /etc/xdg defaults,
+# plus app autosaves that mask system defaults via the per-user override
+# layer (dconf user-db beats system-db:site; xfconf user XML beats /etc/xdg).
 # Quarantined — not deleted — so the user can recover anything they care
 # about from the quarantine path noted in the migration log.
 QUARANTINE_PATHS="
@@ -30,6 +32,7 @@ QUARANTINE_PATHS="
 .config/lxqt
 .config/openbox
 .config/plank
+.config/dconf
 .gtkrc-2.0
 .config/gtk-3.0/settings.ini
 "
