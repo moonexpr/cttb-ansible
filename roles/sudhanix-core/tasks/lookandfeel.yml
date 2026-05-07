@@ -293,6 +293,7 @@
       group: root
     tags:
       - sudhanix-core
+      - config
 
   - name: configure xfwm4 window manager
     template:
