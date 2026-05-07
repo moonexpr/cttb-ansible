@@ -1,0 +1,27 @@
+#!/bin/bash
+# Toggle the xfce4-panel applications menu.
+#
+# `xfce4-popup-applicationsmenu` only opens the menu — pressing the bound
+# Super key a second time has no effect and `--help` exposes no dismiss
+# option (verified on xfce4-panel 4.18, Ubuntu 24.04). When the popup is
+# already showing, the menu window holds keyboard focus and identifies
+# itself with WM_CLASS = "xfce4-panel"; sending Escape to that window
+# dismisses the GTK popup cleanly. Otherwise we fall through to invoke
+# the popup as normal.
+
+set -u
+
+if command -v xdotool >/dev/null 2>&1; then
+    active=$(xdotool getactivewindow 2>/dev/null || true)
+    if [[ -n "${active}" ]]; then
+        cls=$(xdotool getwindowclassname "${active}" 2>/dev/null || true)
+        case "${cls}" in
+            Xfce4-panel|xfce4-panel)
+                xdotool key Escape
+                exit 0
+                ;;
+        esac
+    fi
+fi
+
+exec xfce4-popup-applicationsmenu

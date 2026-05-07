@@ -51,6 +51,7 @@
       - simple-scan
       - system-tools-backends
       - xdg-user-dirs
+      - xdotool
       - xfce4-panel
       - xfce4-power-manager
       - xfce4-appmenu-plugin
