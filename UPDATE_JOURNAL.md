@@ -2715,3 +2715,68 @@ Captured here for posterity since the items contributed to the Sudhanix 26 relea
 - HelpfulWebSitesForContentFiltering merged into Content Filtering FAQ; old title now redirects (2026-05-06).
 - Remaining wiki work tracked in #24, #25, #26.
 
+---
+
+## 2026-05-07 — vajra port-rest-of-legacy-tools, two test cycles, ldap_group_ou fix
+
+Two-pass dev/test cycle on dvgs-testmachine for the Rust+Lua vajra rewrite. End state: vajra 1.2.1-1 installed, all 22 bundled tools loaded (19 newly ported in this branch + 3 previously bundled).
+
+### Branch rename
+
+`feature/ubuntu22-upgrade` → `release/sudhanix26` on `origin` (GitHub). Internal `cttb` remote pushed once on-campus. The old name predated the noble target; the new one names what's actually shipping.
+
+### vajra source: 19 tools ported, framework upgrade (moonexpr/monogarden#4, vajra 1.1.0 → 1.1.1 → 1.2.1)
+
+19 legacy Python tools translated to Lua under `app/vajra/src/tools/` and registered in `loader.rs::BUNDLED`:
+`app_install`, `apt_updates`, `cache_flush`, `chrome_locks`, `device_register`, `display`, `firewall`, `hardware`, `kerberos`, `network_diag`, `password_reset`, `print_queue`, `services`, `sessions`, `storage`, `sudhanix`, `time_ntp`, `wakeonlan`, `welcome_reset`, `xfce_reset`.
+
+Framework upgrade: `ctx:run` and `ctx:run_privileged` now accept an optional opts table (`env`, `timeout`, `input`, `check`). For privileged calls the env is wrapped via `pkexec ... env VAR=val ...` because pkexec strips its child env — apt-style ports rely on `DEBIAN_FRONTEND=noninteractive` and friends.
+
+Two side bugs fixed in the same PR:
+
+- **moonexpr/monogarden#2 — LDAP TLS.** Campus OpenLDAP enforces `olcSecurity ssf>=128`; vajra was issuing cleartext binds and getting `Confidentiality required (13)`. `ldap_search` now adds `-ZZ` for `ldap://` URIs and threads optional `tls_cacert` through `LDAPTLS_CACERT` via a new `merged_env` helper that preserves PATH/HOME so `env_clear` doesn't break ldapsearch. Second pass extended `-ZZ` to `welcome_reset` (ldapmodify) and `password_reset` (ldappasswd) — same campus refusal, same fix.
+- **moonexpr/monogarden#3 — Quick Links dedup.** Operator override at `/etc/vajra/quick-links.json` was being appended to the bundled list without dedup; lab hosts saw 6 tiles (Wiki, Storehouse twice; APT Repository; Wiki, Storehouse from override; Gateway). `links_view` now seeds a `HashSet` of bundled URLs and skips overrides that collide. Policy documented inline: append + dedup by URL; ship a system drop-in to fully replace.
+
+### First test cycle — found two GUI defects + one infrastructure blocker
+
+Built and verified mechanically on dvgs-testmachine via `cttb-ansible/plays/test-vajra-pr.yml` (new). Build clean, binary contains the new tool IDs, `ldapsearch -x -ZZ -LLL -H ldap://ldap-srv.cttb` works against the campus LDAP standalone — confirms the StartTLS fix mechanism.
+
+Pool deployment was the original target. Discovered the apt.cttb pool layout (debmirror LXD container hosted on srv-nas, reprepro at `/srv/cttb-repos/apt/ubuntu/`, public URL `http://apt.cttb/cttb-repos/apt/ubuntu`, Apache + symlink, no nginx). Adding a `noble` distribution worked; signing failed because the cttb-repo signing key (`C77F25EB89F06C01`) is passphrase-protected and gpg 1.4.20 on the container has no batch-mode access path — filed as cttb-ansible#5. Fell back to direct `dpkg -i` for the test deploy.
+
+GUI testing then surfaced two bugs that the mechanical pass couldn't catch:
+
+- **moonexpr/monogarden#6 — Plymouth wedge.** `Sudhanix → Plymouth boot screen test` ran the recipe `plymouthd --mode=boot && plymouth show-splash && sleep 10 && plymouth quit --retain-splash; plymouth quit` (faithful Python port). On a live X session this attaches plymouthd to the same DRM/framebuffer, layers above X's draw surface, and `--retain-splash` explicitly keeps the splash on the framebuffer when plymouthd exits — desktop went black, power-off / logout dialogs never repainted, hard power-cycle required. Replaced with `plymouth_status`: read-only — prints active theme, available themes, and unit state.
+- `Sudhanix → System information` launched gnome-system-monitor instead of showing data inline (faithful port; user expectation mismatch). Replaced with `show_sysinfo`: prints host/OS/kernel/CPU/RAM/uptime in the result body, full `lscpu`/`free -h`/`df -h`/`lsblk`/`ip -br addr` in details. No external app launched.
+
+Also filed during the test pass:
+
+- **moonexpr/monogarden#5 — vajra has no headless invocation path.** Testing #2 and #3 acceptance had to be a human-clicking-buttons exercise. Proposed: `vajra tools list / run / status` and `vajra lua -e ...` CLI mode reusing the existing `AppContext` and `LuaEngine`. Future test passes can then run as ansible playbooks against real `ActionResult` JSON, not just `strings | grep` heuristics.
+
+### Second test cycle — operator delivered an 8-page PDF report → vajra 1.2.1
+
+Test report covered the 1.1.1 deploy. New bugs:
+
+- **moonexpr/monogarden#10 — `ldap_debug` "List my LDAP groups" failed with `No such object (32)` matched at `dc=cttb`.** Root cause: campus directory exposes `ou=Groups,dc=cttb` (plural) but vajra's bundled fallback (`context.rs::ldap_cfg`), the `.deb`-shipped `packaging/ldap.json`, and the `roles/sudhanix-vajra-tool/defaults/main.yml::vajra_ldap_group_ou` all used `ou=Group,dc=cttb` (singular). Typo carried since the original Python era. Fixed in all three places. Hosts that already had `/etc/vajra/ldap.json` deployed needed a conffile update (dpkg flagged the file as operator-modified because the ansible role had written the singular default; resolved with `dpkg --force-confnew -i`).
+- **moonexpr/monogarden#11 — `xfce_reset` lockout.** Action quarantined the user's XFCE config and printed `(skipped: /usr/local/sbin/sudhanix-firstlogin not found)` when the bootstrap binary was absent — leaving the user unable to start a session next login ("Unable to load a failsafe session — xfconfd isn't running, $XDG_CONFIG_DIRS, etc."). Action now refuses pre-flight if the binary is missing.
+- **moonexpr/monogarden#12 — Sudhanix `open_welcome` false success.** Reported "Welcome panel launched" without verifying the binary exists or that `spawn()` didn't raise. Now pre-checks `/usr/local/bin/sudhanix-welcome` with `test -f` and wraps spawn in `pcall`.
+
+Structural change:
+
+- Standalone `set_hostname.lua` tool removed. The same action lives inside the Sudhanix tool's `set_hostname` runner; the duplicate sidebar entry was operator confusion noted in the report.
+
+UX requests filed for follow-up cycles (not implemented this PR):
+
+- **moonexpr/monogarden#8 — sidebar typing-to-search.** Spotlight-style: typing with no field focused opens a search bar and filters the tool list by label + description. Skip if a form input has focus. Esc clears.
+- **moonexpr/monogarden#9 — Quick Links to top-of-sidebar widget.** Move the link grid out of the dedicated category into a compact tile row at the top of the sidebar; hover shows the destination URL; badge styling. Retire the standalone Quick Links category.
+
+### Ansible role changes (this branch, `release/sudhanix26`)
+
+- **`roles/sudhanix-vajra-tool/defaults/main.yml`:** `vajra_ldap_group_ou` default → `ou=Groups,{{ vajra_ldap_base_dn }}` (was `ou=Group`). On next role run, deployed `/etc/vajra/ldap.json` will be rewritten to match.
+- **`plays/test-vajra-pr.yml` (new):** rsync local `app/vajra/` to dvgs-testmachine; install build deps + rustup; `cargo build --release`; lua syntax-check every bundled tool; verify `ldapsearch -ZZ` against campus LDAP. Used to validate moonexpr/monogarden#4 end-to-end without touching the apt.cttb pool.
+- **`plays/publish-vajra-deb.yml` (new, blocked):** three-act flow: build the .deb on testmachine, synchronize to srv-nas, lxc file push into the debmirror container, reprepro includedeb + export against a noble distribution, then add a cttb-repos apt source on testmachine and apt install. Currently parked at the noble-distribution step because of the signing-key blocker (cttb-ansible#5). Committed so the structure is in tree for when that decision lands.
+
+### Deploy state on dvgs-testmachine
+
+vajra 1.2.1-1 installed via direct `dpkg --force-confnew -i`, not via apt.cttb pool. `/etc/vajra/ldap.json` corrected to `ou=Groups,dc=cttb`. `/usr/local/lib/vajra/tools/sudhanix.lua` drop-in (used to test the sysinfo + plymouth replacements before the .deb rebuild) removed; bundled tool from the .deb is now what runs. Binary contains `-ZZ`, `ou=Groups,dc=cttb`, and "Refusing to reset" — verified via `strings`.
+
+Next test pass should verify GUI behaviour of: LDAP groups list (now plural), Reset Welcome Dismissal, Reset Password (write paths' StartTLS), `xfce_reset` refusal on this host (no firstlogin binary), `open_welcome` reporting an error when binary absent, System information showing CPU/RAM/disk inline, Plymouth status read-only.
