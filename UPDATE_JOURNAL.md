@@ -2524,3 +2524,90 @@ The output is identical regardless of who triggered the parse, so cache hits are
 **CSS in `MediaWiki:Common.css`** — default state shows the lock and dims the link; group-keyed rules hide `.cttb-lock` and restore normal blue link colour when the body class matches one of the link's required groups. Five rules cover IT / DRBU / DVGS / DVBS / CTTB.
 
 Verified: anon `GET /wiki/Main_Page` returns 5 `cttb-restricted-link` anchors and a body class with no `cttb-user-in-*` token. Logged-in IT viewer's render produces identical HTML but the body picks up `cttb-user-in-it`, hiding the locks and restoring normal styling via CSS.
+
+---
+
+## 2026-05-07 — firstlogin/welcome/migrate-home triage on dvgs-testmachine
+
+**Symptom (reported by JC, terminal screenshot from a live session as `john.chandara@dvgs-testmachine`):**
+
+```
+$ sudhanix-migrate-home
+sudhanix-migrate-home: must be run as root
+$ sudhanix-firstlogin
+$ sudhanix-welcome
+[sudhanix-welcome] no cached PAM token; can't reach LDAP this session
+```
+
+Three failures look related; only one is real.
+
+### Triage
+
+**1. `sudhanix-migrate-home` "must be run as root" — by design.** `/usr/local/sbin/sudhanix-migrate-home` is the sysadmin-callable form. It guards on `id -u -ne 0` and exits 2. The user-side path is `/usr/local/sbin/sudhanix-firstlogin`, invoked synchronously by `/etc/X11/Xsession.d/55sudhanix-firstlogin` before xfce4-session forks. Source: `roles/sudhanix-core/files/firstlogin/sudhanix-migrate-home:25-29`. No code change.
+
+**2. `sudhanix-firstlogin` silent — no bug; already-bootstrapped no-op path.** Live inspection of john.chandara's NFS home (`sudo -u john.chandara`, since NFSv4 root-squash maps server-side root reads to `nobody`):
+
+- Marker present: `/nfs/home/john.chandara/.config/sudhanix/v26-bootstrapped` written `2026-05-07T15:30:05Z`, hostname `dvgs-testmachine.cttb`.
+- Bootstrap log `~/.cache/sudhanix-firstlogin.log` shows the full successful run from the Xsession.d hook: `quarantined: .config/{xfce4,lxqt,openbox,plank}` → `~/.config/.pre-sudhanix-26.20260507-083005/`, `seeded from /etc/skel via rsync (ignore-existing)`, `wrote ~/.dmrc (Session=xfce)`, `marker written`.
+- All four subsequent terminal invocations during the test session correctly reported `already bootstrapped (marker present); exit 0` to the per-user log and produced no stdout. That silence on stdout is the designed behavior for the autostart re-run path — see `roles/sudhanix-core/files/firstlogin/sudhanix-firstlogin-lib.sh:174` (`sfl_already_bootstrapped` returns true → log line + return). `~/.sudhanix-migration-NOTES.txt` was also written, confirming first-run success.
+
+The 2026-05-06 first-login bootstrap implementation (last entry above) is **working** on this host. No code change.
+
+**3. `sudhanix-welcome: no cached PAM token` — real bug.**
+
+All scaffolding is correctly deployed on dvgs-testmachine:
+
+| Asset | State |
+|-------|-------|
+| `/usr/local/sbin/sudhanix-cache-token` | 0755 root:root, deployed 2026-05-05 19:16 |
+| `/usr/local/sbin/sudhanix-shred-token` | 0755 root:root, deployed 2026-05-05 19:16 |
+| `/etc/tmpfiles.d/sudhanix-tokens.conf` | `d /run/sudhanix-tokens 1733 root root - -` |
+| `/run/sudhanix-tokens/` | `drwx-wx-wt 2 root root` (matches tmpfiles.d) |
+| `/etc/pam.d/lightdm` | `auth optional pam_exec.so expose_authtok /usr/local/sbin/sudhanix-cache-token` correctly inserted after `@include common-auth` |
+| `/run/sudhanix-tokens/2156.tok` | **MISSING** for the just-completed session |
+
+The hook is wired but the token file was never written. Cause is currently invisible: `pam_exec` was deployed without a `log=` option, so any stderr from the child script is dropped to `/dev/null`; `cache-pam-token.sh` itself has no internal logging and exits 0 from every failure branch (empty PAM_USER, empty stdin, mkdir fail, write fail). Four plausible root causes, ranked:
+
+1. **`expose_authtok` not delivering PAM_AUTHTOK to stdin** — pam_exec EOFs immediately, `read -r PW` returns empty, script exits 0 silently. Could be Ubuntu 24.04 pam_exec semantics, the `pam_succeed_if.so user ingroup nopasswdlogin sufficient` line short-circuiting before AUTHTOK is set, or LDAP path consuming PAM_AUTHTOK differently from pam_unix.
+2. **Auth stack short-circuited before the hook line** — `@include common-auth` resolves to `sufficient` somewhere and PAM stops. Should not happen given Ubuntu's stock common-auth ending in `pam_permit required`, but worth verifying.
+3. **Hook fires, token written, then immediately shredded.** Unlikely — dir is empty, not "had a token then lost it."
+4. **Login bypass** — auto-login or session-restore path that doesn't traverse the lightdm PAM stack. john.chandara is not in `nopasswdlogin`, so `pam_succeed_if` should not bypass.
+
+### Fix (this session): instrument, then iterate
+
+Two edits, scoped to the welcome role:
+
+**`roles/sudhanix-core/files/welcome/cache-pam-token.sh`** — added unconditional logging to `/var/log/sudhanix-pam-cache.log` on every branch. Heartbeat at invocation logs `PAM_USER`, `PAM_TYPE`, `PAM_SERVICE`. Each early exit logs the reason (`empty PAM_USER`, `id -u produced no numeric uid`, `empty stdin (expose_authtok did not deliver token)`, `mkdir failed`, `write failed`). Success logs `wrote /run/sudhanix-tokens/<uid>.tok (N bytes)`. **PAM_AUTHTOK content is never logged — only its byte length on success.**
+
+**`roles/sudhanix-core/tasks/sudhanix-welcome.yml`** — added `log=/var/log/sudhanix-pam-cache.log` to both `pam_exec` lineinfile entries (auth-cache + session-shred). Used `regexp:` so the existing line is *replaced* in `/etc/pam.d/lightdm` — `lineinfile` without a `regexp` would have appended a duplicate. The regexp tolerates the old (no `log=`) and new (with `log=`) forms so re-runs are idempotent.
+
+### Side findings filed as GitHub issues, scope kept tight
+
+- `moonexpr/monogarden#2` — Vajra 1.1.0 LDAP Debug fails with `Confidentiality required (13) — TLS confidentiality required` from `bundled/ldap_debug.lua:50`/`:72`. Lua `ctx:ldap_search` opens an unencrypted LDAP connection; campus OpenLDAP enforces ssf. Fix is in `app/vajra/src/lua_bridge.rs` — needs StartTLS or `ldaps://` before bind.
+- `moonexpr/monogarden#3` — Vajra Quick Links pane renders six tiles instead of four: Wiki and Storehouse appear twice. `app/vajra/src/tools/quick_links.lua` bundles three (`Wiki`, `Storehouse`, `APT Repository`); `/etc/vajra/quick-links.json` operator override adds Wiki + Storehouse + Gateway; merge in the loader/UI is additive without dedup. Fix in `app/vajra/src/loader.rs` or `ui.rs`.
+- `moonexpr/cttb-ansible#2` — Vajra "Set Hostname" pkexec dialog reads `Password for administrator:`, defaulting to the local Ansible-managed admin account rather than accepting an `it`-group LDAP user. No polkit rule grants `unix-group:it` `org.freedesktop.hostname1.set-hostname`. Existing pattern in `roles/sudhanix-core/files/config/10-network-manager.{pkla,rules}` should be cloned for hostname1.
+
+### Deploy + verify (next iteration)
+
+```bash
+source utils/setup-env
+ansible-playbook plays/install-sudhanix-cslabs.yml \
+    --limit dvgs-testmachine --tags sudhanix_welcome --diff
+```
+
+Then log out + back in via lightdm, and check:
+
+```bash
+sudo tail -40 /var/log/sudhanix-pam-cache.log
+sudo ls -la /run/sudhanix-tokens/
+sudo -u john.chandara sudhanix-welcome
+```
+
+The log output picks the next branch on the decision tree. Expected outcomes:
+
+- `invoked PAM_USER=john.chandara ... wrote /run/sudhanix-tokens/2156.tok (N bytes)` → original miss was a transient deploy state; recheck welcome app behavior.
+- `invoked` then `exit: empty stdin (expose_authtok did not deliver token)` → root cause is auth-stack ordering; investigate where PAM_AUTHTOK is consumed before reaching the cache hook (likely either pam_unix re-prompt-on-fail before pam_ldap, or `pam_succeed_if` ordering).
+- No log entries at all → hook never fires; investigate auth-stack short-circuit.
+- `invoked` from an unexpected `PAM_SERVICE` → lineinfile landed in the wrong PAM file.
+
+Plan and decision tree captured in `.claude/plans/inherited-prancing-bubble.md`.
