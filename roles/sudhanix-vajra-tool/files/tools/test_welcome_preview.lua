@@ -33,14 +33,13 @@ return {
       description = "Spawns /usr/local/bin/sudhanix-welcome with SUDHANIX_WELCOME_FORCE=1.",
       button_label = "Show",
       runner = function(ctx, _)
-        if not ctx:has("sudhanix-welcome") and
-           not ctx:has("/usr/local/bin/sudhanix-welcome") then
-          -- ctx:has resolves via PATH; absolute paths fall through to false.
-          -- Spawn directly anyway; sudhanix-welcome lives at a fixed path.
-        end
-        local r = ctx:spawn({ "env", "SUDHANIX_WELCOME_FORCE=1",
-                              "/usr/local/bin/sudhanix-welcome" })
-        if r then
+        -- ctx:spawn returns nil on success (Rust Ok(()) → Lua nil) and
+        -- raises a Lua error on failure. Use pcall to distinguish.
+        local ok, err = pcall(function()
+          ctx:spawn({ "env", "SUDHANIX_WELCOME_FORCE=1",
+                      "/usr/local/bin/sudhanix-welcome" })
+        end)
+        if ok then
           return {
             ok = true,
             title = "Welcome window spawned",
@@ -50,7 +49,7 @@ return {
                 .. "action to clear the flag first.",
           }
         end
-        return { ok = false, title = "Spawn failed" }
+        return { ok = false, title = "Spawn failed", body = tostring(err) }
       end,
     },
 
