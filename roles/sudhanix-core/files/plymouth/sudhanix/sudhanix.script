@@ -1,6 +1,6 @@
 #
 # Sudhanix Plymouth boot splash
-# macOS-style: black background, centered lotus logo, thin progress bar below.
+# macOS-style: black background, centered Amitabha logo, thin progress bar below.
 #
 
 # Pure black background
@@ -10,9 +10,9 @@ Window.SetBackgroundBottomColor(0.0, 0.0, 0.0);
 screen_w = Window.GetWidth();
 screen_h = Window.GetHeight();
 
-# ── Lotus logo ────────────────────────────────────────────────────────────
+# ── Amitabha logo ─────────────────────────────────────────────────────────
 # Render at ~22% of screen height (matches Apple's relative sizing).
-logo.image_raw = Image("lotus.png");
+logo.image_raw = Image("amitabha.png");
 logo_target_h = screen_h * 0.22;
 logo_scale = logo_target_h / logo.image_raw.GetHeight();
 logo.image = logo.image_raw.Scale(logo.image_raw.GetWidth() * logo_scale, logo_target_h);
