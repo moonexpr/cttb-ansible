@@ -42,7 +42,7 @@ cttb-ansible/
 
 ## Inventory
 
-The default inventory is set in `ansible.cfg` (`inventory/hosts_os_upgrade.ini`). Hosts are organized by institution and location:
+The default inventory is set in `ansible.cfg` (`inventory/sudhanix26_hosts.ini`). Hosts are organized by institution and location:
 
 | Group               | Description                        |
 |---------------------|------------------------------------|

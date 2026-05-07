@@ -6,16 +6,16 @@
 #
 # Usage:
 #   ansible-playbook plays/deploy-netinstall-2404.yml \
-#     -i inventory/hosts_os_upgrade.ini --vault-password-file <vault-pass>
+#     -i inventory/sudhanix26_hosts.ini --vault-password-file <vault-pass>
 #
 # To enable auto-install on PXE boot (for upgrade rollouts):
 #   ansible-playbook plays/deploy-netinstall-2404.yml \
-#     -i inventory/hosts_os_upgrade.ini --vault-password-file <vault-pass> \
+#     -i inventory/sudhanix26_hosts.ini --vault-password-file <vault-pass> \
 #     -e ni_pxe_default=Autoinstall-noble-desktop
 #
 # To restore safe local-boot default after rollout:
 #   ansible-playbook plays/deploy-netinstall-2404.yml \
-#     -i inventory/hosts_os_upgrade.ini --vault-password-file <vault-pass> \
+#     -i inventory/sudhanix26_hosts.ini --vault-password-file <vault-pass> \
 #     -e ni_pxe_default=BootLocal -t ni_pxe_menu
 
 - name: Render netinstall-2404 templates locally
