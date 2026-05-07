@@ -96,11 +96,15 @@
   tags:
     - sudhanix_welcome
 
+# pam_exec `log=` captures the child's stderr to a file. Combined with the
+# script's own logging, this gives belt-and-suspenders diagnostic coverage —
+# critical because pam_exec otherwise silently discards script stderr.
 - name: enable token cache during graphical auth
   lineinfile:
     path: "/etc/pam.d/{{ item.item }}"
     insertafter: '^@include common-auth'
-    line: 'auth     optional  pam_exec.so  expose_authtok  /usr/local/sbin/sudhanix-cache-token'
+    regexp: '^auth\s+optional\s+pam_exec\.so\s+expose_authtok\s+(?:log=\S+\s+)?/usr/local/sbin/sudhanix-cache-token\b'
+    line: 'auth     optional  pam_exec.so  expose_authtok  log=/var/log/sudhanix-pam-cache.log  /usr/local/sbin/sudhanix-cache-token'
     state: present
   loop: "{{ pam_dms.results }}"
   loop_control:
@@ -113,7 +117,8 @@
   lineinfile:
     path: "/etc/pam.d/{{ item.item }}"
     insertafter: '^@include common-session'
-    line: 'session  optional  pam_exec.so  /usr/local/sbin/sudhanix-shred-token'
+    regexp: '^session\s+optional\s+pam_exec\.so\s+(?:log=\S+\s+)?/usr/local/sbin/sudhanix-shred-token\b'
+    line: 'session  optional  pam_exec.so  log=/var/log/sudhanix-pam-cache.log  /usr/local/sbin/sudhanix-shred-token'
     state: present
   loop: "{{ pam_dms.results }}"
   loop_control:
