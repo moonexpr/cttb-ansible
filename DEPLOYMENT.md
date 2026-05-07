@@ -62,7 +62,7 @@ If the machine is powered off or SSH is unreachable:
    ansible dvgs-labN.cttb -m ping
    ```
 2. **Hostname** — set automatically by common role (`ansible.builtin.hostname` task). No manual step needed.
-3. **Update inventory IP** if needed in `inventory/hosts_os_upgrade.ini`
+3. **Update inventory IP** if needed in `inventory/sudhanix26_hosts.ini`
 4. **Configure WiFi** (if machine needs WAN access and will be disconnected from ethernet):
    ```bash
    ssh administrator@dvgs-labN.cttb
@@ -216,7 +216,7 @@ Requires `scrot` (installed via lubuntu.yml). Works over SSH + ProxyJump.
 
 ```bash
 # Revert inventory changes
-git checkout HEAD -- inventory/hosts_os_upgrade.ini
+git checkout HEAD -- inventory/sudhanix26_hosts.ini
 
 # View what changed on the branch
 git log main..feature/ubuntu22-upgrade --oneline
