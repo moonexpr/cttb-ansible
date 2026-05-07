@@ -2780,3 +2780,53 @@ UX requests filed for follow-up cycles (not implemented this PR):
 vajra 1.2.1-1 installed via direct `dpkg --force-confnew -i`, not via apt.cttb pool. `/etc/vajra/ldap.json` corrected to `ou=Groups,dc=cttb`. `/usr/local/lib/vajra/tools/sudhanix.lua` drop-in (used to test the sysinfo + plymouth replacements before the .deb rebuild) removed; bundled tool from the .deb is now what runs. Binary contains `-ZZ`, `ou=Groups,dc=cttb`, and "Refusing to reset" — verified via `strings`.
 
 Next test pass should verify GUI behaviour of: LDAP groups list (now plural), Reset Welcome Dismissal, Reset Password (write paths' StartTLS), `xfce_reset` refusal on this host (no firstlogin binary), `open_welcome` reporting an error when binary absent, System information showing CPU/RAM/disk inline, Plymouth status read-only.
+
+---
+
+## 2026-05-07 — xfce4-session.xml hot fix + plymouth Amitabha + Vajra Testing tools
+
+Three follow-on landings from the morning's welcome-PAM-token session.
+
+### xfce4-session "Unable to load failsafe" — root cause and hot fix
+
+**Symptom (mid-session, JC at the seat).** After authenticating to lightdm successfully, the user lands on a modal `Unable to load a failsafe session` dialog. xfce4-session never reaches the desktop; the wallpaper paints behind the dialog.
+
+**Root cause.** Ubuntu 24.04's `xfce4-session` package installs `/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml` as a placeholder where every property is `type="empty"`:
+
+```xml
+<property name="general" type="empty">
+  <property name="FailsafeSessionName" type="empty"/>
+  <property name="SessionName" type="string" value="Default"/>
+</property>
+<property name="sessions" type="empty">
+  <property name="Failsafe" type="empty">
+    <property name="Client0_Command" type="empty"/>
+    ...
+```
+
+`SessionName="Default"` references a `Default` block that doesn't exist; falls back to Failsafe; Failsafe has no Client commands set. xfce4-session aborts with the dialog. JC's morning session worked only because xfce4-session loaded an autosaved session-cache from `/tmp/.unburden-john.chandara/cache/sessions/`. After log-out the cache rotated empty; the next login had nothing to fall back to and the empty placeholder bit.
+
+**Hot fix on dvgs-testmachine.** Wrote a working `xfce4-session.xml` at `/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml` with `FailsafeSessionName=Failsafe`, `SessionName=Failsafe`, and a populated Failsafe block listing five clients (`xfwm4`, `xfsettingsd`, `xfce4-panel`, `Thunar --daemon`, `xfdesktop`). Backed up the upstream broken file to `*.upstream-broken`. After the fix lands, lightdm authentication produces a working desktop on first login. Quarantine interaction note: a previous session attempt had a per-user override at `~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml`; running the firstlogin "quarantine hot fix tool" (which forces re-quarantine by removing the marker) moved that file into `~/.config/.pre-sudhanix-26.<ts>/`, which is why the dialog returned mid-session. Lesson for the firstlogin script: per-user xfconf XMLs should not be quarantined as part of the "stale config" sweep — they're the autosaved state and forward-compatible.
+
+**Codification (todo).** Drop `roles/sudhanix-core/files/config/xfce4-session.xml` with the working content; add a copy task in `lookandfeel.yml` that lays it down at `/etc/xdg/...` mode `0644 root:root`, tagged `desktop`. Until that lands, future PXE-installed hosts will hit the same dialog on first LDAP-user login. cttb-ansible#7 captures the full punch list.
+
+### Plymouth: lotus.png → amitabha.png
+
+Previous boot splash used a hyper-realistic 1024×1024 lotus that read more uncanny than calming. Swapped to a stylised Amitabha figure that reads cleanly at boot resolution and matches the calmer monastery branding. Repo changes: deleted `roles/sudhanix-core/files/plymouth/sudhanix/lotus.png`, added `amitabha.png`, updated `sudhanix.script`'s `Image()` reference and the `.plymouth` Description.
+
+Hot-deployed to dvgs-testmachine via scp + `update-initramfs -u`. The role's `install Sudhanix Plymouth theme` task is gated on `creates: /usr/share/plymouth/themes/sudhanix`, so already-installed lab hosts will continue to render the old lotus until the storehouse tarball is rebuilt and re-uploaded, or the install task is reworked to detect file-level drift.
+
+### Vajra Testing tool category (drop-in Lua, deployed via sudhanix-vajra-tool)
+
+Per monogarden#7. Four Lua tool files dropped at `roles/sudhanix-vajra-tool/files/tools/`:
+
+- `test_pam_auth.lua` — drives `pamtester` via `ctx:run_privileged` with the password piped on stdin; surfaces rc + cache-log tail + token-dir state.
+- `test_token_state.lua` — `stat` metadata + uid-scoped log grep (token contents never displayed); "Clear my token" via privileged rm.
+- `test_welcome_preview.lua` — three buttons: spawn welcome with `SUDHANIX_WELCOME_FORCE=1`; reset `sudhanixWelcomeDismissed` via cached-token `ldapmodify`; composite "Reset + show".
+- `test_ldap_dismissal.lua` — read/set/clear the dismissal flag for any uid (anonymous-bind read; cached-token `ldapmodify` for writes; `sudhanixUser` aux objectClass added when needed).
+
+All four declare `category = "Testing"`, `required_groups = { "it" }`, and use only the `ctx:` API surface verified in `app/vajra/src/lua_bridge.rs` (`run`, `run_privileged`, `spawn`, `ldap_search`, `ldap_escape`, `my_ldap_dn`, `config`, `has`). Deploy task wired into `roles/sudhanix-vajra-tool/tasks/main.yml` under tag `vajra-testing`. Lab-desktop counterpart to `utils/run-pam-test`; closes the iteration loop for IT staff doing per-host PAM/welcome QA from the GUI. Two known dependencies, surfaced in tool-level comments: monogarden#2 (Vajra LDAP TLS) and the missing `SUDHANIX_WELCOME_FORCE` env-var bypass in `/usr/local/bin/sudhanix-welcome`.
+
+### Test harness usage during the session
+
+`utils/run-pam-test dvgs-testmachine.cttb john.chandara` (cttb-ansible#3 Tier-1) confirmed the PAM stack reaches the cache hook, `expose_authtok` delivers PAM_AUTHTOK, and the script writes `/run/sudhanix-tokens/2156.tok` correctly chown'd. JC's earlier real lightdm login at 09:56:09 also reached the hook (per `/var/log/sudhanix-pam-cache.log`) but failed with EACCES on overwriting an existing user-owned token file — likely AppArmor mediation on the lightdm pam_exec child. Atomic mktemp+rename fix outlined in cttb-ansible#7. The harness also surfaced the shred-on-open hypothesis: `pam_exec.so` on the session line runs for both `open_session` and `close_session`, so without a `$PAM_TYPE` gate, shred fires immediately after auth-cache and wipes the token before xfdesktop autostart kicks in.
