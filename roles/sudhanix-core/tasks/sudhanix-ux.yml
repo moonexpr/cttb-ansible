@@ -153,12 +153,16 @@
       - sudhanix-ux
 
   - name: autostart devilspie2 for all users
+    # devilspie2 only reads ONE folder per process; default is ~/.config/devilspie2.
+    # An empty user folder makes it exit with "No script files found" instead of
+    # falling back to /etc/xdg/devilspie2. Pass --folder explicitly so the
+    # system-wide rule set is loaded for every user without per-home seeding.
     copy:
       content: |
         [Desktop Entry]
         Type=Application
         Name=Devilspie2
-        Exec=devilspie2
+        Exec=devilspie2 --folder=/etc/xdg/devilspie2
         Hidden=false
         NoDisplay=true
         X-GNOME-Autostart-enabled=true
@@ -169,6 +173,7 @@
     tags:
       - sudhanix-core
       - sudhanix-ux
+      - config
 
   - name: configure xfce4-appfinder (icon view, centered, no categories)
     template:
