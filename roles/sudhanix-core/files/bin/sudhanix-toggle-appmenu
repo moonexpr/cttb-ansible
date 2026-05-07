@@ -17,36 +17,34 @@ log() { printf '[%s] %s\n' "$(date '+%F %T.%3N')" "$*" >> "$LOG" 2>/dev/null; }
 
 log "invoked"
 
+# Diagnostic dump: every visible top-level window. Used to learn which
+# window represents the panel's open applications menu (it's typically
+# override-redirect, so it doesn't show up as the focused window).
+log_visible_windows() {
+    command -v xdotool >/dev/null 2>&1 || return
+    local w n c
+    while read -r w; do
+        [[ -z "$w" ]] && continue
+        n=$(xdotool getwindowname "$w" 2>/dev/null || true)
+        c=$(xdotool getwindowclassname "$w" 2>/dev/null || true)
+        log "  win=${w} class=[${c}] name=[${n}]"
+    done < <(xdotool search --onlyvisible "" 2>/dev/null)
+}
+
 dismiss_if_open() {
     command -v xdotool >/dev/null 2>&1 || { log "no xdotool"; return 1; }
 
-    local active cls name
-    active=$(xdotool getactivewindow 2>/dev/null || true)
-    if [[ -n "${active}" ]]; then
-        cls=$(xdotool getwindowclassname "${active}" 2>/dev/null || true)
-        name=$(xdotool getwindowname "${active}" 2>/dev/null || true)
-        log "active=${active} class=[${cls}] name=[${name}]"
-    else
-        log "no active window"
-    fi
+    log "visible windows:"
+    log_visible_windows
 
     # Search for any visible window matching panel popup hints.
     local hits
-    hits=$(xdotool search --onlyvisible --class 'xfce4-popup-applicationsmenu|Xfce4-popup|whiskermenu' 2>/dev/null | head -1)
+    hits=$(xdotool search --onlyvisible --class 'xfce4-popup-applicationsmenu|Xfce4-popup|whiskermenu|Whisker' 2>/dev/null | head -1)
     if [[ -n "${hits}" ]]; then
         log "popup detected via class search: ${hits}"
         xdotool key Escape
         return 0
     fi
-
-    # Fall back: if active window class/name itself looks like the panel's popup.
-    case "${cls}" in
-        Xfce4-panel|xfce4-panel|Xfce4-popup*|xfce4-popup*|whiskermenu*)
-            log "popup detected via active class match"
-            xdotool key Escape
-            return 0
-            ;;
-    esac
 
     return 1
 }
