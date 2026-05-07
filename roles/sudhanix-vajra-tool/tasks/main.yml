@@ -1,0 +1,96 @@
+---
+# vajra — sysadmin multi-tool. Now distributed as a .deb from apt.cttb.
+#
+# The vajra source lives in ~/Garden/app/vajra (Rust + Lua tools, not in
+# this repo). Production builds run on storehouse.cttb (cargo build +
+# cargo deb) and the resulting .deb is published to apt.cttb's extras pool.
+# This role just installs the package and templates the host-overridable
+# JSON configs over the .deb-shipped defaults.
+#
+# Layout on disk after this role runs:
+#   /usr/bin/vajra                          — binary (from .deb)
+#   /usr/share/applications/vajra.desktop   — menu entry (from .deb)
+#   /usr/local/lib/vajra/tools/             — drop-in Lua plugin dir (this role)
+#   /etc/vajra/{quick-links,ldap,sudhanix}.json — configs (this role,
+#                                                  override .deb defaults)
+#
+# Tag layout (consistent with sudhanix-core):
+#   vajra            — everything in this role
+#   vajra-install    — apt install vajra + cleanup of legacy zipapp install
+#   vajra-config     — drop-in dir + /etc/vajra/*.json
+#   install / config — universal cross-role tags
+
+# ---------- shared: drop-in dir + /etc/vajra ---------- #
+
+- name: ensure vajra runtime dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /usr/local/lib/vajra
+    - /usr/local/lib/vajra/tools
+    - /etc/vajra
+  tags:
+    - vajra
+    - vajra-install
+    - vajra-config
+    - install
+    - config
+
+# ---------- install path ---------- #
+
+- name: install vajra (from apt.cttb extras)
+  apt:
+    name: vajra
+    state: latest
+    update_cache: yes
+    cache_valid_time: 3600
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
+- name: remove legacy zipapp install (pre-deb layout)
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /usr/local/bin/vajra
+    - /usr/local/bin/vajra-test
+    - /usr/local/lib/vajra/lib
+    - /usr/local/lib/vajra/tests
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
+# ---------- config path ---------- #
+
+- name: deploy host-overridable configs (override .deb defaults)
+  copy:
+    content: "{{ item.content | to_nice_json(indent=2) }}\n"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - dest: /etc/vajra/quick-links.json
+      content: "{{ vajra_quick_links }}"
+    - dest: /etc/vajra/ldap.json
+      content:
+        uri:       "{{ vajra_ldap_uri }}"
+        base_dn:   "{{ vajra_ldap_base_dn }}"
+        people_ou: "{{ vajra_ldap_people_ou }}"
+        group_ou:  "{{ vajra_ldap_group_ou }}"
+    - dest: /etc/vajra/sudhanix.json
+      content:
+        it_email: "{{ vajra_it_email }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  tags:
+    - vajra
+    - vajra-config
+    - config

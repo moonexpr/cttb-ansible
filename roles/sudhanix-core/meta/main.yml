@@ -2,3 +2,4 @@
 
 dependencies:
   - { role: common }
+  - { role: sudhanix-vajra-tool, tags: vajra }

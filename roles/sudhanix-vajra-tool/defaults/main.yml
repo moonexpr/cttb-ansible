@@ -1,0 +1,21 @@
+---
+# vajra — sysadmin multi-tool. Distributed as a .deb from apt.cttb;
+# this role provides the host-overridable JSON configs in /etc/vajra/.
+#
+# Defaults can be overridden in host_vars or group_vars.
+
+# LDAP server URI — read by the ldap-debug + password-reset tools.
+vajra_ldap_uri: "ldap://ldap-srv.cttb"
+vajra_ldap_base_dn: "dc=cttb"
+vajra_ldap_people_ou: "ou=People,{{ vajra_ldap_base_dn }}"
+vajra_ldap_group_ou: "ou=Group,{{ vajra_ldap_base_dn }}"
+
+# Quick-links rendered by the quick_links tool's flow grid. The Lua source
+# (in ~/Garden/app/vajra) ships its own defaults baked into the .deb;
+# whatever's set here is appended to that list at render time. Format:
+# {label, url, icon} — icon is a gtk icon name.
+vajra_quick_links: []
+
+# IT email address — the "Set hostname" action pre-populates a Thunderbird
+# draft to this address requesting a DNS / DHCP record update.
+vajra_it_email: "it@cttb.org"

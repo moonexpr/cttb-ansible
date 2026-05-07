@@ -1,4 +1,10 @@
 ---
+# Tag strategy across this role + sudhanix-vajra-tool dep:
+#   install — apt, tarballs, binary deploys, PAM hooks (one-off / rare)
+#   config  — xfconf, dconf, polkit rules, JSONs, theme settings (frequent)
+#   Run a config-only refresh with: --tags config
+#   Run a fresh install with:        --tags install
+#   Default (no tag): both, same as before.
 
 - name: Set platform/version specific variables
   ansible.builtin.include_vars: "{{ __desktop_vars_file }}"
@@ -9,6 +15,8 @@
   vars:
     __desktop_vars_file: "{{ role_path }}/vars/{{ __desktop_vars_file_item }}"
   when: __desktop_vars_file is file
+  tags:
+    - always
 
 - name: Run shared setup tasks
   ansible.builtin.import_tasks: setup/default.yml
@@ -22,13 +30,18 @@
         - "{{ ansible_facts['distribution'] }}_{{ ansible_facts['distribution_major_version'] }}.yml"
       paths:
         - "{{ role_path }}/tasks/setup"
+  tags:
+    - install
+    - config
 
 - name: Sudhanix first-login bootstrap + migration
   ansible.builtin.import_tasks: sudhanix-firstlogin.yml
   tags:
+    - install
     - sudhanix_firstlogin
 
 - name: Sudhanix welcome window
   ansible.builtin.import_tasks: sudhanix-welcome.yml
   tags:
+    - install
     - sudhanix_welcome
