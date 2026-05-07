@@ -1,0 +1,28 @@
+---
+# Deploy the netinstall-2404 role to the parallel test PXE server (pxetest, 10.11.13.86).
+# The test box runs Ubuntu 22.04 + nginx (vs the legacy pxe.cttb which runs Ubuntu 16.04 + apache2).
+#
+# Scope of this play:
+#   - install nginx + tftpd-hpa + p7zip-full + pxelinux
+#   - render nginx default site (/etc/nginx/sites-available/default)
+#   - create /srv/netinstall and /var/www/html/netinstall symlink
+#   - DOES NOT push ISOs or render pxelinux.cfg by default; use the appropriate tags
+#     (ni_isos, ni_pxe_menu) when the morning's verification proves the base path works.
+#
+# Usage:
+#   ansible-playbook plays/netinstall-pxetest.yml -i inventory/hosts_pxetest.ini --check --diff
+#   ansible-playbook plays/netinstall-pxetest.yml -i inventory/hosts_pxetest.ini \
+#       --tags 'ni_webserver,ni_packages' --diff   # base path only
+
+- hosts: pxetest-server
+  become: true
+  vars:
+    ni_webserver: nginx
+    ni_h5ai_enabled: true
+    ni_php_version: "8.1"
+    ni_server_name: "pxetest.cttb"
+    # Skip the assets URL lookup that the role's defaults rely on; this test box doesn't
+    # need the `ni_isos_baseurl` to resolve until we run the ni_isos tag.
+    ansible_assets_url: "http://storehouse.cttb/ansible"
+  roles:
+    - netinstall-2404

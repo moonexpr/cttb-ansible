@@ -1,0 +1,57 @@
+---
+# Configure nginx to serve the netinstall tree.
+# Runs only when ni_webserver == 'nginx'.
+
+- name: deploy nginx default site for netinstall
+  template:
+    src: nginx/netinstall-default.conf.j2
+    dest: /etc/nginx/sites-available/default
+    owner: root
+    group: root
+    mode: 0644
+  notify: reload nginx
+
+- name: ensure nginx default site is enabled
+  file:
+    src: /etc/nginx/sites-available/default
+    dest: /etc/nginx/sites-enabled/default
+    state: link
+    owner: root
+    group: root
+  notify: reload nginx
+
+# ── Static homepage (mirrors the storehouse pattern) ────────────────────────
+
+- name: deploy static homepage index.html
+  template:
+    src: nginx/index.html.j2
+    dest: /var/www/html/index.html
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: deploy citylights CSS + fonts (shared with storehouse)
+  copy:
+    src: "{{ item }}"
+    dest: "/var/www/html/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - citylights.min.css
+    - fonts.css
+    - p31m-pattern.svg
+
+- name: deploy citylights font files
+  copy:
+    src: fonts/
+    dest: /var/www/html/fonts/
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: ensure nginx is enabled and started
+  service:
+    name: nginx
+    enabled: yes
+    state: started
