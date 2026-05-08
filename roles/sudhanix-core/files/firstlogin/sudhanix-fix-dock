@@ -108,17 +108,39 @@ else
     sfl_seed_user_dconf
 fi
 
-# 4. Restart plank if it's running in this user's session.
-if pgrep -u "$(id -u)" -x plank >/dev/null 2>&1; then
+# 4. Restart plank if it's running in this user's session. xfce4-session's
+#    autostart fires at session-start, NOT on process death, so we have to
+#    capture the running plank's X/dbus env and respawn ourselves.
+PLANK_PID=$(pgrep -u "$(id -u)" -x plank | head -1)
+if [ -n "$PLANK_PID" ]; then
     if [ "$DRY_RUN" = "1" ]; then
-        log "would: pkill -u $(id -u) -x plank (session would auto-respawn it)"
-    else
+        log "would: capture env from plank pid=$PLANK_PID, pkill plank, respawn"
+    elif [ -r "/proc/$PLANK_PID/environ" ]; then
+        # Pull DISPLAY/XAUTHORITY/DBUS_SESSION_BUS_ADDRESS/XDG_RUNTIME_DIR from
+        # the running plank — sudo -i and pam_exec contexts don't have them.
+        PLANK_ENV=$(tr '\0' '\n' < "/proc/$PLANK_PID/environ" | \
+            grep -E '^(DISPLAY|XAUTHORITY|DBUS_SESSION_BUS_ADDRESS|XDG_RUNTIME_DIR|XDG_CURRENT_DESKTOP)=' || true)
         if pkill -u "$(id -u)" -x plank 2>/dev/null; then
-            log "pkill plank — xfce4 session autostart will respawn"
+            log "killed plank pid=$PLANK_PID; respawning with captured env"
+            sleep 1
+            (
+                # shellcheck disable=SC2046
+                export $(printf '%s\n' "$PLANK_ENV" | xargs)
+                nohup plank >/dev/null 2>&1 &
+            )
+            sleep 1
+            NEW_PID=$(pgrep -u "$(id -u)" -x plank | head -1)
+            if [ -n "$NEW_PID" ]; then
+                log "plank respawned pid=$NEW_PID"
+            else
+                log "plank respawn failed — start it manually from the panel"
+            fi
         fi
+    else
+        log "cannot read /proc/$PLANK_PID/environ (perm); skipping restart"
     fi
 else
-    log "plank not running in this session"
+    log "plank not running in this session — nothing to restart"
 fi
 
 log "done"
