@@ -43,6 +43,14 @@ PRESERVE_PAIRS="
 .config/gtk-3.0/bookmarks .config/gtk-3.0/bookmarks
 "
 
+# Snap → apt profile migrations.  Pipe-delimited 4-tuples:
+#   snap_name | snap_subpath_rel | apt_dest_rel | post_copy_fn
+# snap_subpath_rel and apt_dest_rel are relative to $HOME.
+# post_copy_fn may be empty (no fixup needed).
+SNAP_APP_MIGRATIONS="
+firefox|snap/firefox/common/.mozilla/firefox|.mozilla/firefox|sfl_post_firefox
+"
+
 # ----- Helpers --------------------------------------------------------------
 
 sfl_log() {
@@ -90,7 +98,7 @@ Sudhanix ${SUDHANIX_VERSION} home-directory migration notes
 =============================================================
 
 This file was created by sudhanix-firstlogin / sudhanix-migrate-home when
-your home directory was upgraded from the previous Lubuntu/Ubuntu 20.04
+your home directory was upgraded from the previous Lubuntu 20.04
 desktop layout to the new Sudhanix ${SUDHANIX_VERSION} (XFCE) layout.
 
 Configuration files from the old desktop session were moved aside so the
@@ -271,6 +279,62 @@ sfl_write_marker() {
     sfl_log "marker written: ${MARKER_REL}"
 }
 
+# ----- Snap → apt profile migration ----------------------------------------
+
+sfl_post_firefox() {
+    _dst="$1"
+    _ini="${_dst}/profiles.ini"
+    [ -f "${_ini}" ] || return 0
+
+    # Strip the absolute snap prefix, leaving just the profile dir name.
+    sed -i \
+        "s|^Path=${HOME}/snap/firefox/common/.mozilla/firefox/||" \
+        "${_ini}" 2>/dev/null || true
+
+    # For any Path line now relative (no leading /), ensure IsRelative=1.
+    sed -i \
+        '/^Path=[^/]/{ n; s/^IsRelative=0/IsRelative=1/; }' \
+        "${_ini}" 2>/dev/null || true
+
+    sfl_log "firefox: profiles.ini rewritten (snap abs paths -> relative)"
+}
+
+sfl_migrate_snap_apps() {
+    printf '%s\n' "${SNAP_APP_MIGRATIONS}" | while IFS='|' read -r _name _snap_sub _apt_dest _post_fn; do
+        # Skip blank lines (the leading/trailing newlines in the heredoc).
+        [ -n "${_name}" ] || continue
+
+        _snap_src="${HOME}/${_snap_sub}"
+        _apt_dst="${HOME}/${_apt_dest}"
+
+        if [ ! -d "${_snap_src}" ]; then
+            sfl_log "${_name}: no snap profile at ${_snap_sub}, skip"
+            continue
+        fi
+
+        if [ -e "${_apt_dst}" ]; then
+            sfl_log "${_name}: apt path exists (${_apt_dest}), skip (idempotent)"
+            continue
+        fi
+
+        if [ "${SFL_DRY_RUN}" = "1" ]; then
+            printf '[dry-run] would: cp -a %s %s\n' "${_snap_src}" "${_apt_dst}"
+            continue
+        fi
+
+        mkdir -p "$(dirname "${_apt_dst}")" 2>/dev/null || continue
+        if cp -a "${_snap_src}" "${_apt_dst}" 2>/dev/null; then
+            sfl_log "${_name}: migrated snap profile -> ${_apt_dst}"
+            sfl_note "  ${_name}: snap profile copied to ~/${_apt_dest}"
+            if [ -n "${_post_fn}" ] && command -v "${_post_fn}" >/dev/null 2>&1; then
+                "${_post_fn}" "${_apt_dst}"
+            fi
+        else
+            sfl_log "${_name}: cp failed; snap profile intact at ${_snap_sub}"
+        fi
+    done
+}
+
 # ----- Top-level orchestrator ----------------------------------------------
 
 sfl_run_bootstrap() {
@@ -301,6 +365,7 @@ sfl_run_bootstrap() {
     sfl_init_notes
     sfl_quarantine_stale_configs
     sfl_carry_forward_preserved
+    sfl_migrate_snap_apps
     sfl_seed_from_skel
     sfl_set_xfce_session_pref
     sfl_write_marker
