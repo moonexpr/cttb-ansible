@@ -2881,3 +2881,138 @@ Empirical proof: `dbus-run-session -- bash -c '. /usr/local/lib/sudhanix-firstlo
 ### Login harness verified end-to-end
 
 `utils/run-pam-test dvgs-testmachine.cttb john.chandara` driven through `expect` (to satisfy its `read </dev/tty`) authenticated cleanly with the password sourced from Keychain, log tail confirmed `wrote /run/sudhanix-tokens/2156.tok (10 bytes)`, and the token persisted with correct ownership. Tier-1 of cttb-ansible#3 is live.
+
+---
+
+## 2026-05-08 (afternoon) — welcome panel rebuild + Plank auto-pinning fix (closes #51, #3, redoes #35)
+
+What started as a "wire up the stubbed welcome screen" issue (cttb-ansible#51) turned into the day where the dock layout finally stops fighting back. The work touches the welcome panel, the Plank dock, the dconf seed pipeline, the WhiteSur theme casing, the vajra sidebar, and (eventually) the system-db site default that was the actual problem all along.
+
+### #51 — welcome sidebar wired to Gtk.Stack
+
+Replaced the decorative ListBox + dialog popups with a real `Gtk.Stack` content router. Five named pages: `welcome`, `whats-new`, `quick-tour`, `customization`, `about`. Sidebar `ListBox` row-selection drives `stack.set_visible_child_name()`. The bottom pill buttons go away — Customization and About are first-class sidebar entries now. The Continue button + "skip on next sign-in" checkbox move out of the welcome page into a persistent action row at the bottom of the right pane, reachable from any selected page.
+
+CustomizationDialog and AboutDialog become `CustomizationPage(Gtk.Box)` and `AboutPage(Gtk.Box)`. Customization's Cancel button drops (no modal to cancel from); Apply gets inline "Applied" feedback for 2s.
+
+What's new + Quick tour pages get provisional content sourced from `wiki.cttb / Sudhanix 26 Release Notes` and `Common Tasks on Sudhanix`: 2x2 takeaway-card grids, four cards per page, each with a 44px theme-neutral SVG line-art icon at `#7a7a7a` stroke — readable on both DARK and LIGHT panel CSS without per-theme variants. Eight new SVGs land at `/usr/share/sudhanix/welcome-icons/`.
+
+Sidebar gets a macOS-Finder treatment: 16px icon next to each label, solid `#0a84ff` system-blue selected row with bold white text, tighter `4px 8px` padding. Five sidebar SVGs (`sidebar-house`, `-sparkle`, `-compass`, `-gear`, `-info`).
+
+About row "User Guide" links to a new wiki stub at `[[Sudhanix User Guide]]` — published today as a directory-of-links to Migrating, Release Notes, Common Tasks. Replaces the "being drafted right now" placeholder.
+
+### Live theme swap (DARK / LIGHT) plus xfwm4 alignment
+
+Added a `GTK_CSS_LIGHT` mirror of the existing `GTK_CSS_DARK`. `apply_css_safe(theme)` is now hot-swappable — drops the prior provider before adding the new one, otherwise dark colours bleed through light. Clicking Light/Dark on the segmented control re-applies the welcome panel's own CSS in place; Apply additionally pushes the system theme to xfconf as before.
+
+`apply_settings` now writes three xfconf knobs (`/Net/ThemeName`, `/Net/IconThemeName`, and `xfwm4 /general/theme`) on every theme switch, so window decorations follow the GTK widget theme. Same pattern in vajra's new `theme.lua` tool.
+
+### WhiteSur theme casing standardized
+
+The upstream tarballs ship inconsistently-cased dirs: GTK has `WhiteSur` (light) + `WhiteSur-Dark` (capital D); icons have lowercase `WhiteSur-light` + `WhiteSur-dark`. Setting the GTK theme to a non-existent name (we'd been using "WhiteSur-Light" everywhere) silently falls back to Adwaita, which is why the welcome panel's preview matched but the rest of the desktop did not.
+
+Fix landed in `lookandfeel.yml`: bidirectional symlinks (`WhiteSur-light` and `WhiteSur-Light` → `WhiteSur`, `WhiteSur-dark` → `WhiteSur-Dark`, plus capital aliases for icons) so any tool can use either casing and resolve to the same backing dir. THEME_MAP and vajra theme.lua use the real-dir names so they always work even without the symlinks.
+
+### Dock model: weighted anchors + four named categories
+
+Replace the ad-hoc DOCK_GROUPS / DOCK_ALWAYS_PINNED constants with four named categories — `essentials` (always-on), `office`, `code`, `art` — backed by dconf-seeded metadata at `/org/sudhanix/dock/categories/<name>/`. Sysadmins or per-host overrides can change category contents without touching the welcome script.
+
+Switched from a positional `{left, right}` anchors model to a single weighted number-space:
+
+```
+appfinder    weight    0   leftmost anchor
+essentials   weight  100   always-on category
+office       weight  300
+code         weight  500   center
+art          weight  700
+trash        weight 1000   rightmost anchor
+```
+
+apply_settings sorts every contributing group by weight and concatenates in declared order, dropping anything not present in `~/.config/plank/dock1/launchers/`. Anchors only join the sort when at least one category contributes items — toggling everything off yields a blank dock by design.
+
+`Trash.dockitem` (`Launcher=trash://`) drops into `/etc/skel/.config/plank/dock1/launchers/` so fresh users get the right anchor. The lookandfeel `setup default account files` task got extra tags (`config / install / lookandfeel / skel`) so `--tags lookandfeel` actually deploys the etc-skel tree — previously it only fired under `--tags sudhanix-core` which doesn't trigger the include itself.
+
+### customize.yml — three constants become one declarative spec
+
+Pulled THEME_MAP, BROWSER_MAP, and dock category metadata out of hardcoded Python constants into a single declarative `/usr/share/sudhanix/welcome/customize.yml`. The welcome script reads it at module load and populates theme presets, browser presets, and the dock category fallback from it. Embedded constants survive as a tertiary fallback.
+
+Resolution order:
+- Themes / browsers: customize.yml → embedded fallback
+- Dock categories: dconf user-db → customize.yml → embedded fallback
+
+CustomizationPage builds its theme segmented control, browser radio buttons, and dock chips dynamically from these data sources. Adding a theme or browser is a one-line YAML edit; sysadmins can template customize.yml per-school via Ansible.
+
+### Dismiss-without-Apply default-everything
+
+WelcomeWindow tracks `applied_during_session`. CustomizationPage._on_apply sets it on the parent. `_on_continue` (Continue button) and `_on_destroy` (window X-close) both check the flag — if Apply was never clicked, call `_apply_default_layout` which enables every non-always-on category plus the default theme and browser. So a user who never touches Customization ends up with the full dock by default rather than an empty one.
+
+### The actual root fix — Plank's auto-pinning
+
+We spent most of the day patching the symptoms of a single setting. Plank's `auto-pinning` defaults to true: any recently-launched app gets silently promoted to a permanent launcher. Plank writes a `.dockitem` file to `~/.config/plank/dock1/launchers/`, appends the app id to `dock-items` in user-db, and on every restart re-asserts the auto-detected list — undoing whatever the welcome panel just wrote.
+
+That is what JC's session was hitting: every Plank restart would re-clobber dock-items with `app.zen_browser.zen-1.dockitem`, `vlc-1.dockitem`, `ktelnetservice5.dockitem`, etc. — apps Plank had silently auto-pinned across past sessions. apply_settings would write 11 items, Plank would over-write them, and the loop continued.
+
+Two settings landed in `/etc/dconf/db/site.d/00-plank-dock1`:
+
+```
+auto-pinning = false   # no silent auto-promotion
+pinned-only  = true    # only items in dock-items render
+```
+
+With those flipped, Plank only renders what `dock-items` lists, only writes `.dockitem` files when a user explicitly right-clicks "Keep in Dock", and apply_settings becomes the durable source of truth.
+
+### Post-fix simplification
+
+Now that auto-pinning is off, the empty-and-autohidden initial state machinery is load-bearing for nothing — stripped. Site default and `plank.txt` seed both ship the canonical 11-item weighted layout from minute one, with `hide-mode='none'`. A user who never opens welcome still gets the canonical dock; a user who opens it can narrow / expand / reorder.
+
+Verbose apply tracing trimmed back to one-line summaries (kept `refresh_plank_skel: seeded=N pruned=N`, `apply theme=... browser=... dock={...}`, `dock-items rewritten: N items`, error-only branches). The defensive `refresh_plank_skel` prune logic stays for already-corrupted homes but is no longer the main line of defence.
+
+### vajra: theme tool + Sudhanix-specific drop-ins
+
+New Lua tool `theme.lua` for the vajra sidebar: status rows for GTK theme / Light-or-Dark / icon theme / cursor theme / xfwm4 window decorations / Plank dock theme / wallpaper, plus full-report and Light/Dark switch actions. Bundled in `vajra::loader::BUNDLED` for the next .deb release; deployed today as a runtime drop-in via the `sudhanix-vajra-tool` role under `vajra-config` so it shows up immediately.
+
+The role's drop-in deploy section was reorganised: `sudhanix.lua`, `welcome_reset.lua` (sidebar Sudhanix tools), and `theme.lua` (sidebar System tool) now ship as Sudhanix-specific runtime tools alongside the four `test_*.lua` Testing-category tools, keeping vajra's upstream package portable.
+
+### #3 login harness, end-to-end across the deploy
+
+`utils/run-pam-test` driven via `expect` against the freshly-deployed binary on dvgs-testmachine:
+
+```
+auth          → pamtester: successfully authenticated; wrote /run/sudhanix-tokens/2156.tok (10 bytes)
+open_session  → [shred] invoked PAM_TYPE=open_session ... skip: not close_session
+ldapsearch -y → returns JC's entry; sudhanixWelcomeDismissed not present (welcome would render)
+close_session → [shred] shredded /run/sudhanix-tokens/2156.tok
+welcome FORCE → start pid=... uid=2156 force=True; refresh_plank_skel: seeded=11 pruned=0 ([])
+```
+
+Five-Apply smoke under JC's session driver: T1 (office only) → 9 items; T2 (all categories) → 11; T3 (all chips off) → 6 (essentials + anchors); T4 (simulated dismiss-default) → 11; restore → 9. Every Apply rewrites dock-items in dconf with `rc=0`, `launchers/` stays at exactly the 11 canonical files, `auto-pinning=false` blocks any re-auto-detect.
+
+### Files touched
+
+```
+roles/sudhanix-core/files/welcome/sudhanix-welcome           +700 line refactor
+roles/sudhanix-core/files/welcome/customize.yml              new — declarative spec
+roles/sudhanix-core/files/welcome/icons/sidebar-*.svg        5 new sidebar icons
+roles/sudhanix-core/files/welcome/icons/{lotus-menu,
+  spotlight, dock, snap-package, keyboard, tile-windows,
+  folder-split, screenshot, cloud-home}.svg                  9 new content-card icons
+roles/sudhanix-core/files/dconf-db/00-plank-dock1            site default — auto-pinning fix
+roles/sudhanix-core/files/firstlogin/dconf-seeds/dock-{
+  essentials, office, code, art }.txt                        new — category metadata
+roles/sudhanix-core/files/firstlogin/dconf-seeds/plank.txt   day-1 dock + auto-pinning
+roles/sudhanix-core/files/firstlogin/sudhanix-fix-dock       per-user remediation tool
+roles/sudhanix-core/files/config/etc-skel/.config/plank/
+  dock1/launchers/Trash.dockitem                             new — right-anchor
+roles/sudhanix-core/tasks/lookandfeel.yml                    bidirectional theme symlinks
+roles/sudhanix-core/tasks/sudhanix-welcome.yml               customize.yml + icons + Trash
+roles/sudhanix-vajra-tool/files/tools/theme.lua              new vajra tool
+roles/sudhanix-vajra-tool/tasks/main.yml                     drop-in re-org
+
+monogarden:
+  app/vajra/src/tools/theme.lua                              new bundled tool
+  app/vajra/src/loader.rs                                    BUNDLED entry
+
+wiki:
+  Sudhanix User Guide                                        new stub
+```
+
+Closes cttb-ansible#51, cttb-ansible#3. Re-validates cttb-ansible#35 (the empty-user-db preseed approach still works; the auto-pinning fix is the more complete answer).
