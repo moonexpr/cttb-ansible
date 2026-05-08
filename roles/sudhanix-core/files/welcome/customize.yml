@@ -1,0 +1,109 @@
+# customize.yml — declarative spec for the Sudhanix welcome panel's
+# Customization tab.
+#
+# The welcome script reads this file at module load and uses it to populate
+# every customization-tab choice: theme presets, browser presets, and the
+# dock category fallback (the live source of truth for dock categories is
+# dconf at /org/sudhanix/dock/categories/, seeded from the dock-*.txt files
+# in /etc/sudhanix/dconf-seeds/; this file's dock_categories section is the
+# tertiary fallback used only when dconf is unreachable).
+#
+# Edit here for fleet-wide changes; per-host overrides are still possible
+# via xfconf-query / dconf at the system-db layer. The script falls back to
+# embedded Python constants if this file is missing or unparseable, so
+# editing it never breaks the panel — at worst the panel reverts to defaults.
+#
+# Deployed to /usr/share/sudhanix/welcome/customize.yml by the
+# sudhanix-welcome.yml task.
+
+# ── Theme presets ───────────────────────────────────────────────────────────
+# Each entry maps to (gtk theme dir, icon theme dir, xfwm4 window-decoration
+# dir). xfwm4 reads the GTK theme dir for window decorations, so the gtk and
+# xfwm fields usually share a value; we keep them separate so a host could
+# pin one without the other if needed. lookandfeel.yml ships bidirectional
+# casing symlinks so either lower or capital case resolves on disk.
+themes:
+  - id: Light
+    label: Light
+    gtk: WhiteSur
+    icon: WhiteSur-light
+    xfwm: WhiteSur
+  - id: Dark
+    label: Dark
+    gtk: WhiteSur-Dark
+    icon: WhiteSur-dark
+    xfwm: WhiteSur-Dark
+  - id: Auto
+    label: Auto
+    # TODO(v2): Auto needs xdg-portal or sunset cron for day/night switching.
+    # Until that lands, Auto resolves to Dark.
+    gtk: WhiteSur-Dark
+    icon: WhiteSur-dark
+    xfwm: WhiteSur-Dark
+
+# Default theme selected when the panel first opens (id must match a theme).
+default_theme: Dark
+
+# ── Browser presets ─────────────────────────────────────────────────────────
+# `desktop` is the .desktop filename xdg-settings registers as the system
+# default web browser. Adding a browser here makes it appear as a radio
+# button in the Customization tab; remove a row to drop it from the panel.
+browsers:
+  - id: Chrome
+    label: Chrome
+    desktop: google-chrome.desktop
+  - id: Firefox
+    label: Firefox
+    desktop: firefox.desktop
+  - id: Zen
+    label: Zen
+    desktop: zen-browser.desktop
+
+default_browser: Chrome
+
+# ── Dock category fallback ──────────────────────────────────────────────────
+# Live data normally comes from /org/sudhanix/dock/categories/<name>/ in
+# dconf (seeded at first login from /etc/sudhanix/dconf-seeds/dock-*.txt).
+# This block is consulted only when the dconf service is unreachable
+# (Xvfb / CI smoke tests, or transient dconf-service failures). Keep this
+# in sync with the dock-*.txt seed files; both are intended to express the
+# same defaults.
+dock_categories:
+  essentials:
+    items:
+      - xfce4-appfinder.dockitem
+      - thunar.dockitem
+      - thunderbird.dockitem
+      - com.google.Chrome.dockitem
+      - Zoom.dockitem
+    label: Essentials
+    always_on: true
+    order: 10
+    default_enabled: true
+  office:
+    items:
+      - libreoffice-writer.dockitem
+      - libreoffice-calc.dockitem
+      - org.gnome.Calculator.dockitem
+    label: Office
+    always_on: false
+    order: 20
+    default_enabled: true
+  code:
+    items:
+      - org.gnome.gedit.dockitem
+      - xfce4-terminal.dockitem
+      - code.dockitem
+    label: Code
+    always_on: false
+    order: 30
+    default_enabled: false
+  art:
+    items:
+      - gimp.dockitem
+      - inkscape.dockitem
+      - krita.dockitem
+    label: Art
+    always_on: false
+    order: 40
+    default_enabled: false
