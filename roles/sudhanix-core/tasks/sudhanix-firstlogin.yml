@@ -67,6 +67,16 @@
   tags:
     - sudhanix_firstlogin
 
+- name: deploy sudhanix-fix-dock (per-user remediation tool)
+  copy:
+    src: firstlogin/sudhanix-fix-dock
+    dest: /usr/local/sbin/sudhanix-fix-dock
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_firstlogin
+
 - name: deploy Xsession.d hook (primary trigger)
   copy:
     src: firstlogin/55sudhanix-firstlogin
