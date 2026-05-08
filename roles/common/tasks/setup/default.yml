@@ -191,8 +191,8 @@
   copy:
     content: |
       The programs included with {{ sudhanix_description }} are derived from
-      Ubuntu and free software; the exact distribution terms for each program
-      are described in the individual files in /usr/share/doc/*/copyright.
+      free and open source software; the exact distribution terms for each
+      program are described in the individual files in /usr/share/doc/*/copyright.
     dest: /etc/legal
     mode: 0644
     owner: root
