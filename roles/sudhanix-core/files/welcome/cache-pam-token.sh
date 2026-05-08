@@ -55,14 +55,29 @@ if ! mkdir -p "$DIR" 2>/dev/null; then
 fi
 chmod 1733 "$DIR" 2>/dev/null || true
 
-# Write the token, owned by the user, readable only by them.
+# Write atomically: mktemp(1) the file root-owned, populate, chown, fsync-rename.
+# Avoids the EACCES path where bash > redirect tries to truncate a pre-existing
+# user-owned token file. lightdm's pam_exec child has been observed unable to
+# truncate-open the existing file (suspected AppArmor/seccomp mediation),
+# even though it can create+rename a fresh one.
 umask 077
-if printf '%s' "$PW" > "$TOKEN"; then
-    chown "$UID_NUM:$UID_NUM" "$TOKEN" 2>/dev/null || log "warn: chown $TOKEN failed"
-    chmod 0600 "$TOKEN" 2>/dev/null || true
+TMP="$(mktemp -p "$DIR" ".${UID_NUM}.tok.XXXXXX" 2>/dev/null || true)"
+if [[ -z "$TMP" ]]; then
+    log "exit: mktemp in $DIR failed"
+    exit 0
+fi
+chmod 0600 "$TMP" 2>/dev/null || true
+if ! printf '%s' "$PW" > "$TMP"; then
+    log "exit: write $TMP failed"
+    rm -f "$TMP" 2>/dev/null
+    exit 0
+fi
+chown "$UID_NUM:$UID_NUM" "$TMP" 2>/dev/null || log "warn: chown $TMP failed"
+if mv -f "$TMP" "$TOKEN" 2>/dev/null; then
     log "wrote $TOKEN (${#PW} bytes)"
 else
-    log "exit: write $TOKEN failed"
+    log "exit: rename $TMP -> $TOKEN failed"
+    rm -f "$TMP" 2>/dev/null
 fi
 
 exit 0
