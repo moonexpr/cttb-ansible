@@ -192,6 +192,33 @@
       - sudhanix-core
       - theme
 
+  # Theme casing is split across the two upstream tarballs: the GTK package
+  # ships /usr/share/themes/WhiteSur (light) + /WhiteSur-Dark (capital D),
+  # while the icon package ships /usr/share/icons/WhiteSur-light + -dark
+  # (lowercase). xfwm4 reads the GTK theme dir for window decorations, so
+  # window decor follows GTK casing. Add bidirectional symlinks so any tool
+  # (xfconf-query, the welcome panel, vajra theme.lua) can use either
+  # casing and resolve to the same backing dir.
+  - name: bidirectional WhiteSur theme/icon casing symlinks
+    file:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      state: link
+      force: yes
+    loop:
+      # GTK theme dir aliases (real: WhiteSur, WhiteSur-Dark)
+      - { src: WhiteSur,      dest: /usr/share/themes/WhiteSur-light }
+      - { src: WhiteSur,      dest: /usr/share/themes/WhiteSur-Light }
+      - { src: WhiteSur-Dark, dest: /usr/share/themes/WhiteSur-dark }
+      # Icon theme dir aliases (real: WhiteSur-light, WhiteSur-dark)
+      - { src: WhiteSur-light, dest: /usr/share/icons/WhiteSur-Light }
+      - { src: WhiteSur-dark,  dest: /usr/share/icons/WhiteSur-Dark }
+    tags:
+      - sudhanix-core
+      - theme
+      - config
+      - lookandfeel
+
   - name: install WhiteSur icon theme (includes dark variant)
     unarchive:
       remote_src: yes

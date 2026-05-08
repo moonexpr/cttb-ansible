@@ -1,0 +1,19 @@
+# Plank dock category: essentials.
+#
+# The always-pinned baseline — every Sudhanix user gets these, regardless
+# of category preferences. App-finder, file manager, mail, browser, video
+# call. Five items chosen to cover the campus's daily-driver minimum.
+#
+# Loaded by sudhanix-firstlogin's sfl_seed_user_dconf into the user's
+# dconf user-db. The Welcome panel's Customization page reads this
+# category back from dconf at startup and renders the chip set; the
+# in-script DOCK_CATEGORIES_FALLBACK is only used when the dconf service
+# is unreachable (e.g. during CI-style Xvfb tests).
+#
+# prefix: /org/sudhanix/dock/
+
+[categories/essentials]
+items=['xfce4-appfinder.dockitem', 'thunar.dockitem', 'thunderbird.dockitem', 'com.google.Chrome.dockitem', 'Zoom.dockitem']
+label='Essentials'
+always-on=true
+order=10

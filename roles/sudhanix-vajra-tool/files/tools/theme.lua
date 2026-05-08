@@ -4,13 +4,13 @@
 -- the welcome window. Read-only by default; theme switching is a separate
 -- action with its own button.
 
--- GTK theme dir + icon theme dir for each mode. Names match what's actually
--- installed in /usr/share/themes/ and /usr/share/icons/: the WhiteSur GTK
--- package ships a base "WhiteSur" (light) plus "WhiteSur-Dark"; the icon
--- set ships lowercase "WhiteSur-light" / "WhiteSur-dark". Non-existent
--- names silently fall back to Adwaita.
-local LIGHT_GTK,  LIGHT_ICONS  = "WhiteSur",      "WhiteSur-light"
-local DARK_GTK,   DARK_ICONS   = "WhiteSur-Dark", "WhiteSur-dark"
+-- GTK theme + icon theme + xfwm4 window decorations per mode. Names match
+-- the real on-disk dirs: GTK ships "WhiteSur" (light) + "WhiteSur-Dark"
+-- (capital D), icons ship "WhiteSur-light" + "WhiteSur-dark" (lowercase).
+-- xfwm4 decorations share the GTK theme dir. lookandfeel.yml ships
+-- bidirectional casing aliases so xfconf set with either case resolves.
+local LIGHT_GTK,  LIGHT_ICONS,  LIGHT_XFWM  = "WhiteSur",      "WhiteSur-light", "WhiteSur"
+local DARK_GTK,   DARK_ICONS,   DARK_XFWM   = "WhiteSur-Dark", "WhiteSur-dark",  "WhiteSur-Dark"
 
 local function trim(s)
   return (s or ""):gsub("^%s*(.-)%s*$", "%1")
@@ -180,39 +180,41 @@ return {
 
     {
       name = "switch_light",
-      label = "Switch GTK + icons to Light (" .. LIGHT_GTK .. " / " .. LIGHT_ICONS .. ")",
+      label = "Switch to Light (" .. LIGHT_GTK .. ")",
       button_label = "Light",
-      confirm = "Set GTK theme to " .. LIGHT_GTK .. " and icons to " .. LIGHT_ICONS .. "?",
+      confirm = "Set GTK + icons + window decorations to " .. LIGHT_GTK .. "?",
       runner = function(ctx)
         local r1 = xfconf_write(ctx, "xsettings", "/Net/ThemeName",     LIGHT_GTK)
         local r2 = xfconf_write(ctx, "xsettings", "/Net/IconThemeName", LIGHT_ICONS)
-        if r1.returncode ~= 0 or r2.returncode ~= 0 then
+        local r3 = xfconf_write(ctx, "xfwm4",     "/general/theme",     LIGHT_XFWM)
+        if r1.returncode ~= 0 or r2.returncode ~= 0 or r3.returncode ~= 0 then
           return {
             ok = false,
             title = "Theme switch failed",
-            details = trim(r1.stderr) .. "\n" .. trim(r2.stderr),
+            details = trim(r1.stderr) .. "\n" .. trim(r2.stderr) .. "\n" .. trim(r3.stderr),
           }
         end
-        return { ok = true, title = "Switched to " .. LIGHT_GTK .. " / " .. LIGHT_ICONS }
+        return { ok = true, title = "Switched to " .. LIGHT_GTK }
       end,
     },
 
     {
       name = "switch_dark",
-      label = "Switch GTK + icons to Dark (" .. DARK_GTK .. " / " .. DARK_ICONS .. ")",
+      label = "Switch to Dark (" .. DARK_GTK .. ")",
       button_label = "Dark",
-      confirm = "Set GTK theme to " .. DARK_GTK .. " and icons to " .. DARK_ICONS .. "?",
+      confirm = "Set GTK + icons + window decorations to " .. DARK_GTK .. "?",
       runner = function(ctx)
         local r1 = xfconf_write(ctx, "xsettings", "/Net/ThemeName",     DARK_GTK)
         local r2 = xfconf_write(ctx, "xsettings", "/Net/IconThemeName", DARK_ICONS)
-        if r1.returncode ~= 0 or r2.returncode ~= 0 then
+        local r3 = xfconf_write(ctx, "xfwm4",     "/general/theme",     DARK_XFWM)
+        if r1.returncode ~= 0 or r2.returncode ~= 0 or r3.returncode ~= 0 then
           return {
             ok = false,
             title = "Theme switch failed",
-            details = trim(r1.stderr) .. "\n" .. trim(r2.stderr),
+            details = trim(r1.stderr) .. "\n" .. trim(r2.stderr) .. "\n" .. trim(r3.stderr),
           }
         end
-        return { ok = true, title = "Switched to " .. DARK_GTK .. " / " .. DARK_ICONS }
+        return { ok = true, title = "Switched to " .. DARK_GTK }
       end,
     },
   },
