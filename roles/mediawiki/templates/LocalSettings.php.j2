@@ -133,6 +133,32 @@ $wgHooks["BeforePageDisplay"][] = function ( $out ) {
     $out->addStyle( $out->getConfig()->get( 'ScriptPath' ) . '/resources/assets/cttb-dark.css' );
 };
 
+{% if mediawiki_lockdown and mediawiki_lockdown_search_visible %}
+## Search visibility override — keep restricted titles in the search bar.
+##
+## Lockdown's onSearchableNamespaces strips restricted namespaces from the
+## searchable list, and onSearchGetNearMatchComplete nulls out exact-title
+## "Go" matches for users without the read group. We register hooks after
+## Lockdown to reverse both filters so every page surfaces in Special:Search
+## hits and the main search bar dropdown. Reading is still blocked by
+## Lockdown's getUserPermissionsErrors — clicking a restricted hit lands on
+## the badaccess-groups error page.
+$wgHooks["SearchableNamespaces"][] = function ( &$searchableNs ) {
+{% for ns in mediawiki_extra_namespaces %}
+    $searchableNs[NS_{{ ns.name | upper }}] = "{{ ns.name }}";
+{% endfor %}
+};
+
+$wgHooks["SearchGetNearMatchComplete"][] = function ( $searchterm, &$title ) {
+    if ( $title === null ) {
+        $candidate = Title::newFromText( $searchterm );
+        if ( $candidate && $candidate->exists() ) {
+            $title = $candidate;
+        }
+    }
+};
+
+{% endif %}
 {% if mediawiki_lockdown %}
 ## Decorate links to read-restricted pages with a lock prefix.
 ## Parser-cache-safe two-pass design:
