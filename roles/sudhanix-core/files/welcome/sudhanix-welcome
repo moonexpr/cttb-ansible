@@ -352,29 +352,19 @@ def lotus_image(size: int) -> Gtk.Image | None:
         return None
 
 
-# ── About dialog ─────────────────────────────────────────────────────────────
-class AboutDialog(Gtk.Dialog):
+# ── About page ───────────────────────────────────────────────────────────────
+class AboutPage(Gtk.Box):
     """
-    420x360 modal, transient on the welcome window.
-    Static info: logo, OS name/build, wiki links, credit.
+    Inline stack page: logo, OS name/build, wiki links, credit.
+    Was AboutDialog (modal) until #51 wired the sidebar to Gtk.Stack.
     """
 
-    def __init__(self, parent: Gtk.Window) -> None:
-        super().__init__(
-            title="About Sudhanix",
-            transient_for=parent,
-            modal=True,
-        )
-        self.set_default_size(420, 360)
-        self.set_resizable(False)
-
-        area = self.get_content_area()
-        area.set_border_width(0)
-        area.set_spacing(0)
+    def __init__(self) -> None:
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 
         body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         body.set_border_width(22)
-        area.add(body)
+        self.pack_start(body, True, True, 0)
 
         # Hero block: lotus + wordmark + build line
         hero = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -472,32 +462,21 @@ class AboutDialog(Gtk.Dialog):
         foot_lbl.set_margin_top(10)
         body.pack_start(foot_lbl, False, False, 0)
 
-        self.show_all()
 
-
-# ── Customization dialog ──────────────────────────────────────────────────────
-class CustomizationDialog(Gtk.Dialog):
+# ── Customization page ───────────────────────────────────────────────────────
+class CustomizationPage(Gtk.Box):
     """
-    480x380 modal, transient on the welcome window.
-    Collects theme, wallpaper rotation, dock groups, default browser.
-    Apply button calls apply_settings(); Cancel discards.
+    Inline stack page: theme, wallpaper rotation, dock groups, default browser.
+    Apply button writes apply_settings(); was CustomizationDialog (modal) until
+    #51 wired the sidebar to Gtk.Stack.
     """
 
-    def __init__(self, parent: Gtk.Window) -> None:
-        super().__init__(
-            title="Customization",
-            transient_for=parent,
-            modal=True,
-        )
-        self.set_default_size(480, 380)
-        self.set_resizable(False)
-
-        area = self.get_content_area()
-        area.set_border_width(0)
+    def __init__(self) -> None:
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 
         body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         body.set_border_width(22)
-        area.add(body)
+        self.pack_start(body, True, True, 0)
 
         # ── Header ──
         header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -635,7 +614,7 @@ class CustomizationDialog(Gtk.Dialog):
         # Spacer
         body.pack_start(Gtk.Box(), True, True, 0)
 
-        # ── Footer: Cancel / Apply ──
+        # ── Footer: Apply (Cancel dropped — no modal to cancel from) ──
         foot_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         foot_sep.set_margin_bottom(10)
         body.pack_start(foot_sep, False, False, 0)
@@ -643,18 +622,12 @@ class CustomizationDialog(Gtk.Dialog):
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_halign(Gtk.Align.END)
 
-        cancel_btn = Gtk.Button(label="Cancel")
-        cancel_btn.connect("clicked", lambda _: self.response(Gtk.ResponseType.CANCEL))
-        btn_row.pack_start(cancel_btn, False, False, 0)
-
-        apply_btn = Gtk.Button(label="Apply")
-        apply_btn.get_style_context().add_class("suggested-action")
-        apply_btn.connect("clicked", self._on_apply)
-        btn_row.pack_start(apply_btn, False, False, 0)
+        self._apply_btn = Gtk.Button(label="Apply")
+        self._apply_btn.get_style_context().add_class("suggested-action")
+        self._apply_btn.connect("clicked", self._on_apply)
+        btn_row.pack_start(self._apply_btn, False, False, 0)
 
         body.pack_start(btn_row, False, False, 0)
-
-        self.show_all()
 
     # ── internal helpers ──
 
@@ -703,16 +676,43 @@ class CustomizationDialog(Gtk.Dialog):
             "browser": self._selected_browser,
         }
         apply_settings(values)
-        self.response(Gtk.ResponseType.APPLY)
+        # Inline-page feedback: Apply confirms by updating the button label.
+        # Reset on next change is out of scope here — apply is idempotent.
+        self._apply_btn.set_label("Applied")
+        self._apply_btn.set_sensitive(False)
+        GLib.timeout_add_seconds(2, self._reset_apply_button)
+
+    def _reset_apply_button(self) -> bool:
+        self._apply_btn.set_label("Apply")
+        self._apply_btn.set_sensitive(True)
+        return False  # one-shot
 
 
 # ── Main welcome window ───────────────────────────────────────────────────────
+# Stack page identifiers — keep keys stable so wiki/style/wiring references hold.
+PAGE_WELCOME = "welcome"
+PAGE_WHATS_NEW = "whats-new"
+PAGE_QUICK_TOUR = "quick-tour"
+PAGE_CUSTOMIZATION = "customization"
+PAGE_ABOUT = "about"
+
+# Sidebar nav rows: (page-name, label). Order is presentation order.
+SIDEBAR_NAV = (
+    (PAGE_WELCOME, "Welcome"),
+    (PAGE_WHATS_NEW, "What’s new"),
+    (PAGE_QUICK_TOUR, "Quick tour"),
+    (PAGE_CUSTOMIZATION, "Customization"),
+    (PAGE_ABOUT, "About"),
+)
+
+
 class WelcomeWindow(Gtk.Window):
     """
     960x540 main panel.
-    Left sidebar (240px) + right content pane.
-    Sidebar has brand lockup, nav list, Customization/About pill buttons.
-    Content pane has title, subtitle, 3 body rows, action row.
+    Left sidebar (240px) + right pane (Gtk.Stack on top, persistent action row
+    at the bottom). Sidebar ListBox row-selection drives stack page switch.
+    Visual / copy redesign tracked in #4; this layout is the wiring layer
+    landed in #51.
     """
 
     def __init__(self) -> None:
@@ -729,8 +729,19 @@ class WelcomeWindow(Gtk.Window):
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.add(hbox)
 
+        # Stack must exist before sidebar is built (sidebar binds to it).
+        self._stack = Gtk.Stack()
+        self._stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self._stack.set_transition_duration(180)
+        self._stack.add_named(self._build_welcome_page(), PAGE_WELCOME)
+        self._stack.add_named(self._build_whats_new_page(), PAGE_WHATS_NEW)
+        self._stack.add_named(self._build_quick_tour_page(), PAGE_QUICK_TOUR)
+        self._stack.add_named(CustomizationPage(), PAGE_CUSTOMIZATION)
+        self._stack.add_named(AboutPage(), PAGE_ABOUT)
+        self._stack.set_visible_child_name(PAGE_WELCOME)
+
         hbox.pack_start(self._build_sidebar(), False, False, 0)
-        hbox.pack_start(self._build_content(), True, True, 0)
+        hbox.pack_start(self._build_right_pane(), True, True, 0)
 
     def _build_sidebar(self) -> Gtk.Box:
         sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -782,48 +793,32 @@ class WelcomeWindow(Gtk.Window):
         nav_heading.set_margin_bottom(6)
         inner.pack_start(nav_heading, False, False, 0)
 
-        # Nav list (decorative — only "Welcome" is interactive in v1)
+        # Nav list — every row routes to a Gtk.Stack page (#51).
         nav_list = Gtk.ListBox()
         nav_list.get_style_context().add_class("navigation-sidebar")
         nav_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        nav_list.set_activate_on_single_click(False)
+        nav_list.set_activate_on_single_click(True)
 
-        for i, nav_label in enumerate(("Welcome", "What’s new", "Quick tour")):
+        first_row: Gtk.ListBoxRow | None = None
+        for page_name, nav_label in SIDEBAR_NAV:
             row = Gtk.ListBoxRow()
+            row.page_name = page_name  # type: ignore[attr-defined]
             lbl = Gtk.Label(label=nav_label)
             lbl.set_xalign(0)
             lbl.set_margin_start(4)
             row.add(lbl)
             nav_list.add(row)
-            if i == 0:
-                nav_list.select_row(row)
+            if first_row is None:
+                first_row = row
+
+        nav_list.connect("row-selected", self._on_nav_row_selected)
+        if first_row is not None:
+            nav_list.select_row(first_row)
 
         inner.pack_start(nav_list, False, False, 0)
 
-        # Spacer pushes pills to the bottom
+        # Spacer pushes the build-stamp footer to the bottom.
         inner.pack_start(Gtk.Box(), True, True, 0)
-
-        # Pill buttons
-        cust_btn = Gtk.Button()
-        cust_btn.get_style_context().add_class("pill")
-        cust_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        cust_lbl = Gtk.Label(label="Customization")
-        cust_lbl.set_xalign(0)
-        cust_box.pack_start(cust_lbl, True, True, 0)
-        cust_btn.add(cust_box)
-        cust_btn.connect("clicked", self._open_customization)
-        inner.pack_start(cust_btn, False, False, 0)
-
-        about_btn = Gtk.Button()
-        about_btn.get_style_context().add_class("pill")
-        about_btn.set_margin_top(8)
-        about_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        about_lbl = Gtk.Label(label="About")
-        about_lbl.set_xalign(0)
-        about_box.pack_start(about_lbl, True, True, 0)
-        about_btn.add(about_box)
-        about_btn.connect("clicked", self._open_about)
-        inner.pack_start(about_btn, False, False, 0)
 
         # Sidebar footer
         foot_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
@@ -839,29 +834,71 @@ class WelcomeWindow(Gtk.Window):
 
         return sidebar
 
-    def _build_content(self) -> Gtk.Box:
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        content.set_margin_top(34)
-        content.set_margin_bottom(26)
-        content.set_margin_start(36)
-        content.set_margin_end(36)
+    def _build_right_pane(self) -> Gtk.Box:
+        """Stack on top, persistent action row at the bottom."""
+        right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 
-        # Title
+        # Stack expands to fill available height.
+        right.pack_start(self._stack, True, True, 0)
+
+        # Persistent action row at the bottom of the right pane (lives outside
+        # the stack so Continue is reachable from every page).
+        action_wrap = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        action_wrap.set_margin_start(36)
+        action_wrap.set_margin_end(36)
+        action_wrap.set_margin_bottom(26)
+
+        action_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        action_sep.set_margin_bottom(12)
+        action_wrap.pack_start(action_sep, False, False, 0)
+
+        action_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        self._skip_checkbox = Gtk.CheckButton(
+            label="Got it — skip this on next sign‑in"
+        )
+        self._skip_checkbox.set_active(True)
+        action_row.pack_start(self._skip_checkbox, False, False, 0)
+
+        action_row.pack_start(Gtk.Box(), True, True, 0)
+
+        continue_btn = Gtk.Button(label="Continue")
+        continue_btn.get_style_context().add_class("suggested-action")
+        continue_btn.set_can_default(True)
+        continue_btn.connect("clicked", self._on_continue)
+        action_row.pack_start(continue_btn, False, False, 0)
+
+        action_wrap.pack_start(action_row, False, False, 0)
+        right.pack_start(action_wrap, False, False, 0)
+
+        return right
+
+    # ── stack pages ──
+
+    def _new_page_box(self) -> Gtk.Box:
+        """Vbox with the standard content margins shared across stack pages."""
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        page.set_margin_top(34)
+        page.set_margin_start(36)
+        page.set_margin_end(36)
+        # Bottom margin is owned by the persistent action row, not the page.
+        return page
+
+    def _build_welcome_page(self) -> Gtk.Box:
+        page = self._new_page_box()
+
         title = Gtk.Label()
         title.set_markup(
             "<span weight='600' size='24576'>Welcome to Sudhanix 26</span>"
         )
         title.set_xalign(0)
-        content.pack_start(title, False, False, 0)
+        page.pack_start(title, False, False, 0)
 
-        # Subtitle
         subtitle = Gtk.Label(label="City of Ten Thousand Buddhas lab network")
         subtitle.get_style_context().add_class("dim-label")
         subtitle.set_xalign(0)
         subtitle.set_margin_top(4)
-        content.pack_start(subtitle, False, False, 0)
+        page.pack_start(subtitle, False, False, 0)
 
-        # Body rows
         rows_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         rows_box.set_margin_top(28)
 
@@ -895,53 +932,86 @@ class WelcomeWindow(Gtk.Window):
             row.pack_start(lbl, True, True, 0)
             rows_box.pack_start(row, False, False, 0)
 
-        content.pack_start(rows_box, False, False, 0)
+        page.pack_start(rows_box, False, False, 0)
+        page.pack_start(Gtk.Box(), True, True, 0)
+        return page
 
-        # Spacer
-        content.pack_start(Gtk.Box(), True, True, 0)
-
-        # Action row separator
-        action_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        action_sep.set_margin_top(14)
-        action_sep.set_margin_bottom(12)
-        content.pack_start(action_sep, False, False, 0)
-
-        # Action row: checkbox + Continue
-        action_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-
-        self._skip_checkbox = Gtk.CheckButton(
-            label="Got it — skip this on next sign‑in"
+    def _build_whats_new_page(self) -> Gtk.Box:
+        # Stub — copy lands in #4; release-note content lives at
+        # http://wiki.cttb/wiki/Sudhanix_26_Release_Notes (#24/#25 pending).
+        return _build_stub_page(
+            heading="What’s new in Sudhanix 26",
+            body=(
+                "Release notes are being prepared. Until they land here, see "
+                "wiki.cttb / Sudhanix_26_Release_Notes for the live draft."
+            ),
+            wiki_path="Sudhanix_26_Release_Notes",
         )
-        self._skip_checkbox.set_active(True)
-        action_row.pack_start(self._skip_checkbox, False, False, 0)
 
-        action_row.pack_start(Gtk.Box(), True, True, 0)
+    def _build_quick_tour_page(self) -> Gtk.Box:
+        # Stub — interactive tour is a v2 idea (#4 design package).
+        return _build_stub_page(
+            heading="Quick tour",
+            body=(
+                "An interactive walkthrough of the dock, panel, app finder, "
+                "and your roaming home directory will live here. For now, "
+                "see Common Tasks on Sudhanix on the wiki."
+            ),
+            wiki_path="Common_Tasks_on_Sudhanix",
+        )
 
-        continue_btn = Gtk.Button(label="Continue")
-        continue_btn.get_style_context().add_class("suggested-action")
-        continue_btn.set_can_default(True)
-        continue_btn.connect("clicked", self._on_continue)
-        action_row.pack_start(continue_btn, False, False, 0)
+    # ── handlers ──
 
-        content.pack_start(action_row, False, False, 0)
-
-        return content
-
-    # ── button handlers ──
-
-    def _open_customization(self, _btn: Gtk.Button) -> None:
-        dlg = CustomizationDialog(self)
-        dlg.run()
-        dlg.destroy()
-
-    def _open_about(self, _btn: Gtk.Button) -> None:
-        dlg = AboutDialog(self)
-        dlg.run()
-        dlg.destroy()
+    def _on_nav_row_selected(
+        self, _list: Gtk.ListBox, row: Gtk.ListBoxRow | None
+    ) -> None:
+        if row is None:
+            return
+        page_name = getattr(row, "page_name", None)
+        if page_name:
+            self._stack.set_visible_child_name(page_name)
 
     def _on_continue(self, _btn: Gtk.Button) -> None:
         self.dismiss_on_continue = self._skip_checkbox.get_active()
         Gtk.main_quit()
+
+
+def _build_stub_page(*, heading: str, body: str, wiki_path: str) -> Gtk.Box:
+    """Placeholder stack page — heading + paragraph + wiki link.
+    Visual / copy redesign is #4; this is the interim filler #51 ships."""
+    page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+    page.set_margin_top(34)
+    page.set_margin_start(36)
+    page.set_margin_end(36)
+
+    title = Gtk.Label()
+    title.set_markup(
+        f"<span weight='600' size='24576'>"
+        f"{GLib.markup_escape_text(heading)}</span>"
+    )
+    title.set_xalign(0)
+    page.pack_start(title, False, False, 0)
+
+    para = Gtk.Label(label=body)
+    para.get_style_context().add_class("dim-label")
+    para.set_xalign(0)
+    para.set_line_wrap(True)
+    para.set_max_width_chars(60)
+    para.set_margin_top(18)
+    page.pack_start(para, False, False, 0)
+
+    link = Gtk.Label()
+    url = f"http://wiki.cttb/wiki/{wiki_path}"
+    link.set_markup(
+        f'<a href="{GLib.markup_escape_text(url)}">'
+        f'wiki.cttb / {GLib.markup_escape_text(wiki_path)}</a>'
+    )
+    link.set_xalign(0)
+    link.set_margin_top(14)
+    page.pack_start(link, False, False, 0)
+
+    page.pack_start(Gtk.Box(), True, True, 0)
+    return page
 
 
 # ── CSS injection ─────────────────────────────────────────────────────────────
