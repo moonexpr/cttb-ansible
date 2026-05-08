@@ -30,6 +30,12 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf, GLib, Gtk  # noqa: E402
 
+try:
+    import yaml  # type: ignore[import-not-found]
+    _HAVE_YAML = True
+except Exception:  # pragma: no cover — yaml is in python3-yaml on Sudhanix
+    _HAVE_YAML = False
+
 # ── LDAP constants (unchanged from v1) ───────────────────────────────────────
 LDAP_URI = "ldap://ldap-srv.cttb"
 LDAP_DN_TEMPLATE = "uid={uid},ou=People,dc=cttb"
@@ -49,38 +55,115 @@ WELCOME_ICONS_DIR = "/usr/share/sudhanix/welcome-icons"
 SUDHANIX_CONFIG_DIR = Path.home() / ".config" / "sudhanix"
 DOCK_PREFS_FILE = SUDHANIX_CONFIG_DIR / "welcome-dock-prefs.json"
 
-# ── Theme maps ────────────────────────────────────────────────────────────────
-# Tuple is (GTK theme dir, icon theme dir, xfwm4 window-decoration theme dir).
-# Names match the real on-disk directories the upstream tarballs install:
-#   GTK   /usr/share/themes/WhiteSur          (light)
-#   GTK   /usr/share/themes/WhiteSur-Dark
-#   icons /usr/share/icons/WhiteSur-light
-#   icons /usr/share/icons/WhiteSur-dark
-# xfwm4 window decorations live inside the GTK theme dir, so they share
-# the GTK casing. The casing inconsistency between GTK ("Dark", capital)
-# and icons ("dark", lowercase) is upstream; lookandfeel.yml ships
-# bidirectional symlinks so either casing resolves regardless.
-THEME_MAP = {
-    "Light": ("WhiteSur",      "WhiteSur-light", "WhiteSur"),
-    "Dark":  ("WhiteSur-Dark", "WhiteSur-dark",  "WhiteSur-Dark"),
-    # TODO(v2): Auto needs xdg-portal or sunset cron for day/night switching.
-    # For now treat Auto as Dark.
-    "Auto":  ("WhiteSur-Dark", "WhiteSur-dark",  "WhiteSur-Dark"),
-}
+# ── Customize spec (data-driven) ──────────────────────────────────────────────
+# /usr/share/sudhanix/welcome/customize.yml drives every Customization-tab
+# choice (theme presets, browser presets, dock category fallback). Edit that
+# file for fleet-wide changes; this script falls back to the embedded
+# defaults below if the file is missing, unparseable, or yaml is absent.
+CUSTOMIZE_PATH = "/usr/share/sudhanix/welcome/customize.yml"
 
-BROWSER_MAP = {
-    "Chrome":  "google-chrome.desktop",
-    "Firefox": "firefox.desktop",
-    "Zen":     "zen-browser.desktop",
-}
+# Embedded fallbacks. Names match the real on-disk dirs the upstream WhiteSur
+# tarballs install:
+#   GTK   /usr/share/themes/{WhiteSur (light), WhiteSur-Dark}
+#   icons /usr/share/icons/{WhiteSur-light, WhiteSur-dark}
+# xfwm4 reads the GTK theme dir; lookandfeel.yml ships bidirectional casing
+# symlinks so either lower or capital case resolves regardless.
+_FALLBACK_THEMES = [
+    {"id": "Light", "label": "Light",
+     "gtk": "WhiteSur",      "icon": "WhiteSur-light", "xfwm": "WhiteSur"},
+    {"id": "Dark",  "label": "Dark",
+     "gtk": "WhiteSur-Dark", "icon": "WhiteSur-dark",  "xfwm": "WhiteSur-Dark"},
+    {"id": "Auto",  "label": "Auto",
+     "gtk": "WhiteSur-Dark", "icon": "WhiteSur-dark",  "xfwm": "WhiteSur-Dark"},
+]
+_FALLBACK_DEFAULT_THEME = "Dark"
+
+_FALLBACK_BROWSERS = [
+    {"id": "Chrome",  "label": "Chrome",  "desktop": "google-chrome.desktop"},
+    {"id": "Firefox", "label": "Firefox", "desktop": "firefox.desktop"},
+    {"id": "Zen",     "label": "Zen",     "desktop": "zen-browser.desktop"},
+]
+_FALLBACK_DEFAULT_BROWSER = "Chrome"
+
+
+def _load_customize() -> dict:
+    """Read customize.yml. Return {} on any failure so callers fall back to
+    embedded defaults — this script must never refuse to launch over a
+    config-file glitch."""
+    if not _HAVE_YAML:
+        return {}
+    try:
+        with open(CUSTOMIZE_PATH, encoding="utf-8") as fh:
+            data = yaml.safe_load(fh)
+        return data if isinstance(data, dict) else {}
+    except FileNotFoundError:
+        return {}
+    except Exception as exc:
+        log(f"customize.yml unreadable ({CUSTOMIZE_PATH}): {exc}")
+        return {}
+
+
+# Module-level state populated at first call. log() is defined later in the
+# file, so we defer the actual read until the first lookup.
+_CUSTOMIZE: dict | None = None
+
+
+def _customize() -> dict:
+    global _CUSTOMIZE
+    if _CUSTOMIZE is None:
+        _CUSTOMIZE = _load_customize()
+    return _CUSTOMIZE
+
+
+def themes() -> list[dict]:
+    """List of theme presets from customize.yml or the embedded fallback."""
+    rows = _customize().get("themes")
+    if isinstance(rows, list) and rows:
+        return rows
+    return _FALLBACK_THEMES
+
+
+def default_theme_id() -> str:
+    return _customize().get("default_theme") or _FALLBACK_DEFAULT_THEME
+
+
+def browsers() -> list[dict]:
+    rows = _customize().get("browsers")
+    if isinstance(rows, list) and rows:
+        return rows
+    return _FALLBACK_BROWSERS
+
+
+def default_browser_id() -> str:
+    return _customize().get("default_browser") or _FALLBACK_DEFAULT_BROWSER
+
+
+def theme_triple(theme_id: str) -> tuple[str, str, str]:
+    """Return (gtk, icon, xfwm) for the named theme, falling back to the
+    Dark default if the id is unknown."""
+    for t in themes():
+        if t.get("id") == theme_id:
+            return (t.get("gtk", ""), t.get("icon", ""), t.get("xfwm", ""))
+    for t in themes():
+        if t.get("id") == _FALLBACK_DEFAULT_THEME:
+            return (t.get("gtk", ""), t.get("icon", ""), t.get("xfwm", ""))
+    return ("WhiteSur-Dark", "WhiteSur-dark", "WhiteSur-Dark")
+
+
+def browser_desktop(browser_id: str) -> str:
+    for b in browsers():
+        if b.get("id") == browser_id:
+            return b.get("desktop", "")
+    return _FALLBACK_BROWSERS[0]["desktop"]
 
 # ── Dock layout ──────────────────────────────────────────────────────────────
 # Categories drive both the day-1 default plank dock-items list and the
-# Customization page chips. Source of truth lives in dconf at
-# /org/sudhanix/dock/categories/<name>/ — sfl_seed_user_dconf seeds this
-# branch from /etc/sudhanix/dconf-seeds/dock-*.txt at first login. The
-# fallback below is consulted only when the dconf service can't be reached
-# (e.g. CI / Xvfb tests that don't run firstlogin).
+# Customization page chips. Resolution order (first non-empty wins):
+#   1. dconf  /org/sudhanix/dock/categories/<name>/   (live source of truth;
+#      seeded at first login from /etc/sudhanix/dconf-seeds/dock-*.txt and
+#      modifiable per-host or per-user)
+#   2. customize.yml  dock_categories block            (fleet-wide config file)
+#   3. _DOCK_CATEGORIES_HARDCODED below                (last-resort default)
 #
 # Each category dict carries:
 #   items:           [.dockitem filenames]
@@ -90,9 +173,9 @@ BROWSER_MAP = {
 #   default_enabled: chip default state when the user hasn't chosen yet
 #
 # At apply time: dock-items = union(items of every enabled category),
-# filtered against ~/.config/plank/dock1/launchers/ to drop launchers
-# the user doesn't have on disk.
-DOCK_CATEGORIES_FALLBACK = {
+# filtered against ~/.config/plank/dock1/launchers/ to drop launchers the
+# user doesn't have on disk.
+_DOCK_CATEGORIES_HARDCODED = {
     "essentials": {
         "items": [
             "xfce4-appfinder.dockitem",
@@ -140,6 +223,28 @@ DOCK_CATEGORIES_FALLBACK = {
         "default_enabled": False,
     },
 }
+
+
+def DOCK_CATEGORIES_FALLBACK() -> dict[str, dict]:
+    """customize.yml dock_categories block; falls through to the embedded
+    constants if the YAML file is missing, unparseable, or has no
+    dock_categories section."""
+    raw = _customize().get("dock_categories")
+    if isinstance(raw, dict) and raw:
+        normalized: dict[str, dict] = {}
+        for key, val in raw.items():
+            if not isinstance(val, dict):
+                continue
+            normalized[key] = {
+                "items": list(val.get("items") or []),
+                "label": val.get("label") or key.title(),
+                "always_on": bool(val.get("always_on", False)),
+                "order": int(val.get("order", 999)),
+                "default_enabled": bool(val.get("default_enabled", False)),
+            }
+        if normalized:
+            return normalized
+    return _DOCK_CATEGORIES_HARDCODED
 
 # Where Plank reads launchers from for the per-user dock1 layout.
 PLANK_LAUNCHERS_DIR = Path.home() / ".config" / "plank" / "dock1" / "launchers"
@@ -199,12 +304,12 @@ def load_dock_categories() -> dict[str, dict]:
             capture_output=True, text=True, timeout=5,
         )
         if r.returncode != 0:
-            return DOCK_CATEGORIES_FALLBACK
+            return DOCK_CATEGORIES_FALLBACK()
         names = [n.rstrip("/") for n in r.stdout.split() if n.strip()]
         if not names:
-            return DOCK_CATEGORIES_FALLBACK
+            return DOCK_CATEGORIES_FALLBACK()
     except Exception:
-        return DOCK_CATEGORIES_FALLBACK
+        return DOCK_CATEGORIES_FALLBACK()
 
     cats: dict[str, dict] = {}
     for name in names:
@@ -227,7 +332,7 @@ def load_dock_categories() -> dict[str, dict]:
             "order": order,
             "default_enabled": default_enabled,
         }
-    return cats or DOCK_CATEGORIES_FALLBACK
+    return cats or DOCK_CATEGORIES_FALLBACK()
 
 
 def ordered_category_keys(cats: dict[str, dict]) -> list[str]:
@@ -570,8 +675,8 @@ def apply_settings(values: dict) -> None:
     """
     # 1. Theme — set GTK widget theme, icon theme, and xfwm4 window decorations
     # together so the user sees a single consistent Light/Dark switch.
-    theme = values.get("theme", "Dark")
-    gtk_theme, icon_theme, xfwm_theme = THEME_MAP.get(theme, THEME_MAP["Dark"])
+    theme = values.get("theme", default_theme_id())
+    gtk_theme, icon_theme, xfwm_theme = theme_triple(theme)
     for cmd in [
         ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName",     "-s", gtk_theme],
         ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", icon_theme],
@@ -687,8 +792,8 @@ def apply_settings(values: dict) -> None:
         log(f"dock prefs write failed: {exc}")
 
     # 4. Default browser
-    browser = values.get("browser", "Chrome")
-    desktop_file = BROWSER_MAP.get(browser, BROWSER_MAP["Chrome"])
+    browser = values.get("browser", default_browser_id())
+    desktop_file = browser_desktop(browser) or browser_desktop(default_browser_id())
     try:
         r = subprocess.run(
             ["xdg-settings", "set", "default-web-browser", desktop_file],
@@ -904,13 +1009,17 @@ class CustomizationPage(Gtk.Box):
         seg_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         seg_box.set_name("theme-seg")
         self._theme_buttons: dict[str, Gtk.Button] = {}
-        for label in ("Light", "Dark", "Auto"):
-            btn = Gtk.Button(label=label)
+        for theme_row_data in themes():
+            theme_id = theme_row_data.get("id", "")
+            theme_label = theme_row_data.get("label", theme_id)
+            if not theme_id:
+                continue
+            btn = Gtk.Button(label=theme_label)
             btn.set_relief(Gtk.ReliefStyle.NONE)
-            btn.connect("clicked", self._on_theme_clicked, label)
+            btn.connect("clicked", self._on_theme_clicked, theme_id)
             seg_box.pack_start(btn, False, False, 0)
-            self._theme_buttons[label] = btn
-        self._set_theme_active("Dark")
+            self._theme_buttons[theme_id] = btn
+        self._set_theme_active(default_theme_id())
         theme_row.pack_start(seg_box, False, False, 0)
         body.pack_start(theme_row, False, False, 0)
 
@@ -998,13 +1107,17 @@ class CustomizationPage(Gtk.Box):
         browser_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         browser_row.set_margin_bottom(16)
         self._browser_buttons: dict[str, Gtk.Button] = {}
-        for browser in ("Chrome", "Firefox", "Zen"):
-            btn = Gtk.Button(label=browser)
+        for browser_row_data in browsers():
+            browser_id = browser_row_data.get("id", "")
+            browser_label = browser_row_data.get("label", browser_id)
+            if not browser_id:
+                continue
+            btn = Gtk.Button(label=browser_label)
             btn.get_style_context().add_class("radio-pick")
-            btn.connect("clicked", self._on_browser_clicked, browser)
+            btn.connect("clicked", self._on_browser_clicked, browser_id)
             browser_row.pack_start(btn, False, False, 0)
-            self._browser_buttons[browser] = btn
-        self._set_browser_active("Chrome")
+            self._browser_buttons[browser_id] = btn
+        self._set_browser_active(default_browser_id())
         body.pack_start(browser_row, False, False, 0)
 
         # Spacer
