@@ -19,3 +19,14 @@
 # infer the array element type.
 dock-items=@as []
 hide-mode='auto'
+# auto-pinning=false stops Plank from promoting a running app to a
+# permanent launcher on its own. Without this, every recently-launched
+# app (zen, vlc, ktelnet, ...) ends up as a .dockitem file written to
+# the user's launchers/, which then re-pollutes dock-items on every
+# Plank restart and undoes the welcome panel's choices.
+# pinned-only=true is the matching belt: only items in dock-items are
+# rendered — no transient running-app icons. Users can still right-click
+# "Keep in dock" to manually pin (which DOES write a .dockitem file), so
+# this isn't a hard lock; it just blocks the silent auto path.
+auto-pinning=false
+pinned-only=true
