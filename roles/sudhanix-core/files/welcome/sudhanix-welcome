@@ -127,17 +127,24 @@ box#sidebar {
     background-color: #1c1c1c;
 }
 
-/* nav list */
+/* nav list -- macOS Finder-style sidebar (DARK) */
 list.navigation-sidebar {
     background-color: transparent;
 }
 list.navigation-sidebar row {
     border-radius: 6px;
-    padding: 4px 6px;
+    padding: 4px 8px;
+    margin: 1px 0;
+}
+list.navigation-sidebar row label {
+    color: #c8c8c8;
 }
 list.navigation-sidebar row:selected {
-    background-color: rgba(53,132,228,0.18);
-    color: #9ec5f8;
+    background-color: #0a84ff;
+}
+list.navigation-sidebar row:selected label {
+    color: #ffffff;
+    font-weight: 500;
 }
 
 /* pill buttons */
@@ -243,17 +250,24 @@ box#sidebar {
     background-color: #e8e8e8;
 }
 
-/* nav list */
+/* nav list -- macOS Finder-style sidebar (LIGHT) */
 list.navigation-sidebar {
     background-color: transparent;
 }
 list.navigation-sidebar row {
     border-radius: 6px;
-    padding: 4px 6px;
+    padding: 4px 8px;
+    margin: 1px 0;
+}
+list.navigation-sidebar row label {
+    color: #444444;
 }
 list.navigation-sidebar row:selected {
-    background-color: rgba(53,132,228,0.18);
-    color: #1a65c0;
+    background-color: #0a84ff;
+}
+list.navigation-sidebar row:selected label {
+    color: #ffffff;
+    font-weight: 500;
 }
 
 /* pill buttons */
@@ -923,13 +937,15 @@ PAGE_QUICK_TOUR = "quick-tour"
 PAGE_CUSTOMIZATION = "customization"
 PAGE_ABOUT = "about"
 
-# Sidebar nav rows: (page-name, label). Order is presentation order.
+# Sidebar nav rows: (page-name, label, icon-name). Order is presentation order.
+# Icons are theme-neutral SVGs at /usr/share/sudhanix/welcome-icons/sidebar-*.svg
+# loaded at 16px and rendered next to the label, macOS-Finder style.
 SIDEBAR_NAV = (
-    (PAGE_WELCOME, "Welcome"),
-    (PAGE_WHATS_NEW, "What’s new"),
-    (PAGE_QUICK_TOUR, "Quick tour"),
-    (PAGE_CUSTOMIZATION, "Customization"),
-    (PAGE_ABOUT, "About"),
+    (PAGE_WELCOME,       "Welcome",       "sidebar-house"),
+    (PAGE_WHATS_NEW,     "What’s new",    "sidebar-sparkle"),
+    (PAGE_QUICK_TOUR,    "Quick tour",    "sidebar-compass"),
+    (PAGE_CUSTOMIZATION, "Customization", "sidebar-gear"),
+    (PAGE_ABOUT,         "About",         "sidebar-info"),
 )
 
 
@@ -1027,13 +1043,27 @@ class WelcomeWindow(Gtk.Window):
         nav_list.set_activate_on_single_click(True)
 
         first_row: Gtk.ListBoxRow | None = None
-        for page_name, nav_label in SIDEBAR_NAV:
+        for page_name, nav_label, icon_name in SIDEBAR_NAV:
             row = Gtk.ListBoxRow()
             row.page_name = page_name  # type: ignore[attr-defined]
+
+            row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            icon = welcome_icon(icon_name, 16)
+            if icon is not None:
+                icon.set_valign(Gtk.Align.CENTER)
+                row_box.pack_start(icon, False, False, 0)
+            else:
+                # Reserve the icon slot so labels still align when an SVG
+                # is missing — better than rows of inconsistent indent.
+                spacer = Gtk.Box()
+                spacer.set_size_request(16, 16)
+                row_box.pack_start(spacer, False, False, 0)
+
             lbl = Gtk.Label(label=nav_label)
             lbl.set_xalign(0)
-            lbl.set_margin_start(4)
-            row.add(lbl)
+            row_box.pack_start(lbl, True, True, 0)
+            row.add(row_box)
+
             nav_list.add(row)
             if first_row is None:
                 first_row = row
