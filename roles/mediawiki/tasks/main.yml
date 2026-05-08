@@ -67,11 +67,18 @@
   tags:
     - mediawiki
 
+- name: check whether mediawiki is already installed
+  stat:
+    path: "{{ mediawiki_install_dir }}/LocalSettings.php"
+  register: mediawiki_installed
+  tags:
+    - mediawiki
+
 - name: download mediawiki target version
   get_url:
     url: "{{ mediawiki_download_url }}/{{ mediawiki_target_version | regex_replace('^(\\d+\\.\\d+).*', '\\1') }}/mediawiki-{{ mediawiki_target_version }}.tar.gz"
     dest: "{{ mediawiki_data_dir }}/mediawiki-{{ mediawiki_target_version }}.tar.gz"
-  when: not mediawiki_migration_mode
+  when: not mediawiki_migration_mode and not mediawiki_installed.stat.exists
   tags:
     - mediawiki
 
@@ -84,7 +91,7 @@
     extra_opts:
       - --transform
       - "s/^mediawiki-{{ mediawiki_target_version }}/w/"
-  when: not mediawiki_migration_mode
+  when: not mediawiki_migration_mode and not mediawiki_installed.stat.exists
   tags:
     - mediawiki
 
