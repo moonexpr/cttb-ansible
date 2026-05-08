@@ -33,7 +33,7 @@ zone_cttb:
   - printer-srv: "10.11.1.36"
   - printer-srv2: "10.11.1.37"
   - pxe: "10.11.1.23"
-  - pxetest: "10.11.13.86"
+  - pxetest: "10.11.13.27"
   - rui-test1: "10.11.5.13"
   - rui-test2: "10.11.5.14"
   - sis.drbu: "10.11.1.41"
