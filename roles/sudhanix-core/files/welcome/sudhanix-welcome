@@ -1,27 +1,22 @@
 #!/usr/bin/env python3
 """
-sudhanix-welcome — first-login welcome window with LDAP-persisted dismissal.
+sudhanix-welcome — first-login welcome panel, Sudhanix 26.
 
-Behavior:
-  * On launch, check /run/sudhanix-tokens/<uid>.tok exists (cleartext password
-    cached at login by the pam_exec hook in /etc/pam.d/lightdm).
-  * Use the OpenLDAP CLI (ldapsearch / ldapmodify), passing the token file via
-    -y so the password never lands on argv. This keeps the cleartext on tmpfs
-    only.
-  * Read sudhanixWelcomeDismissed on the user's own entry. If TRUE, exit
-    silently — user already opted out.
-  * Otherwise, show a GTK3 window with a welcome message, a "Don't show this
-    again" checkbox, and an OK button.
-  * If the box was ticked when the user dismissed the window, modify the user
-    entry (add objectClass sudhanixUser if missing, set the flag).
+Design: 960x540 main window (sidebar + content), Customization and About
+sub-dialogs. Spec: .claude/issues/04-welcome-panel-spec/
 
-Failure handling: if anything goes wrong (no token, no ldap-srv, schema not
-present, network down) we log to stderr and exit 0. The welcome window is
-optional UX and must never block login.
+Behaviour preserved from v1:
+  * DISPLAY/WAYLAND_DISPLAY gate — exit 0 if no display.
+  * PAM token at /run/sudhanix-tokens/<uid>.tok with strict owner/mode check.
+  * already_dismissed() — tri-state: True/False/None (LDAP read).
+  * write_dismissal() — adds sudhanixUser objectClass if missing, sets flag.
+  * Fail-soft: any LDAP/subprocess error logs to stderr, exits 0.
+  * Dismissal written ONLY when checkbox is active at Continue time.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import pwd
 import subprocess
@@ -32,27 +27,163 @@ from pathlib import Path
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib  # noqa: E402
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import GdkPixbuf, GLib, Gtk  # noqa: E402
 
+# ── LDAP constants (unchanged from v1) ───────────────────────────────────────
 LDAP_URI = "ldap://ldap-srv.cttb"
 LDAP_DN_TEMPLATE = "uid={uid},ou=People,dc=cttb"
 WELCOME_FLAG_ATTR = "sudhanixWelcomeDismissed"
 SUDHANIX_USER_OC = "sudhanixUser"
 
-WELCOME_TITLE = "Welcome to Sudhanix"
-WELCOME_BODY = (
-    "Welcome to Sudhanix 26\n\n"
-    "This computer is part of the City of Ten Thousand Buddhas lab network.\n\n"
-    "• Your home directory follows you across lab machines (NFS).\n"
-    "• Sign-in uses your CTTB account.\n"
-    "• Need help or have feedback? Visit http://wiki.cttb\n"
-)
+# ── Asset paths ───────────────────────────────────────────────────────────────
+LOTUS_PATH = "/usr/share/icons/cttb/lotus.png"
+# Dep: lookandfeel.yml must run before this role places lotus.png.
+
+# ── Prefs stub dir ────────────────────────────────────────────────────────────
+# Dock preference stub written here; a future role/script can consume it.
+SUDHANIX_CONFIG_DIR = Path.home() / ".config" / "sudhanix"
+DOCK_PREFS_FILE = SUDHANIX_CONFIG_DIR / "welcome-dock-prefs.json"
+
+# ── Theme maps ────────────────────────────────────────────────────────────────
+THEME_MAP = {
+    "Light": ("WhiteSur-Light", "WhiteSur-Light"),
+    "Dark":  ("WhiteSur-Dark",  "WhiteSur-Dark"),
+    # TODO(v2): Auto needs xdg-portal or sunset cron for day/night switching.
+    # For now treat Auto as Dark.
+    "Auto":  ("WhiteSur-Dark",  "WhiteSur-Dark"),
+}
+
+BROWSER_MAP = {
+    "Chrome":  "google-chrome.desktop",
+    "Firefox": "firefox.desktop",
+    "Zen":     "zen-browser.desktop",
+}
+
+# ── Colour palette (matches spec :root tokens) ─────────────────────────────
+GTK_CSS = b"""
+/* sudhanix-welcome custom theme tokens */
+window#welcome-window,
+dialog {
+    background-color: #242424;
+    color: #ebebeb;
+}
+
+/* sidebar */
+box#sidebar {
+    background-color: #1c1c1c;
+}
+
+/* nav list */
+list.navigation-sidebar {
+    background-color: transparent;
+}
+list.navigation-sidebar row {
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+list.navigation-sidebar row:selected {
+    background-color: rgba(53,132,228,0.18);
+    color: #9ec5f8;
+}
+
+/* pill buttons */
+button.pill {
+    border-radius: 999px;
+    background: #2d2d2d;
+    border: 1px solid #404040;
+    color: #ebebeb;
+    padding: 6px 12px;
+}
+button.pill:hover {
+    background-color: #3a3a3a;
+}
+
+/* suggested-action (Continue, Apply) */
+button.suggested-action {
+    background: linear-gradient(#3584e4, #1c71d8);
+    border-color: #1a65c0;
+    color: white;
+    font-weight: 500;
+}
+button.suggested-action:hover {
+    background: linear-gradient(#4590e8, #2278da);
+}
+
+/* dim labels */
+label.dim-label {
+    color: #a0a0a0;
+}
+
+/* separator lines */
+separator {
+    background-color: #3a3a3a;
+    min-height: 1px;
+}
+
+/* segmented control for theme selection */
+box#theme-seg button {
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    color: #a0a0a0;
+    padding: 3px 9px;
+    font-size: small;
+}
+box#theme-seg button.active {
+    background-color: #2d2d2d;
+    color: #ebebeb;
+}
+box#theme-seg {
+    background-color: #1a1a1a;
+    border-radius: 6px;
+    border: 1px solid #3a3a3a;
+    padding: 2px;
+}
+
+/* chip toggle buttons (dock groups) */
+button.chip {
+    border-radius: 999px;
+    background-color: #1a1a1a;
+    border: 1px solid #3a3a3a;
+    color: #a0a0a0;
+    padding: 3px 9px;
+    font-size: small;
+}
+button.chip.active {
+    background-color: rgba(53,132,228,0.18);
+    border-color: rgba(53,132,228,0.5);
+    color: #9ec5f8;
+}
+
+/* browser radio buttons */
+button.radio-pick {
+    border-radius: 6px;
+    background-color: #1a1a1a;
+    border: 1px solid #3a3a3a;
+    color: #a0a0a0;
+    padding: 4px 9px;
+    font-size: small;
+}
+button.radio-pick.active {
+    background-color: #2d2d2d;
+    color: #ebebeb;
+    border-color: #555;
+}
+
+/* about-list link colour */
+label.wiki-link {
+    color: #6cb4ff;
+}
+"""
 
 
+# ── Logging (unchanged from v1) ──────────────────────────────────────────────
 def log(msg: str) -> None:
     print(f"[sudhanix-welcome] {msg}", file=sys.stderr)
 
 
+# ── LDAP helpers (unchanged from v1) ────────────────────────────────────────
 def token_path(uid: int) -> Path | None:
     p = Path(f"/run/sudhanix-tokens/{uid}.tok")
     try:
@@ -92,7 +223,6 @@ def already_dismissed(user_dn: str, tok: Path) -> bool | None:
 
 
 def write_dismissal(user_dn: str, tok: Path) -> None:
-    # Probe current objectClasses; only add sudhanixUser if absent.
     proc = subprocess.run(
         ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
          "-D", user_dn, "-y", str(tok),
@@ -104,8 +234,7 @@ def write_dismissal(user_dn: str, tok: Path) -> None:
     parts = [f"dn: {user_dn}", "changetype: modify"]
     if needs_oc:
         parts += ["add: objectClass", f"objectClass: {SUDHANIX_USER_OC}", "-"]
-    parts += [f"replace: {WELCOME_FLAG_ATTR}",
-              f"{WELCOME_FLAG_ATTR}: TRUE"]
+    parts += [f"replace: {WELCOME_FLAG_ATTR}", f"{WELCOME_FLAG_ATTR}: TRUE"]
     ldif = "\n".join(parts) + "\n"
 
     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".ldif") as fh:
@@ -127,49 +256,713 @@ def write_dismissal(user_dn: str, tok: Path) -> None:
             pass
 
 
-class WelcomeWindow(Gtk.Window):
-    def __init__(self) -> None:
-        super().__init__(title=WELCOME_TITLE)
-        self.set_default_size(520, 320)
-        self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_border_width(24)
+# ── Settings applicator ───────────────────────────────────────────────────────
+def apply_settings(values: dict) -> None:
+    """
+    Apply user preferences collected from the Customization dialog.
+    Each setting is applied independently; a failure in one does not abort
+    the rest. All errors are logged to stderr only.
+    """
+    # 1. Theme
+    theme = values.get("theme", "Dark")
+    gtk_theme, icon_theme = THEME_MAP.get(theme, THEME_MAP["Dark"])
+    for cmd in [
+        ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName", "-s", gtk_theme],
+        ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", icon_theme],
+    ]:
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if r.returncode != 0:
+                log(f"xfconf theme set failed: {r.stderr.strip()}")
+        except Exception as exc:
+            log(f"xfconf theme exception: {exc}")
+
+    # 2. Wallpaper rotation
+    # Enumerate xfce4-desktop monitor paths via xfconf-query, then write
+    # random-order. Falls through to a comment if enumeration fails.
+    rotate = values.get("wallpaper_rotate", True)
+    try:
+        lv = subprocess.run(
+            ["xfconf-query", "-c", "xfce4-desktop", "-lv"],
+            capture_output=True, text=True, timeout=5,
+        )
+        monitor_paths = set()
+        for line in lv.stdout.splitlines():
+            # e.g. /backdrop/screen0/monitorVGA-1/workspace0/image-style
+            parts = line.strip().split()
+            if not parts:
+                continue
+            prop = parts[0]
+            # grab parent up to workspaceN
+            segs = prop.split("/")
+            if len(segs) >= 5 and segs[1] == "backdrop":
+                parent = "/".join(segs[:5])
+                monitor_paths.add(parent)
+        if not monitor_paths:
+            log("wallpaper rotation: no monitor paths found in xfconf")
+        for parent in monitor_paths:
+            rotate_prop = f"{parent}/random-order"
+            val = "true" if rotate else "false"
+            r = subprocess.run(
+                ["xfconf-query", "-c", "xfce4-desktop", "-p", rotate_prop,
+                 "--create", "-t", "bool", "-s", val],
+                capture_output=True, text=True, timeout=5,
+            )
+            if r.returncode != 0:
+                log(f"wallpaper rotation set failed ({rotate_prop}): {r.stderr.strip()}")
+    except Exception as exc:
+        log(f"wallpaper rotation exception: {exc}")
+
+    # 3. Dock groups — STUB for v1.
+    # Plank launcher management requires per-desktop .dockitem files and
+    # live dbus interaction; too fragile for first-login. Instead, write a
+    # marker file that a future ansible role/script can consume.
+    dock = values.get("dock", {})
+    try:
+        SUDHANIX_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        DOCK_PREFS_FILE.write_text(json.dumps(dock, indent=2))
+    except Exception as exc:
+        log(f"dock prefs write failed: {exc}")
+
+    # 4. Default browser
+    browser = values.get("browser", "Chrome")
+    desktop_file = BROWSER_MAP.get(browser, BROWSER_MAP["Chrome"])
+    try:
+        r = subprocess.run(
+            ["xdg-settings", "set", "default-web-browser", desktop_file],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode != 0:
+            log(f"xdg-settings browser set failed: {r.stderr.strip()}")
+    except Exception as exc:
+        log(f"xdg-settings exception: {exc}")
+
+
+# ── Lotus pixbuf helper ───────────────────────────────────────────────────────
+def lotus_image(size: int) -> Gtk.Image | None:
+    """Return a Gtk.Image at the requested square pixel size, or None on error."""
+    try:
+        pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            LOTUS_PATH, size, size, True
+        )
+        img = Gtk.Image.new_from_pixbuf(pb)
+        return img
+    except Exception as exc:
+        log(f"lotus asset missing or unreadable ({LOTUS_PATH}): {exc}")
+        return None
+
+
+# ── About dialog ─────────────────────────────────────────────────────────────
+class AboutDialog(Gtk.Dialog):
+    """
+    420x360 modal, transient on the welcome window.
+    Static info: logo, OS name/build, wiki links, credit.
+    """
+
+    def __init__(self, parent: Gtk.Window) -> None:
+        super().__init__(
+            title="About Sudhanix",
+            transient_for=parent,
+            modal=True,
+        )
+        self.set_default_size(420, 360)
         self.set_resizable(False)
-        self.dont_show_again = False
 
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
-        self.add(outer)
+        area = self.get_content_area()
+        area.set_border_width(0)
+        area.set_spacing(0)
 
+        body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        body.set_border_width(22)
+        area.add(body)
+
+        # Hero block: lotus + wordmark + build line
+        hero = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        hero.set_halign(Gtk.Align.CENTER)
+
+        lotus = lotus_image(72)
+        if lotus:
+            lotus.set_margin_bottom(10)
+            hero.pack_start(lotus, False, False, 0)
+
+        name_lbl = Gtk.Label()
+        name_lbl.set_markup(
+            "<span weight='600' size='17000'>"
+            "Sudha<span color='#D99A3C'>*</span>nix Operating System"
+            "</span>"
+        )
+        hero.pack_start(name_lbl, False, False, 0)
+
+        build_lbl = Gtk.Label(
+            label="version 26 · built on Ubuntu 24.04 LTS · XFCE 4.18"
+        )
+        build_lbl.get_style_context().add_class("dim-label")
+        build_lbl.set_margin_top(3)
+        hero.pack_start(build_lbl, False, False, 0)
+
+        body.pack_start(hero, False, False, 0)
+
+        sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        sep.set_margin_top(14)
+        sep.set_margin_bottom(10)
+        body.pack_start(sep, False, False, 0)
+
+        # Link rows
+        rows = [
+            ("User Guide", None, "being drafted right now"),
+            ("Common Tasks", "http://wiki.cttb/wiki/Common_Tasks_on_Sudhanix",
+             "wiki.cttb / Common_Tasks_on_Sudhanix"),
+            ("Linux Article", "http://wiki.cttb/wiki/Introduction_to_Linux",
+             "wiki.cttb / Introduction_to_Linux"),
+        ]
+
+        link_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        for key, url, display in rows:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            row.set_margin_top(4)
+            row.set_margin_bottom(4)
+
+            key_lbl = Gtk.Label(label=key)
+            key_lbl.get_style_context().add_class("dim-label")
+            key_lbl.set_xalign(0)
+            key_lbl.set_size_request(100, -1)
+            row.pack_start(key_lbl, False, False, 0)
+
+            if url:
+                val_lbl = Gtk.Label()
+                val_lbl.set_markup(
+                    f'<a href="{GLib.markup_escape_text(url)}">'
+                    f'{GLib.markup_escape_text(display)}</a>'
+                )
+                val_lbl.set_xalign(0)
+                val_lbl.set_selectable(True)
+                row.pack_start(val_lbl, True, True, 0)
+            else:
+                val_lbl = Gtk.Label(label=display)
+                val_lbl.get_style_context().add_class("dim-label")
+                ctx = val_lbl.get_pango_context()
+                # Italicise "being drafted" hint
+                val_lbl.set_markup(f"<i>{GLib.markup_escape_text(display)}</i>")
+                val_lbl.set_xalign(0)
+                row.pack_start(val_lbl, True, True, 0)
+
+            link_box.pack_start(row, False, False, 0)
+
+            if key != "Linux Article":
+                hr = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+                link_box.pack_start(hr, False, False, 0)
+
+        body.pack_start(link_box, False, False, 0)
+
+        # Spacer
+        body.pack_start(Gtk.Box(), True, True, 0)
+
+        # Footer separator + credit
+        foot_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        foot_sep.set_margin_top(10)
+        body.pack_start(foot_sep, False, False, 0)
+
+        foot_lbl = Gtk.Label()
+        foot_lbl.set_markup(
+            "Designed with <span color='#d05d6c'>♥</span> by John Chandara\n"
+            "Copyright © City of Ten Thousand Buddhas, 2026"
+        )
+        foot_lbl.get_style_context().add_class("dim-label")
+        foot_lbl.set_justify(Gtk.Justification.CENTER)
+        foot_lbl.set_margin_top(10)
+        body.pack_start(foot_lbl, False, False, 0)
+
+        self.show_all()
+
+
+# ── Customization dialog ──────────────────────────────────────────────────────
+class CustomizationDialog(Gtk.Dialog):
+    """
+    480x380 modal, transient on the welcome window.
+    Collects theme, wallpaper rotation, dock groups, default browser.
+    Apply button calls apply_settings(); Cancel discards.
+    """
+
+    def __init__(self, parent: Gtk.Window) -> None:
+        super().__init__(
+            title="Customization",
+            transient_for=parent,
+            modal=True,
+        )
+        self.set_default_size(480, 380)
+        self.set_resizable(False)
+
+        area = self.get_content_area()
+        area.set_border_width(0)
+
+        body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        body.set_border_width(22)
+        area.add(body)
+
+        # ── Header ──
+        header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        header.set_margin_bottom(14)
+
+        lotus = lotus_image(32)
+        if lotus:
+            header.pack_start(lotus, False, False, 0)
+
+        title_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        t = Gtk.Label()
+        t.set_markup("<span weight='600' size='15000'>Make it yours</span>")
+        t.set_xalign(0)
+        title_col.pack_start(t, False, False, 0)
+
+        sub = Gtk.Label(label="A few tweaks for this lab session.")
+        sub.get_style_context().add_class("dim-label")
+        sub.set_xalign(0)
+        title_col.pack_start(sub, False, False, 0)
+
+        header.pack_start(title_col, True, True, 0)
+        body.pack_start(header, False, False, 0)
+
+        sep0 = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        sep0.set_margin_bottom(12)
+        body.pack_start(sep0, False, False, 0)
+
+        # ── Appearance section ──
+        app_label = Gtk.Label(label="APPEARANCE")
+        app_label.get_style_context().add_class("dim-label")
+        app_label.set_xalign(0)
+        app_label.set_margin_bottom(6)
+        body.pack_start(app_label, False, False, 0)
+
+        # Theme segmented control
+        theme_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        theme_row.set_margin_bottom(10)
+
+        theme_lbl_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        theme_lbl = Gtk.Label(label="Theme")
+        theme_lbl.set_xalign(0)
+        theme_lbl_col.pack_start(theme_lbl, False, False, 0)
+        theme_sublbl = Gtk.Label(label="Dark by default; matches your saved preference.")
+        theme_sublbl.get_style_context().add_class("dim-label")
+        theme_sublbl.set_xalign(0)
+        theme_sublbl.set_line_wrap(True)
+        theme_sublbl.set_max_width_chars(30)
+        theme_lbl_col.pack_start(theme_sublbl, False, False, 0)
+        theme_row.pack_start(theme_lbl_col, True, True, 0)
+
+        seg_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        seg_box.set_name("theme-seg")
+        self._theme_buttons: dict[str, Gtk.Button] = {}
+        for label in ("Light", "Dark", "Auto"):
+            btn = Gtk.Button(label=label)
+            btn.set_relief(Gtk.ReliefStyle.NONE)
+            btn.connect("clicked", self._on_theme_clicked, label)
+            seg_box.pack_start(btn, False, False, 0)
+            self._theme_buttons[label] = btn
+        self._set_theme_active("Dark")
+        theme_row.pack_start(seg_box, False, False, 0)
+        body.pack_start(theme_row, False, False, 0)
+
+        # Wallpaper rotation switch
+        wp_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        wp_row.set_margin_bottom(14)
+
+        wp_lbl_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        wp_lbl = Gtk.Label(label="Rotate wallpaper daily")
+        wp_lbl.set_xalign(0)
+        wp_lbl_col.pack_start(wp_lbl, False, False, 0)
+        wp_sublbl = Gtk.Label(label="Cycle through the campus wallpaper set each morning.")
+        wp_sublbl.get_style_context().add_class("dim-label")
+        wp_sublbl.set_xalign(0)
+        wp_sublbl.set_line_wrap(True)
+        wp_sublbl.set_max_width_chars(30)
+        wp_lbl_col.pack_start(wp_sublbl, False, False, 0)
+        wp_row.pack_start(wp_lbl_col, True, True, 0)
+
+        self._wp_switch = Gtk.Switch()
+        self._wp_switch.set_active(True)
+        self._wp_switch.set_valign(Gtk.Align.CENTER)
+        wp_row.pack_start(self._wp_switch, False, False, 0)
+        body.pack_start(wp_row, False, False, 0)
+
+        sep1 = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        sep1.set_margin_bottom(12)
+        body.pack_start(sep1, False, False, 0)
+
+        # ── Dock section ──
+        dock_label = Gtk.Label(label="DOCK — SHOW THESE APP GROUPS")
+        dock_label.get_style_context().add_class("dim-label")
+        dock_label.set_xalign(0)
+        dock_label.set_margin_bottom(6)
+        body.pack_start(dock_label, False, False, 0)
+
+        chip_flow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        chip_flow.set_margin_bottom(10)
+        self._dock_chips: dict[str, Gtk.ToggleButton] = {}
+        dock_defaults = {
+            "Office suite": True,
+            "Browsers": True,
+            "Code tools": True,
+            "Audio & video": False,
+        }
+        for chip_label, default_on in dock_defaults.items():
+            chip = Gtk.ToggleButton(label=chip_label)
+            chip.get_style_context().add_class("chip")
+            chip.set_active(default_on)
+            chip.connect("toggled", self._on_chip_toggled, chip_label)
+            self._update_chip_style(chip)
+            chip_flow.pack_start(chip, False, False, 0)
+            self._dock_chips[chip_label] = chip
+        body.pack_start(chip_flow, False, False, 0)
+
+        # Default browser
+        browser_lbl = Gtk.Label(label="Default browser")
+        browser_lbl.get_style_context().add_class("dim-label")
+        browser_lbl.set_xalign(0)
+        browser_lbl.set_margin_bottom(4)
+        body.pack_start(browser_lbl, False, False, 0)
+
+        browser_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        browser_row.set_margin_bottom(16)
+        self._browser_buttons: dict[str, Gtk.Button] = {}
+        for browser in ("Chrome", "Firefox", "Zen"):
+            btn = Gtk.Button(label=browser)
+            btn.get_style_context().add_class("radio-pick")
+            btn.connect("clicked", self._on_browser_clicked, browser)
+            browser_row.pack_start(btn, False, False, 0)
+            self._browser_buttons[browser] = btn
+        self._set_browser_active("Chrome")
+        body.pack_start(browser_row, False, False, 0)
+
+        # Spacer
+        body.pack_start(Gtk.Box(), True, True, 0)
+
+        # ── Footer: Cancel / Apply ──
+        foot_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        foot_sep.set_margin_bottom(10)
+        body.pack_start(foot_sep, False, False, 0)
+
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        btn_row.set_halign(Gtk.Align.END)
+
+        cancel_btn = Gtk.Button(label="Cancel")
+        cancel_btn.connect("clicked", lambda _: self.response(Gtk.ResponseType.CANCEL))
+        btn_row.pack_start(cancel_btn, False, False, 0)
+
+        apply_btn = Gtk.Button(label="Apply")
+        apply_btn.get_style_context().add_class("suggested-action")
+        apply_btn.connect("clicked", self._on_apply)
+        btn_row.pack_start(apply_btn, False, False, 0)
+
+        body.pack_start(btn_row, False, False, 0)
+
+        self.show_all()
+
+    # ── internal helpers ──
+
+    def _set_theme_active(self, active: str) -> None:
+        self._selected_theme = active
+        for label, btn in self._theme_buttons.items():
+            ctx = btn.get_style_context()
+            if label == active:
+                ctx.add_class("active")
+            else:
+                ctx.remove_class("active")
+
+    def _on_theme_clicked(self, btn: Gtk.Button, label: str) -> None:
+        self._set_theme_active(label)
+
+    def _update_chip_style(self, chip: Gtk.ToggleButton) -> None:
+        ctx = chip.get_style_context()
+        if chip.get_active():
+            ctx.add_class("active")
+        else:
+            ctx.remove_class("active")
+
+    def _on_chip_toggled(self, chip: Gtk.ToggleButton, label: str) -> None:
+        self._update_chip_style(chip)
+
+    def _set_browser_active(self, active: str) -> None:
+        self._selected_browser = active
+        for label, btn in self._browser_buttons.items():
+            ctx = btn.get_style_context()
+            if label == active:
+                ctx.add_class("active")
+            else:
+                ctx.remove_class("active")
+
+    def _on_browser_clicked(self, btn: Gtk.Button, label: str) -> None:
+        self._set_browser_active(label)
+
+    def _on_apply(self, _btn: Gtk.Button) -> None:
+        values = {
+            "theme": self._selected_theme,
+            "wallpaper_rotate": self._wp_switch.get_active(),
+            "dock": {
+                label: chip.get_active()
+                for label, chip in self._dock_chips.items()
+            },
+            "browser": self._selected_browser,
+        }
+        apply_settings(values)
+        self.response(Gtk.ResponseType.APPLY)
+
+
+# ── Main welcome window ───────────────────────────────────────────────────────
+class WelcomeWindow(Gtk.Window):
+    """
+    960x540 main panel.
+    Left sidebar (240px) + right content pane.
+    Sidebar has brand lockup, nav list, Customization/About pill buttons.
+    Content pane has title, subtitle, 3 body rows, action row.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(title="Welcome")
+        self.set_name("welcome-window")
+        self.set_default_size(960, 540)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_resizable(False)
+        self.dismiss_on_continue = True  # checkbox default
+
+        self.connect("destroy", Gtk.main_quit)
+
+        # Top-level horizontal split
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.add(hbox)
+
+        hbox.pack_start(self._build_sidebar(), False, False, 0)
+        hbox.pack_start(self._build_content(), True, True, 0)
+
+    def _build_sidebar(self) -> Gtk.Box:
+        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        sidebar.set_name("sidebar")
+        sidebar.set_size_request(240, -1)
+        sidebar.set_border_width(0)
+
+        inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        inner.set_margin_top(26)
+        inner.set_margin_bottom(18)
+        inner.set_margin_start(18)
+        inner.set_margin_end(18)
+        sidebar.pack_start(inner, True, True, 0)
+
+        # Brand lockup
+        brand = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        brand.set_margin_bottom(18)
+
+        lotus = lotus_image(40)
+        if lotus:
+            brand.pack_start(lotus, False, False, 0)
+
+        brand_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        wordmark = Gtk.Label()
+        wordmark.set_markup(
+            "<span weight='600' size='15000'>"
+            "Sudha<span color='#D99A3C'>*</span>nix"
+            "</span>"
+        )
+        wordmark.set_xalign(0)
+        brand_col.pack_start(wordmark, False, False, 0)
+
+        ver = Gtk.Label(label="version 26")
+        ver.get_style_context().add_class("dim-label")
+        ver.set_xalign(0)
+        brand_col.pack_start(ver, False, False, 0)
+
+        brand.pack_start(brand_col, True, True, 0)
+        inner.pack_start(brand, False, False, 0)
+
+        sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        sep.set_margin_bottom(14)
+        inner.pack_start(sep, False, False, 0)
+
+        # "Get started" section label
+        nav_heading = Gtk.Label(label="GET STARTED")
+        nav_heading.get_style_context().add_class("dim-label")
+        nav_heading.set_xalign(0)
+        nav_heading.set_margin_bottom(6)
+        inner.pack_start(nav_heading, False, False, 0)
+
+        # Nav list (decorative — only "Welcome" is interactive in v1)
+        nav_list = Gtk.ListBox()
+        nav_list.get_style_context().add_class("navigation-sidebar")
+        nav_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        nav_list.set_activate_on_single_click(False)
+
+        for i, nav_label in enumerate(("Welcome", "What’s new", "Quick tour")):
+            row = Gtk.ListBoxRow()
+            lbl = Gtk.Label(label=nav_label)
+            lbl.set_xalign(0)
+            lbl.set_margin_start(4)
+            row.add(lbl)
+            nav_list.add(row)
+            if i == 0:
+                nav_list.select_row(row)
+
+        inner.pack_start(nav_list, False, False, 0)
+
+        # Spacer pushes pills to the bottom
+        inner.pack_start(Gtk.Box(), True, True, 0)
+
+        # Pill buttons
+        cust_btn = Gtk.Button()
+        cust_btn.get_style_context().add_class("pill")
+        cust_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        cust_lbl = Gtk.Label(label="Customization")
+        cust_lbl.set_xalign(0)
+        cust_box.pack_start(cust_lbl, True, True, 0)
+        cust_btn.add(cust_box)
+        cust_btn.connect("clicked", self._open_customization)
+        inner.pack_start(cust_btn, False, False, 0)
+
+        about_btn = Gtk.Button()
+        about_btn.get_style_context().add_class("pill")
+        about_btn.set_margin_top(8)
+        about_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        about_lbl = Gtk.Label(label="About")
+        about_lbl.set_xalign(0)
+        about_box.pack_start(about_lbl, True, True, 0)
+        about_btn.add(about_box)
+        about_btn.connect("clicked", self._open_about)
+        inner.pack_start(about_btn, False, False, 0)
+
+        # Sidebar footer
+        foot_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        foot_sep.set_margin_top(14)
+        foot_sep.set_margin_bottom(12)
+        inner.pack_start(foot_sep, False, False, 0)
+
+        foot = Gtk.Label(label="CTTB lab network\nbuild 26.04 · spring 2026")
+        foot.get_style_context().add_class("dim-label")
+        foot.set_xalign(0)
+        foot.set_justify(Gtk.Justification.LEFT)
+        inner.pack_start(foot, False, False, 0)
+
+        return sidebar
+
+    def _build_content(self) -> Gtk.Box:
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        content.set_margin_top(34)
+        content.set_margin_bottom(26)
+        content.set_margin_start(36)
+        content.set_margin_end(36)
+
+        # Title
         title = Gtk.Label()
         title.set_markup(
-            f"<span size='xx-large' weight='bold'>{GLib.markup_escape_text(WELCOME_TITLE)}</span>"
+            "<span weight='600' size='24576'>Welcome to Sudhanix 26</span>"
         )
         title.set_xalign(0)
-        outer.pack_start(title, False, False, 0)
+        content.pack_start(title, False, False, 0)
 
-        body = Gtk.Label(label=WELCOME_BODY)
-        body.set_xalign(0)
-        body.set_line_wrap(True)
-        body.set_selectable(True)
-        outer.pack_start(body, True, True, 0)
+        # Subtitle
+        subtitle = Gtk.Label(label="City of Ten Thousand Buddhas lab network")
+        subtitle.get_style_context().add_class("dim-label")
+        subtitle.set_xalign(0)
+        subtitle.set_margin_top(4)
+        content.pack_start(subtitle, False, False, 0)
 
-        self.checkbox = Gtk.CheckButton(label="Don't show this again")
-        outer.pack_start(self.checkbox, False, False, 0)
+        # Body rows
+        rows_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        rows_box.set_margin_top(28)
 
-        button_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        button_row.set_halign(Gtk.Align.END)
-        outer.pack_start(button_row, False, False, 0)
+        body_rows = [
+            (
+                "Your files follow you.",
+                " Documents, Desktop, and Downloads live on the campus server "
+                "— sign in at any lab machine and they’ll be there.",
+            ),
+            (
+                "One CTTB account, every machine.",
+                " Same username and password as before — the look is new, the login isn’t.",
+            ),
+            (
+                "Stuck or curious?",
+                " Open ‘Customization’ on the left to set up your dock and theme, "
+                "or visit wiki.cttb for guides and the full release notes.",
+            ),
+        ]
+        for bold_lead, rest in body_rows:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+            lbl = Gtk.Label()
+            lbl.set_markup(
+                f"<span size='14848'>"
+                f"<b>{GLib.markup_escape_text(bold_lead)}</b>"
+                f"{GLib.markup_escape_text(rest)}</span>"
+            )
+            lbl.set_xalign(0)
+            lbl.set_line_wrap(True)
+            lbl.set_max_width_chars(55)
+            row.pack_start(lbl, True, True, 0)
+            rows_box.pack_start(row, False, False, 0)
 
-        ok = Gtk.Button(label="OK")
-        ok.connect("clicked", self.on_close)
-        button_row.pack_start(ok, False, False, 0)
+        content.pack_start(rows_box, False, False, 0)
 
-        self.connect("destroy", self.on_close)
+        # Spacer
+        content.pack_start(Gtk.Box(), True, True, 0)
 
-    def on_close(self, *args) -> None:
-        self.dont_show_again = self.checkbox.get_active()
+        # Action row separator
+        action_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        action_sep.set_margin_top(14)
+        action_sep.set_margin_bottom(12)
+        content.pack_start(action_sep, False, False, 0)
+
+        # Action row: checkbox + Continue
+        action_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+
+        self._skip_checkbox = Gtk.CheckButton(
+            label="Got it — skip this on next sign‑in"
+        )
+        self._skip_checkbox.set_active(True)
+        action_row.pack_start(self._skip_checkbox, False, False, 0)
+
+        action_row.pack_start(Gtk.Box(), True, True, 0)
+
+        continue_btn = Gtk.Button(label="Continue")
+        continue_btn.get_style_context().add_class("suggested-action")
+        continue_btn.set_can_default(True)
+        continue_btn.connect("clicked", self._on_continue)
+        action_row.pack_start(continue_btn, False, False, 0)
+
+        content.pack_start(action_row, False, False, 0)
+
+        return content
+
+    # ── button handlers ──
+
+    def _open_customization(self, _btn: Gtk.Button) -> None:
+        dlg = CustomizationDialog(self)
+        dlg.run()
+        dlg.destroy()
+
+    def _open_about(self, _btn: Gtk.Button) -> None:
+        dlg = AboutDialog(self)
+        dlg.run()
+        dlg.destroy()
+
+    def _on_continue(self, _btn: Gtk.Button) -> None:
+        self.dismiss_on_continue = self._skip_checkbox.get_active()
         Gtk.main_quit()
 
 
+# ── CSS injection ─────────────────────────────────────────────────────────────
+def apply_css_safe() -> None:
+    """Apply CSS; log and continue on failure (doesn't block the panel)."""
+    try:
+        provider = Gtk.CssProvider()
+        provider.load_from_data(GTK_CSS)
+        from gi.repository import Gdk  # noqa: PLC0415
+        screen = Gdk.Screen.get_default()
+        if screen:
+            Gtk.StyleContext.add_provider_for_screen(
+                screen,
+                provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+    except Exception as exc:
+        log(f"CSS provider failed (continuing without theme): {exc}")
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
 def main() -> int:
     if "DISPLAY" not in os.environ and "WAYLAND_DISPLAY" not in os.environ:
         return 0
@@ -196,12 +989,17 @@ def main() -> int:
         # remember their dismissal anyway.
         return 0
 
+    apply_css_safe()
+
     win = WelcomeWindow()
     win.show_all()
     Gtk.main()
 
-    if win.dont_show_again:
-        write_dismissal(user_dn, tok)
+    if win.dismiss_on_continue:
+        try:
+            write_dismissal(user_dn, tok)
+        except Exception as exc:
+            log(f"write_dismissal failed: {exc}")
 
     return 0
 
