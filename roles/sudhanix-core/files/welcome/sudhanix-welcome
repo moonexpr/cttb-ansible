@@ -60,9 +60,52 @@ BROWSER_MAP = {
     "Zen":     "zen-browser.desktop",
 }
 
-# ── Colour palette (matches spec :root tokens) ─────────────────────────────
-GTK_CSS = b"""
-/* sudhanix-welcome custom theme tokens */
+# ── Dock layout ──────────────────────────────────────────────────────────────
+# Groups are layered on top of the always-pinned "core utility" set. Apply
+# writes a new dock-items list to the user's plank dconf (system-db site
+# default already matches; this just lets the user opt groups in/out).
+#
+# Item names must match files seeded into ~/.config/plank/dock1/launchers/
+# from /etc/skel by sudhanix-firstlogin's sfl_seed_from_skel step. Items not
+# present on disk are filtered out at apply time, so this map can list
+# launchers we *might* ship without breaking on hosts that don't have them.
+DOCK_ALWAYS_PINNED = [
+    "xfce4-appfinder.dockitem",
+    "thunar.dockitem",
+    "thunderbird.dockitem",
+    "Zoom.dockitem",
+]
+DOCK_GROUPS = {
+    "Office suite": [
+        "libreoffice-writer.dockitem",
+        "libreoffice-calc.dockitem",
+        "org.gnome.Calculator.dockitem",
+    ],
+    "Browsers": [
+        "com.google.Chrome.dockitem",
+        "firefox.dockitem",
+        "zen-browser.dockitem",
+    ],
+    "Code tools": [
+        "org.gnome.gedit.dockitem",
+        "xfce4-terminal.dockitem",
+        "code.dockitem",
+    ],
+    "Audio & video": [
+        "gimp.dockitem",
+        "vlc.dockitem",
+        "rhythmbox.dockitem",
+    ],
+}
+
+# Where Plank reads launchers from for the per-user dock1 layout.
+PLANK_LAUNCHERS_DIR = Path.home() / ".config" / "plank" / "dock1" / "launchers"
+
+# ── Colour palette ───────────────────────────────────────────────────────────
+# Dark + Light CSS blobs share structure; only colour tokens differ. Auto maps
+# to Dark per THEME_MAP until a portal/sunset switcher lands (TODO v2).
+GTK_CSS_DARK = b"""
+/* sudhanix-welcome custom theme tokens -- DARK */
 window#welcome-window,
 dialog {
     background-color: #242424;
@@ -174,6 +217,122 @@ button.radio-pick.active {
 /* about-list link colour */
 label.wiki-link {
     color: #6cb4ff;
+}
+"""
+
+GTK_CSS_LIGHT = b"""
+/* sudhanix-welcome custom theme tokens -- LIGHT */
+window#welcome-window,
+dialog {
+    background-color: #f4f4f4;
+    color: #1c1c1c;
+}
+
+/* sidebar */
+box#sidebar {
+    background-color: #e8e8e8;
+}
+
+/* nav list */
+list.navigation-sidebar {
+    background-color: transparent;
+}
+list.navigation-sidebar row {
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+list.navigation-sidebar row:selected {
+    background-color: rgba(53,132,228,0.18);
+    color: #1a65c0;
+}
+
+/* pill buttons */
+button.pill {
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid #cdcdcd;
+    color: #1c1c1c;
+    padding: 6px 12px;
+}
+button.pill:hover {
+    background-color: #ececec;
+}
+
+/* suggested-action (Continue, Apply) */
+button.suggested-action {
+    background: linear-gradient(#3584e4, #1c71d8);
+    border-color: #1a65c0;
+    color: white;
+    font-weight: 500;
+}
+button.suggested-action:hover {
+    background: linear-gradient(#4590e8, #2278da);
+}
+
+/* dim labels */
+label.dim-label {
+    color: #707070;
+}
+
+/* separator lines */
+separator {
+    background-color: #d0d0d0;
+    min-height: 1px;
+}
+
+/* segmented control for theme selection */
+box#theme-seg button {
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    color: #707070;
+    padding: 3px 9px;
+    font-size: small;
+}
+box#theme-seg button.active {
+    background-color: #ffffff;
+    color: #1c1c1c;
+}
+box#theme-seg {
+    background-color: #e0e0e0;
+    border-radius: 6px;
+    border: 1px solid #cdcdcd;
+    padding: 2px;
+}
+
+/* chip toggle buttons (dock groups) */
+button.chip {
+    border-radius: 999px;
+    background-color: #ffffff;
+    border: 1px solid #cdcdcd;
+    color: #707070;
+    padding: 3px 9px;
+    font-size: small;
+}
+button.chip.active {
+    background-color: rgba(53,132,228,0.18);
+    border-color: rgba(53,132,228,0.5);
+    color: #1a65c0;
+}
+
+/* browser radio buttons */
+button.radio-pick {
+    border-radius: 6px;
+    background-color: #ffffff;
+    border: 1px solid #cdcdcd;
+    color: #707070;
+    padding: 4px 9px;
+    font-size: small;
+}
+button.radio-pick.active {
+    background-color: #f0f0f0;
+    color: #1c1c1c;
+    border-color: #a0a0a0;
+}
+
+/* about-list link colour */
+label.wiki-link {
+    color: #1c71d8;
 }
 """
 
@@ -313,11 +472,53 @@ def apply_settings(values: dict) -> None:
     except Exception as exc:
         log(f"wallpaper rotation exception: {exc}")
 
-    # 3. Dock groups — STUB for v1.
-    # Plank launcher management requires per-desktop .dockitem files and
-    # live dbus interaction; too fragile for first-login. Instead, write a
-    # marker file that a future ansible role/script can consume.
-    dock = values.get("dock", {})
+    # 3. Dock groups — rewrite plank dock-items in the user's dconf user-db.
+    # Layout: DOCK_ALWAYS_PINNED items first, then the union of every enabled
+    # group's items, filtered against what's actually present in
+    # ~/.config/plank/dock1/launchers/ (so missing .dockitem files don't end
+    # up referenced by Plank and cause empty/broken slots).
+    #
+    # This is a base implementation; fine-tuning (icon order, dedupe rules,
+    # group-display names with i18n) is a follow-up. dconf load is idempotent;
+    # Plank watches dconf and updates the dock without a restart.
+    dock = values.get("dock", {})  # {"Office suite": True, ...}
+    try:
+        present_items: set[str] = set()
+        if PLANK_LAUNCHERS_DIR.exists():
+            present_items = {p.name for p in PLANK_LAUNCHERS_DIR.glob("*.dockitem")}
+
+        target: list[str] = []
+        for item in DOCK_ALWAYS_PINNED:
+            if item in present_items and item not in target:
+                target.append(item)
+        for group_name, enabled in dock.items():
+            if not enabled:
+                continue
+            for item in DOCK_GROUPS.get(group_name, []):
+                if item in present_items and item not in target:
+                    target.append(item)
+
+        if target:
+            quoted = ", ".join(f"'{i}'" for i in target)
+            seed = f"[docks/dock1]\ndock-items=[{quoted}]\n".encode()
+            r = subprocess.run(
+                ["dconf", "load", "/net/launchpad/plank/"],
+                input=seed, capture_output=True, timeout=5,
+            )
+            if r.returncode != 0:
+                log(
+                    "dconf dock load failed: "
+                    + r.stderr.decode(errors="replace").strip()
+                )
+            else:
+                log(f"dock-items rewritten: {len(target)} items")
+        else:
+            log("dock: no present launchers matched chips; skipped dconf write")
+    except Exception as exc:
+        log(f"dock dconf exception: {exc}")
+
+    # Also keep the JSON marker for sysadmin inspection / future ansible
+    # runs that want to reproduce a user's choices.
     try:
         SUDHANIX_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         DOCK_PREFS_FILE.write_text(json.dumps(dock, indent=2))
@@ -642,6 +843,10 @@ class CustomizationPage(Gtk.Box):
 
     def _on_theme_clicked(self, btn: Gtk.Button, label: str) -> None:
         self._set_theme_active(label)
+        # Live preview: swap the welcome panel's own CSS so the user sees the
+        # change without leaving the Customization page. Apply still pushes
+        # through to xfconf for system-wide effect.
+        apply_css_safe(label)
 
     def _update_chip_style(self, chip: Gtk.ToggleButton) -> None:
         ctx = chip.get_style_context()
@@ -1015,19 +1220,45 @@ def _build_stub_page(*, heading: str, body: str, wiki_path: str) -> Gtk.Box:
 
 
 # ── CSS injection ─────────────────────────────────────────────────────────────
-def apply_css_safe() -> None:
-    """Apply CSS; log and continue on failure (doesn't block the panel)."""
+# Module-level state for the active provider so theme switches can swap it
+# in place rather than stacking providers (each add_provider_for_screen is
+# additive — without removing the prior provider, dark colours bleed through
+# light and vice versa).
+_ACTIVE_PROVIDER: Gtk.CssProvider | None = None
+
+
+def _css_for_theme(theme: str) -> bytes:
+    if theme.lower() == "light":
+        return GTK_CSS_LIGHT
+    # "Dark", "Auto", or anything else falls through to dark; THEME_MAP's
+    # comment explains why Auto stays dark until xdg-portal switching lands.
+    return GTK_CSS_DARK
+
+
+def apply_css_safe(theme: str = "Dark") -> None:
+    """Load (or hot-swap) the welcome panel's CSS provider for `theme`.
+    Called once at startup with the persisted preference, and again live
+    from the Customization page when the theme segmented control is touched."""
+    global _ACTIVE_PROVIDER
     try:
-        provider = Gtk.CssProvider()
-        provider.load_from_data(GTK_CSS)
         from gi.repository import Gdk  # noqa: PLC0415
         screen = Gdk.Screen.get_default()
-        if screen:
-            Gtk.StyleContext.add_provider_for_screen(
-                screen,
-                provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-            )
+        if screen is None:
+            return
+
+        # Drop any prior provider so the new one isn't layered on top of it.
+        if _ACTIVE_PROVIDER is not None:
+            Gtk.StyleContext.remove_provider_for_screen(screen, _ACTIVE_PROVIDER)
+            _ACTIVE_PROVIDER = None
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(_css_for_theme(theme))
+        Gtk.StyleContext.add_provider_for_screen(
+            screen,
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+        _ACTIVE_PROVIDER = provider
     except Exception as exc:
         log(f"CSS provider failed (continuing without theme): {exc}")
 
