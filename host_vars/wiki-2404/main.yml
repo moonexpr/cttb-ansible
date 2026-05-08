@@ -53,6 +53,12 @@ mediawiki_user_groups:
   - dvbs
   - cttb
 
+# Show every title in Special:Search and the main search bar regardless of
+# group membership. Read is still gated by Lockdown — clicking a restricted
+# hit lands on badaccess-groups. Set false to fall back to Lockdown defaults
+# (titles hidden from non-members).
+mediawiki_lockdown_search_visible: true
+
 # Lockdown rules: per-namespace, per-action lists of allowed user groups.
 # Format mirrors $wgNamespacePermissionLockdown[NS_<NAME>][action] = [...].
 mediawiki_lockdown:

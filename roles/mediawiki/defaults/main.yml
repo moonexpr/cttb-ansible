@@ -77,6 +77,13 @@ mediawiki_user_groups: []
 # namespace_name must match a NS_<NAME> constant defined in mediawiki_extra_namespaces.
 mediawiki_lockdown: {}
 
+# When true, override Lockdown's search filtering so titles in restricted
+# namespaces still appear in Special:Search results and the main search bar
+# for everyone. Reading the page is still blocked by Lockdown's
+# getUserPermissionsErrors hook (badaccess-groups on click). Useful when
+# you want a campus-wide title index without exposing page bodies.
+mediawiki_lockdown_search_visible: false
+
 # Migration (set to true when importing from old wiki)
 mediawiki_migration_mode: false
 mediawiki_migration_dump_file: "/tmp/wiki-dump.sql"
