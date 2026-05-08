@@ -5,8 +5,8 @@ ResultAny=no
 ResultInactive=no
 ResultActive=no
 
-[Allow the "administrator" account to modify network state or setting]
-Identity=unix-user:administrator
+[Allow privileged groups to modify network state or setting]
+Identity=unix-group:sudo;unix-group:it;unix-group:dvgs-staff;unix-group:dvbs-staff;unix-group:drbu-staff
 Action=org.freedesktop.NetworkManager.*
 ResultAny=no
 ResultInactive=no
