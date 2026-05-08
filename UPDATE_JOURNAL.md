@@ -2840,3 +2840,44 @@ Replaced the template with a populated Failsafe definition (five clients: xfwm4,
 Also caught while codifying: my Vajra Testing tool drop from earlier in the session (monogarden#7) was never actually committed — only the journal mention. Committed the four `test_*.lua` files and the deploy task in `roles/sudhanix-vajra-tool/tasks/main.yml` together with the xfce4-session fix, under tag `vajra-testing`.
 
 Pending follow-ups in cttb-ansible#7: cache-token atomic mktemp+rename for the EACCES path, shred-token gate to close_session only with diagnostic logging.
+
+---
+
+## 2026-05-08 — Blocker sweep: cache-token atomic write, welcome FORCE bypass, plank dconf seed (closes #7, #35)
+
+Both open Blocker labels cleared today against dvgs-testmachine via the unattended pamtester harness. No at-the-seat work needed.
+
+### #7 cache-pam-token: atomic mktemp+rename
+
+Replaced the bash `> "$TOKEN"` redirect with `mktemp -p "$DIR" ".${UID_NUM}.tok.XXXXXX"` followed by chmod / write / chown / `mv -f`. The pre-existing user-owned token file is never opened-for-write by root in lightdm's pam_exec child; instead a fresh root-owned tmpfile is written, chowned to the target user, and atomically renamed over the destination. Fail-soft: any step failure logs and `rm -f`'s the tmp.
+
+Empirical proof on dvgs-testmachine: pre-staged a stale `/run/sudhanix-tokens/2156.tok` (10 bytes "STALEDATA" owned by `john.chandara:2156` mode 0600), then drove the auth phase via `printf '%s\n' "$PW" | sudo -n pamtester lightdm john.chandara authenticate`. Result: `wrote /run/sudhanix-tokens/2156.tok (10 bytes)` in the cache log, token re-owned correctly, no leftover `.2156.tok.XXX` tmpfile. The bash > truncate path that JC's 09:56:09 real-login hit yesterday is gone.
+
+### #7 shred-pam-token: close_session gate (already in tree)
+
+Verified on disk; the close_session gate landed yesterday afternoon (commit 36461ea1 era). Ran the open_session→close_session pair against pamtester to confirm the diagnostic logging:
+
+```
+[shred] invoked PAM_TYPE=open_session ... skip: not close_session
+[shred] invoked PAM_TYPE=close_session ... shredded /run/sudhanix-tokens/2156.tok
+```
+
+Hypothesis #3 from cttb-ansible#7 — shred-on-open wiping tokens immediately after auth-cache wrote them — is empirically dead.
+
+### #7 sudhanix-welcome: SUDHANIX_WELCOME_FORCE bypass
+
+Added an env-var bypass at the top of `main()`. When `SUDHANIX_WELCOME_FORCE=1`, the LDAP token read and the `already_dismissed()` gate are skipped, so the panel renders unconditionally. The Continue button still records `sudhanixWelcomeDismissed` only when force is *off* — preview from vajra's `test_welcome_preview.lua` no longer side-effects the user's LDAP entry. Closes the missing-bypass dependency listed in monogarden#7.
+
+### #35 firstlogin: seed user-db dconf for Plank
+
+Generic helper `sfl_seed_user_dconf` walks `/etc/sudhanix/dconf-seeds/*.txt`, parses a `# prefix: /net/launchpad/plank/` directive line, and feeds the rest to `dconf load <prefix>`. Falls back to `dbus-run-session` when `DBUS_SESSION_BUS_ADDRESS` is unset (Xsession.d/40x11-common_xsessionrc normally exports it before our hook runs, but the wrapper makes the helper also work from migrate-home and CI). Logs each seed to firstlogin.log + the user-visible NOTES file.
+
+Wired into `sfl_run_bootstrap` between `sfl_seed_from_skel` and `sfl_set_xfce_session_pref`. Deployed via `roles/sudhanix-core/tasks/sudhanix-firstlogin.yml` with a new `with_fileglob` over `firstlogin/dconf-seeds/*.txt` — drop a new `.txt` next to `plank.txt` and it deploys without YAML changes.
+
+The trade-off the issue calls out is loud in the lib-script comment header: once the user-db is seeded, future updates to `/etc/dconf/db/site.d/00-plank-dock1` will NOT propagate (user-db beats system-db:site in the dconf profile). Re-seeding a fleet post-rollout requires either (a) bumping `SUDHANIX_VERSION` to re-quarantine, or (b) a separate `sudhanix-reseed-dock` sysadmin tool. We accepted lock-in vs. Plank's first-run auto-detect clobber; (b) is filed for a future agent.
+
+Empirical proof: `dbus-run-session -- bash -c '. /usr/local/lib/sudhanix-firstlogin-lib.sh; sfl_seed_user_dconf'` against a synthetic `$HOME` returned the canonical 10-item dock-items list on `dconf read /net/launchpad/plank/docks/dock1/dock-items`. A second call from the same session was idempotent — same value, no spurious diff.
+
+### Login harness verified end-to-end
+
+`utils/run-pam-test dvgs-testmachine.cttb john.chandara` driven through `expect` (to satisfy its `read </dev/tty`) authenticated cleanly with the password sourced from Keychain, log tail confirmed `wrote /run/sudhanix-tokens/2156.tok (10 bytes)`, and the token persisted with correct ownership. Tier-1 of cttb-ansible#3 is live.
