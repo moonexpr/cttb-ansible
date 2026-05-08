@@ -67,12 +67,13 @@
     - vajra-install
     - install
 
-# ---------- testing tools ---------- #
-# Drop-in Lua tools that exercise the local PAM/welcome/LDAP stack from
-# the GUI. Counterpart to utils/run-pam-test (cttb-ansible#3) for IT staff
-# at the seat. See monogarden#7 for design notes; depends on monogarden#2
-# (Vajra LDAP TLS) for the LDAP-write paths.
-- name: deploy Vajra Testing-category tools
+# ---------- Sudhanix-specific Vajra tools ---------- #
+# vajra ships as a generic sysadmin shell — any tool that hard-codes a
+# CTTB-only path (sudhanix-welcome, sudhanixWelcomeDismissed, the welcome
+# panel test runners) lives in this role and deploys as a runtime drop-in
+# under /usr/local/lib/vajra/tools/, NOT bundled in the .deb. Keeps the
+# upstream vajra package portable.
+- name: deploy Sudhanix-specific Vajra tools (sidebar + Testing category)
   copy:
     src: "tools/{{ item }}"
     dest: "/usr/local/lib/vajra/tools/{{ item }}"
@@ -80,6 +81,12 @@
     group: root
     mode: '0644'
   loop:
+    # Sidebar Sudhanix tools (campus desktop status, launchers, dismissal flag)
+    - sudhanix.lua
+    - welcome_reset.lua
+    # Testing category — IT-only test runners for PAM / welcome / LDAP. See
+    # monogarden#7 for design notes; depends on the LDAP TLS fix in
+    # monogarden#2 for the LDAP-write paths.
     - test_pam_auth.lua
     - test_token_state.lua
     - test_welcome_preview.lua
@@ -87,6 +94,7 @@
   tags:
     - vajra
     - vajra-config
+    - vajra-sudhanix
     - vajra-testing
     - config
 
