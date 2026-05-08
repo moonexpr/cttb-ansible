@@ -39,6 +39,10 @@ SUDHANIX_USER_OC = "sudhanixUser"
 # ── Asset paths ───────────────────────────────────────────────────────────────
 LOTUS_PATH = "/usr/share/icons/cttb/lotus.png"
 # Dep: lookandfeel.yml must run before this role places lotus.png.
+WELCOME_ICONS_DIR = "/usr/share/sudhanix/welcome-icons"
+# SVG line-art icons used on the What's new / Quick tour cards. Theme-neutral
+# stroke colour (#7a7a7a) reads on both DARK and LIGHT panel CSS without
+# needing a per-theme variant. Files deployed by sudhanix-welcome.yml.
 
 # ── Prefs stub dir ────────────────────────────────────────────────────────────
 # Dock preference stub written here; a future role/script can consume it.
@@ -539,7 +543,7 @@ def apply_settings(values: dict) -> None:
         log(f"xdg-settings exception: {exc}")
 
 
-# ── Lotus pixbuf helper ───────────────────────────────────────────────────────
+# ── Pixbuf helpers ────────────────────────────────────────────────────────────
 def lotus_image(size: int) -> Gtk.Image | None:
     """Return a Gtk.Image at the requested square pixel size, or None on error."""
     try:
@@ -550,6 +554,17 @@ def lotus_image(size: int) -> Gtk.Image | None:
         return img
     except Exception as exc:
         log(f"lotus asset missing or unreadable ({LOTUS_PATH}): {exc}")
+        return None
+
+
+def welcome_icon(name: str, size: int = 44) -> Gtk.Image | None:
+    """Load a theme-neutral SVG line-art icon from WELCOME_ICONS_DIR."""
+    path = f"{WELCOME_ICONS_DIR}/{name}.svg"
+    try:
+        pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, size, size, True)
+        return Gtk.Image.new_from_pixbuf(pb)
+    except Exception as exc:
+        log(f"welcome icon missing ({path}): {exc}")
         return None
 
 
@@ -600,7 +615,8 @@ class AboutPage(Gtk.Box):
 
         # Link rows
         rows = [
-            ("User Guide", None, "being drafted right now"),
+            ("User Guide", "http://wiki.cttb/wiki/Sudhanix_User_Guide",
+             "wiki.cttb / Sudhanix_User_Guide"),
             ("Common Tasks", "http://wiki.cttb/wiki/Common_Tasks_on_Sudhanix",
              "wiki.cttb / Common_Tasks_on_Sudhanix"),
             ("Linux Article", "http://wiki.cttb/wiki/Introduction_to_Linux",
@@ -1142,27 +1158,59 @@ class WelcomeWindow(Gtk.Window):
         return page
 
     def _build_whats_new_page(self) -> Gtk.Box:
-        # Stub — copy lands in #4; release-note content lives at
-        # http://wiki.cttb/wiki/Sudhanix_26_Release_Notes (#24/#25 pending).
-        return _build_stub_page(
+        # Sourced from wiki.cttb / Sudhanix 26 Release Notes — the four
+        # changes most likely to surface in a daily lab session. Tune later.
+        return _build_card_page(
             heading="What’s new in Sudhanix 26",
-            body=(
-                "Release notes are being prepared. Until they land here, see "
-                "wiki.cttb / Sudhanix_26_Release_Notes for the live draft."
-            ),
-            wiki_path="Sudhanix_26_Release_Notes",
+            cards=[
+                ("lotus-menu",
+                 "Lotus menu in the top panel",
+                 "Click the lotus at top-left, or press Super, for a "
+                 "categorised app menu with a built-in search box."),
+                ("spotlight",
+                 "Search-and-launch with Super + Space",
+                 "Spotlight-style launcher. Type a few letters of any app "
+                 "or settings panel and press Enter."),
+                ("dock",
+                 "Plank dock, one click away",
+                 "A minimalist dock at the bottom of the screen for the "
+                 "apps you reach for daily. Right-click any open app to pin."),
+                ("snap-package",
+                 "Snap removed; faster cold-launch",
+                 "Firefox, Software, and friends are now apt or Flatpak — "
+                 "first launch is seconds, not a minute."),
+            ],
+            footer_text="Full notes:",
+            footer_label="wiki.cttb / Sudhanix 26 Release Notes",
+            footer_url="http://wiki.cttb/wiki/Sudhanix_26_Release_Notes",
         )
 
     def _build_quick_tour_page(self) -> Gtk.Box:
-        # Stub — interactive tour is a v2 idea (#4 design package).
-        return _build_stub_page(
+        # Sourced from wiki.cttb / Common Tasks on Sudhanix — the four
+        # shortcut takeaways most useful on day one.
+        return _build_card_page(
             heading="Quick tour",
-            body=(
-                "An interactive walkthrough of the dock, panel, app finder, "
-                "and your roaming home directory will live here. For now, "
-                "see Common Tasks on Sudhanix on the wiki."
-            ),
-            wiki_path="Common_Tasks_on_Sudhanix",
+            cards=[
+                ("keyboard",
+                 "Super + Space launches anything",
+                 "Apps, settings, and recent files all in one search bar. "
+                 "The fastest way to get from “I want X” to running X."),
+                ("tile-windows",
+                 "Tile windows side-by-side",
+                 "Super + Left or Right snaps the focused window to that "
+                 "half of the screen. Great for two documents at once."),
+                ("folder-split",
+                 "Split-view file manager (F3)",
+                 "In the file manager, F3 opens a second pane. Drag-and-"
+                 "drop between them to copy without juggling two windows."),
+                ("screenshot",
+                 "Take a screenshot",
+                 "Print Screen captures the whole screen; Shift + Print "
+                 "Screen lets you select a region. Both land in Pictures/."),
+            ],
+            footer_text="More recipes:",
+            footer_label="wiki.cttb / Common Tasks on Sudhanix",
+            footer_url="http://wiki.cttb/wiki/Common_Tasks_on_Sudhanix",
         )
 
     # ── handlers ──
@@ -1181,40 +1229,89 @@ class WelcomeWindow(Gtk.Window):
         Gtk.main_quit()
 
 
-def _build_stub_page(*, heading: str, body: str, wiki_path: str) -> Gtk.Box:
-    """Placeholder stack page — heading + paragraph + wiki link.
-    Visual / copy redesign is #4; this is the interim filler #51 ships."""
+def _build_card_page(
+    *,
+    heading: str,
+    cards: list[tuple[str, str, str]],
+    footer_text: str,
+    footer_label: str,
+    footer_url: str,
+) -> Gtk.Box:
+    """2x2 grid of takeaway cards (icon + title + 1-sentence body) + footer
+    pointing at the canonical wiki article. Used for both What's new and
+    Quick tour. Card content is provisional; tune later (#4)."""
     page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-    page.set_margin_top(34)
+    page.set_margin_top(28)
     page.set_margin_start(36)
     page.set_margin_end(36)
 
     title = Gtk.Label()
     title.set_markup(
-        f"<span weight='600' size='24576'>"
+        f"<span weight='600' size='22000'>"
         f"{GLib.markup_escape_text(heading)}</span>"
     )
     title.set_xalign(0)
+    title.set_margin_bottom(18)
     page.pack_start(title, False, False, 0)
 
-    para = Gtk.Label(label=body)
-    para.get_style_context().add_class("dim-label")
-    para.set_xalign(0)
-    para.set_line_wrap(True)
-    para.set_max_width_chars(60)
-    para.set_margin_top(18)
-    page.pack_start(para, False, False, 0)
+    grid = Gtk.Grid()
+    grid.set_row_spacing(14)
+    grid.set_column_spacing(20)
+    grid.set_column_homogeneous(True)
+
+    for idx, (icon_name, card_title, card_body) in enumerate(cards):
+        col = idx % 2
+        row = idx // 2
+
+        card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+
+        icon = welcome_icon(icon_name, 44)
+        if icon is not None:
+            icon.set_valign(Gtk.Align.START)
+            card.pack_start(icon, False, False, 0)
+
+        text_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        t = Gtk.Label()
+        t.set_markup(
+            f"<span weight='600' size='11500'>"
+            f"{GLib.markup_escape_text(card_title)}</span>"
+        )
+        t.set_xalign(0)
+        t.set_line_wrap(True)
+        t.set_max_width_chars(28)
+        text_col.pack_start(t, False, False, 0)
+
+        b = Gtk.Label(label=card_body)
+        b.get_style_context().add_class("dim-label")
+        b.set_xalign(0)
+        b.set_yalign(0)
+        b.set_line_wrap(True)
+        b.set_max_width_chars(34)
+        text_col.pack_start(b, False, False, 0)
+
+        card.pack_start(text_col, True, True, 0)
+        grid.attach(card, col, row, 1, 1)
+
+    page.pack_start(grid, False, False, 0)
+
+    # Footer: wiki link.
+    footer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+    footer.set_margin_top(18)
+
+    pre = Gtk.Label(label=footer_text)
+    pre.get_style_context().add_class("dim-label")
+    pre.set_xalign(0)
+    footer.pack_start(pre, False, False, 0)
 
     link = Gtk.Label()
-    url = f"http://wiki.cttb/wiki/{wiki_path}"
     link.set_markup(
-        f'<a href="{GLib.markup_escape_text(url)}">'
-        f'wiki.cttb / {GLib.markup_escape_text(wiki_path)}</a>'
+        f'<a href="{GLib.markup_escape_text(footer_url)}">'
+        f'{GLib.markup_escape_text(footer_label)}</a>'
     )
     link.set_xalign(0)
-    link.set_margin_top(14)
-    page.pack_start(link, False, False, 0)
+    footer.pack_start(link, False, False, 0)
 
+    page.pack_start(footer, False, False, 0)
     page.pack_start(Gtk.Box(), True, True, 0)
     return page
 

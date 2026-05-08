@@ -73,6 +73,28 @@
   tags:
     - sudhanix_welcome
 
+- name: ensure welcome icons dir exists
+  file:
+    path: /usr/share/sudhanix/welcome-icons
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_welcome
+
+- name: deploy theme-neutral welcome icons (SVG line-art for stack-page cards)
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/share/sudhanix/welcome-icons/{{ item | basename }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_fileglob:
+    - "welcome/icons/*.svg"
+  tags:
+    - sudhanix_welcome
+
 - name: deploy XDG autostart entry
   copy:
     src: welcome/sudhanix-welcome.desktop
