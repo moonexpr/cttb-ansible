@@ -12,5 +12,5 @@
 items=['org.gnome.gedit.dockitem', 'xfce4-terminal.dockitem', 'code.dockitem']
 label='Code'
 always-on=false
-order=30
+weight=500
 default-enabled=false

@@ -85,6 +85,15 @@ _FALLBACK_BROWSERS = [
 ]
 _FALLBACK_DEFAULT_BROWSER = "Chrome"
 
+# Weighted anchors: each entry pins one launcher at a specific weight in the
+# 0..1000 number-space shared with category weights. 0 = leftmost,
+# 1000 = rightmost, 500 = center. Anchors only appear when at least one
+# category is enabled (see apply_settings).
+_FALLBACK_DOCK_ANCHORS = [
+    {"item": "xfce4-appfinder.dockitem", "weight": 0},
+    {"item": "Trash.dockitem",           "weight": 1000},
+]
+
 
 def _load_customize() -> dict:
     """Read customize.yml. Return {} on any failure so callers fall back to
@@ -156,6 +165,40 @@ def browser_desktop(browser_id: str) -> str:
             return b.get("desktop", "")
     return _FALLBACK_BROWSERS[0]["desktop"]
 
+
+def dock_anchors() -> list[dict]:
+    """Return a list of weighted anchor entries [{item, weight}, ...].
+    Anchors share the 0..1000 weight number-space with categories: lower
+    weight is leftward in the dock, higher is rightward, 500 is center.
+    Anchors are conditional in apply_settings — they only appear when at
+    least one category contributes items."""
+    raw = _customize().get("dock_anchors")
+    if isinstance(raw, list) and raw:
+        rows: list[dict] = []
+        for entry in raw:
+            if not isinstance(entry, dict):
+                continue
+            item = entry.get("item")
+            if not isinstance(item, str) or not item:
+                continue
+            try:
+                w = int(entry.get("weight", 0))
+            except (TypeError, ValueError):
+                w = 0
+            rows.append({"item": item, "weight": w})
+        if rows:
+            return rows
+    # Back-compat: older customize.yml shape used {left, right} keys.
+    if isinstance(raw, dict):
+        rows = []
+        if raw.get("left"):
+            rows.append({"item": raw["left"], "weight": 0})
+        if raw.get("right"):
+            rows.append({"item": raw["right"], "weight": 1000})
+        if rows:
+            return rows
+    return [dict(a) for a in _FALLBACK_DOCK_ANCHORS]
+
 # ── Dock layout ──────────────────────────────────────────────────────────────
 # Categories drive both the day-1 default plank dock-items list and the
 # Customization page chips. Resolution order (first non-empty wins):
@@ -177,8 +220,8 @@ def browser_desktop(browser_id: str) -> str:
 # user doesn't have on disk.
 _DOCK_CATEGORIES_HARDCODED = {
     "essentials": {
+        # appfinder lives in dock_anchors.left, not here.
         "items": [
-            "xfce4-appfinder.dockitem",
             "thunar.dockitem",
             "thunderbird.dockitem",
             "com.google.Chrome.dockitem",
@@ -186,7 +229,7 @@ _DOCK_CATEGORIES_HARDCODED = {
         ],
         "label": "Essentials",
         "always_on": True,
-        "order": 10,
+        "weight": 100,
         "default_enabled": True,
     },
     "office": {
@@ -197,7 +240,7 @@ _DOCK_CATEGORIES_HARDCODED = {
         ],
         "label": "Office",
         "always_on": False,
-        "order": 20,
+        "weight": 300,
         "default_enabled": True,
     },
     "code": {
@@ -208,7 +251,7 @@ _DOCK_CATEGORIES_HARDCODED = {
         ],
         "label": "Code",
         "always_on": False,
-        "order": 30,
+        "weight": 500,
         "default_enabled": False,
     },
     "art": {
@@ -219,7 +262,7 @@ _DOCK_CATEGORIES_HARDCODED = {
         ],
         "label": "Art",
         "always_on": False,
-        "order": 40,
+        "weight": 700,
         "default_enabled": False,
     },
 }
@@ -239,7 +282,7 @@ def DOCK_CATEGORIES_FALLBACK() -> dict[str, dict]:
                 "items": list(val.get("items") or []),
                 "label": val.get("label") or key.title(),
                 "always_on": bool(val.get("always_on", False)),
-                "order": int(val.get("order", 999)),
+                "weight": int(val.get("weight", val.get("order", 999))),
                 "default_enabled": bool(val.get("default_enabled", False)),
             }
         if normalized:
@@ -317,11 +360,14 @@ def load_dock_categories() -> dict[str, dict]:
         items = _dconf_read_array(f"{base}/items") or []
         label = _dconf_read_scalar(f"{base}/label") or name.title()
         always_on = (_dconf_read_scalar(f"{base}/always-on") or "").lower() == "true"
-        order_s = _dconf_read_scalar(f"{base}/order") or "999"
+        # Prefer `weight` (new); fall through to `order` (back-compat).
+        weight_s = _dconf_read_scalar(f"{base}/weight")
+        if weight_s is None:
+            weight_s = _dconf_read_scalar(f"{base}/order") or "999"
         try:
-            order = int(order_s)
+            weight = int(weight_s)
         except ValueError:
-            order = 999
+            weight = 999
         default_enabled = (_dconf_read_scalar(f"{base}/default-enabled") or "false").lower() == "true"
         if always_on:
             default_enabled = True
@@ -329,14 +375,21 @@ def load_dock_categories() -> dict[str, dict]:
             "items": items,
             "label": label,
             "always_on": always_on,
-            "order": order,
+            "weight": weight,
             "default_enabled": default_enabled,
         }
     return cats or DOCK_CATEGORIES_FALLBACK()
 
 
 def ordered_category_keys(cats: dict[str, dict]) -> list[str]:
-    return sorted(cats.keys(), key=lambda k: (cats[k].get("order", 999), k))
+    """Sort by weight (preferred) or legacy `order` field."""
+    return sorted(
+        cats.keys(),
+        key=lambda k: (
+            cats[k].get("weight", cats[k].get("order", 999)),
+            k,
+        ),
+    )
 
 # ── Colour palette ───────────────────────────────────────────────────────────
 # Dark + Light CSS blobs share structure; only colour tokens differ. Auto maps
@@ -728,10 +781,14 @@ def apply_settings(values: dict) -> None:
     # 3. Dock categories — rewrite plank dock-items in the user's dconf
     # user-db from the chip state. Always-on categories (essentials) are
     # included regardless; other categories follow the user's chip choices.
-    # Items not present in ~/.config/plank/dock1/launchers/ are filtered out
-    # so missing .dockitem files don't show up as broken slots in Plank.
-    # dconf load is idempotent and Plank watches dconf, so the dock updates
-    # without a restart.
+    # The result is wrapped with the dock_anchors framing icons (app finder
+    # left, trash right). Items not present in ~/.config/plank/dock1/launchers/
+    # are filtered out so missing .dockitem files don't show up as broken
+    # slots in Plank. If every category resolves to zero items (or the user
+    # disabled all toggleable categories AND essentials yields nothing on
+    # this host), we ship a blank dock — no anchors, by design. dconf load
+    # is idempotent and Plank watches dconf, so the dock updates without
+    # a restart.
     dock = values.get("dock", {})  # {"office": True, "code": False, ...}
     try:
         cats = load_dock_categories()
@@ -739,35 +796,68 @@ def apply_settings(values: dict) -> None:
         if PLANK_LAUNCHERS_DIR.exists():
             present_items = {p.name for p in PLANK_LAUNCHERS_DIR.glob("*.dockitem")}
 
-        target: list[str] = []
-        for key in ordered_category_keys(cats):
-            cat = cats[key]
+        # Build (weight, items[]) groups. Each enabled category contributes
+        # one group; each anchor entry contributes a single-item group.
+        # Anchors only join the sort when at least one category contributes
+        # items — toggling everything off yields a blank dock by design.
+        category_groups: list[tuple[int, list[str]]] = []
+        for key, cat in cats.items():
             if cat.get("always_on"):
                 enabled = True
             else:
                 enabled = bool(dock.get(key, cat.get("default_enabled", False)))
             if not enabled:
                 continue
-            for item in cat.get("items", []):
-                if item in present_items and item not in target:
-                    target.append(item)
+            cat_w = int(cat.get("weight", cat.get("order", 999)))
+            cat_items = [
+                i for i in cat.get("items", []) if i in present_items
+            ]
+            if cat_items:
+                category_groups.append((cat_w, cat_items))
 
+        target: list[str] = []
+        if category_groups:
+            anchor_groups: list[tuple[int, list[str]]] = []
+            for a in dock_anchors():
+                item = a.get("item", "")
+                if item and item in present_items:
+                    anchor_groups.append((int(a.get("weight", 0)), [item]))
+            for _w, group_items in sorted(
+                category_groups + anchor_groups, key=lambda g: g[0]
+            ):
+                for item in group_items:
+                    if item not in target:
+                        target.append(item)
+
+        # Always write — including the empty list — so that toggling every
+        # category off actually produces the blank dock the user asked for,
+        # rather than leaving the prior dock-items in place. Also flip
+        # hide-mode back to 'none' so the dock becomes visible: the
+        # site-default starts it auto-hidden until the user has either
+        # chosen or accepted the default through the welcome flow.
+        # An empty array needs the @as GVariant type annotation so dconf
+        # can infer the element type.
         if target:
             quoted = ", ".join(f"'{i}'" for i in target)
-            seed = f"[docks/dock1]\ndock-items=[{quoted}]\n".encode()
-            r = subprocess.run(
-                ["dconf", "load", "/net/launchpad/plank/"],
-                input=seed, capture_output=True, timeout=5,
-            )
-            if r.returncode != 0:
-                log(
-                    "dconf dock load failed: "
-                    + r.stderr.decode(errors="replace").strip()
-                )
-            else:
-                log(f"dock-items rewritten: {len(target)} items")
+            items_value = f"[{quoted}]"
         else:
-            log("dock: no present launchers matched chips; skipped dconf write")
+            items_value = "@as []"
+        seed = (
+            "[docks/dock1]\n"
+            f"dock-items={items_value}\n"
+            "hide-mode='none'\n"
+        ).encode()
+        r = subprocess.run(
+            ["dconf", "load", "/net/launchpad/plank/"],
+            input=seed, capture_output=True, timeout=5,
+        )
+        if r.returncode != 0:
+            log(
+                "dconf dock load failed: "
+                + r.stderr.decode(errors="replace").strip()
+            )
+        else:
+            log(f"dock-items rewritten: {len(target)} items")
 
         # Persist the user's category choices into their dconf so vajra and
         # future tools can read them back without re-deriving.
@@ -1189,6 +1279,12 @@ class CustomizationPage(Gtk.Box):
             "browser": self._selected_browser,
         }
         apply_settings(values)
+        # Tell the surrounding WelcomeWindow that the user customised
+        # explicitly — otherwise dismiss would re-apply the all-categories
+        # default and stomp the user's chip choices.
+        top = self.get_toplevel()
+        if top is not None and hasattr(top, "applied_during_session"):
+            top.applied_during_session = True  # type: ignore[attr-defined]
         # Inline-page feedback: Apply confirms by updating the button label.
         # Reset on next change is out of scope here — apply is idempotent.
         self._apply_btn.set_label("Applied")
@@ -1237,8 +1333,12 @@ class WelcomeWindow(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_resizable(False)
         self.dismiss_on_continue = True  # checkbox default
+        # Did the user click Apply on the Customization page during this
+        # session? If not, we apply the all-categories default at dismiss
+        # so the dock comes up populated rather than empty + autohidden.
+        self.applied_during_session = False
 
-        self.connect("destroy", Gtk.main_quit)
+        self.connect("destroy", self._on_destroy)
 
         # Top-level horizontal split
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
@@ -1534,7 +1634,35 @@ class WelcomeWindow(Gtk.Window):
 
     def _on_continue(self, _btn: Gtk.Button) -> None:
         self.dismiss_on_continue = self._skip_checkbox.get_active()
+        if not self.applied_during_session:
+            self._apply_default_layout()
         Gtk.main_quit()
+
+    def _on_destroy(self, _w: Gtk.Window) -> None:
+        # Window X-close: same dismiss semantics as Continue. If the user
+        # never clicked Apply, lay down the default-everything layout so
+        # they don't end up stuck with the empty + autohidden dock.
+        if not self.applied_during_session:
+            self._apply_default_layout()
+        Gtk.main_quit()
+
+    def _apply_default_layout(self) -> None:
+        """Dismiss without Apply -> populate dock with every category and
+        the default theme/browser. Without this the dock would stay empty
+        and auto-hidden because the site default starts it that way."""
+        try:
+            cats = load_dock_categories()
+            dock_choices = {
+                key: True for key, val in cats.items() if not val.get("always_on")
+            }
+            apply_settings({
+                "theme": default_theme_id(),
+                "wallpaper_rotate": True,
+                "dock": dock_choices,
+                "browser": default_browser_id(),
+            })
+        except Exception as exc:
+            log(f"default-layout apply failed: {exc}")
 
 
 def _build_card_page(
