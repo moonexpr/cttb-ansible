@@ -59,7 +59,30 @@ browsers:
     label: Zen
     desktop: zen-browser.desktop
 
-default_browser: Chrome
+default_browser: Firefox
+
+# ── Dock weights ────────────────────────────────────────────────────────────
+# Anchors and categories share a single 0..1000 weight number-space. Lower
+# weight = leftward, higher = rightward, center = 500. The welcome panel
+# sorts every contributing group by weight at Apply time and concatenates
+# their items in declared order to produce dock-items.
+#
+# Default placement
+#   appfinder    weight    0   leftmost anchor
+#   essentials   weight  100   always-on category, just right of appfinder
+#   office       weight  300
+#   code         weight  500   center
+#   art          weight  700
+#   trash        weight 1000   rightmost anchor
+#
+# Anchors are conditional on at least one category contributing items: if
+# the user toggles every category off, the dock goes empty (no anchors
+# either) — toggling everything off is a deliberate "blank dock" gesture.
+dock_anchors:
+  - item: xfce4-appfinder.dockitem
+    weight: 0
+  - item: Trash.dockitem
+    weight: 1000
 
 # ── Dock category fallback ──────────────────────────────────────────────────
 # Live data normally comes from /org/sudhanix/dock/categories/<name>/ in
@@ -70,15 +93,16 @@ default_browser: Chrome
 # same defaults.
 dock_categories:
   essentials:
+    # xfce4-appfinder lives in dock_anchors, not here — it's the
+    # leftmost framing icon, separate from the category set.
     items:
-      - xfce4-appfinder.dockitem
       - thunar.dockitem
       - thunderbird.dockitem
       - com.google.Chrome.dockitem
       - Zoom.dockitem
     label: Essentials
     always_on: true
-    order: 10
+    weight: 100
     default_enabled: true
   office:
     items:
@@ -87,7 +111,7 @@ dock_categories:
       - org.gnome.Calculator.dockitem
     label: Office
     always_on: false
-    order: 20
+    weight: 300
     default_enabled: true
   code:
     items:
@@ -96,7 +120,7 @@ dock_categories:
       - code.dockitem
     label: Code
     always_on: false
-    order: 30
+    weight: 500
     default_enabled: false
   art:
     items:
@@ -105,5 +129,5 @@ dock_categories:
       - krita.dockitem
     label: Art
     always_on: false
-    order: 40
+    weight: 700
     default_enabled: false

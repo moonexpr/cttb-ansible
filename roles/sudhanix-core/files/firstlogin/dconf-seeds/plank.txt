@@ -14,4 +14,12 @@
 # prefix: /net/launchpad/plank/
 
 [docks/dock1]
-dock-items=['xfce4-appfinder.dockitem', 'thunar.dockitem', 'thunderbird.dockitem', 'com.google.Chrome.dockitem', 'Zoom.dockitem', 'libreoffice-writer.dockitem', 'libreoffice-calc.dockitem', 'org.gnome.Calculator.dockitem']
+# Day-1 first-login state: empty AND auto-hidden. The welcome panel
+# populates dock-items + flips hide-mode back to 'none' when the user
+# clicks Apply or dismisses (default = all categories on dismiss). An
+# explicit empty list (rather than absent) is what keeps Plank's auto-
+# detect from clobbering the user-db on first run; see cttb-ansible#35.
+# `@as []` is the GVariant type annotation forcing "array of strings"
+# on an empty list -- dconf load can't infer the element type otherwise.
+dock-items=@as []
+hide-mode='auto'

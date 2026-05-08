@@ -9,5 +9,5 @@
 items=['libreoffice-writer.dockitem', 'libreoffice-calc.dockitem', 'org.gnome.Calculator.dockitem']
 label='Office'
 always-on=false
-order=20
+weight=300
 default-enabled=true

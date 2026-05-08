@@ -11,5 +11,5 @@
 items=['gimp.dockitem', 'inkscape.dockitem', 'krita.dockitem']
 label='Art'
 always-on=false
-order=40
+weight=700
 default-enabled=false

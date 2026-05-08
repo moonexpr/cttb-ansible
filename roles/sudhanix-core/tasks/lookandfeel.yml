@@ -7,6 +7,10 @@
       dest: /etc/skel/
     tags:
       - sudhanix-core
+      - config
+      - install
+      - lookandfeel
+      - skel
 
   # gnome-shell: a few buttons at left, status on top. Default in Lubuntu 20.04 install. Not CTTB Lubuntu style, must remove it.
   - name: remove gnome-shell

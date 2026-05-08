@@ -13,7 +13,8 @@
 # prefix: /org/sudhanix/dock/
 
 [categories/essentials]
-items=['xfce4-appfinder.dockitem', 'thunar.dockitem', 'thunderbird.dockitem', 'com.google.Chrome.dockitem', 'Zoom.dockitem']
+items=['thunar.dockitem', 'thunderbird.dockitem', 'com.google.Chrome.dockitem', 'Zoom.dockitem']
 label='Essentials'
 always-on=true
-order=10
+weight=100
+# xfce4-appfinder is in dock_anchors (weight 0) — see customize.yml.
