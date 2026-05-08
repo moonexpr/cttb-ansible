@@ -291,6 +291,42 @@ def DOCK_CATEGORIES_FALLBACK() -> dict[str, dict]:
 
 # Where Plank reads launchers from for the per-user dock1 layout.
 PLANK_LAUNCHERS_DIR = Path.home() / ".config" / "plank" / "dock1" / "launchers"
+PLANK_USER_DIR = Path.home() / ".config" / "plank"
+PLANK_SKEL_DIR = Path("/etc/skel/.config/plank")
+
+
+def refresh_plank_skel() -> None:
+    """Ensure ~/.config/plank mirrors /etc/skel/.config/plank.
+    Called once at panel startup for users who haven't yet dismissed
+    the welcome flow. The user's dock-items dconf entry is left alone
+    here — apply_settings will rewrite it once we know what categories
+    the user wants. The point is to recover from cases where the
+    .dockitem files have been deleted or never seeded, which sends
+    Plank's auto-detect into a clobber spiral that can't be untangled
+    from dconf alone."""
+    if not PLANK_SKEL_DIR.is_dir():
+        log(f"refresh_plank_skel: skel dir missing ({PLANK_SKEL_DIR}); skip")
+        return
+    try:
+        PLANK_USER_DIR.mkdir(parents=True, exist_ok=True)
+        # rsync-like behaviour with overwrite of canonical skel files;
+        # any user-added .dockitem (e.g. dragged-in apps) is preserved.
+        skel_launchers = PLANK_SKEL_DIR / "dock1" / "launchers"
+        if skel_launchers.is_dir():
+            target = PLANK_USER_DIR / "dock1" / "launchers"
+            target.mkdir(parents=True, exist_ok=True)
+            seeded = 0
+            for src in skel_launchers.glob("*.dockitem"):
+                dst = target / src.name
+                try:
+                    dst.write_bytes(src.read_bytes())
+                    seeded += 1
+                except Exception as exc:
+                    log(f"refresh_plank_skel: copy {src.name} failed: {exc}")
+            if seeded:
+                log(f"refresh_plank_skel: seeded {seeded} .dockitem files")
+    except Exception as exc:
+        log(f"refresh_plank_skel: top-level error: {exc}")
 
 
 def _dconf_read_array(key: str) -> list[str] | None:
@@ -1829,6 +1865,14 @@ def main() -> int:
             # Couldn't query LDAP — don't pester the user since we can't
             # remember their dismissal anyway.
             return 0
+
+    # User has not yet completed welcome. Refresh ~/.config/plank/ from
+    # /etc/skel BEFORE the panel paints, so Apply / dismiss-default have
+    # a known canonical launchers/ to filter against. Without this, a
+    # migrated user with a stale or empty .config/plank/ ends up with
+    # Plank's auto-detect garbage in user-db, which dconf write can't
+    # cleanly recover from.
+    refresh_plank_skel()
 
     apply_css_safe()
 
