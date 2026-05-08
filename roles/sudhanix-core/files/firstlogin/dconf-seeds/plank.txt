@@ -1,25 +1,19 @@
 # Plank dock-items seed: day-1 default for the user's dconf user-db.
 #
-# Loaded by sudhanix-firstlogin's sfl_seed_user_dconf() on first login,
-# BEFORE Plank starts. Pre-populating user-db here is what suppresses
-# Plank's first-run auto-detect from clobbering both the dconf default
-# and the .dockitem files seeded from /etc/skel.
+# Loaded by sudhanix-firstlogin's sfl_seed_user_dconf() on first login.
+# Mirrors the system-db site default so first-login state is identical
+# whether or not user-db is touched. Keep in sync with
+# /etc/dconf/db/site.d/00-plank-dock1.
 #
-# Day-1 contents = the union of the default-enabled dock categories
-# (see dock-essentials.txt and dock-office.txt). The Welcome panel's
-# Customization tab can then add Code or Art categories on top, or
-# remove Office, by rewriting this same key. Keep the order matching
-# DOCK_CATEGORIES_FALLBACK in /usr/local/bin/sudhanix-welcome.
+# auto-pinning=false stops Plank from silently promoting recently-
+# launched apps to permanent launchers (and writing .dockitem files
+# into ~/.config/plank/dock1/launchers/). Without this flag, dock-items
+# would get clobbered on every Plank restart by Plank's own auto-detect.
 #
 # prefix: /net/launchpad/plank/
 
 [docks/dock1]
-# Day-1 first-login state: empty AND auto-hidden. The welcome panel
-# populates dock-items + flips hide-mode back to 'none' when the user
-# clicks Apply or dismisses (default = all categories on dismiss). An
-# explicit empty list (rather than absent) is what keeps Plank's auto-
-# detect from clobbering the user-db on first run; see cttb-ansible#35.
-# `@as []` is the GVariant type annotation forcing "array of strings"
-# on an empty list -- dconf load can't infer the element type otherwise.
-dock-items=@as []
-hide-mode='auto'
+dock-items=['xfce4-appfinder.dockitem', 'thunar.dockitem', 'thunderbird.dockitem', 'com.google.Chrome.dockitem', 'Zoom.dockitem', 'libreoffice-writer.dockitem', 'libreoffice-calc.dockitem', 'org.gnome.Calculator.dockitem', 'org.gnome.gedit.dockitem', 'gimp.dockitem', 'Trash.dockitem']
+hide-mode='none'
+auto-pinning=false
+pinned-only=true

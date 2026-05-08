@@ -796,11 +796,8 @@ def apply_settings(values: dict) -> None:
     Each setting is applied independently; a failure in one does not abort
     the rest. All errors are logged to stderr only.
     """
-    log(f"apply_settings entry: theme={values.get('theme')!r} "
-        f"browser={values.get('browser')!r} "
-        f"dock_chips={values.get('dock')!r}")
-    log(f"  env DISPLAY={os.environ.get('DISPLAY','<unset>')} "
-        f"DBUS={os.environ.get('DBUS_SESSION_BUS_ADDRESS','<unset>')[:60]}")
+    log(f"apply theme={values.get('theme')!r} browser={values.get('browser')!r} "
+        f"dock={values.get('dock')!r}")
     # 1. Theme — set GTK widget theme, icon theme, and xfwm4 window decorations
     # together so the user sees a single consistent Light/Dark switch.
     theme = values.get("theme", default_theme_id())
@@ -867,14 +864,9 @@ def apply_settings(values: dict) -> None:
     dock = values.get("dock", {})  # {"office": True, "code": False, ...}
     try:
         cats = load_dock_categories()
-        log(f"  cats loaded: {sorted(cats.keys())} "
-            f"(weights: {[(k, cats[k].get('weight', cats[k].get('order'))) for k in cats]})")
         present_items: set[str] = set()
         if PLANK_LAUNCHERS_DIR.exists():
             present_items = {p.name for p in PLANK_LAUNCHERS_DIR.glob("*.dockitem")}
-        log(f"  PLANK_LAUNCHERS_DIR={PLANK_LAUNCHERS_DIR} "
-            f"exists={PLANK_LAUNCHERS_DIR.exists()} "
-            f"present={sorted(present_items)}")
 
         # Build (weight, items[]) groups. Each enabled category contributes
         # one group; each anchor entry contributes a single-item group.
@@ -896,21 +888,18 @@ def apply_settings(values: dict) -> None:
                 category_groups.append((cat_w, cat_items))
 
         target: list[str] = []
-        log(f"  category_groups (post-filter): {category_groups}")
         if category_groups:
             anchor_groups: list[tuple[int, list[str]]] = []
             for a in dock_anchors():
                 item = a.get("item", "")
                 if item and item in present_items:
                     anchor_groups.append((int(a.get("weight", 0)), [item]))
-            log(f"  anchor_groups: {anchor_groups}")
             for _w, group_items in sorted(
                 category_groups + anchor_groups, key=lambda g: g[0]
             ):
                 for item in group_items:
                     if item not in target:
                         target.append(item)
-        log(f"  final target (len={len(target)}): {target}")
 
         # Always write — including the empty list — so that toggling every
         # category off actually produces the blank dock the user asked for,
@@ -930,26 +919,15 @@ def apply_settings(values: dict) -> None:
             f"dock-items={items_value}\n"
             "hide-mode='none'\n"
         ).encode()
-        log(f"  about to dconf load /net/launchpad/plank/, seed={seed!r}")
         r = subprocess.run(
             ["dconf", "load", "/net/launchpad/plank/"],
             input=seed, capture_output=True, timeout=5,
         )
-        log(f"  dconf load rc={r.returncode} "
-            f"stderr={r.stderr.decode(errors='replace').strip()!r}")
         if r.returncode != 0:
-            log(
-                "dconf dock load failed: "
-                + r.stderr.decode(errors="replace").strip()
-            )
+            log("dconf dock load failed: "
+                + r.stderr.decode(errors="replace").strip())
         else:
             log(f"dock-items rewritten: {len(target)} items")
-        # Read back to confirm what's actually in dconf right now.
-        rb = subprocess.run(
-            ["dconf", "read", "/net/launchpad/plank/docks/dock1/dock-items"],
-            capture_output=True, text=True, timeout=5,
-        )
-        log(f"  readback dock-items: rc={rb.returncode} value={rb.stdout.strip()!r}")
 
         # Persist the user's category choices into their dconf so vajra and
         # future tools can read them back without re-deriving.
@@ -1361,7 +1339,6 @@ class CustomizationPage(Gtk.Box):
         self._set_browser_active(label)
 
     def _on_apply(self, _btn: Gtk.Button) -> None:
-        log("CustomizationPage._on_apply CLICKED")
         values = {
             "theme": self._selected_theme,
             "wallpaper_rotate": self._wp_switch.get_active(),
@@ -1371,7 +1348,6 @@ class CustomizationPage(Gtk.Box):
             },
             "browser": self._selected_browser,
         }
-        log(f"  collected values: {values}")
         apply_settings(values)
         # Tell the surrounding WelcomeWindow that the user customised
         # explicitly — otherwise dismiss would re-apply the all-categories
@@ -1727,14 +1703,12 @@ class WelcomeWindow(Gtk.Window):
             self._stack.set_visible_child_name(page_name)
 
     def _on_continue(self, _btn: Gtk.Button) -> None:
-        log(f"_on_continue: applied_during_session={self.applied_during_session}")
         self.dismiss_on_continue = self._skip_checkbox.get_active()
         if not self.applied_during_session:
             self._apply_default_layout()
         Gtk.main_quit()
 
     def _on_destroy(self, _w: Gtk.Window) -> None:
-        log(f"_on_destroy: applied_during_session={self.applied_during_session}")
         if not self.applied_during_session:
             self._apply_default_layout()
         Gtk.main_quit()
@@ -1891,15 +1865,10 @@ def apply_css_safe(theme: str = "Dark") -> None:
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 def main() -> int:
-    log("=" * 60)
-    log(f"main() entry pid={os.getpid()} uid={os.getuid()} "
-        f"argv={sys.argv} cwd={os.getcwd()}")
-    log(f"  DISPLAY={os.environ.get('DISPLAY','<unset>')} "
-        f"DBUS={os.environ.get('DBUS_SESSION_BUS_ADDRESS','<unset>')[:60]} "
-        f"FORCE={os.environ.get('SUDHANIX_WELCOME_FORCE','')!r}")
     if "DISPLAY" not in os.environ and "WAYLAND_DISPLAY" not in os.environ:
-        log("  no DISPLAY/WAYLAND_DISPLAY, exit 0")
         return 0
+    log(f"start pid={os.getpid()} uid={os.getuid()} "
+        f"force={bool(os.environ.get('SUDHANIX_WELCOME_FORCE'))}")
 
     uid = os.getuid()
     try:
