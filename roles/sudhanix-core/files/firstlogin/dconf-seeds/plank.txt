@@ -1,0 +1,16 @@
+# Plank dock-items seed for the user's dconf user-db.
+#
+# Loaded by sudhanix-firstlogin's sfl_seed_user_dconf() helper on first
+# login, BEFORE Plank starts. Pre-populating user-db here is the only
+# reliable way to suppress Plank's first-run auto-detection from clobbering
+# both the dconf default and the .dockitem files seeded from /etc/skel.
+#
+# The `# prefix:` line below is read by sfl_seed_user_dconf(); the rest is
+# fed to `dconf load <prefix>` via stdin. Keep this list in sync with
+# /etc/dconf/db/site.d/00-plank-dock1 so the system default and the seeded
+# user-db agree on day one.
+#
+# prefix: /net/launchpad/plank/
+
+[docks/dock1]
+dock-items=['xfce4-appfinder.dockitem', 'thunar.dockitem', 'thunderbird.dockitem', 'com.google.Chrome.dockitem', 'Zoom.dockitem', 'org.gnome.gedit.dockitem', 'org.gnome.Calculator.dockitem', 'libreoffice-writer.dockitem', 'libreoffice-calc.dockitem', 'gimp.dockitem']
