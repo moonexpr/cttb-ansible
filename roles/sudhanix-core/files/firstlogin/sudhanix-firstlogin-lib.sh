@@ -18,6 +18,19 @@ LOG_REL=".cache/sudhanix-firstlogin.log"
 NOTES_REL=".sudhanix-migration-NOTES.txt"
 SKEL_DIR="/etc/skel"
 
+# Per-app dconf user-db seeds applied on first login. Each file in this
+# directory must start with a `# prefix: /net/launchpad/plank/` header line
+# naming the dconf prefix; the rest is fed to `dconf load <prefix>`.
+#
+# Trade-off (loud, on purpose): once we seed user-db, the user "owns" those
+# keys forever — future updates to /etc/dconf/db/site.d/* will NOT propagate
+# (user-db beats system-db:site in /etc/dconf/profile/user). To re-seed a
+# fleet post-rollout, ship a sysadmin reseed tool or bump SUDHANIX_VERSION
+# to re-quarantine. The reason we still seed: Plank's first-run auto-detect
+# clobbers system-db defaults the moment user-db is empty, and there is no
+# upstream knob to disable that behaviour. See cttb-ansible#35.
+DCONF_SEED_DIR="/etc/sudhanix/dconf-seeds"
+
 # When SFL_DRY_RUN=1, every step prints what it WOULD do to stdout and
 # performs no filesystem mutations. Set by --dry-run on the entry points.
 SFL_DRY_RUN="${SFL_DRY_RUN:-0}"
@@ -251,6 +264,65 @@ sfl_seed_from_skel() {
     cd "${HOME}" 2>/dev/null || true
 }
 
+sfl_seed_user_dconf() {
+    # Pre-populate the user's dconf user-db with canonical site defaults for
+    # apps that auto-detect/clobber on a fresh user-db (Plank in particular).
+    # Runs after sfl_seed_from_skel so .dockitem files are in place, and
+    # before xfce4-session forks Plank.
+    [ -d "${DCONF_SEED_DIR}" ] || return 0
+
+    if ! command -v dconf >/dev/null 2>&1; then
+        sfl_log "dconf seed: dconf binary missing, skip"
+        return 0
+    fi
+
+    # dconf write needs a session bus. Xsession.d/40x11-common_xsessionrc
+    # exports DBUS_SESSION_BUS_ADDRESS before this script runs. If absent,
+    # fall back to a wrapper bus so the user-db still gets seeded.
+    _wrap=""
+    if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+        if command -v dbus-run-session >/dev/null 2>&1; then
+            _wrap="dbus-run-session --"
+            sfl_log "dconf seed: DBUS_SESSION_BUS_ADDRESS unset, using dbus-run-session"
+        else
+            sfl_log "dconf seed: no session bus and dbus-run-session missing, skip"
+            return 0
+        fi
+    fi
+
+    _seeded_any=0
+    for _seed in "${DCONF_SEED_DIR}"/*.txt; do
+        [ -f "${_seed}" ] || continue
+
+        _prefix=$(awk '/^[[:space:]]*#[[:space:]]*prefix:/ { sub(/^[[:space:]]*#[[:space:]]*prefix:[[:space:]]*/,""); print; exit }' "${_seed}")
+        if [ -z "${_prefix}" ]; then
+            sfl_log "dconf seed: ${_seed} has no '# prefix:' header, skip"
+            continue
+        fi
+
+        _name=$(basename "${_seed}" .txt)
+
+        if [ "${SFL_DRY_RUN}" = "1" ]; then
+            printf '[dry-run] would: dconf load %s < %s\n' "${_prefix}" "${_seed}"
+            continue
+        fi
+
+        # Strip the `# prefix:` directive line; dconf-load tolerates other
+        # comments but the directive is ours, not its.
+        if grep -v '^[[:space:]]*#[[:space:]]*prefix:' "${_seed}" | ${_wrap} dconf load "${_prefix}" 2>>"${HOME}/${LOG_REL}"; then
+            sfl_log "dconf seed: ${_name} -> ${_prefix}"
+            sfl_note "  seeded user-db dconf: ${_name} (${_prefix})"
+            _seeded_any=1
+        else
+            sfl_log "dconf seed: ${_name} -> ${_prefix} FAILED"
+        fi
+    done
+
+    if [ "${_seeded_any}" = "1" ]; then
+        sfl_note "    you can rearrange these defaults; your changes will persist."
+    fi
+}
+
 sfl_set_xfce_session_pref() {
     _dmrc="${HOME}/.dmrc"
     if [ "${SFL_DRY_RUN}" = "1" ]; then
@@ -367,6 +439,7 @@ sfl_run_bootstrap() {
     sfl_carry_forward_preserved
     sfl_migrate_snap_apps
     sfl_seed_from_skel
+    sfl_seed_user_dconf
     sfl_set_xfce_session_pref
     sfl_write_marker
 
