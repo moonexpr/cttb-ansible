@@ -50,12 +50,18 @@ SUDHANIX_CONFIG_DIR = Path.home() / ".config" / "sudhanix"
 DOCK_PREFS_FILE = SUDHANIX_CONFIG_DIR / "welcome-dock-prefs.json"
 
 # ── Theme maps ────────────────────────────────────────────────────────────────
+# Tuple is (GTK theme dir, icon theme dir). Names match what's actually
+# installed in /usr/share/themes/ and /usr/share/icons/ on Sudhanix 26 hosts:
+# the WhiteSur GTK package ships a base "WhiteSur" (light) plus "WhiteSur-Dark";
+# the icon set ships "WhiteSur-light" + "WhiteSur-dark" (lowercase). Setting a
+# non-existent GTK theme name silently falls back to Adwaita, which is why
+# "WhiteSur-Light" was wrong here.
 THEME_MAP = {
-    "Light": ("WhiteSur-Light", "WhiteSur-Light"),
-    "Dark":  ("WhiteSur-Dark",  "WhiteSur-Dark"),
+    "Light": ("WhiteSur",      "WhiteSur-light"),
+    "Dark":  ("WhiteSur-Dark", "WhiteSur-dark"),
     # TODO(v2): Auto needs xdg-portal or sunset cron for day/night switching.
     # For now treat Auto as Dark.
-    "Auto":  ("WhiteSur-Dark",  "WhiteSur-Dark"),
+    "Auto":  ("WhiteSur-Dark", "WhiteSur-dark"),
 }
 
 BROWSER_MAP = {

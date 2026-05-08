@@ -90,6 +90,23 @@
     - vajra-testing
     - config
 
+# theme.lua is bundled in the next vajra release (BUNDLED in src/loader.rs);
+# until that .deb ships, deploy as a runtime drop-in so the tool shows up
+# in the sidebar today. Idempotent — when the bundled version takes over
+# the drop-in path is harmless (loader prefers BUNDLED on collision; remove
+# this task once the .deb ships).
+- name: deploy theme tool (drop-in pre-bundle)
+  copy:
+    src: "tools/theme.lua"
+    dest: "/usr/local/lib/vajra/tools/theme.lua"
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - vajra
+    - vajra-config
+    - config
+
 # ---------- config path ---------- #
 
 - name: deploy host-overridable configs (override .deb defaults)
