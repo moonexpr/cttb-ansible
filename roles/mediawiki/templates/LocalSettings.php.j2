@@ -55,6 +55,15 @@ define( "NS_{{ ns.name | upper | replace('_TALK', '_TALK') }}", {{ ns.id }} );
 $wgExtraNamespaces[{{ ns.id }}] = "{{ ns.name }}";
 {% endfor %}
 
+## Treat content (even-ID) custom namespaces as real content: include them in
+## default search (so a bare "Onboarding" finds IT:CTTB IT Member Onboarding…)
+## and in $wgContentNamespaces (so page counts and Special:Random behave).
+## Lockdown still hides results from users who lack the read group.
+{% for ns in mediawiki_extra_namespaces if ns.id is even %}
+$wgContentNamespaces[] = NS_{{ ns.name | upper }};
+$wgNamespacesToBeSearchedDefault[NS_{{ ns.name | upper }}] = true;
+{% endfor %}
+
 {% endif %}
 ## Extensions
 {% for ext in mediawiki_extensions %}
