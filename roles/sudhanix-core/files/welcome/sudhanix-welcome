@@ -296,35 +296,54 @@ PLANK_SKEL_DIR = Path("/etc/skel/.config/plank")
 
 
 def refresh_plank_skel() -> None:
-    """Ensure ~/.config/plank mirrors /etc/skel/.config/plank.
+    """Make ~/.config/plank/dock1/launchers/ a strict mirror of
+    /etc/skel/.config/plank/dock1/launchers/: seed canonical files AND
+    prune anything Plank's auto-detect has dropped in.
+
     Called once at panel startup for users who haven't yet dismissed
     the welcome flow. The user's dock-items dconf entry is left alone
     here — apply_settings will rewrite it once we know what categories
-    the user wants. The point is to recover from cases where the
-    .dockitem files have been deleted or never seeded, which sends
-    Plank's auto-detect into a clobber spiral that can't be untangled
-    from dconf alone."""
+    the user wants. The aggressive prune is the only reliable way out
+    of Plank's auto-detect-clobber spiral: if launchers/ has stale
+    files like app.zen_browser.zen-1.dockitem or vlc.dockitem that
+    weren't seeded by us, every Plank restart can re-auto-detect them
+    into dock-items, even after a clean Apply."""
     if not PLANK_SKEL_DIR.is_dir():
         log(f"refresh_plank_skel: skel dir missing ({PLANK_SKEL_DIR}); skip")
         return
     try:
         PLANK_USER_DIR.mkdir(parents=True, exist_ok=True)
-        # rsync-like behaviour with overwrite of canonical skel files;
-        # any user-added .dockitem (e.g. dragged-in apps) is preserved.
         skel_launchers = PLANK_SKEL_DIR / "dock1" / "launchers"
-        if skel_launchers.is_dir():
-            target = PLANK_USER_DIR / "dock1" / "launchers"
-            target.mkdir(parents=True, exist_ok=True)
-            seeded = 0
-            for src in skel_launchers.glob("*.dockitem"):
-                dst = target / src.name
+        if not skel_launchers.is_dir():
+            return
+
+        target = PLANK_USER_DIR / "dock1" / "launchers"
+        target.mkdir(parents=True, exist_ok=True)
+
+        canonical = {p.name for p in skel_launchers.glob("*.dockitem")}
+
+        seeded = 0
+        for src in skel_launchers.glob("*.dockitem"):
+            dst = target / src.name
+            try:
+                dst.write_bytes(src.read_bytes())
+                seeded += 1
+            except Exception as exc:
+                log(f"refresh_plank_skel: copy {src.name} failed: {exc}")
+
+        pruned: list[str] = []
+        for existing in target.glob("*.dockitem"):
+            if existing.name not in canonical:
                 try:
-                    dst.write_bytes(src.read_bytes())
-                    seeded += 1
+                    existing.unlink()
+                    pruned.append(existing.name)
                 except Exception as exc:
-                    log(f"refresh_plank_skel: copy {src.name} failed: {exc}")
-            if seeded:
-                log(f"refresh_plank_skel: seeded {seeded} .dockitem files")
+                    log(f"refresh_plank_skel: prune {existing.name} failed: {exc}")
+
+        log(
+            f"refresh_plank_skel: seeded={seeded} pruned={len(pruned)} "
+            f"({pruned!r})"
+        )
     except Exception as exc:
         log(f"refresh_plank_skel: top-level error: {exc}")
 
@@ -677,9 +696,24 @@ label.wiki-link {
 """
 
 
-# ── Logging (unchanged from v1) ──────────────────────────────────────────────
+# ── Logging ──────────────────────────────────────────────────────────────────
+# Per-user debug log captures everything the panel does at runtime. Useful
+# when the welcome runs via xdg-autostart (stderr goes to .xsession-errors
+# which is hard to scrape) or when an apply path silently fails. File
+# survives across sessions and rotates only when the user clears it.
+_DEBUG_LOG_PATH = Path.home() / ".cache" / "sudhanix-welcome.log"
+
+
 def log(msg: str) -> None:
-    print(f"[sudhanix-welcome] {msg}", file=sys.stderr)
+    line = f"[sudhanix-welcome] {msg}"
+    print(line, file=sys.stderr)
+    # Also append to the debug log; fail-soft so logging never blocks the panel.
+    try:
+        _DEBUG_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with _DEBUG_LOG_PATH.open("a") as fh:
+            fh.write(f"[{__import__('datetime').datetime.now().isoformat(timespec='seconds')}] {msg}\n")
+    except Exception:
+        pass
 
 
 # ── LDAP helpers (unchanged from v1) ────────────────────────────────────────
@@ -762,6 +796,11 @@ def apply_settings(values: dict) -> None:
     Each setting is applied independently; a failure in one does not abort
     the rest. All errors are logged to stderr only.
     """
+    log(f"apply_settings entry: theme={values.get('theme')!r} "
+        f"browser={values.get('browser')!r} "
+        f"dock_chips={values.get('dock')!r}")
+    log(f"  env DISPLAY={os.environ.get('DISPLAY','<unset>')} "
+        f"DBUS={os.environ.get('DBUS_SESSION_BUS_ADDRESS','<unset>')[:60]}")
     # 1. Theme — set GTK widget theme, icon theme, and xfwm4 window decorations
     # together so the user sees a single consistent Light/Dark switch.
     theme = values.get("theme", default_theme_id())
@@ -828,9 +867,14 @@ def apply_settings(values: dict) -> None:
     dock = values.get("dock", {})  # {"office": True, "code": False, ...}
     try:
         cats = load_dock_categories()
+        log(f"  cats loaded: {sorted(cats.keys())} "
+            f"(weights: {[(k, cats[k].get('weight', cats[k].get('order'))) for k in cats]})")
         present_items: set[str] = set()
         if PLANK_LAUNCHERS_DIR.exists():
             present_items = {p.name for p in PLANK_LAUNCHERS_DIR.glob("*.dockitem")}
+        log(f"  PLANK_LAUNCHERS_DIR={PLANK_LAUNCHERS_DIR} "
+            f"exists={PLANK_LAUNCHERS_DIR.exists()} "
+            f"present={sorted(present_items)}")
 
         # Build (weight, items[]) groups. Each enabled category contributes
         # one group; each anchor entry contributes a single-item group.
@@ -852,18 +896,21 @@ def apply_settings(values: dict) -> None:
                 category_groups.append((cat_w, cat_items))
 
         target: list[str] = []
+        log(f"  category_groups (post-filter): {category_groups}")
         if category_groups:
             anchor_groups: list[tuple[int, list[str]]] = []
             for a in dock_anchors():
                 item = a.get("item", "")
                 if item and item in present_items:
                     anchor_groups.append((int(a.get("weight", 0)), [item]))
+            log(f"  anchor_groups: {anchor_groups}")
             for _w, group_items in sorted(
                 category_groups + anchor_groups, key=lambda g: g[0]
             ):
                 for item in group_items:
                     if item not in target:
                         target.append(item)
+        log(f"  final target (len={len(target)}): {target}")
 
         # Always write — including the empty list — so that toggling every
         # category off actually produces the blank dock the user asked for,
@@ -883,10 +930,13 @@ def apply_settings(values: dict) -> None:
             f"dock-items={items_value}\n"
             "hide-mode='none'\n"
         ).encode()
+        log(f"  about to dconf load /net/launchpad/plank/, seed={seed!r}")
         r = subprocess.run(
             ["dconf", "load", "/net/launchpad/plank/"],
             input=seed, capture_output=True, timeout=5,
         )
+        log(f"  dconf load rc={r.returncode} "
+            f"stderr={r.stderr.decode(errors='replace').strip()!r}")
         if r.returncode != 0:
             log(
                 "dconf dock load failed: "
@@ -894,6 +944,12 @@ def apply_settings(values: dict) -> None:
             )
         else:
             log(f"dock-items rewritten: {len(target)} items")
+        # Read back to confirm what's actually in dconf right now.
+        rb = subprocess.run(
+            ["dconf", "read", "/net/launchpad/plank/docks/dock1/dock-items"],
+            capture_output=True, text=True, timeout=5,
+        )
+        log(f"  readback dock-items: rc={rb.returncode} value={rb.stdout.strip()!r}")
 
         # Persist the user's category choices into their dconf so vajra and
         # future tools can read them back without re-deriving.
@@ -1305,6 +1361,7 @@ class CustomizationPage(Gtk.Box):
         self._set_browser_active(label)
 
     def _on_apply(self, _btn: Gtk.Button) -> None:
+        log("CustomizationPage._on_apply CLICKED")
         values = {
             "theme": self._selected_theme,
             "wallpaper_rotate": self._wp_switch.get_active(),
@@ -1314,6 +1371,7 @@ class CustomizationPage(Gtk.Box):
             },
             "browser": self._selected_browser,
         }
+        log(f"  collected values: {values}")
         apply_settings(values)
         # Tell the surrounding WelcomeWindow that the user customised
         # explicitly — otherwise dismiss would re-apply the all-categories
@@ -1669,15 +1727,14 @@ class WelcomeWindow(Gtk.Window):
             self._stack.set_visible_child_name(page_name)
 
     def _on_continue(self, _btn: Gtk.Button) -> None:
+        log(f"_on_continue: applied_during_session={self.applied_during_session}")
         self.dismiss_on_continue = self._skip_checkbox.get_active()
         if not self.applied_during_session:
             self._apply_default_layout()
         Gtk.main_quit()
 
     def _on_destroy(self, _w: Gtk.Window) -> None:
-        # Window X-close: same dismiss semantics as Continue. If the user
-        # never clicked Apply, lay down the default-everything layout so
-        # they don't end up stuck with the empty + autohidden dock.
+        log(f"_on_destroy: applied_during_session={self.applied_during_session}")
         if not self.applied_during_session:
             self._apply_default_layout()
         Gtk.main_quit()
@@ -1834,7 +1891,14 @@ def apply_css_safe(theme: str = "Dark") -> None:
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 def main() -> int:
+    log("=" * 60)
+    log(f"main() entry pid={os.getpid()} uid={os.getuid()} "
+        f"argv={sys.argv} cwd={os.getcwd()}")
+    log(f"  DISPLAY={os.environ.get('DISPLAY','<unset>')} "
+        f"DBUS={os.environ.get('DBUS_SESSION_BUS_ADDRESS','<unset>')[:60]} "
+        f"FORCE={os.environ.get('SUDHANIX_WELCOME_FORCE','')!r}")
     if "DISPLAY" not in os.environ and "WAYLAND_DISPLAY" not in os.environ:
+        log("  no DISPLAY/WAYLAND_DISPLAY, exit 0")
         return 0
 
     uid = os.getuid()
