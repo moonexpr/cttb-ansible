@@ -1,0 +1,16 @@
+# Plank dock category: code.
+#
+# Editor, terminal, IDE. Default-disabled because most lab use is
+# document-driven; a CS student can opt in via the Welcome panel's
+# Customization tab. Only the .dockitem files actually present in the
+# user's launchers/ dir get pinned, so listing optional items here
+# (xfce4-terminal, code) is harmless when they aren't installed.
+#
+# prefix: /org/sudhanix/dock/
+
+[categories/code]
+items=['org.gnome.gedit.dockitem', 'xfce4-terminal.dockitem', 'code.dockitem']
+label='Code'
+always-on=false
+order=30
+default-enabled=false

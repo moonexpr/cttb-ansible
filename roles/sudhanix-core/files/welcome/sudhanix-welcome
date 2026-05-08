@@ -50,18 +50,22 @@ SUDHANIX_CONFIG_DIR = Path.home() / ".config" / "sudhanix"
 DOCK_PREFS_FILE = SUDHANIX_CONFIG_DIR / "welcome-dock-prefs.json"
 
 # ── Theme maps ────────────────────────────────────────────────────────────────
-# Tuple is (GTK theme dir, icon theme dir). Names match what's actually
-# installed in /usr/share/themes/ and /usr/share/icons/ on Sudhanix 26 hosts:
-# the WhiteSur GTK package ships a base "WhiteSur" (light) plus "WhiteSur-Dark";
-# the icon set ships "WhiteSur-light" + "WhiteSur-dark" (lowercase). Setting a
-# non-existent GTK theme name silently falls back to Adwaita, which is why
-# "WhiteSur-Light" was wrong here.
+# Tuple is (GTK theme dir, icon theme dir, xfwm4 window-decoration theme dir).
+# Names match the real on-disk directories the upstream tarballs install:
+#   GTK   /usr/share/themes/WhiteSur          (light)
+#   GTK   /usr/share/themes/WhiteSur-Dark
+#   icons /usr/share/icons/WhiteSur-light
+#   icons /usr/share/icons/WhiteSur-dark
+# xfwm4 window decorations live inside the GTK theme dir, so they share
+# the GTK casing. The casing inconsistency between GTK ("Dark", capital)
+# and icons ("dark", lowercase) is upstream; lookandfeel.yml ships
+# bidirectional symlinks so either casing resolves regardless.
 THEME_MAP = {
-    "Light": ("WhiteSur",      "WhiteSur-light"),
-    "Dark":  ("WhiteSur-Dark", "WhiteSur-dark"),
+    "Light": ("WhiteSur",      "WhiteSur-light", "WhiteSur"),
+    "Dark":  ("WhiteSur-Dark", "WhiteSur-dark",  "WhiteSur-Dark"),
     # TODO(v2): Auto needs xdg-portal or sunset cron for day/night switching.
     # For now treat Auto as Dark.
-    "Auto":  ("WhiteSur-Dark", "WhiteSur-dark"),
+    "Auto":  ("WhiteSur-Dark", "WhiteSur-dark",  "WhiteSur-Dark"),
 }
 
 BROWSER_MAP = {
@@ -71,45 +75,163 @@ BROWSER_MAP = {
 }
 
 # ── Dock layout ──────────────────────────────────────────────────────────────
-# Groups are layered on top of the always-pinned "core utility" set. Apply
-# writes a new dock-items list to the user's plank dconf (system-db site
-# default already matches; this just lets the user opt groups in/out).
+# Categories drive both the day-1 default plank dock-items list and the
+# Customization page chips. Source of truth lives in dconf at
+# /org/sudhanix/dock/categories/<name>/ — sfl_seed_user_dconf seeds this
+# branch from /etc/sudhanix/dconf-seeds/dock-*.txt at first login. The
+# fallback below is consulted only when the dconf service can't be reached
+# (e.g. CI / Xvfb tests that don't run firstlogin).
 #
-# Item names must match files seeded into ~/.config/plank/dock1/launchers/
-# from /etc/skel by sudhanix-firstlogin's sfl_seed_from_skel step. Items not
-# present on disk are filtered out at apply time, so this map can list
-# launchers we *might* ship without breaking on hosts that don't have them.
-DOCK_ALWAYS_PINNED = [
-    "xfce4-appfinder.dockitem",
-    "thunar.dockitem",
-    "thunderbird.dockitem",
-    "Zoom.dockitem",
-]
-DOCK_GROUPS = {
-    "Office suite": [
-        "libreoffice-writer.dockitem",
-        "libreoffice-calc.dockitem",
-        "org.gnome.Calculator.dockitem",
-    ],
-    "Browsers": [
-        "com.google.Chrome.dockitem",
-        "firefox.dockitem",
-        "zen-browser.dockitem",
-    ],
-    "Code tools": [
-        "org.gnome.gedit.dockitem",
-        "xfce4-terminal.dockitem",
-        "code.dockitem",
-    ],
-    "Audio & video": [
-        "gimp.dockitem",
-        "vlc.dockitem",
-        "rhythmbox.dockitem",
-    ],
+# Each category dict carries:
+#   items:           [.dockitem filenames]
+#   label:           "Title" shown next to the chip / always-on note
+#   always_on:       True = no chip, items always pinned (essentials)
+#   order:           presentation order (lower first)
+#   default_enabled: chip default state when the user hasn't chosen yet
+#
+# At apply time: dock-items = union(items of every enabled category),
+# filtered against ~/.config/plank/dock1/launchers/ to drop launchers
+# the user doesn't have on disk.
+DOCK_CATEGORIES_FALLBACK = {
+    "essentials": {
+        "items": [
+            "xfce4-appfinder.dockitem",
+            "thunar.dockitem",
+            "thunderbird.dockitem",
+            "com.google.Chrome.dockitem",
+            "Zoom.dockitem",
+        ],
+        "label": "Essentials",
+        "always_on": True,
+        "order": 10,
+        "default_enabled": True,
+    },
+    "office": {
+        "items": [
+            "libreoffice-writer.dockitem",
+            "libreoffice-calc.dockitem",
+            "org.gnome.Calculator.dockitem",
+        ],
+        "label": "Office",
+        "always_on": False,
+        "order": 20,
+        "default_enabled": True,
+    },
+    "code": {
+        "items": [
+            "org.gnome.gedit.dockitem",
+            "xfce4-terminal.dockitem",
+            "code.dockitem",
+        ],
+        "label": "Code",
+        "always_on": False,
+        "order": 30,
+        "default_enabled": False,
+    },
+    "art": {
+        "items": [
+            "gimp.dockitem",
+            "inkscape.dockitem",
+            "krita.dockitem",
+        ],
+        "label": "Art",
+        "always_on": False,
+        "order": 40,
+        "default_enabled": False,
+    },
 }
 
 # Where Plank reads launchers from for the per-user dock1 layout.
 PLANK_LAUNCHERS_DIR = Path.home() / ".config" / "plank" / "dock1" / "launchers"
+
+
+def _dconf_read_array(key: str) -> list[str] | None:
+    """Read a string-array key from dconf and parse the GVariant text form.
+    Returns None if the key doesn't exist or dconf is unreachable."""
+    try:
+        r = subprocess.run(
+            ["dconf", "read", key],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode != 0 or not r.stdout.strip():
+            return None
+        # GVariant 'as' format: ['a', 'b']  — eval-style string.
+        out = r.stdout.strip()
+        # Strip outer brackets, split on ", " (with quote awareness).
+        if not (out.startswith("[") and out.endswith("]")):
+            return None
+        inner = out[1:-1].strip()
+        if not inner:
+            return []
+        items: list[str] = []
+        for piece in inner.split(","):
+            s = piece.strip()
+            if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
+                items.append(s[1:-1])
+        return items
+    except Exception:
+        return None
+
+
+def _dconf_read_scalar(key: str) -> str | None:
+    """Read a scalar dconf key as text. Returns None on miss."""
+    try:
+        r = subprocess.run(
+            ["dconf", "read", key],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode != 0 or not r.stdout.strip():
+            return None
+        out = r.stdout.strip()
+        if (out.startswith("'") and out.endswith("'")):
+            return out[1:-1]
+        return out
+    except Exception:
+        return None
+
+
+def load_dock_categories() -> dict[str, dict]:
+    """Read /org/sudhanix/dock/categories/* from dconf; fall back to the
+    embedded constants when the user-db isn't seeded yet."""
+    try:
+        r = subprocess.run(
+            ["dconf", "list", "/org/sudhanix/dock/categories/"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode != 0:
+            return DOCK_CATEGORIES_FALLBACK
+        names = [n.rstrip("/") for n in r.stdout.split() if n.strip()]
+        if not names:
+            return DOCK_CATEGORIES_FALLBACK
+    except Exception:
+        return DOCK_CATEGORIES_FALLBACK
+
+    cats: dict[str, dict] = {}
+    for name in names:
+        base = f"/org/sudhanix/dock/categories/{name}"
+        items = _dconf_read_array(f"{base}/items") or []
+        label = _dconf_read_scalar(f"{base}/label") or name.title()
+        always_on = (_dconf_read_scalar(f"{base}/always-on") or "").lower() == "true"
+        order_s = _dconf_read_scalar(f"{base}/order") or "999"
+        try:
+            order = int(order_s)
+        except ValueError:
+            order = 999
+        default_enabled = (_dconf_read_scalar(f"{base}/default-enabled") or "false").lower() == "true"
+        if always_on:
+            default_enabled = True
+        cats[name] = {
+            "items": items,
+            "label": label,
+            "always_on": always_on,
+            "order": order,
+            "default_enabled": default_enabled,
+        }
+    return cats or DOCK_CATEGORIES_FALLBACK
+
+
+def ordered_category_keys(cats: dict[str, dict]) -> list[str]:
+    return sorted(cats.keys(), key=lambda k: (cats[k].get("order", 999), k))
 
 # ── Colour palette ───────────────────────────────────────────────────────────
 # Dark + Light CSS blobs share structure; only colour tokens differ. Auto maps
@@ -446,12 +568,14 @@ def apply_settings(values: dict) -> None:
     Each setting is applied independently; a failure in one does not abort
     the rest. All errors are logged to stderr only.
     """
-    # 1. Theme
+    # 1. Theme — set GTK widget theme, icon theme, and xfwm4 window decorations
+    # together so the user sees a single consistent Light/Dark switch.
     theme = values.get("theme", "Dark")
-    gtk_theme, icon_theme = THEME_MAP.get(theme, THEME_MAP["Dark"])
+    gtk_theme, icon_theme, xfwm_theme = THEME_MAP.get(theme, THEME_MAP["Dark"])
     for cmd in [
-        ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName", "-s", gtk_theme],
+        ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName",     "-s", gtk_theme],
         ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", icon_theme],
+        ["xfconf-query", "-c", "xfwm4",     "-p", "/general/theme",     "-s", xfwm_theme],
     ]:
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -496,29 +620,30 @@ def apply_settings(values: dict) -> None:
     except Exception as exc:
         log(f"wallpaper rotation exception: {exc}")
 
-    # 3. Dock groups — rewrite plank dock-items in the user's dconf user-db.
-    # Layout: DOCK_ALWAYS_PINNED items first, then the union of every enabled
-    # group's items, filtered against what's actually present in
-    # ~/.config/plank/dock1/launchers/ (so missing .dockitem files don't end
-    # up referenced by Plank and cause empty/broken slots).
-    #
-    # This is a base implementation; fine-tuning (icon order, dedupe rules,
-    # group-display names with i18n) is a follow-up. dconf load is idempotent;
-    # Plank watches dconf and updates the dock without a restart.
-    dock = values.get("dock", {})  # {"Office suite": True, ...}
+    # 3. Dock categories — rewrite plank dock-items in the user's dconf
+    # user-db from the chip state. Always-on categories (essentials) are
+    # included regardless; other categories follow the user's chip choices.
+    # Items not present in ~/.config/plank/dock1/launchers/ are filtered out
+    # so missing .dockitem files don't show up as broken slots in Plank.
+    # dconf load is idempotent and Plank watches dconf, so the dock updates
+    # without a restart.
+    dock = values.get("dock", {})  # {"office": True, "code": False, ...}
     try:
+        cats = load_dock_categories()
         present_items: set[str] = set()
         if PLANK_LAUNCHERS_DIR.exists():
             present_items = {p.name for p in PLANK_LAUNCHERS_DIR.glob("*.dockitem")}
 
         target: list[str] = []
-        for item in DOCK_ALWAYS_PINNED:
-            if item in present_items and item not in target:
-                target.append(item)
-        for group_name, enabled in dock.items():
+        for key in ordered_category_keys(cats):
+            cat = cats[key]
+            if cat.get("always_on"):
+                enabled = True
+            else:
+                enabled = bool(dock.get(key, cat.get("default_enabled", False)))
             if not enabled:
                 continue
-            for item in DOCK_GROUPS.get(group_name, []):
+            for item in cat.get("items", []):
                 if item in present_items and item not in target:
                     target.append(item)
 
@@ -538,6 +663,18 @@ def apply_settings(values: dict) -> None:
                 log(f"dock-items rewritten: {len(target)} items")
         else:
             log("dock: no present launchers matched chips; skipped dconf write")
+
+        # Persist the user's category choices into their dconf so vajra and
+        # future tools can read them back without re-deriving.
+        choices_lines = []
+        for key, enabled in dock.items():
+            choices_lines.append(f"{key}={'true' if enabled else 'false'}")
+        if choices_lines:
+            choices_seed = ("[enabled]\n" + "\n".join(choices_lines) + "\n").encode()
+            subprocess.run(
+                ["dconf", "load", "/org/sudhanix/dock/"],
+                input=choices_seed, capture_output=True, timeout=5,
+            )
     except Exception as exc:
         log(f"dock dconf exception: {exc}")
 
@@ -804,30 +941,52 @@ class CustomizationPage(Gtk.Box):
         body.pack_start(sep1, False, False, 0)
 
         # ── Dock section ──
-        dock_label = Gtk.Label(label="DOCK — SHOW THESE APP GROUPS")
+        dock_label = Gtk.Label(label="DOCK -- APP CATEGORIES")
         dock_label.get_style_context().add_class("dim-label")
         dock_label.set_xalign(0)
         dock_label.set_margin_bottom(6)
         body.pack_start(dock_label, False, False, 0)
 
+        # Categories come from /org/sudhanix/dock/categories/* in dconf
+        # (seeded at first login from /etc/sudhanix/dconf-seeds/dock-*.txt)
+        # with the embedded fallback used when dconf is unreachable.
+        cats = load_dock_categories()
+        self._dock_categories = cats  # apply path reads category items from here
+        # Read prior user choices from /org/sudhanix/dock/enabled/* if any.
+        prior_enabled: dict[str, bool] = {}
+        for k in cats.keys():
+            v = _dconf_read_scalar(f"/org/sudhanix/dock/enabled/{k}")
+            if v is not None:
+                prior_enabled[k] = v.lower() == "true"
+
         chip_flow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         chip_flow.set_margin_bottom(10)
         self._dock_chips: dict[str, Gtk.ToggleButton] = {}
-        dock_defaults = {
-            "Office suite": True,
-            "Browsers": True,
-            "Code tools": True,
-            "Audio & video": False,
-        }
-        for chip_label, default_on in dock_defaults.items():
-            chip = Gtk.ToggleButton(label=chip_label)
+        always_on_labels: list[str] = []
+        for key in ordered_category_keys(cats):
+            cat = cats[key]
+            label = cat.get("label", key.title())
+            if cat.get("always_on"):
+                always_on_labels.append(label)
+                continue
+            default_on = prior_enabled.get(key, cat.get("default_enabled", False))
+            chip = Gtk.ToggleButton(label=label)
             chip.get_style_context().add_class("chip")
             chip.set_active(default_on)
-            chip.connect("toggled", self._on_chip_toggled, chip_label)
+            chip.connect("toggled", self._on_chip_toggled, key)
             self._update_chip_style(chip)
             chip_flow.pack_start(chip, False, False, 0)
-            self._dock_chips[chip_label] = chip
+            self._dock_chips[key] = chip
         body.pack_start(chip_flow, False, False, 0)
+
+        if always_on_labels:
+            note = Gtk.Label(
+                label="Always pinned: " + ", ".join(always_on_labels)
+            )
+            note.get_style_context().add_class("dim-label")
+            note.set_xalign(0)
+            note.set_margin_bottom(8)
+            body.pack_start(note, False, False, 0)
 
         # Default browser
         browser_lbl = Gtk.Label(label="Default browser")
