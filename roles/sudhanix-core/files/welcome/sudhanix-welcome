@@ -976,18 +976,25 @@ def main() -> int:
 
     user_dn = LDAP_DN_TEMPLATE.format(uid=username)
 
-    tok = token_path(uid)
-    if tok is None:
-        log("no cached PAM token; can't reach LDAP this session")
-        return 0
+    # SUDHANIX_WELCOME_FORCE bypasses the dismissal/token gate so vajra's
+    # test_welcome_preview "Show window" action and any future preview path
+    # can render the panel regardless of LDAP state. The Continue button still
+    # writes the dismissal flag if the user accepts; the toolset can clear it.
+    force = os.environ.get("SUDHANIX_WELCOME_FORCE", "").strip().lower() in ("1", "true", "yes")
 
-    state = already_dismissed(user_dn, tok)
-    if state is True:
-        return 0
-    if state is None:
-        # Couldn't query LDAP — don't pester the user since we can't
-        # remember their dismissal anyway.
-        return 0
+    if not force:
+        tok = token_path(uid)
+        if tok is None:
+            log("no cached PAM token; can't reach LDAP this session")
+            return 0
+
+        state = already_dismissed(user_dn, tok)
+        if state is True:
+            return 0
+        if state is None:
+            # Couldn't query LDAP — don't pester the user since we can't
+            # remember their dismissal anyway.
+            return 0
 
     apply_css_safe()
 
@@ -995,7 +1002,7 @@ def main() -> int:
     win.show_all()
     Gtk.main()
 
-    if win.dismiss_on_continue:
+    if win.dismiss_on_continue and not force:
         try:
             write_dismissal(user_dn, tok)
         except Exception as exc:
