@@ -130,6 +130,10 @@
     tags:
       - install
       - sw_install
+      - zoom
+      - browser
+      - thunderbird
+      - vscode
 
   - include_tasks:
       file: sw-goldendict.yml

@@ -25,3 +25,7 @@ ansible_assets_url: "http://storehouse.{{dns_domain}}/ansible"
 
 ntp_servers:
   - ntp.{{dns_domain}}
+
+# Zoom .deb — served from storehouse so lab machines don't hit zoom.us directly.
+# Matches the zoom role's override var in roles/sudhanix-core/tasks/sw.yml.
+zoom_deb_url: "{{ansible_assets_url}}/zoom_amd64.deb"
