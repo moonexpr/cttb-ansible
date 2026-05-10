@@ -152,6 +152,36 @@
       - sudhanix-core
       - sudhanix-ux
 
+  - name: deploy session watchdog script
+    copy:
+      src: config/sudhanix-session-watchdog.sh
+      dest: /usr/local/bin/sudhanix-session-watchdog
+      mode: '0755'
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
+  - name: autostart session watchdog on graphical login
+    copy:
+      content: |
+        [Desktop Entry]
+        Type=Application
+        Name=Sudhanix Session Watchdog
+        Exec=/usr/local/bin/sudhanix-session-watchdog
+        Hidden=false
+        NoDisplay=true
+        X-GNOME-Autostart-enabled=true
+        OnlyShowIn=XFCE;
+      dest: /etc/xdg/autostart/sudhanix-session-watchdog.desktop
+      mode: '0644'
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
   - name: deploy Super-key application menu toggle wrapper
     # xfce4-popup-applicationsmenu (4.18) has no dismiss flag; pressing the
     # bound Super key a second time is a no-op. The wrapper inspects the
