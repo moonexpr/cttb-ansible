@@ -42,6 +42,22 @@
 
 # ---------- install path ---------- #
 
+- name: drop cttb-extras apt source (provides vajra .deb)
+  copy:
+    dest: /etc/apt/sources.list.d/cttb-extras.list
+    owner: root
+    group: root
+    mode: '0644'
+    # trusted=yes is a temporary workaround until batch-mode GPG signing is
+    # wired up (tracked in cttb-ansible#42). Replace with signed-by= once
+    # that lands.
+    content: |
+      deb [arch=amd64 trusted=yes] http://apt.{{ dns_domain }}/cttb-repos/apt/ubuntu noble main
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
 - name: install vajra (from apt.cttb extras)
   apt:
     name: vajra
