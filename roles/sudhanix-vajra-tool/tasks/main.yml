@@ -42,17 +42,26 @@
 
 # ---------- install path ---------- #
 
+- name: deploy cttb-repo apt signing key
+  copy:
+    src: cttb-repo.asc
+    dest: /usr/share/keyrings/cttb-repo.asc
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
 - name: drop cttb-extras apt source (provides vajra .deb)
   copy:
     dest: /etc/apt/sources.list.d/cttb-extras.list
     owner: root
     group: root
     mode: '0644'
-    # trusted=yes is a temporary workaround until batch-mode GPG signing is
-    # wired up (tracked in cttb-ansible#42). Replace with signed-by= once
-    # that lands.
     content: |
-      deb [arch=amd64 trusted=yes] http://apt.{{ dns_domain }}/cttb-repos/apt/ubuntu noble main
+      deb [arch=amd64 signed-by=/usr/share/keyrings/cttb-repo.asc] http://apt.{{ dns_domain }}/cttb-repos/apt/ubuntu noble main
   tags:
     - vajra
     - vajra-install

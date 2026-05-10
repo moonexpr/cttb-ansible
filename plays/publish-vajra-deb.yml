@@ -96,42 +96,10 @@
       register: dists_current
       changed_when: false
 
-    - name: Strip stale noble stanza from reprepro distributions
-      raw: |
-        lxc exec debmirror -- bash -c "
-          F={{ repo_path }}/conf/distributions
-          # Drop the SignWith line from any noble stanza so reprepro stops
-          # trying to lock a passphrase-protected key non-interactively.
-          # We accept unsigned for noble because dvgs-testmachine consumes
-          # this pool through a [trusted=yes] apt source for testing only.
-          if grep -q '^Codename: noble' \$F; then
-            awk '
-              /^Codename: noble\$/ { in_noble=1 }
-              /^\$/ { in_noble=0 }
-              !(in_noble && /^SignWith:/) { print }
-            ' \$F > \$F.tmp && mv \$F.tmp \$F
-            echo CLEANED
-          else
-            cat >> \$F <<'EOF'
-
-Origin: cttb.us
-Label: apt repository
-Codename: noble
-Architectures: amd64
-Components: main
-Description: Apt repository for Ubuntu packages customly made at City of Ten Thousand Buddhas
-EOF
-            echo APPENDED
-          fi
-        "
-      register: dist_add
-
-    - debug: var=dist_add.stdout_lines
-
     - name: Push .deb from srv-nas into the container's /tmp
       raw: lxc file push /tmp/{{ local_deb.stdout | basename }} debmirror/tmp/{{ local_deb.stdout | basename }}
 
-    - name: reprepro includedeb noble (unsigned, test-only)
+    - name: reprepro includedeb noble
       raw: |
         lxc exec debmirror -- bash -lc '
           set -e
@@ -162,19 +130,24 @@ EOF
     repo_url: "http://apt.cttb/cttb-repos/apt/ubuntu"
 
   tasks:
-    - name: Drop apt source for cttb-repos noble (trusted, test-only)
+    - name: deploy cttb-repo apt signing key
+      become: true
+      copy:
+        src: "{{ playbook_dir }}/../roles/sudhanix-vajra-tool/files/cttb-repo.asc"
+        dest: /usr/share/keyrings/cttb-repo.asc
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Drop apt source for cttb-repos noble
       become: true
       copy:
         dest: "{{ sources_list }}"
         owner: root
         group: root
         mode: '0644'
-        # noble is the test pool for vajra PR builds on this host; the cttb-repo
-        # signing key is passphrase-protected and not available for batch use,
-        # so trusted=yes bypasses signature verification. Once a signing-key
-        # workflow is wired up, remove trusted=yes and add signed-by=...
         content: |
-          deb [arch=amd64 trusted=yes] {{ repo_url }} noble main
+          deb [arch=amd64 signed-by=/usr/share/keyrings/cttb-repo.asc] {{ repo_url }} noble main
 
     - name: apt update (only this source)
       become: true
