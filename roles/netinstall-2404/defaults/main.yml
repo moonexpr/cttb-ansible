@@ -69,3 +69,6 @@ ni_wifi_password: ""
 # Use "BootLocal" for normal operation, "Autoinstall-noble-desktop" for upgrade rollouts.
 ni_pxe_default: "BootLocal"
 ni_pxe_timeout: 100
+
+# GRUB EFI PXE timeout in seconds (GRUB uses seconds, unlike pxelinux's 1/10s units)
+ni_grub_timeout: 10
