@@ -39,6 +39,7 @@
         - autoinstall/ubuntu/desktop-minimal
         - menu
         - pxelinux.cfg
+        - boot/grub
       tags: always
 
     - name: render autoinstall user-data files
@@ -78,6 +79,15 @@
         dest: "{{ ni_staging_dir }}/pxelinux.cfg/default"
         mode: "0644"
       tags: ni_pxe_menu
+
+    - name: render grub.cfg for UEFI EFI PXE boot
+      template:
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/pxe/grub-cfg-2404.j2"
+        dest: "{{ ni_staging_dir }}/boot/grub/grub.cfg"
+        mode: "0644"
+      tags:
+        - ni_pxe_menu
+        - ni_grub
 
     - name: copy postinst script to staging
       copy:
@@ -131,6 +141,19 @@
           - "--backup"
           - "--suffix=.bak"
       tags: ni_pxe_menu
+
+    - name: sync grub.cfg to server (UEFI EFI boot)
+      synchronize:
+        src: "{{ ni_staging_dir }}/boot/"
+        dest: "{{ ni_root_dir }}/boot/"
+        delete: false
+        rsync_opts:
+          - "--chmod=D755,F644"
+          - "--backup"
+          - "--suffix=.bak"
+      tags:
+        - ni_pxe_menu
+        - ni_grub
 
     - name: fix postinst script permissions
       raw: chmod 755 {{ ni_root_dir }}/autoinstall/postinst.sh

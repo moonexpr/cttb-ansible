@@ -44,3 +44,25 @@
     with_items: "{{ni_2404_images}}"
     tags:
       - ni_pxe_menu
+
+  - name: create grub/boot dir for UEFI PXE
+    file:
+      path: "{{ni_tftp_dir}}/boot/grub"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+    tags:
+      - ni_pxe_menu
+      - ni_grub
+
+  - name: deploy grub.cfg for UEFI EFI PXE boot
+    template:
+      src: pxe/grub-cfg-2404.j2
+      dest: "{{ni_tftp_dir}}/boot/grub/grub.cfg"
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - ni_pxe_menu
+      - ni_grub

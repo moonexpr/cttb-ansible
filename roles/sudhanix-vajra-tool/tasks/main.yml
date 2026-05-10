@@ -42,6 +42,31 @@
 
 # ---------- install path ---------- #
 
+- name: deploy cttb-repo apt signing key
+  copy:
+    src: cttb-repo.asc
+    dest: /usr/share/keyrings/cttb-repo.asc
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
+- name: drop cttb-extras apt source (provides vajra .deb)
+  copy:
+    dest: /etc/apt/sources.list.d/cttb-extras.list
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      deb [arch=amd64 signed-by=/usr/share/keyrings/cttb-repo.asc] http://apt.{{ dns_domain }}/cttb-repos/apt/ubuntu noble main
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
 - name: install vajra (from apt.cttb extras)
   apt:
     name: vajra
