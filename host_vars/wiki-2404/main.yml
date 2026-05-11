@@ -62,16 +62,16 @@ mediawiki_lockdown_search_visible: true
 # Lockdown rules: per-namespace, per-action lists of allowed user groups.
 # Format mirrors $wgNamespacePermissionLockdown[NS_<NAME>][action] = [...].
 mediawiki_lockdown:
-  IT:        { read: [it],   edit: [it],   create: [it],   move: [it] }
-  IT_talk:   { read: [it],   edit: [it] }
-  DRBU:      { read: [drbu], edit: [drbu], create: [drbu], move: [drbu] }
-  DRBU_talk: { read: [drbu], edit: [drbu] }
-  DVGS:      { read: [dvgs], edit: [dvgs], create: [dvgs], move: [dvgs] }
-  DVGS_talk: { read: [dvgs], edit: [dvgs] }
-  DVBS:      { read: [dvbs], edit: [dvbs], create: [dvbs], move: [dvbs] }
-  DVBS_talk: { read: [dvbs], edit: [dvbs] }
-  CTTB:      { read: [cttb], edit: [cttb], create: [cttb], move: [cttb] }
-  CTTB_talk: { read: [cttb], edit: [cttb] }
+  IT:        { read: [it, sysop],   edit: [it, sysop],   create: [it, sysop],   move: [it, sysop] }
+  IT_talk:   { read: [it, sysop],   edit: [it, sysop] }
+  DRBU:      { read: [drbu, sysop], edit: [drbu, sysop], create: [drbu, sysop], move: [drbu, sysop] }
+  DRBU_talk: { read: [drbu, sysop], edit: [drbu, sysop] }
+  DVGS:      { read: [dvgs, sysop], edit: [dvgs, sysop], create: [dvgs, sysop], move: [dvgs, sysop] }
+  DVGS_talk: { read: [dvgs, sysop], edit: [dvgs, sysop] }
+  DVBS:      { read: [dvbs, sysop], edit: [dvbs, sysop], create: [dvbs, sysop], move: [dvbs, sysop] }
+  DVBS_talk: { read: [dvbs, sysop], edit: [dvbs, sysop] }
+  CTTB:      { read: [cttb, sysop], edit: [cttb, sysop], create: [cttb, sysop], move: [cttb, sysop] }
+  CTTB_talk: { read: [cttb, sysop], edit: [cttb, sysop] }
 
 # Secrets from vault
 mediawiki_secret_key: "{{ vault_mediawiki_secret_key }}"
