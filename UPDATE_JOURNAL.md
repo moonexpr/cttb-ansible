@@ -3017,6 +3017,79 @@ wiki:
 
 Closes cttb-ansible#51, cttb-ansible#3. Re-validates cttb-ansible#35 (the empty-user-db preseed approach still works; the auto-pinning fix is the more complete answer).
 
+## 2026-05-09 (evening) — Sudhanix 26 release drain: signed apt (#42), GRUB EFI (#8), watchdog (#34), vajra 1.0 (#38), full testmachine deploy, wiki batch publish (#46)
+
+Automated backlog drain targeting the Sudhanix 26 milestone. All three open bugfix worktrees were merged into `release/sudhanix26`, a full end-to-end deploy ran against `dvgs-testmachine`, vajra was promoted to 1.0 stable, and 50 wiki pages were batch-published.
+
+### #42 + #39 — signed apt releases
+
+Root cause: reprepro on the `debmirror` LXD container (srv-nas 10.11.1.5) runs as root, but the only GPG key in root's keyring required a passphrase, and `ask-passphrase` in the reprepro options triggered a terminal prompt that doesn't exist in batch runs.
+
+Fix: generated a new passphrase-less signing key as root using GPG 2.1.11's `%no-protection` batch mode (fingerprint B4A1DB48, uid "CTTB Repo Signing"). Removed `ask-passphrase` and the old `SignWith` stanza from reprepro options; `distributions` now carries `SignWith: B4A1DB48`. All existing noble packages re-included and the new key verified via `gpg --verify` on a random Release.gpg.
+
+The `sudhanix-vajra-tool` role gained a `cttb-repo.asc` armored key file and a deploy task, replacing the old `trusted=yes` apt source line with `signed-by=/usr/share/keyrings/cttb-repo.asc`. The `publish-vajra-deb.yml` play was cleaned up — the 35-line AWK workaround that stripped stale reprepro distribution stanzas was removed now that the signing key is stable.
+
+### #8 — GRUB EFI PXE grub.cfg
+
+UEFI PXE boot requires a `boot/grub/grub.cfg` under the TFTP root. The live file on `pxe.cttb` was hand-deployed and not under Ansible. Templated it as `roles/netinstall-2404/templates/pxe/grub-cfg-2404.j2` using existing role variables (`ni_2404_images`, `ni_www`, `ni_grub_timeout`). Key detail: GRUB treats bare `;` as a statement separator, so the `ds=nocloud;s=URL` kernel cmdline parameter must use `\;`.
+
+Two new tasks in `roles/netinstall-2404/tasks/pxe.yml`: create `boot/grub/` directory, deploy the template. `ni_grub_timeout: 10` default added to `defaults/main.yml`. The `deploy-netinstall-2404.yml` play got corresponding staging and sync steps tagged `ni_grub`. Template diffed against the live file — functionally identical on all fields.
+
+### #34 — session watchdog (xfwm4 crash recovery)
+
+Added `sudhanix-session-watchdog.sh` — a bash loop that polls for xfwm4 every two seconds and triggers a clean XFCE logout if the window manager disappears. Deployed via two new tasks in `sudhanix-ux.yml`: copy script to `/usr/local/bin/`, drop an XFCE autostart `.desktop` entry. At-seat kill test still required to close the issue.
+
+### Octopus merge into release/sudhanix26
+
+```
+git merge --no-ff bugfix/xfce bugfix/vajra bugfix/pxe \
+  -m "Merge bugfix branches: watchdog (#34), signed apt (#42), grub.cfg (#8)"
+```
+
+9 files changed, 264 insertions, 39 deletions. Three new files: `grub-cfg-2404.j2`, `sudhanix-session-watchdog.sh`, `cttb-repo.asc`.
+
+### Full testmachine deploy
+
+`install-sudhanix-cslabs.yml --limit dvgs-testmachine` result: **ok=261 changed=9 failed=0 skipped=53 ignored=3**. The ignored=3 are expected absent-file conditions on a fresh 24.04 install.
+
+### #38 — vajra 1.0 stable channel (monogarden)
+
+Promoted vajra from `indev` to `stable` in `~/Garden/app/vajra/`:
+
+- `src/version.rs`: `CHANNEL = "stable"`
+- `src/loader.rs`: `kerberos` and `device_register` moved from `BUNDLED` to `BUNDLED_INDEV` — kerberos is a no-op until CTTB runs a KDC; device_register is a stub with no inventory POST endpoint
+- `README.md`: 1.0 stable tool table added (21 tools)
+- Built `.deb 1.0.0-1` on dvgs-testmachine via `publish-vajra-deb.yml`; published to `apt.cttb` pool; verified: `vajra --version` → `vajra 1.0.0 (stable)`
+- Tags `v1.0.0` and `v1.0.0-vajra` created in monogarden and pushed
+
+### #46 — wiki batch publish
+
+50 pages published via `wiki-edit.sh` — all IT infrastructure and Sudhanix documentation drafts in `.claude/wiki-pages/` that were missing from live. Single bash subshell to hold cookie/CSRF state across all edits. ok=50 fail=0.
+
+### Files touched
+
+```
+cttb-ansible (release/sudhanix26):
+  roles/netinstall-2404/templates/pxe/grub-cfg-2404.j2           new — GRUB EFI PXE template
+  roles/netinstall-2404/tasks/pxe.yml                            +2 tasks: mkdir boot/grub, deploy grub.cfg
+  roles/netinstall-2404/defaults/main.yml                        +ni_grub_timeout: 10
+  plays/deploy-netinstall-2404.yml                               +boot/grub staging + sync tasks
+  roles/sudhanix-core/files/config/sudhanix-session-watchdog.sh  new — xfwm4 watchdog loop
+  roles/sudhanix-core/tasks/sudhanix-ux.yml                      +watchdog copy + autostart tasks
+  roles/sudhanix-vajra-tool/files/cttb-repo.asc                  new — apt signing key (B4A1DB48)
+  roles/sudhanix-vajra-tool/tasks/main.yml                       +key deploy; trusted=yes → signed-by=
+  plays/publish-vajra-deb.yml                                    removed AWK workaround; signed-by=
+
+monogarden (main, tag v1.0.0):
+  app/vajra/src/version.rs                                       CHANNEL: "indev" → "stable"
+  app/vajra/src/loader.rs                                        kerberos + device_register → BUNDLED_INDEV
+  app/vajra/README.md                                            +1.0 stable tool table
+```
+
+Closes #42, #39, #38, #46. Partial: #8 (code done, needs physical UEFI PXE boot test), #34 (code done, needs at-seat xfwm4 kill test).
+
+Closes cttb-ansible#51, cttb-ansible#3. Re-validates cttb-ansible#35 (the empty-user-db preseed approach still works; the auto-pinning fix is the more complete answer).
+
 ---
 
 ## 2026-05-11 — Unattended backlog drain: six issues to Candidate
