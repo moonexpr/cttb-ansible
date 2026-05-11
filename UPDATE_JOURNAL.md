@@ -3243,3 +3243,69 @@ Six branches pushed: `release/sudhanix26`, `bugfix/general`,
 `bugfix/xfce` (fast-forwarded then +whiskermenu). The
 `Candidate` label is on all six issues
 (#2, #18, #36, #44, #48, #53) for Monday at-seat review.
+
+---
+
+## 2026-05-11 — Backlog drain retrospective + work-issues skill improvements
+
+Post-mortem on the 05:00 unattended run (attempted=12, done=2,
+skipped=10) led to a set of structural improvements to the
+`/work-issues` skill and the scheduled-task prompt.
+
+### Throughput analysis
+
+Of the ten skips: two were irreducible (PXE off-target, physical
+monitor), one was a timing issue (fleet offline at 5am), one was
+blocked by an open dependency (#39 blocked on #42), one needed a
+wiki publish gate, and the rest were early-disqualifiable scope or
+planning issues. The root cause in every reducible case was the same:
+the skill fixed its candidate list at N up front, so early
+disqualifications consumed slots that workable issues could have
+filled.
+
+### work-issues SKILL.md changes
+
+Four additions to the skill:
+
+**Dynamic queue** (Step 1). The skill no longer fixes N candidates
+at the start. It builds an ordered candidate list and keeps pulling
+the next eligible issue whenever one is fast-skipped. N now means
+"N issues that reach the deploy step," not "N issues picked." A
+run that burns four slots on immediate disqualifications will attempt
+four more candidates from the queue.
+
+**Blocker-first sort** (Step 1, criterion 4). After the standard
+priority/milestone/number sort, one pass promotes any issue that is
+a prerequisite for another picked issue above its dependents. This
+would have surfaced #42 before #39 in the prior run.
+
+**Pre-screening step** (new Step 1b). Before opening a worktree or
+editing any file, a ≤60 s structural check per issue fast-disqualifies:
+off-target domains (pxe/infra), physical-presence requirements, scope
+definitions with no deploy path, and fleet-rollout-gated issues (those
+require `dvgs_cs_lab` etc.). Fast-skips post a one-line comment and
+immediately pull the next candidate — no time lost to localizing a
+role before discovering the blocker.
+
+**dvgs-testmachine only** (Step 5). An explicit hard rule: every
+`ansible-playbook` invocation uses `--limit dvgs-testmachine` without
+exception. Fleet rollout is operator-gated and future-scheduled.
+
+### Scheduled task prompt changes
+
+Rule 7 was split by domain. `/wiki-author` now publishes directly
+with no operator gate — the wiki has full rollback via
+`Special:UndoRevision`. `/ldap` dry-run remains gated-free; writes
+still require `--risks-confirmed`. `/sysadmin` (pxe, infra) still
+requires an operator gate and produces a `skipped:` comment. The
+description line was updated to reflect the dynamic queue and the
+testmachine-only constraint.
+
+### Candidate label
+
+Created the `Candidate` label on `moonexpr/cttb-ansible` (blue,
+"Close to finished — ready for Monday testing/review") and applied
+it to #18 (Zoom storehouse), #43 (vajra meta-dep finding), and #44
+(no ansible changes needed). Combined with the six issues tagged
+Candidate by the subsequent autonomous run, nine issues are now
+marked for at-seat review.
