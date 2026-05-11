@@ -83,6 +83,16 @@
   tags:
     - sudhanix_welcome
 
+- name: deploy wordmark branding image
+  copy:
+    src: branding/sx26/wordmark.png
+    dest: /usr/share/sudhanix/welcome/wordmark.png
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - sudhanix_welcome
+
 - name: deploy customize.yml (theme / browser / dock-category presets)
   copy:
     src: welcome/customize.yml
