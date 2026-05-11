@@ -152,6 +152,16 @@
       - sudhanix-core
       - sudhanix-ux
 
+  - name: install session watchdog dependencies
+    apt:
+      name:
+        - zenity
+        - dbus-x11
+      state: present
+    tags:
+      - sudhanix-core
+      - sudhanix-ux
+
   - name: deploy session watchdog script
     copy:
       src: config/sudhanix-session-watchdog.sh
