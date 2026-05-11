@@ -51,6 +51,10 @@ autoinstall:
       - "{{ni_jc_ssh_pubkey}}"
   timezone: {{ni_timezone}}
   updates: security
+  early-commands:
+    - dd if=/dev/zero of=/tmp/installer-swap bs=1M count=2048
+    - mkswap /tmp/installer-swap
+    - swapon /tmp/installer-swap
   # Minimal desktop: base Lubuntu without extra apps, suitable for
   # lab machines where Ansible will handle software installation
   packages:

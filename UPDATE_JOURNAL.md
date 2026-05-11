@@ -3309,3 +3309,95 @@ it to #18 (Zoom storehouse), #43 (vajra meta-dep finding), and #44
 (no ansible changes needed). Combined with the six issues tagged
 Candidate by the subsequent autonomous run, nine issues are now
 marked for at-seat review.
+
+---
+
+## 2026-05-11 — E2E test prep: home quarantine + bugfix merge
+
+### Home quarantine (dvgs-testmachine)
+
+Removed the Sudhanix 26 bootstrap marker from john.chandara's NFS home so
+the firstlogin script runs fresh on next login:
+
+```
+/nfs/home/john.chandara/.config/sudhanix/v26-bootstrapped  →  deleted
+```
+
+Remaining in `.config/sudhanix/`: `welcome-dock-prefs.json` (untouched).
+
+On next login the firstlogin autostart will quarantine `.config/xfce4`,
+`.config/plank`, `.config/dconf`, etc. into `.config/.pre-sudhanix-26.<ts>`,
+re-seed from `/etc/skel`, seed dconf, and write a fresh `.dmrc`.
+
+**Access note:** `administrator` sudo on the testmachine is blocked by
+`root_squash` on the NFS export. Marker was removed via
+`sudo runuser -u john.chandara -- rm ...` (runs as UID 2156 on the server).
+
+### Fileserver confirmed
+
+| Field | Value |
+|-------|-------|
+| Host | `fileserver` (10.11.1.18) |
+| Volume | `/dev/zd0p1` → `/nethomes` (ext4, usrquota) |
+| Export | `/nethomes` → `10.11.{9,10,16,30}.0/24` (rw, root_squash, async) |
+| NFS version | NFSv4.2 |
+
+### Bugfix branches merged into release/sudhanix26
+
+Octopus merge of 4 Candidate branches (no conflicts):
+
+| Branch | Issue | Change |
+|--------|-------|--------|
+| `bugfix/general` | #53 | Set `GRUB_DISTRIBUTOR` to "Sudhanix 26" |
+| `bugfix/sw` | #18 | Fix Zoom .deb URL → storehouse; fix `--tags zoom` routing |
+| `bugfix/vajra` | #2 | Add polkit rules granting IT group `hostnamectl` without admin password |
+| `bugfix/xfce` | #36 | Install `xfce4-whiskermenu-plugin` (operator-gated panel swap, Path B) |
+
+6 files changed, 66 insertions: `group_vars/all`, `roles/common/tasks/setup/default.yml`,
+`30-hostnamectl.pkla`, `30-hostnamectl.rules`, `roles/sudhanix-core/tasks/lubuntu.yml`,
+`roles/sudhanix-core/tasks/setup/default.yml`.
+
+---
+
+## 2026-05-11 — PXE autoinstall debugging (two blockers found and fixed)
+
+Attempted first full e2e PXE autoinstall on dvgs-testmachine. Hit two blockers:
+
+### Blocker 1: `DataSourceNone` — `ds=nocloud\;s=` escape broken
+
+`ds=nocloud\;s=URL` in GRUB passes a literal backslash+semicolon (`nocloud\`) to the
+kernel. Cloud-init never parses it as `nocloud-net` and falls back to `DataSourceNone`,
+causing Subiquity to drop to interactive mode.
+
+**Fix:** `grub-cfg-2404.j2` updated to `ds="nocloud-net;s=URL"` with double-quote wrapping
+(GRUB strips outer quotes, kernel receives the semicolon correctly) plus
+`cloud-config-url=URL/user-data` as belt-and-suspenders. Deployed to pxe.cttb.
+
+**Needs verification:** `/proc/cmdline` on next boot must show `ds=nocloud-net;s=` not
+`ds=nocloud;s=`.
+
+### Blocker 2: OOM in live environment
+
+snapd + Subiquity snap consume ~4GB on top of the ISO in the live env. Machine has
+7.4GB RAM, no swap — OOM kills the install mid-boot.
+
+**Fix:** Added `early-commands` to `user-data-desktop-minimal.j2`:
+```yaml
+early-commands:
+  - dd if=/dev/zero of=/tmp/installer-swap bs=1M count=2048
+  - mkswap /tmp/installer-swap
+  - swapon /tmp/installer-swap
+```
+Creates 2GB swap in the live environment before the installer runs.
+
+### Note: Subiquity version
+
+User flagged that a newer Subiquity installer is available and should be re-packaged
+for the PXE server.
+
+### State going into next test
+
+- grub.cfg on pxe.cttb: `nocloud-net` + `cloud-config-url=` ✓
+- user-data desktop-minimal: early-commands swap + correct credentials + SSH keys ✓
+- user-data reachable: HTTP 200, 3291 bytes from testmachine ✓
+- dvgs-testmachine: rebooted, disk unknown state — will need PXE boot (F12 at POST)
