@@ -3400,4 +3400,22 @@ for the PXE server.
 - grub.cfg on pxe.cttb: `nocloud-net` + `cloud-config-url=` ✓
 - user-data desktop-minimal: early-commands swap + correct credentials + SSH keys ✓
 - user-data reachable: HTTP 200, 3291 bytes from testmachine ✓
+
+---
+
+## 2026-05-11 — Sudhanix 26 branding swap
+
+Replaced all three visual identity assets with the new sx26 art (`roles/sudhanix-core/files/branding/sx26/`).
+
+| Surface | Old asset | New asset | Deploy path |
+|---------|-----------|-----------|-------------|
+| Title bar (xfce4-panel app menu icon) | `pics/lotus.png` | `branding/sx26/emblem.png` | `/usr/share/icons/cttb/lotus.png` |
+| Welcome screen hero (sudhanix-welcome) | GTK label markup | `branding/sx26/wordmark.png` | `/usr/share/sudhanix/welcome/wordmark.png` |
+| Plymouth boot splash | `plymouth/sudhanix/amitabha.png` | `branding/sx26/logo.png` | `/usr/lib/plymouth/themes/sudhanix/amitabha.png` |
+
+**Changes:**
+- `files/pics/lotus.png` — replaced with `emblem.png` (file copy; deploy task unchanged)
+- `files/plymouth/sudhanix/amitabha.png` — replaced with `logo.png` (file copy; deploy task unchanged)
+- `files/welcome/sudhanix-welcome` — `WORDMARK_PATH` constant added; brand-lockup sidebar now loads `wordmark.png` as `Gtk.Image` at native resolution, falls back to text label if asset missing
+- `tasks/sudhanix-welcome.yml` — new task deploys `branding/sx26/wordmark.png` → `/usr/share/sudhanix/welcome/wordmark.png`
 - dvgs-testmachine: rebooted, disk unknown state — will need PXE boot (F12 at POST)

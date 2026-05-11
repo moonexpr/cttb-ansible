@@ -44,6 +44,7 @@ SUDHANIX_USER_OC = "sudhanixUser"
 
 # ── Asset paths ───────────────────────────────────────────────────────────────
 LOTUS_PATH = "/usr/share/icons/cttb/lotus.png"
+WORDMARK_PATH = "/usr/share/sudhanix/welcome/wordmark.png"
 # Dep: lookandfeel.yml must run before this role places lotus.png.
 WELCOME_ICONS_DIR = "/usr/share/sudhanix/welcome-icons"
 # SVG line-art icons used on the What's new / Quick tour cards. Theme-neutral
@@ -1450,13 +1451,21 @@ class WelcomeWindow(Gtk.Window):
             brand.pack_start(lotus, False, False, 0)
 
         brand_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        wordmark = Gtk.Label()
-        wordmark.set_markup(
-            "<span weight='600' size='15000'>"
-            "Sudha<span color='#D99A3C'>*</span>nix"
-            "</span>"
-        )
-        wordmark.set_xalign(0)
+        try:
+            wordmark_pb = GdkPixbuf.Pixbuf.new_from_file(WORDMARK_PATH)
+            wordmark_img = Gtk.Image.new_from_pixbuf(wordmark_pb)
+            wordmark_img.set_halign(Gtk.Align.START)
+            wordmark = wordmark_img
+        except Exception as exc:
+            log(f"wordmark asset missing or unreadable ({WORDMARK_PATH}): {exc}")
+            wordmark_lbl = Gtk.Label()
+            wordmark_lbl.set_markup(
+                "<span weight='600' size='15000'>"
+                "Sudha<span color='#D99A3C'>*</span>nix"
+                "</span>"
+            )
+            wordmark_lbl.set_xalign(0)
+            wordmark = wordmark_lbl
         brand_col.pack_start(wordmark, False, False, 0)
 
         ver = Gtk.Label(label="version 26")
