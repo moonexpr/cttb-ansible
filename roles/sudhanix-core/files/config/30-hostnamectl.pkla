@@ -1,0 +1,6 @@
+[Allow IT group to change hostname without administrator password]
+Identity=unix-group:it
+Action=org.freedesktop.hostname1.set-hostname;org.freedesktop.hostname1.set-static-hostname;org.freedesktop.hostname1.set-pretty-hostname
+ResultAny=no
+ResultInactive=no
+ResultActive=auth_self_keep
