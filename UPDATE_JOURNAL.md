@@ -3419,3 +3419,148 @@ Replaced all three visual identity assets with the new sx26 art (`roles/sudhanix
 - `files/welcome/sudhanix-welcome` — `WORDMARK_PATH` constant added; brand-lockup sidebar now loads `wordmark.png` as `Gtk.Image` at native resolution, falls back to text label if asset missing
 - `tasks/sudhanix-welcome.yml` — new task deploys `branding/sx26/wordmark.png` → `/usr/share/sudhanix/welcome/wordmark.png`
 - dvgs-testmachine: rebooted, disk unknown state — will need PXE boot (F12 at POST)
+
+## 2026-05-11 (continued) — PXE autoinstall: wrong-path grub.cfg root cause + minimal user-data + Sudhanix 26 menu
+
+### Findings (in order discovered)
+
+1. **OOM during cloud-init.** Live-server ISO in RAM + Subiquity snap + `lubuntu-core` dep resolution exhausts 8 GB; cloud-init gets OOM-killed as collateral. The user-data was carrying the entire desktop stack — wrong layer.
+2. **Wrong-path grub.cfg (root cause of "fix doesn't stick").** `plays/deploy-netinstall-2404.yml` was rendering + rsyncing to `/srv/netinstall/boot/grub/grub.cfg`. The `grubx64.efi` binary on **pxe.cttb** was built with prefix `(pxe)/grub/` and reads `/srv/netinstall/grub/grub.cfg`. Every grub.cfg edit this past session (the `ds=` quoting fix, `nocloud-net`, `cloud-config-url=`) silently landed in a file the boot loader never consults. PXE menu kept showing the stale Apr-23 entries — which is exactly what JC saw on screen tonight after a "successful" deploy.
+3. **Empty meta-data.** `/srv/netinstall/autoinstall/ubuntu/desktop-minimal/meta-data` was 0 bytes. cloud-init's nocloud-net seed needs a non-empty `instance-id` line or it can fall back to `DataSourceNone`.
+4. **Template `src` paths broken in the play.** Play lives in `plays/` but referenced `roles/...` as if from repo root; template lookups failed. Fixed by prepending `{{ playbook_dir }}/../`.
+5. **`sudhanix-core` in render loop with no template.** Loop iterated `[desktop, server, sudhanix-core, desktop-minimal]` — `user-data-sudhanix-core.j2` doesn't exist. Replaced with the actual profiles.
+6. **`ansible_become_password` un-decryptable.** `inventory/group_vars/pxe-server.yml` has the become password vaulted with a different password than the standard `4m1t0f0`. Could not run the play end-to-end this session; fell back to local Jinja render + manual SCP. Filing separately.
+
+### Changes (uncommitted on `release/sudhanix26`)
+
+| File | Change |
+|------|--------|
+| `roles/netinstall-2404/templates/autoinstall/user-data-desktop-minimal.j2` | Stripped to bootstrap-only — `openssh-server` + `python3`; removed `early-commands` swap, `lubuntu-core`/`fish`/`network-manager` packages, `set-default graphical.target`, and `/etc/network/interfaces` write. Ansible's `sudhanix-core` role owns desktop install post-bootstrap. |
+| `roles/netinstall-2404/templates/autoinstall/meta-data.j2` | Unchanged (already had `instance-id: iid-local01`) — but never made it to disk because the deploy play loop was broken. Re-pushed manually. |
+| `roles/netinstall-2404/templates/pxe/grub-cfg-2404.j2` | Unchanged (already correct from earlier today) — uses `ds="nocloud-net;s=URL"` (semicolon inside double-quotes, not `\;`) + `cloud-config-url=` belt-and-suspenders. |
+| `roles/netinstall-2404/defaults/main.yml` | Dropped the `desktop` (full) autoinstall entry. Renamed `desktop-minimal` description: `"Ubuntu 24.04 Desktop Minimal (headless install)"` → **`"Sudhanix 26 Desktop"`**. |
+| `plays/deploy-netinstall-2404.yml` | Fixed three relative-path `src:` lookups by prepending `{{ playbook_dir }}/../`. Loop now `[desktop-minimal, server]` (no more `desktop` or non-existent `sudhanix-core`). **Render destination + rsync path for grub.cfg changed from `boot/grub/` → `grub/`** to match what `grubx64.efi` actually reads. |
+
+### Deployed manually to pxe.cttb (10.11.1.23)
+
+- `/srv/netinstall/autoinstall/ubuntu/desktop-minimal/user-data` (2994 B, minimal bootstrap)
+- `/srv/netinstall/autoinstall/ubuntu/desktop-minimal/meta-data` (`instance-id: iid-local01`)
+- `/srv/netinstall/grub/grub.cfg` ← **the path that actually matters**; two entries (Sudhanix 26 Desktop, Ubuntu 24.04 Server) + local-boot
+- `/srv/netinstall/pxelinux.cfg/default`, `/srv/netinstall/menu/ubuntu-live-server-amd64-noble.menu`
+- Removed: `/srv/netinstall/autoinstall/ubuntu/desktop/` (full-desktop profile retired)
+- `systemctl restart tftpd-hpa`
+
+### Open
+
+- Awaiting PXE boot of dvgs-testmachine with new menu to confirm: cloud-init picks up the seed (no `DataSourceNone`), Subiquity runs unattended, install completes without OOM, machine reboots into bootstrap state ready for `install-sudhanix-cslabs.yml`.
+- File issue: vault password mismatch for `pxe-server` `ansible_become_password` blocks `deploy-netinstall-2404.yml` from running end-to-end.
+- File issue: the play's grub.cfg render path was wrong for the lifetime of the role — historical edits to PXE menu may have silently no-op'd. Worth a quick audit of any other paths in the play that diverge from the live TFTP layout.
+- Memory: `reference_pxe_grub_cfg_path.md` records the correct live path.
+
+## 2026-05-11 (continued) — Subiquity Mirror crash: schema mismatch in user-data `security:` block
+
+### What happened
+
+After the grub.cfg fix took effect, dvgs-testmachine PXE-booted the new "Sudhanix 26 Desktop" entry, cloud-init completed cleanly (no more OOM, no `DataSourceNone`), and Subiquity began running the autoinstall. It crashed early — during `subiquity/Mirror/apply_autoinstall_config`, before any disk writes. Screen showed `An error occurred. Press enter to start a shell.` JC dropped to root and enabled root SSH.
+
+### Root cause
+
+Curtin (the back end Subiquity calls for apt config) crashed with:
+
+```
+TypeError: argument of type 'NoneType' is not iterable
+  File curtin/commands/apt_config.py:853 in get_arch_mirrorconfig
+    if arch in arches:
+```
+
+Pulled from `journalctl -t subiquity_log.1919` on the live env at 10.11.30.60.
+
+The schema in our template was inconsistent:
+
+```yaml
+apt:
+  preserve_sources_list: false
+  mirror-selection:
+    primary:
+      - uri: http://apt.cttb/mirrors/ubuntu/        # under mirror-selection (correct, new schema)
+  security:
+    - uri: http://apt.cttb/mirrors/ubuntu           # top-level (old curtin schema — wrong)
+```
+
+Subiquity's pipeline converts the `mirror-selection.primary` list to curtin's internal format, adding `arches: ['default']` automatically. It then forwards the bare top-level `security:` block to curtin **as-is**, with no arches. Curtin iterates `if arch in arches:` against `arches=None` → `TypeError`.
+
+apt.cttb itself was fine — direct `curl` from the live env returned `HTTP 200` for `dists/noble/Release`; the mirror has noble published with all four components.
+
+### Fix
+
+`roles/netinstall-2404/templates/autoinstall/user-data-desktop-minimal.j2` — moved `security:` under `mirror-selection:` so both primary and security go through the same conversion path:
+
+```yaml
+apt:
+  preserve_sources_list: false
+  mirror-selection:
+    primary:
+      - uri: http://{{apt_host}}/mirrors/ubuntu/
+    security:
+      - uri: http://{{apt_host}}/mirrors/ubuntu/
+  geoip: false
+```
+
+Re-rendered locally via Python Jinja2 and SCP'd to `pxe.cttb:/srv/netinstall/autoinstall/ubuntu/desktop-minimal/user-data`. Confirmed live file shows the corrected indentation.
+
+### Lessons
+
+- The autoinstall reference at <https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#apt> puts both `primary` and `security` under `mirror-selection`. Our template was authored against the older curtin schema, mixed.
+- The crash signature (`'NoneType' is not iterable` deep inside curtin) is unhelpful — the real signal is "you mixed two schemas." Worth adding a comment in the template flagging this trap for the next editor.
+
+### Next
+
+Reboot dvgs-testmachine → PXE → pick "Sudhanix 26 Desktop" → confirm Subiquity gets past the mirror step into curtin's actual install (partition, format, debootstrap). If that completes, install reaches `late-commands` and reboots into the freshly installed system at `administrator@10.11.30.60` (or DHCP-assigned IP).
+
+## 2026-05-11 (continued) — Two more crashes, one fix each, then green
+
+### Crash 3 — `subiquity/Network/apply_autoinstall_config` (netplan)
+
+Curtin and mirror both happy after Crash 2's `mirror-selection.security` fix. Next stop: netplan apply during the live env's network config step.
+
+```
+ERROR: id1: networkd backend does not support wifi with match:, only by interface name
+subprocess.CalledProcessError: Command '['netplan', 'apply']' returned non-zero exit status 1.
+```
+
+**Root cause:** our `wifis:` block uses `match: { name: "wl*" }`. netplan supports `match:` for wifi only with the **NetworkManager** renderer (desktop default). The Subiquity live env runs **systemd-networkd**, which rejects it. The wifi block was always going to break netplan-apply during installs, regardless of whether the host has wifi or needs it. It just happened to never have been exercised on an actual install attempt before.
+
+**Fix:** `roles/netinstall-2404/defaults/main.yml` — `ni_wifi_ssid: ""` by default (was `"DRBU"`). CS-lab desktops are wired; the wifi block is now gated off. Overridable per-host with `-e ni_wifi_ssid=DRBU` for laptops/tablets, with a doc-comment warning about the networkd-renderer constraint. Re-rendered + redeployed user-data to pxe.cttb.
+
+### Crash 4 — `subiquity/Late/run/command_0` (usermod exit 6)
+
+Got past netplan. Curtin install partition + format + grub + debootstrap + python3 + openssh-server + unattended-upgrades + apt-get update — **all SUCCESS**. Then late-commands fired:
+
+```
+curtin in-target -- usermod -u 999 administrator
+returned non-zero exit status 6
+```
+
+Exit code 6 from `usermod` = "user doesn't exist." `/target/etc/passwd` confirmed: no `administrator` entry. The user creation from `identity:` is deferred to **first-boot cloud-init on the target**, written via `/target/etc/cloud/cloud.cfg.d/99-installer.cfg`. Late-commands run before that boot, so the user genuinely doesn't exist yet.
+
+**Fix:** `roles/netinstall-2404/templates/autoinstall/user-data-desktop-minimal.j2` — removed the entire `late-commands:` block. The user is created with default UID 1000 on first boot; `ssh.authorized-keys:` propagates both pubkeys via the same cloud-init path (verified by inspecting `/target/etc/cloud/cloud.cfg.d/99-installer.cfg` — `ssh_authorized_keys:` has both jc's ed25519 and the ansible@cttb.us RSA key). UID 999 was a holdover from the legacy 20.04 preseed install; not load-bearing for new deploys, Ansible's sudhanix-core role handles any UID concerns post-bootstrap.
+
+Added an in-template comment block explaining *why* there are no late-commands so the next editor doesn't put them back.
+
+### 2026-05-11 22:50 PT — END-TO-END GREEN
+
+After roughly six fixes layered over months of intermittent attempts, the Ubuntu 24.04 Sudhanix 26 PXE autoinstall pipeline runs end-to-end on dvgs-testmachine:
+
+1. PXE menu shows "Sudhanix 26 Desktop" (from rendered grub.cfg at the **correct live path**).
+2. UEFI grub loads kernel + initrd via TFTP, then ISO via HTTP.
+3. Cloud-init finds the nocloud-net seed (non-empty meta-data, valid user-data), no fallback to DataSourceNone, no OOM.
+4. Subiquity loads autoinstall config without crashing — mirror schema valid, network valid, identity wired up.
+5. Curtin runs through the full install — partition NVMe, format ext4/vfat, debootstrap noble-minimal, install python3 + openssh-server, configure cloud-init, unattended-upgrades for security, restore apt config.
+6. Late-commands now empty — no false failures.
+7. Reboot.
+8. Installed system boots, cloud-init runs target-side, user `administrator` created with both ssh keys, hostname `computer` (placeholder, Ansible overwrites), TTY login prompt visible.
+
+JC went off-campus before the Ansible deploy step, but the autoinstall itself is unblocked. Tomorrow on-campus task: `ansible-playbook -i inventory/sudhanix26_hosts.ini plays/install-sudhanix-cslabs.yml -l dvgs-testmachine` to layer the Sudhanix desktop stack on top of the bootstrap.
+
+The full month+ of intermittent debugging on this — wrong grub path that silently swallowed weeks of "fixes," OOM-kill of cloud-init by a bloated user-data, ds= shell-quoting, the mirror-schema NoneType, the networkd-renderer wifi rejection, the late-commands ordering against first-boot cloud-init — closes here. Issue #8 ("Autoinstall not triggering on PXE boot") gets closed.
+
