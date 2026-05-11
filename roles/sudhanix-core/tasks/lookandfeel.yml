@@ -160,19 +160,9 @@
       - sudhanix-core
       - icons
 
-  - name: copy lotus icon (svg, legacy)
-    copy:
-      src: pics/lotus.svg
-      dest: /usr/share/icons/cttb/lotus.svg
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - icons
-
-  # PNG companion for the panel — xfce4-panel.xml.j2 references this path.
-  # Kept alongside the SVG so existing references to lotus.svg keep working.
+  # PNG is the live icon — xfce4-panel.xml.j2 references this path.
+  # The legacy SVG companion was retired 2026-05-11; no remaining
+  # references depend on /usr/share/icons/cttb/lotus.svg.
   - name: copy lotus icon (png, panel)
     copy:
       src: pics/lotus.png
