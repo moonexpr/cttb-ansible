@@ -32,8 +32,8 @@ autoinstall:
     mirror-selection:
       primary:
         - uri: http://{{apt_host}}/mirrors/ubuntu/
-    security:
-      - uri: http://{{apt_host}}/mirrors/ubuntu
+      security:
+        - uri: http://{{apt_host}}/mirrors/ubuntu/
     geoip: false
   storage:
     layout:
@@ -51,32 +51,11 @@ autoinstall:
       - "{{ni_jc_ssh_pubkey}}"
   timezone: {{ni_timezone}}
   updates: security
-  early-commands:
-    - dd if=/dev/zero of=/tmp/installer-swap bs=1M count=2048
-    - mkswap /tmp/installer-swap
-    - swapon /tmp/installer-swap
-  # Minimal desktop: base Lubuntu without extra apps, suitable for
-  # lab machines where Ansible will handle software installation
+  # Ansible handles the full desktop stack; PXE install is Ansible bootstrap only.
   packages:
     - openssh-server
     - python3
-    - fish
-    - lubuntu-core
-    - network-manager
-  late-commands:
-    - curtin in-target -- usermod -u {{ni_admin_uid}} {{ni_admin_user}}
-    - curtin in-target -- mkdir -p /home/{{ni_admin_user}}/.ssh
-    - curtin in-target -- chmod 700 /home/{{ni_admin_user}}/.ssh
-    - |
-      cat <<'SSHEOF' > /target/home/{{ni_admin_user}}/.ssh/authorized_keys
-      {{ni_ansible_ssh_pubkey}}
-      {{ni_jc_ssh_pubkey}}
-      SSHEOF
-    - curtin in-target -- chown -R {{ni_admin_uid}}:{{ni_admin_uid}} /home/{{ni_admin_user}}/.ssh
-    - curtin in-target -- chmod 600 /home/{{ni_admin_user}}/.ssh/authorized_keys
-    - curtin in-target -- systemctl set-default graphical.target
-    - |
-      cat <<'NETEOF' > /target/etc/network/interfaces
-      auto lo
-      iface lo inet loopback
-      NETEOF
+  # No late-commands: identity creates {{ni_admin_user}} via cloud-init on first
+  # boot (default UID 1000), and ssh.authorized-keys above propagates keys via
+  # cloud-init. usermod/authorized_keys writes in late-commands fail with exit 6
+  # ("user doesn't exist") because cloud-init hasn't created the user yet.

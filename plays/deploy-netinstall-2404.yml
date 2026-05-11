@@ -34,34 +34,31 @@
         state: directory
         mode: "0755"
       loop:
-        - autoinstall/ubuntu/desktop
-        - autoinstall/ubuntu/server
         - autoinstall/ubuntu/desktop-minimal
+        - autoinstall/ubuntu/server
         - menu
         - pxelinux.cfg
-        - boot/grub
+        - grub
       tags: always
 
     - name: render autoinstall user-data files
       template:
-        src: "roles/netinstall-2404/templates/autoinstall/user-data-{{ item }}.j2"
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/autoinstall/user-data-{{ item }}.j2"
         dest: "{{ ni_staging_dir }}/autoinstall/ubuntu/{{ item }}/user-data"
         mode: "0644"
       loop:
-        - sudhanix-core
-        - server
         - desktop-minimal
+        - server
       tags: ni_autoinstall
 
     - name: render autoinstall meta-data files
       template:
-        src: "roles/netinstall-2404/templates/autoinstall/meta-data.j2"
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/autoinstall/meta-data.j2"
         dest: "{{ ni_staging_dir }}/autoinstall/ubuntu/{{ item }}/meta-data"
         mode: "0644"
       loop:
-        - sudhanix-core
-        - server
         - desktop-minimal
+        - server
       tags: ni_autoinstall
 
     - name: render pxe install menu
@@ -83,7 +80,7 @@
     - name: render grub.cfg for UEFI EFI PXE boot
       template:
         src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/pxe/grub-cfg-2404.j2"
-        dest: "{{ ni_staging_dir }}/boot/grub/grub.cfg"
+        dest: "{{ ni_staging_dir }}/grub/grub.cfg"
         mode: "0644"
       tags:
         - ni_pxe_menu
@@ -91,7 +88,7 @@
 
     - name: copy postinst script to staging
       copy:
-        src: "roles/netinstall-2404/files/autoinstall-postinst.sh"
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/files/autoinstall-postinst.sh"
         dest: "{{ ni_staging_dir }}/autoinstall/postinst.sh"
         mode: "0755"
       tags: ni_autoinstall
@@ -144,8 +141,8 @@
 
     - name: sync grub.cfg to server (UEFI EFI boot)
       synchronize:
-        src: "{{ ni_staging_dir }}/boot/"
-        dest: "{{ ni_root_dir }}/boot/"
+        src: "{{ ni_staging_dir }}/grub/"
+        dest: "{{ ni_root_dir }}/grub/"
         delete: false
         rsync_opts:
           - "--chmod=D755,F644"

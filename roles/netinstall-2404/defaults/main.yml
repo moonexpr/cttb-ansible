@@ -36,12 +36,10 @@ ni_2404_images:
     kernel_path: casper/vmlinuz
     initrd_path: casper/initrd
     autoinstall:
-      - name: desktop
-        description: "Ubuntu 24.04 Desktop (headless install)"
+      - name: desktop-minimal
+        description: "Sudhanix 26 Desktop"
       - name: server
         description: "Ubuntu 24.04 Server"
-      - name: desktop-minimal
-        description: "Ubuntu 24.04 Desktop Minimal (headless install)"
 
 # Default administrator user for autoinstall
 ni_admin_user: administrator
@@ -59,9 +57,14 @@ ni_timezone: US/Pacific
 ni_locale: en_US.UTF-8
 ni_keyboard_layout: us
 
-# Wifi configuration for autoinstall (needed when hosts aren't wired)
-# Set per-site in group_vars. Leave ni_wifi_ssid empty to skip wifi config.
-ni_wifi_ssid: "DRBU"
+# Wifi configuration for autoinstall.
+# CS-lab desktops are wired — leave SSID empty so no wifi block is emitted.
+# The Subiquity live env uses networkd as its netplan renderer, which does NOT
+# support wifi by match: pattern (only NetworkManager does). If you enable wifi
+# here, `netplan apply` in the live env will fail with:
+#   "id1: networkd backend does not support wifi with match:, only by interface name"
+# Override per-host (laptops/tablets) with: -e ni_wifi_ssid=DRBU
+ni_wifi_ssid: ""
 ni_wifi_password: ""
 
 # PXE menu behavior
