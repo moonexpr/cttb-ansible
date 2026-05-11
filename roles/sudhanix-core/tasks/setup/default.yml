@@ -74,6 +74,30 @@
       - config
       - allow_root_crontab_power_off
 
+  - name: Allow IT group to change hostname via pkexec (polkit rules, 24.04+)
+    copy:
+      src: "config/30-hostnamectl.rules"
+      dest: /etc/polkit-1/rules.d/30-hostnamectl.rules
+      mode: 0644
+      owner: root
+      group: root
+    when: ansible_distribution_major_version | int >= 24
+    tags:
+      - config
+      - polkit_hostnamectl
+
+  - name: Allow IT group to change hostname via pkexec (pkla, pre-24.04)
+    copy:
+      src: "config/30-hostnamectl.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/30-hostnamectl.pkla
+      mode: 0644
+      owner: root
+      group: root
+    when: ansible_distribution_major_version | int < 24
+    tags:
+      - config
+      - polkit_hostnamectl
+
   # Add /bin/bash as GS "student" account shell
   - name: Add /bin/bash as GS "student" account shell
     replace:
@@ -130,6 +154,10 @@
     tags:
       - install
       - sw_install
+      - zoom
+      - browser
+      - thunderbird
+      - vscode
 
   - include_tasks:
       file: sw-goldendict.yml

@@ -1,0 +1,15 @@
+// Allow members of the IT group to change hostname via hostnamectl/pkexec.
+// Requires the IT user to authenticate with their own password once per session.
+polkit.addRule(function(action, subject) {
+    var hostname_actions = [
+        "org.freedesktop.hostname1.set-hostname",
+        "org.freedesktop.hostname1.set-static-hostname",
+        "org.freedesktop.hostname1.set-pretty-hostname"
+    ];
+    if (hostname_actions.indexOf(action.id) === -1) {
+        return;
+    }
+    if (subject.isInGroup("it")) {
+        return polkit.Result.AUTH_SELF_KEEP;
+    }
+});
