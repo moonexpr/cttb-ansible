@@ -337,6 +337,34 @@ EOF
     sfl_log "wrote ~/.dmrc (Session=xfce)"
 }
 
+# Seed ~/.config/xfce4/helpers.rc with campus defaults so exo-helper-1
+# (Thunar "Open in Terminal", xfce4-panel "Open URL", vajra Quick Links,
+# anything that exo-open's) has a registered handler from the first
+# session. Without this the user sees "Failed to execute default Web
+# Browser" / "no terminal emulator configured" dialogs until they wander
+# into Settings → Preferred Applications.
+#
+# Welcome customizer's apply_settings() rewrites the same file with the
+# user's choices — this seed is the safety net for the time between
+# first login and the first Apply click.
+sfl_set_default_helpers() {
+    _rc="${HOME}/.config/xfce4/helpers.rc"
+    if [ "${SFL_DRY_RUN}" = "1" ]; then
+        printf '[dry-run] would: seed %s with TerminalEmulator + WebBrowser\n' "${_rc}"
+        return 0
+    fi
+    mkdir -p "${HOME}/.config/xfce4" 2>/dev/null || return 0
+    # Don't clobber a pre-existing helpers.rc (a returning user may have
+    # set preferences via the GUI). Only write when absent.
+    [ -e "${_rc}" ] && { sfl_log "helpers.rc already exists; leaving as-is"; return 0; }
+    cat > "${_rc}" <<'EOF' 2>/dev/null || return 0
+TerminalEmulator=xfce4-terminal
+WebBrowser=firefox
+EOF
+    chmod 0644 "${_rc}" 2>/dev/null || true
+    sfl_log "wrote ~/.config/xfce4/helpers.rc (TerminalEmulator + WebBrowser defaults)"
+}
+
 sfl_write_marker() {
     if [ "${SFL_DRY_RUN}" = "1" ]; then
         printf '[dry-run] would: write marker %s\n' "${HOME}/${MARKER_REL}"
@@ -441,6 +469,7 @@ sfl_run_bootstrap() {
     sfl_seed_from_skel
     sfl_seed_user_dconf
     sfl_set_xfce_session_pref
+    sfl_set_default_helpers
     sfl_write_marker
 
     [ "${SFL_DRY_RUN}" != "1" ] && sfl_log "end bootstrap"
