@@ -1435,33 +1435,34 @@ class WelcomeWindow(Gtk.Window):
         sidebar.set_size_request(240, -1)
         sidebar.set_border_width(0)
 
+        # Hero wordmark — packed directly into the sidebar (NOT into the
+        # padded `inner` box) so it breaks the margin and fills the
+        # top-left. Source asset is 1200x700; scale to sidebar width
+        # (240px) → height ~140px, aspect preserved.
+        wordmark_ok = False
+        try:
+            wordmark_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                WORDMARK_PATH, 240, -1, True
+            )
+            wordmark_img = Gtk.Image.new_from_pixbuf(wordmark_pb)
+            wordmark_img.set_halign(Gtk.Align.START)
+            wordmark_img.set_valign(Gtk.Align.START)
+            sidebar.pack_start(wordmark_img, False, False, 0)
+            wordmark_ok = True
+        except Exception as exc:
+            log(f"wordmark asset missing or unreadable ({WORDMARK_PATH}): {exc}")
+
         inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        inner.set_margin_top(26)
+        # Tight top padding when the hero is present (it already gives
+        # visual breathing room); fall back to original 26 if hero failed.
+        inner.set_margin_top(6 if wordmark_ok else 26)
         inner.set_margin_bottom(18)
         inner.set_margin_start(18)
         inner.set_margin_end(18)
         sidebar.pack_start(inner, True, True, 0)
 
-        # Brand lockup
-        brand = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        brand.set_margin_bottom(18)
-
-        lotus = lotus_image(40)
-        if lotus:
-            brand.pack_start(lotus, False, False, 0)
-
-        brand_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        try:
-            # Source asset is 2006x858. Scale to ~48px tall on load so the
-            # sidebar isn't dwarfed; preserve aspect ratio (width follows).
-            wordmark_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                WORDMARK_PATH, -1, 48, True
-            )
-            wordmark_img = Gtk.Image.new_from_pixbuf(wordmark_pb)
-            wordmark_img.set_halign(Gtk.Align.START)
-            wordmark = wordmark_img
-        except Exception as exc:
-            log(f"wordmark asset missing or unreadable ({WORDMARK_PATH}): {exc}")
+        # Text wordmark fallback (only when the image asset failed to load).
+        if not wordmark_ok:
             wordmark_lbl = Gtk.Label()
             wordmark_lbl.set_markup(
                 "<span weight='600' size='15000'>"
@@ -1469,16 +1470,14 @@ class WelcomeWindow(Gtk.Window):
                 "</span>"
             )
             wordmark_lbl.set_xalign(0)
-            wordmark = wordmark_lbl
-        brand_col.pack_start(wordmark, False, False, 0)
+            wordmark_lbl.set_margin_bottom(8)
+            inner.pack_start(wordmark_lbl, False, False, 0)
 
         ver = Gtk.Label(label="version 26")
         ver.get_style_context().add_class("dim-label")
         ver.set_xalign(0)
-        brand_col.pack_start(ver, False, False, 0)
-
-        brand.pack_start(brand_col, True, True, 0)
-        inner.pack_start(brand, False, False, 0)
+        ver.set_margin_bottom(18)
+        inner.pack_start(ver, False, False, 0)
 
         sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         sep.set_margin_bottom(14)
