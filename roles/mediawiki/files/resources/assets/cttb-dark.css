@@ -193,21 +193,87 @@ main#content > .vector-page-toolbar {
 
 main#content > .vector-body,
 main#content > #bodyContent {
-    background-color: var(--cttb-panel-toolbar);
+    background-color: var(--cttb-panel-body);
     border: 1px solid var(--cttb-border);
     border-radius: 0 0 5px 5px;
     padding: 0 1.25rem;
 }
 
-/* Toolbar tabs (Read / Edit / History / dropdown) — pull text down
- * by 1px so the active-tab underline sits flush with the toolbar
- * border below. */
+/* Toolbar tab + dropdown links — let the parent flex/inline-flex
+ * layout (set on #left-navigation and #right-navigation below)
+ * size them rather than the Vector default block-ish display. */
 @media screen {
     .vector-menu-tabs .mw-list-item.vector-tab-noicon > a,
     .vector-page-toolbar-container .vector-dropdown.vector-tab-noicon > a,
     .vector-menu-tabs .mw-list-item .vector-dropdown-label,
     .vector-page-toolbar-container .vector-dropdown .vector-dropdown-label {
-        margin-bottom: -1px;
+        display: unset;
+    }
+}
+
+/* ── Toolbar layout — flex the left/right navigation groups ────
+ * Vector's default toolbar layout doesn't align the tab links and
+ * the action buttons cleanly when the panel is bordered. Use flex
+ * containers on both sides + justify-content: space-between on
+ * the toolbar so tabs cluster left, actions cluster right.
+ */
+#left-navigation {
+    margin-left: -8px;
+    display: flex;
+    align-items: center;
+}
+
+#right-navigation {
+    margin-right: unset;
+    display: flex;
+    align-items: center;
+}
+
+#right-navigation div {
+    display: inline;
+}
+
+.vector-page-toolbar-container {
+    align-content: center;
+    justify-content: space-between;
+}
+
+/* Icon-only action buttons (star, watch, etc.) — drop the Vector
+ * default block margin and align inline with the tab text. */
+.vector-menu-tabs .mw-list-item .cdx-button--icon-only {
+    margin: unset;
+}
+.vector-menu-content .cdx-button--icon-only {
+    display: inline;
+}
+.vector-menu-content .cdx-button--icon-only span {
+    height: 1rem !important;
+    width: 1rem !important;
+}
+.vector-menu-content #right-navigation label.cdx-button {
+    padding: 0;
+    display: flex;
+}
+
+/* Dropdown caret (▾) — tighten the indicator size and pull it up
+ * so it sits next to its label rather than below baseline. */
+.vector-dropdown .vector-dropdown-label:not(.cdx-button--icon-only)::after {
+    margin-left: 0;
+    width: 0.6rem;
+    height: 0.6rem;
+    margin-top: 0.3rem;
+}
+
+/* ── Body grid (≥1120px) ───────────────────────────────────────
+ * Make `.mw-body` a grid container at wide widths so the right
+ * sidebar's space can be reclaimed by the body when the sidebar
+ * is dismissed. TODO: define grid-template-columns to actually
+ * reclaim the empty column — current rule only flips the display
+ * mode; the column-template needs follow-up.
+ */
+@media screen and (min-width: 1120px) {
+    .mw-body {
+        display: grid;
     }
 }
 
