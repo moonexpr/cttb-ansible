@@ -109,13 +109,14 @@
     # Sidebar Sudhanix tools (campus desktop status, launchers, dismissal flag)
     - sudhanix.lua
     - welcome_reset.lua
-    # Testing category — IT-only test runners for PAM / welcome / LDAP. See
-    # monogarden#7 for design notes; depends on the LDAP TLS fix in
-    # monogarden#2 for the LDAP-write paths.
+    # Testing category — IT-only test runners for PAM / welcome / LDAP /
+    # plank DBus. See monogarden#7 for design notes; depends on the LDAP
+    # TLS fix in monogarden#2 for the LDAP-write paths.
     - test_pam_auth.lua
     - test_token_state.lua
     - test_welcome_preview.lua
     - test_ldap_dismissal.lua
+    - test_plank_dbus.lua
   tags:
     - vajra
     - vajra-config

@@ -19,6 +19,7 @@ from __future__ import annotations
 import abc
 import os
 import pwd
+import re
 import subprocess
 import sys
 import tempfile
@@ -658,46 +659,99 @@ class PlankDock:
         self._user_dir.mkdir(parents=True, exist_ok=True)
         self._launchers_dir.mkdir(parents=True, exist_ok=True)
 
-    def _clear(self) -> list[str]:
-        if not self._launchers_dir.is_dir():
-            log(f"PlankDock._clear: launchers dir absent ({self._launchers_dir}); nothing to do")
-            return []
-        removed: list[str] = []
-        for existing in self._launchers_dir.glob("*.dockitem"):
-            try:
-                existing.unlink()
-                removed.append(existing.name)
-            except Exception as exc:
-                log(f"PlankDock._clear: unlink {existing.name} failed: {exc}")
-        log(f"PlankDock._clear: removed={len(removed)} ({removed!r})")
-        return removed
+    # ── DBus integration with the running plank instance ──────────────────
+    #
+    # `plank --replace` is a DBus handshake: the new instance signals the old
+    # to exit. When dispatched via subprocess.Popen with start_new_session=True
+    # the new process loses the session-bus context, the handshake silently
+    # fails, and the old plank keeps running against its in-memory dock.
+    #
+    # Plank publishes `net.launchpad.plank.Items` on
+    # /net/launchpad/plank/dock1 with `Add(uri)`, `Remove(uri)`, and
+    # `GetPersistentApplications()`. Plank manages the .dockitem files in
+    # ~/.config/plank/dock1/launchers/ itself in response to those calls,
+    # so the welcome program does not touch them — it just diffs the
+    # plank-reported persistent set against the requested target and issues
+    # Add/Remove. Plank stays running across customizations.
 
-    def _seed(self, items: list[str]) -> list[str]:
-        if not self._skel_launchers_dir.is_dir():
-            log(f"PlankDock._seed: skel launchers missing ({self._skel_launchers_dir}); skip")
-            return []
-        self.ensure_user_dir()
-        seeded: list[str] = []
-        for name in items:
-            src = self._skel_launchers_dir / name
-            if not src.is_file():
-                log(f"PlankDock._seed: skel missing {name}; skip")
+    _DOCK_URI_RE = re.compile(r"(?:file|trash)://[^\s',]+|trash://?")
+
+    def _dockitem_uri(self, dockitem_name: str) -> str | None:
+        """Resolve a .dockitem filename to its `Launcher=` URI. Prefer the
+        canonical role-shipped copy in /etc/skel; fall back to the user
+        dir (handles user-created .dockitems that aren't in skel)."""
+        for d in (self._skel_launchers_dir, self._launchers_dir):
+            p = d / dockitem_name
+            if not p.is_file():
                 continue
-            dst = self._launchers_dir / name
             try:
-                dst.write_bytes(src.read_bytes())
-                seeded.append(name)
+                for line in p.read_text(errors="replace").splitlines():
+                    if line.startswith("Launcher="):
+                        return line[len("Launcher="):].strip()
             except Exception as exc:
-                log(f"PlankDock._seed: copy {name} failed: {exc}")
-        log(f"PlankDock._seed: seeded={len(seeded)} ({seeded!r})")
-        return seeded
+                log(f"PlankDock._dockitem_uri: read {p} failed: {exc}")
+        return None
+
+    def _plank_call(self, method: str, *args: str) -> bool:
+        r = self._runner.run([
+            "gdbus", "call", "--session",
+            "--dest", "net.launchpad.plank",
+            "--object-path", "/net/launchpad/plank/dock1",
+            "--method", f"net.launchpad.plank.Items.{method}",
+            *args,
+        ], timeout=3.0)
+        return r.ok
+
+    def _plank_persistent(self) -> set[str] | None:
+        """Return plank's current persistent-application URI set, or None
+        if plank isn't reachable on the session bus."""
+        r = self._runner.run([
+            "gdbus", "call", "--session",
+            "--dest", "net.launchpad.plank",
+            "--object-path", "/net/launchpad/plank/dock1",
+            "--method", "net.launchpad.plank.Items.GetPersistentApplications",
+        ], timeout=3.0)
+        if not r.ok:
+            return None
+        return set(self._DOCK_URI_RE.findall(r.stdout))
 
     def replace_items(self, items: list[str]) -> bool:
-        """clear → seed → plank --replace. Returns True on full success."""
+        """Synchronize plank's persistent dock with `items` via DBus.
+
+        items: ordered list of .dockitem filenames (e.g. "thunar.dockitem").
+        Returns True if the diff was issued cleanly. Plank stays running.
+
+        If plank isn't on the bus (not yet started, or crashed) we fall
+        back to dispatching a fresh `plank` process — dconf already holds
+        the dock-items list from PlankDockApplier.apply, so plank reads it
+        at startup."""
         try:
-            self._clear()
-            self._seed(items)
-            self._runner.dispatch(["plank", "--replace"])
+            # Resolve target .dockitem names to their Launcher URIs once.
+            target_ordered: list[str] = []
+            for name in items:
+                uri = self._dockitem_uri(name)
+                if uri and uri not in target_ordered:
+                    target_ordered.append(uri)
+            target_set = set(target_ordered)
+
+            current = self._plank_persistent()
+            if current is None:
+                # Plank not on the bus — start one. Dconf already carries
+                # the desired items, so a cold start picks them up.
+                log("PlankDock.replace_items: plank not on session bus; dispatching")
+                self._runner.dispatch(["plank"])
+                return True
+
+            removed: list[str] = []
+            for uri in current - target_set:
+                if self._plank_call("Remove", uri):
+                    removed.append(uri)
+            added: list[str] = []
+            for uri in target_ordered:
+                if uri not in current and self._plank_call("Add", uri):
+                    added.append(uri)
+            log(f"PlankDock.replace_items: added={len(added)} removed={len(removed)} "
+                f"target={len(target_set)}")
             return True
         except Exception as exc:
             log(f"PlankDock.replace_items: top-level error: {exc}")
