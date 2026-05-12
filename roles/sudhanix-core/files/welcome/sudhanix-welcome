@@ -930,6 +930,33 @@ def apply_settings(values: dict) -> None:
         else:
             log(f"dock-items rewritten: {len(target)} items")
 
+        # Refresh the user's plank launchers from /etc/skel/.config/plank
+        # so that any .dockitem the role added since last login lands in
+        # the user's dir BEFORE plank reloads. Without this step, items
+        # newly enabled by the customizer that aren't yet in the user's
+        # launchers dir get filtered out and look like the apply did
+        # nothing.
+        refresh_plank_skel()
+
+        # Restart plank so it re-reads dconf + scans the launchers dir.
+        # `plank --replace` exits any existing instance and starts a new
+        # one. If no instance is running (autostart skipped or user
+        # killed it), this is the same as a fresh start. Detached from
+        # the welcome process so closing welcome doesn't kill the dock.
+        try:
+            subprocess.Popen(
+                ["plank", "--replace"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            log("plank --replace dispatched")
+        except FileNotFoundError:
+            log("plank binary not on PATH; dock will not reload until next session")
+        except Exception as exc:
+            log(f"plank restart exception: {exc}")
+
         # Persist the user's category choices into their dconf so vajra and
         # future tools can read them back without re-deriving.
         choices_lines = []
@@ -952,7 +979,12 @@ def apply_settings(values: dict) -> None:
     except Exception as exc:
         log(f"dock prefs write failed: {exc}")
 
-    # 4. Default browser
+    # 4. Default browser + terminal emulator
+    # Two-track for each: xdg-settings / xdg-mime for the freedesktop
+    # MIME/scheme registry (covers most apps that ask "open a URL" or
+    # "spawn a terminal"), and ~/.config/xfce4/helpers.rc for XFCE's
+    # exo-helper which Thunar / xfce4-panel / vajra use directly.
+    # Browser
     browser = values.get("browser", default_browser_id())
     desktop_file = browser_desktop(browser) or browser_desktop(default_browser_id())
     try:
@@ -964,6 +996,46 @@ def apply_settings(values: dict) -> None:
             log(f"xdg-settings browser set failed: {r.stderr.strip()}")
     except Exception as exc:
         log(f"xdg-settings exception: {exc}")
+    # Terminal emulator — xfce4-terminal is the Sudhanix default; future
+    # work can surface a chip for this. xdg-mime registration covers
+    # `x-scheme-handler/terminal` (used by Files → Open Terminal etc).
+    term_desktop = "xfce4-terminal.desktop"
+    try:
+        subprocess.run(
+            ["xdg-mime", "default", term_desktop, "x-scheme-handler/terminal"],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception as exc:
+        log(f"xdg-mime terminal set failed: {exc}")
+
+    # XFCE helpers.rc — exo-open / exo-helper-1 consults this for "Run
+    # in terminal", "Open in browser", etc. Keyed by the helper category
+    # name (TerminalEmulator, WebBrowser, ...) and the value is the
+    # basename of an .desktop in /usr/share/xfce4/helpers/ — NOT the
+    # binary. xfce4-terminal ships xfce4-terminal.desktop there.
+    browser_helper_map = {
+        "google-chrome.desktop": "google-chrome",
+        "firefox.desktop": "firefox",
+        "firefox-esr.desktop": "firefox",
+        "zen-browser.desktop": "zen-browser",
+    }
+    helpers_path = Path.home() / ".config" / "xfce4" / "helpers.rc"
+    try:
+        helpers_path.parent.mkdir(parents=True, exist_ok=True)
+        lines: dict[str, str] = {}
+        if helpers_path.exists():
+            for ln in helpers_path.read_text().splitlines():
+                if "=" in ln and not ln.lstrip().startswith("#"):
+                    k, v = ln.split("=", 1)
+                    lines[k.strip()] = v.strip()
+        lines["TerminalEmulator"] = "xfce4-terminal"
+        if desktop_file in browser_helper_map:
+            lines["WebBrowser"] = browser_helper_map[desktop_file]
+        helpers_path.write_text(
+            "\n".join(f"{k}={v}" for k, v in lines.items()) + "\n"
+        )
+    except Exception as exc:
+        log(f"helpers.rc write failed: {exc}")
 
 
 # ── Pixbuf helpers ────────────────────────────────────────────────────────────
