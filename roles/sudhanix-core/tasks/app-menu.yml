@@ -47,36 +47,47 @@
     tags:
       - app_menu
 
+  # Pre-filter to only files that exist on this install profile.
+  # lubuntu-core (minimal) lacks software-properties-{gtk,drivers},
+  # gnome-language-selector, etc.; lineinfile rc=257s on absent dest.
+  - name: find existing apps to hide in the app menu
+    find:
+      paths: /usr/share/applications
+      patterns:
+        - fcitx.desktop
+        # No need to show a generic Leave
+        - lxqt-leave.desktop
+        # Hibernate does not work
+        - lxqt-hibernate.desktop
+        # TeXInfo
+        - info.desktop
+        - vim.desktop
+        # Additional Device Drivers
+        - software-properties-drivers.desktop
+        - nm-connection-editor.desktop
+        - org.freedesktop.IBus.Setup.desktop
+        - im-config.desktop
+        - time.desktop
+        - software-properties-gtk.desktop
+        - users.desktop
+        - obconf.desktop
+        - fcitx-configtool.desktop
+        - lightdm-gtk-greeter-settings.desktop
+        - light-locker-settings.desktop
+        - gnome-language-selector.desktop
+        - xfce4-power-manager-settings.desktop
+        - lxinput.desktop
+        - lxqt-config-monitor.desktop
+    register: apps_to_hide_found
+    tags:
+      - app_menu
+
   - name: hide apps in the app menu
     lineinfile:
-      dest: "/usr/share/applications/{{ item }}.desktop"
+      dest: "{{ item.path }}"
       line: "NoDisplay=true"
-    loop:
-      - fcitx
-      # No need to show a generic Leave
-      - lxqt-leave
-      # Hibernate does not work.
-      - lxqt-hibernate
-      #- qlipper
-      # TeXInfo
-      - info
-      - vim
-      # Additional Device Drivers
-      - software-properties-drivers
-      - nm-connection-editor
-      - org.freedesktop.IBus.Setup
-      - im-config
-      - time
-      - software-properties-gtk
-      - users
-      - obconf
-      - fcitx-configtool
-      - lightdm-gtk-greeter-settings
-      - light-locker-settings
-      - gnome-language-selector
-      - xfce4-power-manager-settings
-      - lxinput
-      - lxqt-config-monitor
-    ignore_errors: yes
+    loop: "{{ apps_to_hide_found.files }}"
+    loop_control:
+      label: "{{ item.path | basename }}"
     tags:
       - app_menu
