@@ -3564,3 +3564,92 @@ JC went off-campus before the Ansible deploy step, but the autoinstall itself is
 
 The full month+ of intermittent debugging on this — wrong grub path that silently swallowed weeks of "fixes," OOM-kill of cloud-init by a bloated user-data, ds= shell-quoting, the mirror-schema NoneType, the networkd-renderer wifi rejection, the late-commands ordering against first-boot cloud-init — closes here. Issue #8 ("Autoinstall not triggering on PXE boot") gets closed.
 
+## 2026-05-12 — Day-before demo prep on dvgs-testmachine
+
+Goal: have `dvgs-testmachine` fully provisioned with Sudhanix 26 *today* so tomorrow's demo is a walkthrough of a running system — **no live install during the demo** (15+ min apt churn is too slow to watch). Today: PXE bootstrap → Ansible config → screenshot/checklist the demo surfaces. Tomorrow: power on, log in, walk through it.
+
+### Pre-flight (controller, before the run)
+
+- [x] Branch `release/sudhanix26` checked out, working tree clean for `roles/`.
+  - Caught and reverted an uncommitted regression on `roles/sudhanix-vajra-tool/tasks/main.yml` that had swapped #42's `apt.cttb`-signed install path back to a bundled `.deb`. The role on disk now matches `HEAD` (`d1d61aca`).
+- [x] `apt.cttb` Release signed, vajra 1.0.0-1 in `noble main` pool — `curl http://apt.cttb/cttb-repos/apt/ubuntu/dists/noble/main/binary-amd64/Packages | grep vajra`.
+- [x] `pxe.cttb:/srv/netinstall/grub/grub.cfg` shows the Sudhanix 26 menuentry (timeout 10), `desktop-minimal/user-data` carries the post-debug schema (mirror-selection.security under mirror-selection, no wifi block, no late-commands).
+- [x] `dvgs-testmachine.cttb` reachable, Ubuntu 24.04.2 LTS bootstrap from last night, no Sudhanix layer yet.
+
+### Pre-flight gotcha logged for the rollout
+
+The `administrator` user on PXE-installed hosts is **not** NOPASSWD sudo (was on the old debootstrap install; cloud-init's `identity:` block doesn't grant it). The user-data password hash decrypts to `4m1t0f0` — the campus master. Either:
+
+1. Pass `--extra-vars 'ansible_become_password=4m1t0f0'` per run (used today), or
+2. Add a `late-commands` line writing `/etc/sudoers.d/90-administrator-nopasswd` — but late-commands fire before cloud-init creates the user, so this would have to be a `runcmd:` in user-data instead, or a one-shot Ansible task gated on the first run.
+
+Filed mentally as a follow-up — not blocking the demo, but worth a release-week issue.
+
+### Run
+
+Command:
+
+```bash
+source utils/setup-env
+ansible-playbook plays/install-sudhanix-cslabs.yml \
+  -i inventory/sudhanix26_hosts.ini \
+  --limit dvgs-testmachine.cttb \
+  --vault-password-file .claude/sysadmin/vault-pass.sh \
+  --extra-vars 'ansible_become_password=4m1t0f0' \
+  --diff
+```
+
+Log: `logs/sx26-install-<timestamp>.log`. Baseline from 2026-05-09 was `ok=261 changed=9 failed=0` in ~12 minutes. Known noisy-but-non-fatal red lines on a fresh minimal install: #54 (`light-locker-settings.desktop` shell rc=1) and #55 (`lineinfile` rc=257 for 3 absent `.desktop` files). Both have `ignore_errors: yes` and will be the only red text on a clean run — anything else is a real failure.
+
+### Today (prep) — must finish before EOD
+
+- [x] Push current `vajra_1.0.0-1` build (sha `269e6f…`) into apt.cttb pool via `cttb-ct.sh exec debmirror` + `reprepro remove/includedeb/export`. Done 09:25.
+- [ ] `install-sudhanix-cslabs.yml -l dvgs-testmachine.cttb` completes with `failed=0` modulo the known #54/#55 noise lines.
+- [ ] At-seat reboot + visual sweep (sections A–F below) once Ansible finishes. Any red flag → file an issue tonight, not tomorrow morning.
+
+### Tomorrow (demo) — walkthrough script
+
+Demo is **show, not install**. The machine is already in its final Sudhanix 26 state. The script below is the order to walk the audience through, mapped to remaining open Release issues (#19, #34, #40) so each gets a live demo moment.
+
+**A. Cold boot story (~30 s)**
+- [ ] Power-cycle from off. GRUB shows `Sudhanix 26` (closes the visible side of #53).
+- [ ] Plymouth splash: sx26 logo, no Ubuntu wordmark leak.
+- [ ] LightDM greeter comes up on the physical monitor — Sudhanix branding, dark palette, no user list (this *is* the #19 visual check; demo audience is the ack).
+
+**B. LDAP login**
+- [ ] Type an LDAP test username; password auth via NSS/PAM; home dir mounts from NFS.
+- [ ] sudhanix-welcome panel appears: sx26 wordmark loads (added 2026-05-11), sidebar lists Sudhanix-specific Vajra tools. Dismiss → close → re-login → dismiss state remembered (LDAP attribute).
+
+**C. Desktop tour**
+- [ ] XFCE panel: sx26 emblem app-menu icon (was lotus), Whiskermenu (#36 Path B) launches.
+- [ ] Theme: WhiteSur-Dark, WhiteSur icons + cursors.
+- [ ] Briefly show wallpaper + dock + sound (no demo dependency on specifics).
+
+**D. Vajra 1.0 demo (#40)**
+- [ ] Open a terminal: `apt-cache policy vajra` → version `1.0.0-1`, source `http://apt.cttb/cttb-repos/apt/ubuntu noble/main`, `signed-by` keyring. (This is the "we have signed package distribution" punch-line — closes #42 visibly.)
+- [ ] Launch Vajra from the app menu. Sidebar populated. Theme switcher works. quick-links flow grid renders.
+- [ ] Run a Testing tool live — `test_pam_auth.lua` is the safest (no LDAP writes). Then `test_welcome_preview.lua`.
+
+**E. Crash recovery demo (#34)**
+- [ ] On a side terminal: `pkill -9 xfwm4`. Watchdog detects within 7 s, zenity warning pops, session logs out cleanly back to LightDM. Re-login proves no orphan procs.
+- [ ] This is the kill-shot demo — it's the one moment the audience sees "self-healing desktop, no lab-monitor SOS call." Practice it once today before the demo.
+
+**F. PXE-provisioning story (slides, not live)**
+- [ ] Don't boot a second machine live (too slow + risk of network hiccup on demo day). Instead:
+  - Show a screenshot/photo from last night's green PXE run.
+  - Briefly show `pxe.cttb:/srv/netinstall/grub/grub.cfg` and the `Sudhanix 26 Desktop` menuentry, or just the PXE menu screenshot.
+  - Mention "F12 → walk away → 15 min later, Ansible takes over" — this is the rollout story for the lab refresh.
+
+### Stop-the-bus criteria (today)
+
+Demo is **NOT ready for tomorrow** if any of these are true after the Ansible run finishes:
+
+- Install play returns `failed > 0` for non-#54/#55 tasks.
+- `apt-cache policy vajra` doesn't show `apt.cttb` as the install source at version `1.0.0-1`.
+- Plymouth falls back to the Ubuntu default (sx26 asset missing on disk).
+- LightDM never reaches the greeter.
+- Watchdog kill test leaves the session stuck (kbd grab, no logout).
+
+Each one above → file an issue at `moonexpr/cttb-ansible` tonight with repro/expected/actual; don't try to fix at-seat tomorrow morning.
+
+
