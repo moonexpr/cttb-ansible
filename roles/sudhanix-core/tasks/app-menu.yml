@@ -1,14 +1,13 @@
 ---
 # Customize the applications menu in lxqt-panel
 
-  - name: ensure desktop file ends with newline
+  - name: ensure light-locker-settings desktop file ends with newline
     shell: |
       FILE=/usr/share/applications/light-locker-settings.desktop
-      [ -f "$FILE" ] && [ -n "$(tail -c1 "$FILE")" ] && echo >> "$FILE"
+      [ -f "$FILE" ] && [ -n "$(tail -c1 "$FILE")" ] && echo >> "$FILE" || true
     args:
       executable: /bin/bash
     changed_when: false
-    ignore_errors: yes
     tags:
       - app_menu
 
