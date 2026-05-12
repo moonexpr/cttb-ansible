@@ -1,225 +1,234 @@
-/* City Lights dark theme for CTTB Wiki — based on citylights-theme palette */
+/* City Lights theme for CTTB Wiki
+ *
+ *   Dark mode:  Internal palette — warm-grey on near-black, muted brass.
+ *   Light mode: Sacred  palette  — paper-tan base, warm-brown ink.
+ *   Pattern:    p31m-pattern.svg, repeating, fixed-attachment, both modes.
+ *
+ * Palette tokens are defined as `--cttb-*` CSS variables. The :root block
+ * sets Sacred (light) defaults; the dark-mode block and the explicit
+ * `clientpref-night` selector swap them to Internal. Surface rules below
+ * reference the tokens — no hardcoded mode-specific hex literals.
+ */
 
-/* Sidebar margin fix */
-.vector-column-start, .vector-column-end { margin-top: 0 !important; }
+/* ── Sacred (light) palette — :root defaults ─────────────────────── */
+:root {
+    --cttb-bg:              #e8dcc0;
+    --cttb-fg:              #2a1f18;
+    --cttb-primary:         #5c2d1a;
+    --cttb-primary-hover:   #7a2e15;
+    --cttb-secondary:       #9e6b14;
+    --cttb-accent:          #5c2d1a;
+    --cttb-muted:           #c8a878;
+    --cttb-muted-text:      #a36c3d;
+    --cttb-surface-0:       rgba(232, 220, 192, 0.82);
+    --cttb-surface-1:       rgba(200, 168, 120, 0.22);
+    --cttb-surface-2:       rgba(200, 168, 120, 0.38);
+    --cttb-border:          rgba(122,  46,  21, 0.30);
+    --cttb-link:            #5c2d1a;
+    --cttb-link-visited:    #7a2e15;
+    --cttb-link-new:        #9e6b14;
+    --cttb-pattern-alpha:   0.18;
+}
 
-/* Sticky footer */
-.mw-page-container-inner { min-height: 100vh; }
-.mw-content-container { flex: 1; }
-
-/* Content area surface */
+/* ── Internal (dark) palette — applied via media query + clientpref ─ */
 @media (prefers-color-scheme: dark) {
-    html.skin-theme-clientpref-os main #bodyContent,
-    html.skin-theme-clientpref-night main #bodyContent {
-        background: #1b1a18;
-        padding: 1rem;
-        border: 1px solid rgba(184,168,138,.15);
-        border-radius: 6px;
+    :root {
+        --cttb-bg:            #1a1418;
+        --cttb-fg:            #d4cfc4;
+        --cttb-primary:       #b8a88a;
+        --cttb-primary-hover: #cdb99a;
+        --cttb-secondary:     #8b5e1e;
+        --cttb-accent:        #8b5e1e;
+        --cttb-muted:         #3a3731;
+        --cttb-muted-text:    #8a8477;
+        --cttb-surface-0:     #131210;
+        --cttb-surface-1:     #12110e;
+        --cttb-surface-2:     #1a1714;
+        --cttb-border:        rgba(184, 168, 138, 0.15);
+        --cttb-link:          #b8a88a;
+        --cttb-link-visited:  #8b5e1e;
+        --cttb-link-new:      #a36c3d;
+        --cttb-pattern-alpha: 0.10;
     }
 }
-html.skin-theme-clientpref-night main #bodyContent {
-    background: #1b1a18;
+
+/* Explicit user choices (Citizen skin clientpref selectors) */
+html.skin-theme-clientpref-night {
+    --cttb-bg:            #1a1418;
+    --cttb-fg:            #d4cfc4;
+    --cttb-primary:       #b8a88a;
+    --cttb-primary-hover: #cdb99a;
+    --cttb-secondary:     #8b5e1e;
+    --cttb-accent:        #8b5e1e;
+    --cttb-muted:         #3a3731;
+    --cttb-muted-text:    #8a8477;
+    --cttb-surface-0:     #131210;
+    --cttb-surface-1:     #12110e;
+    --cttb-surface-2:     #1a1714;
+    --cttb-border:        rgba(184, 168, 138, 0.15);
+    --cttb-link:          #b8a88a;
+    --cttb-link-visited:  #8b5e1e;
+    --cttb-link-new:      #a36c3d;
+    --cttb-pattern-alpha: 0.10;
+}
+/* clientpref-day overrides nothing — :root defaults already are Sacred. */
+
+/* ── MediaWiki + Citizen/Vector skin variable overrides ──────────── */
+:root,
+html.skin-theme-clientpref-os,
+html.skin-theme-clientpref-night,
+html.skin-theme-clientpref-day {
+    --background-color-base:               var(--cttb-bg);
+    --color-base:                          var(--cttb-fg);
+    --color-base--subtle:                  var(--cttb-primary);
+    --border-color-base:                   var(--cttb-muted);
+    --color-surface-0:                     var(--cttb-surface-0);
+    --color-surface-1:                     var(--cttb-surface-1);
+    --color-surface-2:                     var(--cttb-surface-2);
+    --color-surface-3:                     var(--cttb-muted);
+    --background-color-interactive:        var(--cttb-surface-2);
+    --background-color-interactive-subtle: var(--cttb-surface-1);
+    --background-color-neutral-subtle:     var(--cttb-surface-0);
+    --color-link:                          var(--cttb-link);
+    --color-link--visited:                 var(--cttb-link-visited);
+    --color-link-new:                      var(--cttb-link-new);
+    --color-link-new--visited:             var(--cttb-link-new);
+    --color-progressive:                   var(--cttb-primary);
+    --color-progressive--hover:            var(--cttb-primary-hover);
+    --color-progressive--active:           var(--cttb-secondary);
+    --color-destructive:                   var(--cttb-link-new);
+}
+
+/* ── Structural (no color) ───────────────────────────────────────── */
+.vector-column-start,
+.vector-column-end          { margin-top: 0 !important; }
+.mw-page-container-inner    { min-height: 100vh; }
+.mw-content-container       { flex: 1; }
+
+/* ── p31m pagoda tiling — both modes ─────────────────────────────── */
+body {
+    background-color: var(--cttb-bg);
+    background-image: url("p31m-pattern.svg");
+    background-repeat: repeat;
+    background-attachment: fixed;
+    background-size: 125px 216px;
+}
+body::before {
+    /* dimming layer so the pattern reads at the per-mode alpha */
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-color: var(--cttb-bg);
+    opacity: calc(1 - var(--cttb-pattern-alpha));
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* ── Page chrome ─────────────────────────────────────────────────── */
+.mw-page-container {
+    background-color: transparent;
+    color: var(--cttb-fg);
+}
+main #bodyContent {
+    background-color: var(--cttb-surface-2);
     padding: 1rem;
-    border: 1px solid rgba(184,168,138,.15);
+    border: 1px solid var(--cttb-border);
     border-radius: 6px;
 }
-
-/* Dark mode overrides */
-@media (prefers-color-scheme: dark) {
-    html.skin-theme-clientpref-os,
-    html.skin-theme-clientpref-night {
-
-        /* Base surfaces */
-        --background-color-base: #131210;
-        --color-base: #d4cfc4;
-        --color-base--subtle: #b8a88a;
-        --border-color-base: #3a3731;
-        --color-surface-0: #131210;
-        --color-surface-1: #12110e;
-        --color-surface-2: #1a1714;
-        --color-surface-3: #22201b;
-        --color-surface-4: #3a3731;
-        --background-color-interactive: #1a1714;
-        --background-color-interactive-subtle: #12110e;
-        --background-color-neutral-subtle: #131210;
-
-        /* Links — gold/amber */
-        --color-link: #dbb930;
-        --color-link--visited: #c7a505;
-        --color-link-new: #c47a3a;
-        --color-link-new--visited: #a66830;
-
-        /* Progressive/destructive */
-        --color-progressive: #dbb930;
-        --color-progressive--hover: #e8ca4a;
-        --color-progressive--active: #c7a505;
-        --color-destructive: #c47a3a;
-    }
-
-    /* Page container */
-    html.skin-theme-clientpref-os .mw-page-container,
-    html.skin-theme-clientpref-night .mw-page-container {
-        background-color: #131210;
-        color: #d4cfc4;
-    }
-
-    /* Header */
-    html.skin-theme-clientpref-os .vector-header,
-    html.skin-theme-clientpref-night .vector-header {
-        background-color: #131210;
-        border-bottom-color: #3a3731;
-    }
-
-    /* Sidebar */
-    html.skin-theme-clientpref-os .vector-column-start,
-    html.skin-theme-clientpref-night .vector-column-start {
-        background-color: #131210;
-    }
-
-    /* Links */
-    html.skin-theme-clientpref-os a,
-    html.skin-theme-clientpref-night a {
-        color: #dbb930;
-    }
-    html.skin-theme-clientpref-os a:visited,
-    html.skin-theme-clientpref-night a:visited {
-        color: #c7a505;
-    }
-    html.skin-theme-clientpref-os .new,
-    html.skin-theme-clientpref-night .new {
-        color: #c47a3a;
-    }
-
-    /* Active/selected tab */
-    html.skin-theme-clientpref-os .vector-menu-tabs .selected a,
-    html.skin-theme-clientpref-night .vector-menu-tabs .selected a,
-    html.skin-theme-clientpref-os .mw-list-item.selected a,
-    html.skin-theme-clientpref-night .mw-list-item.selected a {
-        color: #d4cfc4;
-    }
-
-    /* Headings */
-    html.skin-theme-clientpref-os .mw-body h1,
-    html.skin-theme-clientpref-os .mw-body h2,
-    html.skin-theme-clientpref-os .mw-body h3,
-    html.skin-theme-clientpref-os .mw-body h4,
-    html.skin-theme-clientpref-night .mw-body h1,
-    html.skin-theme-clientpref-night .mw-body h2,
-    html.skin-theme-clientpref-night .mw-body h3,
-    html.skin-theme-clientpref-night .mw-body h4 {
-        color: #d4cfc4;
-        border-bottom-color: #3a3731;
-    }
-
-    /* Code blocks */
-    html.skin-theme-clientpref-os code,
-    html.skin-theme-clientpref-os pre,
-    html.skin-theme-clientpref-night code,
-    html.skin-theme-clientpref-night pre {
-        background-color: rgba(58, 55, 49, 0.6);
-        color: #d4cfc4;
-        border-color: rgba(184, 168, 138, 0.15);
-    }
-
-    /* Search box */
-    html.skin-theme-clientpref-os .vector-search-box-input,
-    html.skin-theme-clientpref-night .vector-search-box-input {
-        background-color: #1a1714;
-        color: #d4cfc4;
-        border-color: #3a3731;
-    }
-
-    /* Buttons */
-    html.skin-theme-clientpref-os .vector-pinnable-header-toggle-button,
-    html.skin-theme-clientpref-os .cdx-button,
-    html.skin-theme-clientpref-night .vector-pinnable-header-toggle-button,
-    html.skin-theme-clientpref-night .cdx-button {
-        color: #b8a88a;
-        border-color: #3a3731;
-    }
-    html.skin-theme-clientpref-os .cdx-button:hover,
-    html.skin-theme-clientpref-night .cdx-button:hover {
-        background-color: rgba(199, 165, 5, 0.1);
-        border-color: rgba(199, 165, 5, 0.25);
-    }
-
-    /* Section edit links */
-    html.skin-theme-clientpref-os .mw-body-content .mw-editsection a,
-    html.skin-theme-clientpref-night .mw-body-content .mw-editsection a {
-        color: #8b5e1e;
-    }
-
-    /* TOC */
-    html.skin-theme-clientpref-os .vector-toc,
-    html.skin-theme-clientpref-night .vector-toc {
-        background-color: #131210;
-    }
-    html.skin-theme-clientpref-os .vector-toc .vector-toc-link,
-    html.skin-theme-clientpref-night .vector-toc .vector-toc-link {
-        color: #b8a88a;
-    }
-    html.skin-theme-clientpref-os .vector-toc .vector-toc-link:hover,
-    html.skin-theme-clientpref-night .vector-toc .vector-toc-link:hover {
-        color: #dbb930;
-    }
-
-    /* Tables */
-    html.skin-theme-clientpref-os table.wikitable,
-    html.skin-theme-clientpref-night table.wikitable {
-        background-color: #12110e;
-        border-color: #3a3731;
-        color: #d4cfc4;
-    }
-    html.skin-theme-clientpref-os table.wikitable th,
-    html.skin-theme-clientpref-night table.wikitable th {
-        background-color: #1a1714;
-        border-color: #3a3731;
-    }
-    html.skin-theme-clientpref-os table.wikitable td,
-    html.skin-theme-clientpref-night table.wikitable td {
-        border-color: #3a3731;
-    }
-
-    /* Thumb/figure borders */
-    html.skin-theme-clientpref-os .thumb,
-    html.skin-theme-clientpref-night .thumb {
-        border-color: #3a3731;
-    }
-    html.skin-theme-clientpref-os .thumbinner,
-    html.skin-theme-clientpref-night .thumbinner {
-        background-color: #12110e;
-        border-color: #3a3731;
-    }
-
-    /* Footer */
-    html.skin-theme-clientpref-os .vector-footer,
-    html.skin-theme-clientpref-night .vector-footer {
-        border-top-color: #3a3731;
-        color: #8b5e1e;
-    }
-
-    /* Notices / message boxes */
-    html.skin-theme-clientpref-os .mw-message-box,
-    html.skin-theme-clientpref-night .mw-message-box {
-        background-color: #1a1714;
-        border-color: #8b5e1e;
-        color: #d4cfc4;
-    }
-
-    /* Diff / history */
-    html.skin-theme-clientpref-os .diff-context,
-    html.skin-theme-clientpref-night .diff-context {
-        background-color: #131210;
-        color: #b8a88a;
-    }
+.vector-header {
+    background-color: var(--cttb-surface-0);
+    border-bottom-color: var(--cttb-muted);
+}
+.vector-column-start {
+    background-color: transparent;
+}
+.vector-search-box-input {
+    background-color: var(--cttb-surface-2);
+    color: var(--cttb-fg);
+    border-color: var(--cttb-muted);
 }
 
-/* Also apply when user explicitly selects night mode */
-html.skin-theme-clientpref-night {
-    --background-color-base: #131210;
-    --color-base: #d4cfc4;
-    --color-base--subtle: #b8a88a;
-    --border-color-base: #3a3731;
-    --color-link: #dbb930;
-    --color-link--visited: #c7a505;
+/* ── Links ───────────────────────────────────────────────────────── */
+a               { color: var(--cttb-link); }
+a:visited       { color: var(--cttb-link-visited); }
+.new            { color: var(--cttb-link-new); }
+.vector-menu-tabs .selected a,
+.mw-list-item.selected a { color: var(--cttb-fg); }
+
+/* ── Headings ────────────────────────────────────────────────────── */
+.mw-body h1,
+.mw-body h2,
+.mw-body h3,
+.mw-body h4 {
+    color: var(--cttb-fg);
+    border-bottom-color: var(--cttb-muted);
+}
+
+/* ── Code blocks ─────────────────────────────────────────────────── */
+code,
+pre {
+    background-color: var(--cttb-surface-1);
+    color: var(--cttb-fg);
+    border-color: var(--cttb-border);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.vector-pinnable-header-toggle-button,
+.cdx-button {
+    color: var(--cttb-primary);
+    border-color: var(--cttb-muted);
+}
+.cdx-button:hover {
+    background-color: var(--cttb-surface-1);
+    border-color: var(--cttb-accent);
+}
+
+/* ── Section-edit links ──────────────────────────────────────────── */
+.mw-body-content .mw-editsection a {
+    color: var(--cttb-secondary);
+}
+
+/* ── Table of contents ───────────────────────────────────────────── */
+.vector-toc                        { background-color: var(--cttb-surface-0); }
+.vector-toc .vector-toc-link       { color: var(--cttb-primary); }
+.vector-toc .vector-toc-link:hover { color: var(--cttb-primary-hover); }
+
+/* ── Tables ──────────────────────────────────────────────────────── */
+table.wikitable {
+    background-color: var(--cttb-surface-1);
+    border-color: var(--cttb-muted);
+    color: var(--cttb-fg);
+}
+table.wikitable th {
+    background-color: var(--cttb-surface-2);
+    border-color: var(--cttb-muted);
+}
+table.wikitable td {
+    border-color: var(--cttb-muted);
+}
+
+/* ── Thumb / figure ──────────────────────────────────────────────── */
+.thumb       { border-color: var(--cttb-muted); }
+.thumbinner  {
+    background-color: var(--cttb-surface-1);
+    border-color: var(--cttb-muted);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.vector-footer {
+    border-top-color: var(--cttb-muted);
+    color: var(--cttb-secondary);
+}
+
+/* ── Notices / message boxes ─────────────────────────────────────── */
+.mw-message-box {
+    background-color: var(--cttb-surface-2);
+    border-color: var(--cttb-accent);
+    color: var(--cttb-fg);
+}
+
+/* ── Diff / history ──────────────────────────────────────────────── */
+.diff-context {
+    background-color: var(--cttb-surface-0);
+    color: var(--cttb-primary);
 }

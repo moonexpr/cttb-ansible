@@ -119,6 +119,17 @@
     - mediawiki
     - assets
 
+- name: deploy p31m pagoda pattern (City Lights background tiling)
+  copy:
+    src: resources/assets/p31m-pattern.svg
+    dest: "{{ mediawiki_install_dir }}/resources/assets/p31m-pattern.svg"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  tags:
+    - mediawiki
+    - assets
+
 # ── Third-party Extensions ────────────────────────────────────────────
 
 - name: install extdist extensions
