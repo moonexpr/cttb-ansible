@@ -1,0 +1,160 @@
+---
+# Install phase — provisioning side of sudhanix-core.
+#
+# All apt installs, unarchives, get_url, binary deploys, tarball extraction,
+# and one-shot fix-ups of system files that other phases read.
+#
+# Post-condition: every dependency required by configure.yml is on disk.
+# main.yml runs `meta: flush_handlers` immediately after this file so the
+# rebuild-font-cache / restart-lightdm / restart-pulseaudio / update-grub /
+# update-initramfs handlers fire before any configure task reads from the
+# artifacts install left behind.
+#
+# Tag strategy is preserved from the prior setup/default.yml orchestrator:
+# each include directive carries the same tag set, and `apply:` propagates
+# the install tag to dynamically-included files (except for mixed files
+# whose internal per-task tags drive their own filtering — they get no
+# apply here and will be split into explicit install/config blocks in
+# follow-on tasks).
+
+  # When installing mini-ubuntu sometimes stray interface entries end up
+  # in /etc/network/interfaces and NetworkManager refuses to manage them.
+  - name: fix network interfaces
+    copy:
+      content: |
+        auto lo
+        iface lo inet loopback
+      dest: /etc/network/interfaces
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - install
+
+  # GS-only: ensure the student/teacher shared accounts have a real shell.
+  # Lives in install phase because it edits /etc/passwd's installed entries.
+  - name: Add /bin/bash as GS "student" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^student:x:2000:2000:Student:/home/student:.*"
+      replace: "student:x:2000:2000:Student:/home/student:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - install
+      - gs_acct_shell
+
+  - name: Add /bin/bash as GS "teacher" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^teacher:x:1999:1999:Teacher:/home/teacher:.*"
+      replace: "teacher:x:1999:1999:Teacher:/home/teacher:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - install
+      - gs_acct_shell
+
+  # Lubuntu core packages — the single biggest apt batch in the role.
+  - include_tasks:
+      file: lubuntu.yml
+      apply:
+        tags: [install]
+    tags:
+      - install
+      - lubuntu
+
+  # Language support. Moved before lookandfeel since fcitx must be installed
+  # before per-user IM configuration writes (handled by skel copy in
+  # lookandfeel).
+  - include_tasks:
+      file: lang.yml
+      apply:
+        tags: [install]
+    tags:
+      - install
+      - lang
+
+  # MIXED file: themes/fonts/gnome-shell-removal/netplan-removal install
+  # interleaved with xfconf/lightdm/panel config. Today's per-task tags
+  # disambiguate; no apply propagation here, so each task inside fires
+  # under any tag the directive carries (install, config, or lookandfeel).
+  # Task 2 of the phase-gate refactor splits this file into explicit
+  # install + config blocks.
+  - include_tasks:
+      file: lookandfeel.yml
+    tags:
+      - install
+      - config
+      - lookandfeel
+
+  # Plymouth boot splash — Sudhanix branding (apt + asset copy + alternatives
+  # + grub cmdline + initramfs rebuild). plymouth.yml is mixed today but
+  # included only via install path; the alternatives/grub/initramfs steps
+  # are technically configure-shape but currently piggyback the install tag.
+  - include_tasks:
+      file: plymouth.yml
+      apply:
+        tags: [install]
+    tags:
+      - install
+      - plymouth
+
+  - include_tasks:
+      file: sw.yml
+      apply:
+        tags: [install]
+    tags:
+      - install
+      - sw_install
+      - zoom
+      - browser
+      - thunderbird
+      - vscode
+
+  - include_tasks:
+      file: sw-goldendict.yml
+      apply:
+        tags: [install]
+    when: goldendict is defined
+    tags:
+      - install
+      - sw_install
+
+  # Sound: modprobe + apt deps + bigsur theme tarball + legacy pulseaudio
+  # systemd service (pre-24.04 only — no-op on Sudhanix 26).
+  - include_tasks:
+      file: sound.yml
+      apply:
+        tags: [install]
+    tags:
+      - install
+      - sound
+
+  # Role-wide apt upgrade — always last in install phase so it operates on
+  # the just-installed package set, not the bare PXE image.
+  - name: apt autoremove before upgrade
+    apt:
+      autoremove: yes
+      purge: yes
+    tags:
+      - install
+      - apt
+      - apt_autoremove
+
+  - name: update system
+    apt:
+      upgrade: full
+      update_cache: yes
+      cache_valid_time: 3600
+      autoremove: yes
+    tags:
+      - install
+      - os_upgrade
+
+  - name: apt autoremove after upgrade
+    apt:
+      autoremove: yes
+      purge: yes
+    tags:
+      - install
+      - apt
+      - apt_autoremove
