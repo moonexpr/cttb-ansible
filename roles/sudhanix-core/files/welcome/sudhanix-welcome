@@ -17,7 +17,6 @@ Behaviour preserved from v1:
 from __future__ import annotations
 
 import abc
-import json
 import os
 import pwd
 import subprocess
@@ -53,11 +52,6 @@ WELCOME_ICONS_DIR = "/usr/share/sudhanix/welcome-icons"
 # SVG line-art icons used on the What's new / Quick tour cards. Theme-neutral
 # stroke colour (#7a7a7a) reads on both DARK and LIGHT panel CSS without
 # needing a per-theme variant. Files deployed by sudhanix-welcome.yml.
-
-# ── Prefs stub dir ────────────────────────────────────────────────────────────
-# Dock preference stub written here; a future role/script can consume it.
-SUDHANIX_CONFIG_DIR = Path.home() / ".config" / "sudhanix"
-DOCK_PREFS_FILE = SUDHANIX_CONFIG_DIR / "welcome-dock-prefs.json"
 
 # ── Customize spec (data-driven) ──────────────────────────────────────────────
 # /usr/share/sudhanix/welcome/customize.yml drives every Customization-tab
@@ -430,6 +424,20 @@ class DockCategory:
             default_enabled=default_enabled,
         )
 
+    @classmethod
+    def from_dconf_dict(cls, key: str, raw: dict) -> "DockCategory":
+        """Lossy build from the registry's dict shape (which is itself derived
+        from dconf scalars/arrays). Tolerant of missing keys."""
+        return cls(
+            key=key,
+            label=str(raw.get("label") or key.title()),
+            items=tuple(raw.get("items") or []),
+            always_on=bool(raw.get("always_on", False)),
+            weight=int(raw.get("weight", 999)),
+            default_enabled=bool(raw.get("default_enabled", False))
+            or bool(raw.get("always_on", False)),
+        )
+
 
 @dataclass(frozen=True)
 class CustomizeConfig:
@@ -604,83 +612,6 @@ _LAST_RESORT_CONFIG = CustomizeConfig(
 )
 
 
-# Lazy singleton used by the free-function accessor shims below. Phase C will
-# remove the shims and pass CustomizeConfig through to CustomizationPage's
-# constructor directly.
-_CONFIG_SINGLETON: CustomizeConfig | None = None
-
-
-def _get_config() -> CustomizeConfig:
-    global _CONFIG_SINGLETON
-    if _CONFIG_SINGLETON is None:
-        _CONFIG_SINGLETON = CustomizeConfig.load()
-    return _CONFIG_SINGLETON
-
-
-# TODO(Phase C): remove; callers should receive CustomizeConfig.
-def themes() -> list[dict]:
-    return [{"id": t.id, "label": t.label, "gtk": t.gtk,
-             "icon": t.icon, "xfwm": t.xfwm}
-            for t in _get_config().themes]
-
-
-# TODO(Phase C): remove; callers should receive CustomizeConfig.
-def default_theme_id() -> str:
-    return _get_config().default_theme_id
-
-
-# TODO(Phase C): remove; callers should receive CustomizeConfig.
-def browsers() -> list[dict]:
-    return [{"id": b.id, "label": b.label, "desktop": b.desktop}
-            for b in _get_config().browsers]
-
-
-# TODO(Phase C): remove; callers should receive CustomizeConfig.
-def default_browser_id() -> str:
-    return _get_config().default_browser_id
-
-
-# TODO(Phase C): remove; callers should receive CustomizeConfig.
-def theme_triple(theme_id: str) -> tuple[str, str, str]:
-    return _get_config().theme_triple(theme_id)
-
-
-# TODO(Phase C): remove; callers should receive CustomizeConfig.
-def browser_desktop(browser_id: str) -> str:
-    return _get_config().browser_desktop(browser_id)
-
-
-# TODO(Phase C): remove; callers should receive CustomizeConfig.
-def dock_anchors() -> list[dict]:
-    return [{"item": a.item, "weight": a.weight}
-            for a in _get_config().dock_anchors]
-
-
-# TODO(Phase C): remove; callers should receive CustomizeConfig.
-def DOCK_CATEGORIES_FALLBACK() -> dict[str, dict]:
-    return {k: c.as_dict() for k, c in _get_config().default_dock_categories.items()}
-
-
-# TODO(Phase C): remove; CustomizationPage should receive resolved categories.
-def load_dock_categories() -> dict[str, dict]:
-    """Read /org/sudhanix/dock/categories/* from dconf via a fresh runner;
-    fall back to the customize.yml categories when the user-db isn't seeded
-    yet. Shape preserved (dict-of-dicts) so existing callers keep working."""
-    registry = DconfRegistry(CommandRunner())
-    cats = registry.read_dock_categories()
-    if cats is None or not cats:
-        return DOCK_CATEGORIES_FALLBACK()
-    return cats
-
-
-# TODO(Phase C): remove; callers should sort DockCategory objects directly.
-def ordered_category_keys(cats: dict[str, dict]) -> list[str]:
-    return sorted(
-        cats.keys(),
-        key=lambda k: (cats[k].get("weight", 999), k),
-    )
-
-
 # ─── PlankDock ─────────────────────────────────────────────────────────────
 # Facade over the per-user plank launchers dir + the clear → seed → replace
 # lifecycle. replace_items(items) is the single entry point Apply uses; the
@@ -809,11 +740,6 @@ class PlankDock:
             log(f"PlankDock.refresh_from_skel: top-level error: {exc}")
 
 
-# TODO(Phase C): remove; main() should construct PlankDock and call refresh_from_skel directly.
-def refresh_plank_skel() -> None:
-    PlankDock(CommandRunner()).refresh_from_skel()
-
-
 # ─── ApplyResult + SettingsApplier base ────────────────────────────────────
 # Strategy interface for the four Apply subsystems (theme / wallpaper / dock /
 # browser+terminal). Each applier owns its own injected deps; the coordinator
@@ -839,8 +765,8 @@ class SettingsApplier(abc.ABC):
 
 # ─── ThemeApplier ──────────────────────────────────────────────────────────
 # Sets GTK widget theme, icon theme, and xfwm window-decoration theme as a
-# single Light/Dark switch. Does NOT touch the in-panel CSS preview — that
-# stays under _ACTIVE_PROVIDER / apply_css_safe until Phase C migrates it.
+# single Light/Dark switch. Does NOT touch the in-panel CSS preview — that's
+# owned by ThemePreview, swapped live from CustomizationPage on chip click.
 
 
 class ThemeApplier(SettingsApplier):
@@ -1366,71 +1292,118 @@ def log(msg: str) -> None:
         pass
 
 
-# ── LDAP helpers (unchanged from v1) ────────────────────────────────────────
-def token_path(uid: int) -> Path | None:
-    p = Path(f"/run/sudhanix-tokens/{uid}.tok")
-    try:
-        st = p.stat()
-    except FileNotFoundError:
-        return None
-    if st.st_uid != uid:
-        log(f"refusing token: owner uid {st.st_uid} != session uid {uid}")
-        return None
-    if st.st_mode & 0o077:
-        log(f"refusing token: mode {st.st_mode:o} too permissive")
-        return None
-    return p
+# ─── WelcomeGate ───────────────────────────────────────────────────────────
+# Encapsulates the DISPLAY-agnostic part of the first-login gate: PAM token,
+# LDAP-stored dismissal flag, and the dismissal write-back. Fail-soft: any
+# unreachable LDAP / missing token returns "don't show" so the panel never
+# pesters a user whose dismissal we can't remember anyway.
 
 
-def already_dismissed(user_dn: str, tok: Path, runner: CommandRunner | None = None) -> bool | None:
-    """Returns True/False/None (None = couldn't query)."""
-    r = (runner or CommandRunner()).run_text(
-        ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
-         "-D", user_dn, "-y", str(tok),
-         "-b", user_dn, "-s", "base",
-         "(objectClass=*)", WELCOME_FLAG_ATTR],
-        timeout=10,
-    )
-    if not r.ok:
-        return None
-    for line in r.stdout.splitlines():
-        if line.lower().startswith(f"{WELCOME_FLAG_ATTR.lower()}:"):
-            _, _, value = line.partition(":")
-            return value.strip().upper() == "TRUE"
-    return False
+class WelcomeGate:
+    def __init__(self, runner: CommandRunner, *, force: bool = False) -> None:
+        self._runner = runner
+        self._force = force
+        self._uid_value = os.getuid()
+        self._username: str | None = None
+        try:
+            self._username = pwd.getpwuid(self._uid_value).pw_name
+        except KeyError:
+            log(f"no passwd entry for uid {self._uid_value}")
+        self._user_dn = (LDAP_DN_TEMPLATE.format(uid=self._username)
+                         if self._username else "")
+        self._token: Path | None = None
 
+    @property
+    def force(self) -> bool:
+        return self._force
 
-def write_dismissal(user_dn: str, tok: Path, runner: CommandRunner | None = None) -> None:
-    runner = runner or CommandRunner()
-    probe = runner.run_text(
-        ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
-         "-D", user_dn, "-y", str(tok),
-         "-b", user_dn, "-s", "base", "(objectClass=*)", "objectClass"],
-        timeout=10,
-    )
-    needs_oc = SUDHANIX_USER_OC.lower() not in probe.stdout.lower()
+    def should_show(self) -> bool:
+        if self._force:
+            return True
+        if self._username is None:
+            return False
+        self._token = self._token_path(self._uid_value)
+        if self._token is None:
+            log("no cached PAM token; can't reach LDAP this session")
+            return False
+        state = self._query_ldap(self._user_dn, self._token)
+        if state is True:
+            return False
+        if state is None:
+            # Couldn't query LDAP — don't pester the user since we can't
+            # remember their dismissal anyway.
+            return False
+        return True
 
-    parts = [f"dn: {user_dn}", "changetype: modify"]
-    if needs_oc:
-        parts += ["add: objectClass", f"objectClass: {SUDHANIX_USER_OC}", "-"]
-    parts += [f"replace: {WELCOME_FLAG_ATTR}", f"{WELCOME_FLAG_ATTR}: TRUE"]
-    ldif = "\n".join(parts) + "\n"
+    def mark_dismissed(self) -> None:
+        if self._username is None or self._token is None:
+            return
+        try:
+            self._write_ldap(self._user_dn, self._token)
+        except Exception as exc:
+            log(f"write_dismissal failed: {exc}")
 
-    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".ldif") as fh:
-        fh.write(ldif)
-        ldif_path = fh.name
-    try:
-        os.chmod(ldif_path, 0o600)
-        runner.run_text(
-            ["ldapmodify", "-x", "-ZZ", "-H", LDAP_URI,
-             "-D", user_dn, "-y", str(tok), "-f", ldif_path],
+    @staticmethod
+    def _token_path(uid: int) -> Path | None:
+        p = Path(f"/run/sudhanix-tokens/{uid}.tok")
+        try:
+            st = p.stat()
+        except FileNotFoundError:
+            return None
+        if st.st_uid != uid:
+            log(f"refusing token: owner uid {st.st_uid} != session uid {uid}")
+            return None
+        if st.st_mode & 0o077:
+            log(f"refusing token: mode {st.st_mode:o} too permissive")
+            return None
+        return p
+
+    def _query_ldap(self, user_dn: str, tok: Path) -> bool | None:
+        r = self._runner.run_text(
+            ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
+             "-D", user_dn, "-y", str(tok),
+             "-b", user_dn, "-s", "base",
+             "(objectClass=*)", WELCOME_FLAG_ATTR],
             timeout=10,
         )
-    finally:
+        if not r.ok:
+            return None
+        for line in r.stdout.splitlines():
+            if line.lower().startswith(f"{WELCOME_FLAG_ATTR.lower()}:"):
+                _, _, value = line.partition(":")
+                return value.strip().upper() == "TRUE"
+        return False
+
+    def _write_ldap(self, user_dn: str, tok: Path) -> None:
+        probe = self._runner.run_text(
+            ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
+             "-D", user_dn, "-y", str(tok),
+             "-b", user_dn, "-s", "base", "(objectClass=*)", "objectClass"],
+            timeout=10,
+        )
+        needs_oc = SUDHANIX_USER_OC.lower() not in probe.stdout.lower()
+
+        parts = [f"dn: {user_dn}", "changetype: modify"]
+        if needs_oc:
+            parts += ["add: objectClass", f"objectClass: {SUDHANIX_USER_OC}", "-"]
+        parts += [f"replace: {WELCOME_FLAG_ATTR}", f"{WELCOME_FLAG_ATTR}: TRUE"]
+        ldif = "\n".join(parts) + "\n"
+
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".ldif") as fh:
+            fh.write(ldif)
+            ldif_path = fh.name
         try:
-            os.unlink(ldif_path)
-        except FileNotFoundError:
-            pass
+            os.chmod(ldif_path, 0o600)
+            self._runner.run_text(
+                ["ldapmodify", "-x", "-ZZ", "-H", LDAP_URI,
+                 "-D", user_dn, "-y", str(tok), "-f", ldif_path],
+                timeout=10,
+            )
+        finally:
+            try:
+                os.unlink(ldif_path)
+            except FileNotFoundError:
+                pass
 
 
 # ── Pixbuf helpers ────────────────────────────────────────────────────────────
@@ -1578,8 +1551,22 @@ class CustomizationPage(Gtk.Box):
     until #51 wired the sidebar to Gtk.Stack.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        config: CustomizeConfig,
+        dock_categories: dict[str, DockCategory],
+        prior_choices: dict[str, bool],
+        coordinator: SettingsCoordinator,
+        theme_preview: ThemePreview,
+        window: "WelcomeWindow",
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self._config = config
+        self._dock_categories = dock_categories
+        self._coordinator = coordinator
+        self._theme_preview = theme_preview
+        self._window = window
 
         body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         body.set_border_width(22)
@@ -1637,17 +1624,15 @@ class CustomizationPage(Gtk.Box):
         seg_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         seg_box.set_name("theme-seg")
         self._theme_buttons: dict[str, Gtk.Button] = {}
-        for theme_row_data in themes():
-            theme_id = theme_row_data.get("id", "")
-            theme_label = theme_row_data.get("label", theme_id)
-            if not theme_id:
+        for theme in self._config.themes:
+            if not theme.id:
                 continue
-            btn = Gtk.Button(label=theme_label)
+            btn = Gtk.Button(label=theme.label)
             btn.set_relief(Gtk.ReliefStyle.NONE)
-            btn.connect("clicked", self._on_theme_clicked, theme_id)
+            btn.connect("clicked", self._on_theme_clicked, theme.id)
             seg_box.pack_start(btn, False, False, 0)
-            self._theme_buttons[theme_id] = btn
-        self._set_theme_active(default_theme_id())
+            self._theme_buttons[theme.id] = btn
+        self._set_theme_active(self._config.default_theme_id)
         theme_row.pack_start(seg_box, False, False, 0)
         body.pack_start(theme_row, False, False, 0)
 
@@ -1684,31 +1669,24 @@ class CustomizationPage(Gtk.Box):
         dock_label.set_margin_bottom(6)
         body.pack_start(dock_label, False, False, 0)
 
-        # Categories come from /org/sudhanix/dock/categories/* in dconf
-        # (seeded at first login from /etc/sudhanix/dconf-seeds/dock-*.txt)
-        # with the embedded fallback used when dconf is unreachable.
-        cats = load_dock_categories()
-        self._dock_categories = cats  # apply path reads category items from here
-        # Read prior user choices from /org/sudhanix/dock/enabled/* if any.
-        prior_enabled: dict[str, bool] = {}
-        _prior_reg = DconfRegistry(CommandRunner())
-        for k in cats.keys():
-            v = _prior_reg.read_scalar(f"/org/sudhanix/dock/enabled/{k}")
-            if v is not None:
-                prior_enabled[k] = v.lower() == "true"
-
+        # Categories + prior enabled state were resolved by WelcomeWindow
+        # (registry → YAML fallback for the category set, registry per-key
+        # for prior user choices). UI is render-only from here.
         chip_flow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         chip_flow.set_margin_bottom(10)
         self._dock_chips: dict[str, Gtk.ToggleButton] = {}
         always_on_labels: list[str] = []
-        for key in ordered_category_keys(cats):
-            cat = cats[key]
-            label = cat.get("label", key.title())
-            if cat.get("always_on"):
-                always_on_labels.append(label)
+        ordered_keys = sorted(
+            self._dock_categories.keys(),
+            key=lambda k: (self._dock_categories[k].weight, k),
+        )
+        for key in ordered_keys:
+            cat = self._dock_categories[key]
+            if cat.always_on:
+                always_on_labels.append(cat.label)
                 continue
-            default_on = prior_enabled.get(key, cat.get("default_enabled", False))
-            chip = Gtk.ToggleButton(label=label)
+            default_on = prior_choices.get(key, cat.default_enabled)
+            chip = Gtk.ToggleButton(label=cat.label)
             chip.get_style_context().add_class("chip")
             chip.set_active(default_on)
             chip.connect("toggled", self._on_chip_toggled, key)
@@ -1736,17 +1714,15 @@ class CustomizationPage(Gtk.Box):
         browser_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         browser_row.set_margin_bottom(16)
         self._browser_buttons: dict[str, Gtk.Button] = {}
-        for browser_row_data in browsers():
-            browser_id = browser_row_data.get("id", "")
-            browser_label = browser_row_data.get("label", browser_id)
-            if not browser_id:
+        for browser in self._config.browsers:
+            if not browser.id:
                 continue
-            btn = Gtk.Button(label=browser_label)
+            btn = Gtk.Button(label=browser.label)
             btn.get_style_context().add_class("radio-pick")
-            btn.connect("clicked", self._on_browser_clicked, browser_id)
+            btn.connect("clicked", self._on_browser_clicked, browser.id)
             browser_row.pack_start(btn, False, False, 0)
-            self._browser_buttons[browser_id] = btn
-        self._set_browser_active(default_browser_id())
+            self._browser_buttons[browser.id] = btn
+        self._set_browser_active(self._config.default_browser_id)
         body.pack_start(browser_row, False, False, 0)
 
         # Spacer
@@ -1783,7 +1759,7 @@ class CustomizationPage(Gtk.Box):
         # Live preview: swap the welcome panel's own CSS so the user sees the
         # change without leaving the Customization page. Apply still pushes
         # through to xfconf for system-wide effect.
-        apply_css_safe(label)
+        self._theme_preview.apply(label)
 
     def _update_chip_style(self, chip: Gtk.ToggleButton) -> None:
         ctx = chip.get_style_context()
@@ -1817,27 +1793,12 @@ class CustomizationPage(Gtk.Box):
             },
             "browser": self._selected_browser,
         }
-        # Phase B: build runtime objects locally per-Apply, then drive them
-        # through the Strategy + Mediator family. Phase C will thread them
-        # through the constructor.
-        runner = CommandRunner()
-        registry = DconfRegistry(runner)
-        dock = PlankDock(runner)
-        config = _get_config()
-        coordinator = SettingsCoordinator([
-            ThemeApplier(runner, config),
-            WallpaperApplier(runner),
-            PlankDockApplier(registry, dock, config),
-            BrowserTerminalApplier(runner, config),
-        ])
-        results = coordinator.apply_all(values)
+        results = self._coordinator.apply_all(values)
         all_ok = all(r.ok for r in results)
         # Tell the surrounding WelcomeWindow that the user customised
         # explicitly — otherwise dismiss would re-apply the all-categories
         # default and stomp the user's chip choices.
-        top = self.get_toplevel()
-        if top is not None and hasattr(top, "applied_during_session"):
-            top.applied_during_session = True  # type: ignore[attr-defined]
+        self._window.applied_during_session = True
         # Inline-page feedback: Apply confirms by updating the button label.
         # Reset on next change is out of scope here — apply is idempotent.
         self._apply_btn.set_label("Applied!" if all_ok else "Applied (with errors)")
@@ -1879,7 +1840,16 @@ class WelcomeWindow(Gtk.Window):
     landed in #51.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        coordinator: SettingsCoordinator,
+        config: CustomizeConfig,
+        registry: DconfRegistry,
+        dock: PlankDock,
+        theme_preview: ThemePreview,
+        user_name: str = "",
+    ) -> None:
         super().__init__(title="Welcome")
         self.set_name("welcome-window")
         self.set_default_size(960, 540)
@@ -1890,6 +1860,30 @@ class WelcomeWindow(Gtk.Window):
         # session? If not, we apply the all-categories default at dismiss
         # so the dock comes up populated rather than empty + autohidden.
         self.applied_during_session = False
+
+        self._coordinator = coordinator
+        self._config = config
+        self._registry = registry
+        self._dock = dock
+        self._theme_preview = theme_preview
+        self._user_name = user_name
+
+        # Resolve dock categories + prior choices once, hand both to the page
+        # as pre-loaded data (UI doesn't query dconf directly).
+        dock_cats_raw = self._registry.read_dock_categories()
+        if dock_cats_raw is None or not dock_cats_raw:
+            dock_categories = dict(self._config.default_dock_categories)
+        else:
+            dock_categories = {
+                k: DockCategory.from_dconf_dict(k, v)
+                for k, v in dock_cats_raw.items()
+            }
+        prior_choices: dict[str, bool] = {}
+        for k in dock_categories.keys():
+            v = self._registry.read_scalar(f"/org/sudhanix/dock/enabled/{k}")
+            if v is not None:
+                prior_choices[k] = v.lower() == "true"
+        self._dock_categories = dock_categories
 
         self.connect("destroy", self._on_destroy)
 
@@ -1904,7 +1898,17 @@ class WelcomeWindow(Gtk.Window):
         self._stack.add_named(self._build_welcome_page(), PAGE_WELCOME)
         self._stack.add_named(self._build_whats_new_page(), PAGE_WHATS_NEW)
         self._stack.add_named(self._build_quick_tour_page(), PAGE_QUICK_TOUR)
-        self._stack.add_named(CustomizationPage(), PAGE_CUSTOMIZATION)
+        self._stack.add_named(
+            CustomizationPage(
+                config=self._config,
+                dock_categories=dock_categories,
+                prior_choices=prior_choices,
+                coordinator=self._coordinator,
+                theme_preview=self._theme_preview,
+                window=self,
+            ),
+            PAGE_CUSTOMIZATION,
+        )
         self._stack.add_named(AboutPage(), PAGE_ABOUT)
         self._stack.set_visible_child_name(PAGE_WELCOME)
 
@@ -2212,25 +2216,15 @@ class WelcomeWindow(Gtk.Window):
         the default theme/browser. Without this the dock would stay empty
         and auto-hidden because the site default starts it that way."""
         try:
-            cats = load_dock_categories()
             dock_choices = {
-                key: True for key, val in cats.items() if not val.get("always_on")
+                key: True for key, cat in self._dock_categories.items()
+                if not cat.always_on
             }
-            runner = CommandRunner()
-            registry = DconfRegistry(runner)
-            dock = PlankDock(runner)
-            config = _get_config()
-            coordinator = SettingsCoordinator([
-                ThemeApplier(runner, config),
-                WallpaperApplier(runner),
-                PlankDockApplier(registry, dock, config),
-                BrowserTerminalApplier(runner, config),
-            ])
-            coordinator.apply_all({
-                "theme": config.default_theme_id,
+            self._coordinator.apply_all({
+                "theme": self._config.default_theme_id,
                 "wallpaper_rotate": True,
                 "dock": dock_choices,
-                "browser": config.default_browser_id,
+                "browser": self._config.default_browser_id,
             })
         except Exception as exc:
             log(f"default-layout apply failed: {exc}")
@@ -2323,112 +2317,138 @@ def _build_card_page(
     return page
 
 
-# ── CSS injection ─────────────────────────────────────────────────────────────
-# Module-level state for the active provider so theme switches can swap it
-# in place rather than stacking providers (each add_provider_for_screen is
-# additive — without removing the prior provider, dark colours bleed through
-# light and vice versa).
-_ACTIVE_PROVIDER: Gtk.CssProvider | None = None
+# ─── ThemePreview ──────────────────────────────────────────────────────────
+# Owns the live CSS provider for the welcome panel. apply() hot-swaps it:
+# additive add_provider_for_screen calls would let dark colours bleed through
+# a light overlay (and vice versa), so we always remove the prior provider
+# before installing the new one. One instance per WelcomeApplication.
 
 
-def _css_for_theme(theme: str) -> bytes:
-    if theme.lower() == "light":
-        return GTK_CSS_LIGHT
-    # "Dark", "Auto", or anything else falls through to dark; THEME_MAP's
-    # comment explains why Auto stays dark until xdg-portal switching lands.
-    return GTK_CSS_DARK
+class ThemePreview:
+    def __init__(self) -> None:
+        self._provider: Gtk.CssProvider | None = None
+
+    def apply(self, theme_id: str) -> None:
+        try:
+            from gi.repository import Gdk  # noqa: PLC0415
+            screen = Gdk.Screen.get_default()
+            if screen is None:
+                return
+            if self._provider is not None:
+                Gtk.StyleContext.remove_provider_for_screen(screen, self._provider)
+                self._provider = None
+            provider = Gtk.CssProvider()
+            provider.load_from_data(self._css_for_theme(theme_id))
+            Gtk.StyleContext.add_provider_for_screen(
+                screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+            self._provider = provider
+        except Exception as exc:
+            log(f"CSS provider failed (continuing without theme): {exc}")
+
+    def clear(self) -> None:
+        try:
+            from gi.repository import Gdk  # noqa: PLC0415
+            screen = Gdk.Screen.get_default()
+            if screen is not None and self._provider is not None:
+                Gtk.StyleContext.remove_provider_for_screen(screen, self._provider)
+        except Exception:
+            pass
+        self._provider = None
+
+    @staticmethod
+    def _css_for_theme(theme_id: str) -> bytes:
+        if theme_id.lower() == "light":
+            return GTK_CSS_LIGHT
+        # "Dark", "Auto", or anything else falls through to dark; Auto stays
+        # dark until xdg-portal switching lands.
+        return GTK_CSS_DARK
 
 
-def apply_css_safe(theme: str = "Dark") -> None:
-    """Load (or hot-swap) the welcome panel's CSS provider for `theme`.
-    Called once at startup with the persisted preference, and again live
-    from the Customization page when the theme segmented control is touched."""
-    global _ACTIVE_PROVIDER
-    try:
-        from gi.repository import Gdk  # noqa: PLC0415
-        screen = Gdk.Screen.get_default()
-        if screen is None:
-            return
+# ─── WelcomeApplication ────────────────────────────────────────────────────
+# Top-level lifecycle template: gate -> bootstrap -> show -> wait -> dismiss.
+# Owns no GTK state itself; constructs the WelcomeWindow with everything it
+# needs and tears it down. Errors in the dismissal write-back are swallowed
+# so a transient LDAP failure doesn't surface as a non-zero exit.
 
-        # Drop any prior provider so the new one isn't layered on top of it.
-        if _ACTIVE_PROVIDER is not None:
-            Gtk.StyleContext.remove_provider_for_screen(screen, _ACTIVE_PROVIDER)
-            _ACTIVE_PROVIDER = None
 
-        provider = Gtk.CssProvider()
-        provider.load_from_data(_css_for_theme(theme))
-        Gtk.StyleContext.add_provider_for_screen(
-            screen,
-            provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+class WelcomeApplication:
+    def __init__(
+        self,
+        *,
+        runner: CommandRunner,
+        registry: DconfRegistry,
+        dock: PlankDock,
+        config: CustomizeConfig,
+        gate: WelcomeGate,
+        theme_preview: ThemePreview,
+    ) -> None:
+        self._runner = runner
+        self._registry = registry
+        self._dock = dock
+        self._config = config
+        self._gate = gate
+        self._theme_preview = theme_preview
+
+    def _bootstrap(self) -> None:
+        # Refresh ~/.config/plank/ from /etc/skel BEFORE the panel paints,
+        # so Apply / dismiss-default have a known canonical launchers/ to
+        # filter against. Kept because a user upgraded from sx25 may have
+        # stale launchers/ that Apply alone won't clean up — without this
+        # the first dock paint shows Plank's auto-detect garbage.
+        self._dock.refresh_from_skel()
+        # Bootstrap CSS for the panel itself; CustomizationPage overrides
+        # live when the user touches the theme segmented control.
+        self._theme_preview.apply(self._config.default_theme_id)
+
+    def run(self) -> int:
+        log(f"start pid={os.getpid()} uid={os.getuid()} force={self._gate.force}")
+        if not self._gate.should_show():
+            return 0
+
+        self._bootstrap()
+        coordinator = SettingsCoordinator([
+            ThemeApplier(self._runner, self._config),
+            WallpaperApplier(self._runner),
+            PlankDockApplier(self._registry, self._dock, self._config),
+            BrowserTerminalApplier(self._runner, self._config),
+        ])
+        win = WelcomeWindow(
+            coordinator=coordinator,
+            config=self._config,
+            registry=self._registry,
+            dock=self._dock,
+            theme_preview=self._theme_preview,
         )
-        _ACTIVE_PROVIDER = provider
-    except Exception as exc:
-        log(f"CSS provider failed (continuing without theme): {exc}")
+        win.show_all()
+        Gtk.main()
+
+        if win.dismiss_on_continue and not self._gate.force:
+            self._gate.mark_dismissed()
+        return 0
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
+def _has_display() -> bool:
+    return "DISPLAY" in os.environ or "WAYLAND_DISPLAY" in os.environ
+
+
+def _force_mode() -> bool:
+    return os.environ.get("SUDHANIX_WELCOME_FORCE", "").strip().lower() in ("1", "true", "yes")
+
+
 def main() -> int:
-    if "DISPLAY" not in os.environ and "WAYLAND_DISPLAY" not in os.environ:
+    if not _has_display():
         return 0
-    log(f"start pid={os.getpid()} uid={os.getuid()} "
-        f"force={bool(os.environ.get('SUDHANIX_WELCOME_FORCE'))}")
-
-    uid = os.getuid()
-    try:
-        username = pwd.getpwuid(uid).pw_name
-    except KeyError:
-        log(f"no passwd entry for uid {uid}")
-        return 0
-
-    user_dn = LDAP_DN_TEMPLATE.format(uid=username)
-
-    # Long-lived runtime objects. Phase A: also constructed locally inside the
-    # UI handlers because CustomizationPage / WelcomeWindow constructors are
-    # not yet DI-aware (Phase C). The duplication is intentional and small.
     runner = CommandRunner()
-
-    # SUDHANIX_WELCOME_FORCE bypasses the dismissal/token gate so vajra's
-    # test_welcome_preview "Show window" action and any future preview path
-    # can render the panel regardless of LDAP state. The Continue button still
-    # writes the dismissal flag if the user accepts; the toolset can clear it.
-    force = os.environ.get("SUDHANIX_WELCOME_FORCE", "").strip().lower() in ("1", "true", "yes")
-
-    if not force:
-        tok = token_path(uid)
-        if tok is None:
-            log("no cached PAM token; can't reach LDAP this session")
-            return 0
-
-        state = already_dismissed(user_dn, tok, runner=runner)
-        if state is True:
-            return 0
-        if state is None:
-            # Couldn't query LDAP — don't pester the user since we can't
-            # remember their dismissal anyway.
-            return 0
-
-    # User has not yet completed welcome. Refresh ~/.config/plank/ from
-    # /etc/skel BEFORE the panel paints, so Apply / dismiss-default have
-    # a known canonical launchers/ to filter against. Without this, a
-    # migrated user with a stale or empty .config/plank/ ends up with
-    # Plank's auto-detect garbage in user-db, which dconf write can't
-    # cleanly recover from.
-    PlankDock(runner).refresh_from_skel()
-
-    apply_css_safe()
-
-    win = WelcomeWindow()
-    win.show_all()
-    Gtk.main()
-
-    if win.dismiss_on_continue and not force:
-        try:
-            write_dismissal(user_dn, tok, runner=runner)
-        except Exception as exc:
-            log(f"write_dismissal failed: {exc}")
-
-    return 0
+    config = CustomizeConfig.load()
+    registry = DconfRegistry(runner)
+    dock = PlankDock(runner)
+    gate = WelcomeGate(runner, force=_force_mode())
+    preview = ThemePreview()
+    app = WelcomeApplication(runner=runner, registry=registry, dock=dock,
+                             config=config, gate=gate, theme_preview=preview)
+    return app.run()
 
 
 if __name__ == "__main__":
