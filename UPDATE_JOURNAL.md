@@ -3601,11 +3601,26 @@ ansible-playbook plays/install-sudhanix-cslabs.yml \
 
 Log: `logs/sx26-install-<timestamp>.log`. Baseline from 2026-05-09 was `ok=261 changed=9 failed=0` in ~12 minutes. Known noisy-but-non-fatal red lines on a fresh minimal install: #54 (`light-locker-settings.desktop` shell rc=1) and #55 (`lineinfile` rc=257 for 3 absent `.desktop` files). Both have `ignore_errors: yes` and will be the only red text on a clean run — anything else is a real failure.
 
-### Today (prep) — must finish before EOD
+### Today (prep) — results
 
 - [x] Push current `vajra_1.0.0-1` build (sha `269e6f…`) into apt.cttb pool via `cttb-ct.sh exec debmirror` + `reprepro remove/includedeb/export`. Done 09:25.
-- [ ] `install-sudhanix-cslabs.yml -l dvgs-testmachine.cttb` completes with `failed=0` modulo the known #54/#55 noise lines.
-- [ ] At-seat reboot + visual sweep (sections A–F below) once Ansible finishes. Any red flag → file an issue tonight, not tomorrow morning.
+- [x] `install-sudhanix-cslabs.yml -l dvgs-testmachine.cttb` completes — final recap `ok=270 changed=117 failed=0 ignored=1` (10:21).
+- [x] Tactical fixes shipped in commit `1004a375`:
+  - WhiteSur GTK theme install moved ahead of greeter CSS deploy (was failing on the fresh host because the theme dir didn't exist yet).
+  - `file: state=directory /etc/xdg/gtk-3.0` added ahead of the panel-GTK-CSS copy (same shape of bug).
+  - New `roles/sudhanix-core/tasks/plymouth.yml` wires up the boot splash that had been staged-but-never-deployed for weeks (apt install + asset copy + `plymouth-set-default-theme -R sudhanix` + `quiet splash` cmdline).
+- [x] Verified on host:
+  - `hostname` → `dvgs-testmachine.cttb`.
+  - `vajra 1.0.0-1` installed from `http://apt.cttb/cttb-repos/apt/ubuntu noble/main amd64`, signed-by keyring.
+  - WhiteSur themes + symlinks present in `/usr/share/themes/`.
+  - `/etc/alternatives/default.plymouth` → `sudhanix.plymouth`.
+  - LightDM service active (had to `systemctl start lightdm` after first install — non-blocker, reboot covers it).
+- [ ] Reboot at-seat tonight + visual sweep tomorrow morning.
+
+### Issues filed today
+
+- **#57** (P2a, **Blocker**): enforce hard install→configure phase gate in roles. Today's WhiteSur + xdg/gtk-3.0 bugs are both instances; commented on the issue with the second one. Tactical fixes shipped; structural fix is the issue body.
+- **#58** (P2a, Release): plymouth boot splash never wired up (assets-staged, tasks-missing). Fixed in `1004a375`; awaiting tomorrow's visual confirm to close.
 
 ### Tomorrow (demo) — walkthrough script
 
