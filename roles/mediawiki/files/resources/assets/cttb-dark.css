@@ -196,18 +196,22 @@ main#content > #bodyContent {
     background-color: var(--cttb-panel-body);
     border: 1px solid var(--cttb-border);
     border-radius: 0 0 5px 5px;
-    padding: 0 1.25rem;
+    padding: 1.25rem;
 }
 
-/* Toolbar tab + dropdown links — let the parent flex/inline-flex
- * layout (set on #left-navigation and #right-navigation below)
- * size them rather than the Vector default block-ish display. */
+/* Toolbar tab + dropdown links — inherit display from the flex
+ * containers (#left-navigation / #right-navigation), with top
+ * padding so the tab text sits centered against the toolbar
+ * height, and a small bottom margin separating it from the
+ * toolbar's bottom border. */
 @media screen {
     .vector-menu-tabs .mw-list-item.vector-tab-noicon > a,
     .vector-page-toolbar-container .vector-dropdown.vector-tab-noicon > a,
     .vector-menu-tabs .mw-list-item .vector-dropdown-label,
     .vector-page-toolbar-container .vector-dropdown .vector-dropdown-label {
-        display: unset;
+        display: inherit;
+        padding: 12px 0 0 0;
+        margin-bottom: 8px;
     }
 }
 
@@ -242,6 +246,7 @@ main#content > #bodyContent {
  * default block margin and align inline with the tab text. */
 .vector-menu-tabs .mw-list-item .cdx-button--icon-only {
     margin: unset;
+    margin-top: 8px;
 }
 .vector-menu-content .cdx-button--icon-only {
     display: inline;
@@ -315,7 +320,7 @@ main#content > #bodyContent {
     margin-left: unset;
 }
 .vector-toc .vector-pinnable-header {
-    margin-left: unset;
+    margin-left: -1rem;
 }
 .vector-toc .vector-toc-list-item {
     padding-left: unset;
