@@ -887,8 +887,18 @@ class PlankDockApplier(SettingsApplier):
             if cats is None or not cats:
                 cats = {k: c.as_dict() for k, c
                         in self._config.default_dock_categories.items()}
-            present_items = self._dock.user_items
+            # `skel_items` is the canonical set of dockitems the role
+            # provides; `user_items` is plank's per-session cache, which
+            # `replace_items()` re-seeds from skel each Apply. Filtering
+            # against `user_items` here was the subtractive bug: a prior
+            # Apply with zero categories empties the user dir, and a later
+            # Apply that re-enables a category would then strip every
+            # candidate ("not in present_items") and produce an empty
+            # target — so the dock stayed blank forever. Fall back to
+            # user_items only if skel is unreadable (matches anchor logic).
             skel_items = self._dock.skel_items
+            present_items = self._dock.user_items
+            available = skel_items or present_items
 
             category_groups: list[tuple[int, list[str]]] = []
             for key, cat in cats.items():
@@ -900,7 +910,7 @@ class PlankDockApplier(SettingsApplier):
                 if not enabled:
                     continue
                 cat_w = int(cat.get("weight", 999))
-                cat_items = [i for i in cat.get("items", []) if i in present_items]
+                cat_items = [i for i in cat.get("items", []) if i in available]
                 if cat_items:
                     category_groups.append((cat_w, cat_items))
 
@@ -908,7 +918,7 @@ class PlankDockApplier(SettingsApplier):
             if category_groups:
                 anchor_groups: list[tuple[int, list[str]]] = []
                 for anchor in self._config.dock_anchors:
-                    if anchor.item and anchor.item in (skel_items or present_items):
+                    if anchor.item and anchor.item in available:
                         anchor_groups.append((anchor.weight, [anchor.item]))
                 for _w, group_items in sorted(
                         category_groups + anchor_groups, key=lambda g: g[0]):
