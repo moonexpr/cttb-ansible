@@ -52,6 +52,15 @@
       - system-tools-backends
       - xdg-user-dirs
       - xdotool
+      # XFCE4 session itself — ships /usr/share/xsessions/xfce.desktop so
+      # LightDM `user-session=xfce` actually picks up an XFCE session
+      # instead of silently falling back to LXQt. Without these, fresh
+      # PXE installs land in LXQt and skip every xfconf/xfce4-panel customization
+      # the rest of this role applies.
+      - xfce4-session
+      - xfdesktop4
+      - xfce4-settings
+      - thunar
       - xfce4-panel
       - xfce4-power-manager
       - xfce4-appmenu-plugin
