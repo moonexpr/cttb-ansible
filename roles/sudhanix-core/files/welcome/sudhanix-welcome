@@ -1452,7 +1452,11 @@ class WelcomeWindow(Gtk.Window):
 
         brand_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         try:
-            wordmark_pb = GdkPixbuf.Pixbuf.new_from_file(WORDMARK_PATH)
+            # Source asset is 2006x858. Scale to ~48px tall on load so the
+            # sidebar isn't dwarfed; preserve aspect ratio (width follows).
+            wordmark_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                WORDMARK_PATH, -1, 48, True
+            )
             wordmark_img = Gtk.Image.new_from_pixbuf(wordmark_pb)
             wordmark_img.set_halign(Gtk.Align.START)
             wordmark = wordmark_img
