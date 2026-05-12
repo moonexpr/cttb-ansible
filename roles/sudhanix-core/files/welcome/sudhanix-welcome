@@ -22,7 +22,9 @@ import pwd
 import subprocess
 import sys
 import tempfile
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 import gi
 
@@ -59,236 +61,9 @@ DOCK_PREFS_FILE = SUDHANIX_CONFIG_DIR / "welcome-dock-prefs.json"
 # ── Customize spec (data-driven) ──────────────────────────────────────────────
 # /usr/share/sudhanix/welcome/customize.yml drives every Customization-tab
 # choice (theme presets, browser presets, dock category fallback). Edit that
-# file for fleet-wide changes; this script falls back to the embedded
-# defaults below if the file is missing, unparseable, or yaml is absent.
+# file for fleet-wide changes; CustomizeConfig.load() falls back to a baked-in
+# last-resort config if the file is missing, unparseable, or yaml is absent.
 CUSTOMIZE_PATH = "/usr/share/sudhanix/welcome/customize.yml"
-
-# Embedded fallbacks. Names match the real on-disk dirs the upstream WhiteSur
-# tarballs install:
-#   GTK   /usr/share/themes/{WhiteSur (light), WhiteSur-Dark}
-#   icons /usr/share/icons/{WhiteSur-light, WhiteSur-dark}
-# xfwm4 reads the GTK theme dir; lookandfeel.yml ships bidirectional casing
-# symlinks so either lower or capital case resolves regardless.
-_FALLBACK_THEMES = [
-    {"id": "Light", "label": "Light",
-     "gtk": "WhiteSur",      "icon": "WhiteSur-light", "xfwm": "WhiteSur"},
-    {"id": "Dark",  "label": "Dark",
-     "gtk": "WhiteSur-Dark", "icon": "WhiteSur-dark",  "xfwm": "WhiteSur-Dark"},
-    {"id": "Auto",  "label": "Auto",
-     "gtk": "WhiteSur-Dark", "icon": "WhiteSur-dark",  "xfwm": "WhiteSur-Dark"},
-]
-_FALLBACK_DEFAULT_THEME = "Dark"
-
-_FALLBACK_BROWSERS = [
-    {"id": "Chrome",  "label": "Chrome",  "desktop": "google-chrome.desktop"},
-    {"id": "Firefox", "label": "Firefox", "desktop": "firefox.desktop"},
-    {"id": "Zen",     "label": "Zen",     "desktop": "zen-browser.desktop"},
-]
-_FALLBACK_DEFAULT_BROWSER = "Chrome"
-
-# Weighted anchors: each entry pins one launcher at a specific weight in the
-# 0..1000 number-space shared with category weights. 0 = leftmost,
-# 1000 = rightmost, 500 = center. Anchors only appear when at least one
-# category is enabled (see apply_settings).
-_FALLBACK_DOCK_ANCHORS = [
-    {"item": "thunar.dockitem", "weight": 0},
-    {"item": "Trash.dockitem",  "weight": 1000},
-]
-
-
-def _load_customize() -> dict:
-    """Read customize.yml. Return {} on any failure so callers fall back to
-    embedded defaults — this script must never refuse to launch over a
-    config-file glitch."""
-    if not _HAVE_YAML:
-        return {}
-    try:
-        with open(CUSTOMIZE_PATH, encoding="utf-8") as fh:
-            data = yaml.safe_load(fh)
-        return data if isinstance(data, dict) else {}
-    except FileNotFoundError:
-        return {}
-    except Exception as exc:
-        log(f"customize.yml unreadable ({CUSTOMIZE_PATH}): {exc}")
-        return {}
-
-
-# Module-level state populated at first call. log() is defined later in the
-# file, so we defer the actual read until the first lookup.
-_CUSTOMIZE: dict | None = None
-
-
-def _customize() -> dict:
-    global _CUSTOMIZE
-    if _CUSTOMIZE is None:
-        _CUSTOMIZE = _load_customize()
-    return _CUSTOMIZE
-
-
-def themes() -> list[dict]:
-    """List of theme presets from customize.yml or the embedded fallback."""
-    rows = _customize().get("themes")
-    if isinstance(rows, list) and rows:
-        return rows
-    return _FALLBACK_THEMES
-
-
-def default_theme_id() -> str:
-    return _customize().get("default_theme") or _FALLBACK_DEFAULT_THEME
-
-
-def browsers() -> list[dict]:
-    rows = _customize().get("browsers")
-    if isinstance(rows, list) and rows:
-        return rows
-    return _FALLBACK_BROWSERS
-
-
-def default_browser_id() -> str:
-    return _customize().get("default_browser") or _FALLBACK_DEFAULT_BROWSER
-
-
-def theme_triple(theme_id: str) -> tuple[str, str, str]:
-    """Return (gtk, icon, xfwm) for the named theme, falling back to the
-    Dark default if the id is unknown."""
-    for t in themes():
-        if t.get("id") == theme_id:
-            return (t.get("gtk", ""), t.get("icon", ""), t.get("xfwm", ""))
-    for t in themes():
-        if t.get("id") == _FALLBACK_DEFAULT_THEME:
-            return (t.get("gtk", ""), t.get("icon", ""), t.get("xfwm", ""))
-    return ("WhiteSur-Dark", "WhiteSur-dark", "WhiteSur-Dark")
-
-
-def browser_desktop(browser_id: str) -> str:
-    for b in browsers():
-        if b.get("id") == browser_id:
-            return b.get("desktop", "")
-    return _FALLBACK_BROWSERS[0]["desktop"]
-
-
-def dock_anchors() -> list[dict]:
-    """Return a list of weighted anchor entries [{item, weight}, ...].
-    Anchors share the 0..1000 weight number-space with categories: lower
-    weight is leftward in the dock, higher is rightward, 500 is center.
-    Anchors are conditional in apply_settings — they only appear when at
-    least one category contributes items."""
-    raw = _customize().get("dock_anchors")
-    if isinstance(raw, list) and raw:
-        rows: list[dict] = []
-        for entry in raw:
-            if not isinstance(entry, dict):
-                continue
-            item = entry.get("item")
-            if not isinstance(item, str) or not item:
-                continue
-            try:
-                w = int(entry.get("weight", 0))
-            except (TypeError, ValueError):
-                w = 0
-            rows.append({"item": item, "weight": w})
-        if rows:
-            return rows
-    # Back-compat: older customize.yml shape used {left, right} keys.
-    if isinstance(raw, dict):
-        rows = []
-        if raw.get("left"):
-            rows.append({"item": raw["left"], "weight": 0})
-        if raw.get("right"):
-            rows.append({"item": raw["right"], "weight": 1000})
-        if rows:
-            return rows
-    return [dict(a) for a in _FALLBACK_DOCK_ANCHORS]
-
-# ── Dock layout ──────────────────────────────────────────────────────────────
-# Categories drive both the day-1 default plank dock-items list and the
-# Customization page chips. Resolution order (first non-empty wins):
-#   1. dconf  /org/sudhanix/dock/categories/<name>/   (live source of truth;
-#      seeded at first login from /etc/sudhanix/dconf-seeds/dock-*.txt and
-#      modifiable per-host or per-user)
-#   2. customize.yml  dock_categories block            (fleet-wide config file)
-#   3. _DOCK_CATEGORIES_HARDCODED below                (last-resort default)
-#
-# Each category dict carries:
-#   items:           [.dockitem filenames]
-#   label:           "Title" shown next to the chip / always-on note
-#   always_on:       True = no chip, items always pinned (essentials)
-#   order:           presentation order (lower first)
-#   default_enabled: chip default state when the user hasn't chosen yet
-#
-# At apply time: dock-items = union(items of every enabled category),
-# filtered against ~/.config/plank/dock1/launchers/ to drop launchers the
-# user doesn't have on disk.
-_DOCK_CATEGORIES_HARDCODED = {
-    "essentials": {
-        # appfinder lives in dock_anchors.left, not here.
-        "items": [
-            "thunar.dockitem",
-            "thunderbird.dockitem",
-            "com.google.Chrome.dockitem",
-            "Zoom.dockitem",
-        ],
-        "label": "Essentials",
-        "always_on": True,
-        "weight": 100,
-        "default_enabled": True,
-    },
-    "office": {
-        "items": [
-            "libreoffice-writer.dockitem",
-            "libreoffice-calc.dockitem",
-            "org.gnome.Calculator.dockitem",
-        ],
-        "label": "Office",
-        "always_on": False,
-        "weight": 300,
-        "default_enabled": True,
-    },
-    "code": {
-        "items": [
-            "org.gnome.gedit.dockitem",
-            "xfce4-terminal.dockitem",
-            "code.dockitem",
-        ],
-        "label": "Code",
-        "always_on": False,
-        "weight": 500,
-        "default_enabled": False,
-    },
-    "art": {
-        "items": [
-            "gimp.dockitem",
-            "inkscape.dockitem",
-            "krita.dockitem",
-        ],
-        "label": "Art",
-        "always_on": False,
-        "weight": 700,
-        "default_enabled": False,
-    },
-}
-
-
-def DOCK_CATEGORIES_FALLBACK() -> dict[str, dict]:
-    """customize.yml dock_categories block; falls through to the embedded
-    constants if the YAML file is missing, unparseable, or has no
-    dock_categories section."""
-    raw = _customize().get("dock_categories")
-    if isinstance(raw, dict) and raw:
-        normalized: dict[str, dict] = {}
-        for key, val in raw.items():
-            if not isinstance(val, dict):
-                continue
-            normalized[key] = {
-                "items": list(val.get("items") or []),
-                "label": val.get("label") or key.title(),
-                "always_on": bool(val.get("always_on", False)),
-                "weight": int(val.get("weight", val.get("order", 999))),
-                "default_enabled": bool(val.get("default_enabled", False)),
-            }
-        if normalized:
-            return normalized
-    return _DOCK_CATEGORIES_HARDCODED
 
 # Where Plank reads launchers from for the per-user dock1 layout.
 PLANK_LAUNCHERS_DIR = Path.home() / ".config" / "plank" / "dock1" / "launchers"
@@ -296,125 +71,145 @@ PLANK_USER_DIR = Path.home() / ".config" / "plank"
 PLANK_SKEL_DIR = Path("/etc/skel/.config/plank")
 
 
-def refresh_plank_skel() -> None:
-    """Make ~/.config/plank/dock1/launchers/ a strict mirror of
-    /etc/skel/.config/plank/dock1/launchers/: seed canonical files AND
-    prune anything Plank's auto-detect has dropped in.
-
-    Called once at panel startup for users who haven't yet dismissed
-    the welcome flow. The user's dock-items dconf entry is left alone
-    here — apply_settings will rewrite it once we know what categories
-    the user wants. The aggressive prune is the only reliable way out
-    of Plank's auto-detect-clobber spiral: if launchers/ has stale
-    files like app.zen_browser.zen-1.dockitem or vlc.dockitem that
-    weren't seeded by us, every Plank restart can re-auto-detect them
-    into dock-items, even after a clean Apply."""
-    if not PLANK_SKEL_DIR.is_dir():
-        log(f"refresh_plank_skel: skel dir missing ({PLANK_SKEL_DIR}); skip")
-        return
-    try:
-        PLANK_USER_DIR.mkdir(parents=True, exist_ok=True)
-        skel_launchers = PLANK_SKEL_DIR / "dock1" / "launchers"
-        if not skel_launchers.is_dir():
-            return
-
-        target = PLANK_USER_DIR / "dock1" / "launchers"
-        target.mkdir(parents=True, exist_ok=True)
-
-        canonical = {p.name for p in skel_launchers.glob("*.dockitem")}
-
-        seeded = 0
-        for src in skel_launchers.glob("*.dockitem"):
-            dst = target / src.name
-            try:
-                dst.write_bytes(src.read_bytes())
-                seeded += 1
-            except Exception as exc:
-                log(f"refresh_plank_skel: copy {src.name} failed: {exc}")
-
-        pruned: list[str] = []
-        for existing in target.glob("*.dockitem"):
-            if existing.name not in canonical:
-                try:
-                    existing.unlink()
-                    pruned.append(existing.name)
-                except Exception as exc:
-                    log(f"refresh_plank_skel: prune {existing.name} failed: {exc}")
-
-        log(
-            f"refresh_plank_skel: seeded={seeded} pruned={len(pruned)} "
-            f"({pruned!r})"
-        )
-    except Exception as exc:
-        log(f"refresh_plank_skel: top-level error: {exc}")
+# ─── CommandRunner ─────────────────────────────────────────────────────────
+# Adapter over subprocess.run / subprocess.Popen. One default timeout, one
+# log-on-failure policy, one place to mock. Errors never raise to the caller —
+# inspect CommandResult.ok.
 
 
-def clear_plank() -> None:
-    """Wipe ~/.config/plank/dock1/launchers/ to a blank slate so the
-    Apply path can insert exactly the .dockitem set implied by the
-    user's category choices. Used in place of refresh_plank_skel on
-    Apply: seeding the full skel here would re-introduce already
-    existing launchers and fight the dock-items list we just wrote
-    into dconf."""
-    target = PLANK_LAUNCHERS_DIR
-    if not target.is_dir():
-        log(f"clear_plank: launchers dir absent ({target}); nothing to do")
-        return
-    removed: list[str] = []
-    try:
-        for existing in target.glob("*.dockitem"):
-            try:
-                existing.unlink()
-                removed.append(existing.name)
-            except Exception as exc:
-                log(f"clear_plank: unlink {existing.name} failed: {exc}")
-        log(f"clear_plank: removed={len(removed)} ({removed!r})")
-    except Exception as exc:
-        log(f"clear_plank: top-level error: {exc}")
+@dataclass(frozen=True)
+class CommandResult:
+    argv: list[str]
+    returncode: int
+    stdout: str
+    stderr: str
+    ok: bool
+    error: Exception | None = None
 
 
-def seed_plank_items(items: list[str]) -> None:
-    """Copy the named .dockitem files from /etc/skel/.config/plank/dock1/launchers/
-    into the user's launchers dir. Run after clear_plank() so plank
-    --replace has actual files backing the dock-items entries we just
-    wrote. Items missing from skel are skipped — they'd have been
-    filtered out of dock-items already."""
-    skel_launchers = PLANK_SKEL_DIR / "dock1" / "launchers"
-    if not skel_launchers.is_dir():
-        log(f"seed_plank_items: skel launchers missing ({skel_launchers}); skip")
-        return
-    try:
-        PLANK_LAUNCHERS_DIR.mkdir(parents=True, exist_ok=True)
-        seeded: list[str] = []
-        for name in items:
-            src = skel_launchers / name
-            if not src.is_file():
-                log(f"seed_plank_items: skel missing {name}; skip")
-                continue
-            dst = PLANK_LAUNCHERS_DIR / name
-            try:
-                dst.write_bytes(src.read_bytes())
-                seeded.append(name)
-            except Exception as exc:
-                log(f"seed_plank_items: copy {name} failed: {exc}")
-        log(f"seed_plank_items: seeded={len(seeded)} ({seeded!r})")
-    except Exception as exc:
-        log(f"seed_plank_items: top-level error: {exc}")
+class CommandRunner:
+    def __init__(
+        self,
+        *,
+        default_timeout: float = 5.0,
+        logger: Callable[[str], None] | None = None,
+    ) -> None:
+        self._timeout = default_timeout
+        # log() is defined later in the file; resolved at call time.
+        self._logger = logger if logger is not None else (lambda m: log(m))
+
+    def _emit(self, msg: str) -> None:
+        try:
+            self._logger(msg)
+        except Exception:
+            pass
+
+    def run(
+        self,
+        argv: list[str],
+        *,
+        timeout: float | None = None,
+        input_bytes: bytes | None = None,
+    ) -> CommandResult:
+        t = timeout if timeout is not None else self._timeout
+        try:
+            r = subprocess.run(
+                argv,
+                input=input_bytes,
+                capture_output=True,
+                timeout=t,
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
+            self._emit(f"run failed argv={argv!r}: {exc}")
+            return CommandResult(argv=list(argv), returncode=-1, stdout="",
+                                 stderr=str(exc), ok=False, error=exc)
+        except Exception as exc:  # defensive
+            self._emit(f"run exception argv={argv!r}: {exc}")
+            return CommandResult(argv=list(argv), returncode=-1, stdout="",
+                                 stderr=str(exc), ok=False, error=exc)
+        ok = r.returncode == 0
+        stdout = r.stdout.decode("utf-8", errors="replace") if isinstance(r.stdout, (bytes, bytearray)) else (r.stdout or "")
+        stderr = r.stderr.decode("utf-8", errors="replace") if isinstance(r.stderr, (bytes, bytearray)) else (r.stderr or "")
+        if not ok:
+            self._emit(f"run rc={r.returncode} argv={argv!r} stderr={stderr.strip()!r}")
+        return CommandResult(argv=list(argv), returncode=r.returncode,
+                             stdout=stdout, stderr=stderr, ok=ok, error=None)
+
+    def run_text(
+        self,
+        argv: list[str],
+        *,
+        timeout: float | None = None,
+        input_text: str | None = None,
+    ) -> CommandResult:
+        t = timeout if timeout is not None else self._timeout
+        try:
+            r = subprocess.run(
+                argv,
+                input=input_text,
+                capture_output=True,
+                text=True,
+                timeout=t,
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
+            self._emit(f"run_text failed argv={argv!r}: {exc}")
+            return CommandResult(argv=list(argv), returncode=-1, stdout="",
+                                 stderr=str(exc), ok=False, error=exc)
+        except Exception as exc:
+            self._emit(f"run_text exception argv={argv!r}: {exc}")
+            return CommandResult(argv=list(argv), returncode=-1, stdout="",
+                                 stderr=str(exc), ok=False, error=exc)
+        ok = r.returncode == 0
+        if not ok:
+            self._emit(f"run_text rc={r.returncode} argv={argv!r} stderr={(r.stderr or '').strip()!r}")
+        return CommandResult(argv=list(argv), returncode=r.returncode,
+                             stdout=r.stdout or "", stderr=r.stderr or "",
+                             ok=ok, error=None)
+
+    def dispatch(self, argv: list[str]) -> None:
+        """Fire-and-forget. Detached process group. Used for plank --replace."""
+        try:
+            subprocess.Popen(
+                argv,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            self._emit(f"dispatch ok argv={argv!r}")
+        except FileNotFoundError as exc:
+            self._emit(f"dispatch missing binary argv={argv!r}: {exc}")
+        except Exception as exc:
+            self._emit(f"dispatch exception argv={argv!r}: {exc}")
 
 
-def _dconf_read_array(key: str) -> list[str] | None:
-    """Read a string-array key from dconf and parse the GVariant text form.
-    Returns None if the key doesn't exist or dconf is unreachable."""
-    try:
-        r = subprocess.run(
-            ["dconf", "read", key],
-            capture_output=True, text=True, timeout=5,
-        )
-        if r.returncode != 0 or not r.stdout.strip():
+# ─── DconfRegistry ─────────────────────────────────────────────────────────
+# Facade for dconf read / list / load. Owns GVariant encoding (string-array
+# quoting, the @as [] empty-array form) and the dock-items / plank seed shape.
+
+
+class DconfRegistry:
+    SUDHANIX_DOCK_BASE = "/org/sudhanix/dock"
+    PLANK_BASE = "/net/launchpad/plank"
+
+    def __init__(self, runner: CommandRunner) -> None:
+        self._runner = runner
+
+    # ── Reads ──
+    def read_scalar(self, key: str) -> str | None:
+        r = self._runner.run_text(["dconf", "read", key])
+        if not r.ok or not r.stdout.strip():
             return None
-        # GVariant 'as' format: ['a', 'b']  — eval-style string.
         out = r.stdout.strip()
-        # Strip outer brackets, split on ", " (with quote awareness).
+        if out.startswith("'") and out.endswith("'"):
+            return out[1:-1]
+        return out
+
+    def read_string_array(self, key: str) -> list[str] | None:
+        r = self._runner.run_text(["dconf", "read", key])
+        if not r.ok or not r.stdout.strip():
+            return None
+        out = r.stdout.strip()
         if not (out.startswith("[") and out.endswith("]")):
             return None
         inner = out[1:-1].strip()
@@ -426,79 +221,596 @@ def _dconf_read_array(key: str) -> list[str] | None:
             if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
                 items.append(s[1:-1])
         return items
-    except Exception:
-        return None
 
+    def list_relative(self, base: str) -> list[str]:
+        r = self._runner.run_text(["dconf", "list", base])
+        if not r.ok:
+            return []
+        return [n.rstrip("/") for n in r.stdout.split() if n.strip()]
 
-def _dconf_read_scalar(key: str) -> str | None:
-    """Read a scalar dconf key as text. Returns None on miss."""
-    try:
-        r = subprocess.run(
-            ["dconf", "read", key],
-            capture_output=True, text=True, timeout=5,
+    # ── Writes ──
+    def write_string_array(self, key: str, items: list[str]) -> bool:
+        # Empty arrays need the @as type annotation so dconf can infer the
+        # element type; non-empty literals use the canonical 'a','b' form.
+        if items:
+            quoted = ", ".join(f"'{i}'" for i in items)
+            value = f"[{quoted}]"
+        else:
+            value = "@as []"
+        r = self._runner.run_text(["dconf", "write", key, value])
+        return r.ok
+
+    def write_scalar_string(self, key: str, value: str) -> bool:
+        r = self._runner.run_text(["dconf", "write", key, f"'{value}'"])
+        return r.ok
+
+    def write_bool(self, key: str, value: bool) -> bool:
+        r = self._runner.run_text(["dconf", "write", key, "true" if value else "false"])
+        return r.ok
+
+    def load_ini_seed(self, base_path: str, seed_text: str) -> bool:
+        r = self._runner.run(
+            ["dconf", "load", base_path],
+            input_bytes=seed_text.encode(),
         )
-        if r.returncode != 0 or not r.stdout.strip():
-            return None
-        out = r.stdout.strip()
-        if (out.startswith("'") and out.endswith("'")):
-            return out[1:-1]
-        return out
-    except Exception:
-        return None
+        return r.ok
 
-
-def load_dock_categories() -> dict[str, dict]:
-    """Read /org/sudhanix/dock/categories/* from dconf; fall back to the
-    embedded constants when the user-db isn't seeded yet."""
-    try:
-        r = subprocess.run(
-            ["dconf", "list", "/org/sudhanix/dock/categories/"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if r.returncode != 0:
-            return DOCK_CATEGORIES_FALLBACK()
-        names = [n.rstrip("/") for n in r.stdout.split() if n.strip()]
+    # ── Sudhanix-specific convenience ──
+    def read_dock_categories(self) -> dict[str, dict] | None:
+        names = self.list_relative(f"{self.SUDHANIX_DOCK_BASE}/categories/")
+        # list_relative returns [] for both "no key" and "dconf unreachable".
+        # Disambiguate: probe one well-known parent. If even the parent base
+        # is empty AND the runner can't reach dconf at all, return None so
+        # callers fall back to YAML; otherwise return whatever we found
+        # (possibly an empty dict, meaning "reachable but no categories").
         if not names:
-            return DOCK_CATEGORIES_FALLBACK()
-    except Exception:
-        return DOCK_CATEGORIES_FALLBACK()
+            probe = self._runner.run_text(["dconf", "list", "/"])
+            if not probe.ok:
+                return None
+            return {}
+        cats: dict[str, dict] = {}
+        for name in names:
+            base = f"{self.SUDHANIX_DOCK_BASE}/categories/{name}"
+            items = self.read_string_array(f"{base}/items") or []
+            label = self.read_scalar(f"{base}/label") or name.title()
+            always_on = (self.read_scalar(f"{base}/always-on") or "").lower() == "true"
+            weight_s = self.read_scalar(f"{base}/weight") or "999"
+            try:
+                weight = int(weight_s)
+            except ValueError:
+                weight = 999
+            default_enabled = (self.read_scalar(f"{base}/default-enabled") or "false").lower() == "true"
+            if always_on:
+                default_enabled = True
+            cats[name] = {
+                "items": items,
+                "label": label,
+                "always_on": always_on,
+                "weight": weight,
+                "default_enabled": default_enabled,
+            }
+        return cats
 
-    cats: dict[str, dict] = {}
-    for name in names:
-        base = f"/org/sudhanix/dock/categories/{name}"
-        items = _dconf_read_array(f"{base}/items") or []
-        label = _dconf_read_scalar(f"{base}/label") or name.title()
-        always_on = (_dconf_read_scalar(f"{base}/always-on") or "").lower() == "true"
-        # Prefer `weight` (new); fall through to `order` (back-compat).
-        weight_s = _dconf_read_scalar(f"{base}/weight")
-        if weight_s is None:
-            weight_s = _dconf_read_scalar(f"{base}/order") or "999"
+    def write_dock_choices(self, choices: dict[str, bool]) -> bool:
+        if not choices:
+            return True
+        lines = [f"{k}={'true' if v else 'false'}" for k, v in choices.items()]
+        seed = "[enabled]\n" + "\n".join(lines) + "\n"
+        return self.load_ini_seed(f"{self.SUDHANIX_DOCK_BASE}/", seed)
+
+    def write_plank_dock_items(self, items: list[str], *, hide_mode: str = "none") -> bool:
+        if items:
+            quoted = ", ".join(f"'{i}'" for i in items)
+            items_value = f"[{quoted}]"
+        else:
+            items_value = "@as []"
+        seed = (
+            "[docks/dock1]\n"
+            f"dock-items={items_value}\n"
+            f"hide-mode='{hide_mode}'\n"
+        )
+        return self.load_ini_seed(f"{self.PLANK_BASE}/", seed)
+
+
+# ─── CustomizeConfig + typed records ──────────────────────────────────────
+# Frozen dataclasses for theme / browser / dock anchor / dock category +
+# CustomizeConfig.load(path) which folds YAML + last-resort baked-in defaults.
+# load() never raises — config-file glitches must not block the panel.
+#
+# Forward-compat: unknown YAML fields are ignored without warning (Task 3
+# acceptance #4 risk note in the plan).
+
+
+@dataclass(frozen=True)
+class Theme:
+    id: str
+    label: str
+    gtk: str
+    icon: str
+    xfwm: str
+
+    def triple(self) -> tuple[str, str, str]:
+        return (self.gtk, self.icon, self.xfwm)
+
+    @classmethod
+    def from_raw(cls, raw: dict) -> "Theme | None":
+        if not isinstance(raw, dict):
+            return None
+        tid = raw.get("id")
+        if not isinstance(tid, str) or not tid:
+            return None
+        return cls(
+            id=tid,
+            label=str(raw.get("label") or tid),
+            gtk=str(raw.get("gtk") or ""),
+            icon=str(raw.get("icon") or ""),
+            xfwm=str(raw.get("xfwm") or ""),
+        )
+
+
+@dataclass(frozen=True)
+class Browser:
+    id: str
+    label: str
+    desktop: str
+
+    @classmethod
+    def from_raw(cls, raw: dict) -> "Browser | None":
+        if not isinstance(raw, dict):
+            return None
+        bid = raw.get("id")
+        if not isinstance(bid, str) or not bid:
+            return None
+        return cls(
+            id=bid,
+            label=str(raw.get("label") or bid),
+            desktop=str(raw.get("desktop") or ""),
+        )
+
+
+@dataclass(frozen=True)
+class DockAnchor:
+    item: str
+    weight: int
+
+    @classmethod
+    def from_raw(cls, raw: dict) -> "DockAnchor | None":
+        if not isinstance(raw, dict):
+            return None
+        item = raw.get("item")
+        if not isinstance(item, str) or not item:
+            return None
         try:
-            weight = int(weight_s)
-        except ValueError:
+            w = int(raw.get("weight", 0))
+        except (TypeError, ValueError):
+            w = 0
+        return cls(item=item, weight=w)
+
+
+@dataclass(frozen=True)
+class DockCategory:
+    key: str
+    label: str
+    items: tuple[str, ...]
+    always_on: bool
+    weight: int
+    default_enabled: bool
+
+    def as_dict(self) -> dict:
+        return {
+            "items": list(self.items),
+            "label": self.label,
+            "always_on": self.always_on,
+            "weight": self.weight,
+            "default_enabled": self.default_enabled,
+        }
+
+    @classmethod
+    def from_raw(cls, key: str, raw: dict) -> "DockCategory | None":
+        if not isinstance(raw, dict):
+            return None
+        items_raw = raw.get("items") or []
+        if not isinstance(items_raw, list):
+            items_raw = []
+        try:
+            weight = int(raw.get("weight", 999))
+        except (TypeError, ValueError):
             weight = 999
-        default_enabled = (_dconf_read_scalar(f"{base}/default-enabled") or "false").lower() == "true"
+        always_on = bool(raw.get("always_on", False))
+        default_enabled = bool(raw.get("default_enabled", False))
         if always_on:
             default_enabled = True
-        cats[name] = {
-            "items": items,
-            "label": label,
-            "always_on": always_on,
-            "weight": weight,
-            "default_enabled": default_enabled,
-        }
-    return cats or DOCK_CATEGORIES_FALLBACK()
+        return cls(
+            key=key,
+            label=str(raw.get("label") or key.title()),
+            items=tuple(str(i) for i in items_raw),
+            always_on=always_on,
+            weight=weight,
+            default_enabled=default_enabled,
+        )
 
 
+@dataclass(frozen=True)
+class CustomizeConfig:
+    themes: tuple[Theme, ...]
+    default_theme_id: str
+    browsers: tuple[Browser, ...]
+    default_browser_id: str
+    dock_anchors: tuple[DockAnchor, ...]
+    default_dock_categories: dict[str, DockCategory] = field(default_factory=dict)
+
+    def theme(self, theme_id: str) -> Theme | None:
+        for t in self.themes:
+            if t.id == theme_id:
+                return t
+        return None
+
+    def default_theme(self) -> Theme:
+        t = self.theme(self.default_theme_id)
+        if t is not None:
+            return t
+        if self.themes:
+            return self.themes[0]
+        return Theme(id="Dark", label="Dark", gtk="WhiteSur-Dark",
+                     icon="WhiteSur-dark", xfwm="WhiteSur-Dark")
+
+    def browser(self, browser_id: str) -> Browser | None:
+        for b in self.browsers:
+            if b.id == browser_id:
+                return b
+        return None
+
+    def default_browser(self) -> Browser:
+        b = self.browser(self.default_browser_id)
+        if b is not None:
+            return b
+        if self.browsers:
+            return self.browsers[0]
+        return Browser(id="Chrome", label="Chrome",
+                       desktop="google-chrome.desktop")
+
+    def theme_triple(self, theme_id: str) -> tuple[str, str, str]:
+        t = self.theme(theme_id) or self.default_theme()
+        return t.triple()
+
+    def browser_desktop(self, browser_id: str) -> str:
+        b = self.browser(browser_id) or self.default_browser()
+        return b.desktop
+
+    @classmethod
+    def load(cls, path: str | Path = CUSTOMIZE_PATH) -> "CustomizeConfig":
+        raw = cls._read_yaml(str(path))
+        if not raw:
+            return _LAST_RESORT_CONFIG
+
+        # Themes
+        theme_rows = raw.get("themes")
+        themes_t: list[Theme] = []
+        if isinstance(theme_rows, list):
+            for entry in theme_rows:
+                t = Theme.from_raw(entry) if isinstance(entry, dict) else None
+                if t is not None:
+                    themes_t.append(t)
+        if not themes_t:
+            themes_t = list(_LAST_RESORT_CONFIG.themes)
+        default_theme = str(raw.get("default_theme") or _LAST_RESORT_CONFIG.default_theme_id)
+
+        # Browsers
+        browser_rows = raw.get("browsers")
+        browsers_t: list[Browser] = []
+        if isinstance(browser_rows, list):
+            for entry in browser_rows:
+                b = Browser.from_raw(entry) if isinstance(entry, dict) else None
+                if b is not None:
+                    browsers_t.append(b)
+        if not browsers_t:
+            browsers_t = list(_LAST_RESORT_CONFIG.browsers)
+        default_browser = str(raw.get("default_browser") or _LAST_RESORT_CONFIG.default_browser_id)
+
+        # Dock anchors
+        anchors_raw = raw.get("dock_anchors")
+        anchors_t: list[DockAnchor] = []
+        if isinstance(anchors_raw, list):
+            for entry in anchors_raw:
+                a = DockAnchor.from_raw(entry) if isinstance(entry, dict) else None
+                if a is not None:
+                    anchors_t.append(a)
+        if not anchors_t:
+            anchors_t = list(_LAST_RESORT_CONFIG.dock_anchors)
+        anchors_t.sort(key=lambda a: a.weight)
+
+        # Dock categories
+        cats_raw = raw.get("dock_categories")
+        cats_t: dict[str, DockCategory] = {}
+        if isinstance(cats_raw, dict):
+            for k, v in cats_raw.items():
+                c = DockCategory.from_raw(str(k), v) if isinstance(v, dict) else None
+                if c is not None:
+                    cats_t[c.key] = c
+        if not cats_t:
+            cats_t = dict(_LAST_RESORT_CONFIG.default_dock_categories)
+
+        return cls(
+            themes=tuple(themes_t),
+            default_theme_id=default_theme,
+            browsers=tuple(browsers_t),
+            default_browser_id=default_browser,
+            dock_anchors=tuple(anchors_t),
+            default_dock_categories=cats_t,
+        )
+
+    @staticmethod
+    def _read_yaml(path: str) -> dict | None:
+        if not _HAVE_YAML:
+            return None
+        try:
+            with open(path, encoding="utf-8") as fh:
+                data = yaml.safe_load(fh)
+            return data if isinstance(data, dict) else None
+        except FileNotFoundError:
+            return None
+        except Exception as exc:
+            log(f"customize.yml unreadable ({path}): {exc}")
+            return None
+
+
+# Baked-in last-resort defaults. Names match the on-disk WhiteSur dirs and the
+# current customize.yml fleet config. Returned by CustomizeConfig.load() only
+# when both YAML load and parse fail. Built bottom-up because CustomizeConfig
+# references it; defined here to keep all defaults in one place.
+_LAST_RESORT_CONFIG = CustomizeConfig(
+    themes=(
+        Theme("Light", "Light", "WhiteSur",      "WhiteSur-light", "WhiteSur"),
+        Theme("Dark",  "Dark",  "WhiteSur-Dark", "WhiteSur-dark",  "WhiteSur-Dark"),
+        Theme("Auto",  "Auto",  "WhiteSur-Dark", "WhiteSur-dark",  "WhiteSur-Dark"),
+    ),
+    default_theme_id="Dark",
+    browsers=(
+        Browser("Chrome",  "Chrome",  "google-chrome.desktop"),
+        Browser("Firefox", "Firefox", "firefox.desktop"),
+        Browser("Zen",     "Zen",     "zen-browser.desktop"),
+    ),
+    default_browser_id="Chrome",
+    dock_anchors=(
+        DockAnchor("thunar.dockitem", 0),
+        DockAnchor("Trash.dockitem",  1000),
+    ),
+    default_dock_categories={
+        "essentials": DockCategory(
+            key="essentials", label="Essentials",
+            items=("thunar.dockitem", "thunderbird.dockitem",
+                   "com.google.Chrome.dockitem", "Zoom.dockitem"),
+            always_on=True, weight=100, default_enabled=True,
+        ),
+        "office": DockCategory(
+            key="office", label="Office",
+            items=("libreoffice-writer.dockitem", "libreoffice-calc.dockitem",
+                   "org.gnome.Calculator.dockitem"),
+            always_on=False, weight=300, default_enabled=True,
+        ),
+        "code": DockCategory(
+            key="code", label="Code",
+            items=("org.gnome.gedit.dockitem", "xfce4-terminal.dockitem",
+                   "code.dockitem"),
+            always_on=False, weight=500, default_enabled=False,
+        ),
+        "art": DockCategory(
+            key="art", label="Art",
+            items=("gimp.dockitem", "inkscape.dockitem", "krita.dockitem"),
+            always_on=False, weight=700, default_enabled=False,
+        ),
+    },
+)
+
+
+# Lazy singleton used by the free-function accessor shims below. Phase C will
+# remove the shims and pass CustomizeConfig through to CustomizationPage's
+# constructor directly.
+_CONFIG_SINGLETON: CustomizeConfig | None = None
+
+
+def _get_config() -> CustomizeConfig:
+    global _CONFIG_SINGLETON
+    if _CONFIG_SINGLETON is None:
+        _CONFIG_SINGLETON = CustomizeConfig.load()
+    return _CONFIG_SINGLETON
+
+
+# TODO(Phase C): remove; callers should receive CustomizeConfig.
+def themes() -> list[dict]:
+    return [{"id": t.id, "label": t.label, "gtk": t.gtk,
+             "icon": t.icon, "xfwm": t.xfwm}
+            for t in _get_config().themes]
+
+
+# TODO(Phase C): remove; callers should receive CustomizeConfig.
+def default_theme_id() -> str:
+    return _get_config().default_theme_id
+
+
+# TODO(Phase C): remove; callers should receive CustomizeConfig.
+def browsers() -> list[dict]:
+    return [{"id": b.id, "label": b.label, "desktop": b.desktop}
+            for b in _get_config().browsers]
+
+
+# TODO(Phase C): remove; callers should receive CustomizeConfig.
+def default_browser_id() -> str:
+    return _get_config().default_browser_id
+
+
+# TODO(Phase C): remove; callers should receive CustomizeConfig.
+def theme_triple(theme_id: str) -> tuple[str, str, str]:
+    return _get_config().theme_triple(theme_id)
+
+
+# TODO(Phase C): remove; callers should receive CustomizeConfig.
+def browser_desktop(browser_id: str) -> str:
+    return _get_config().browser_desktop(browser_id)
+
+
+# TODO(Phase C): remove; callers should receive CustomizeConfig.
+def dock_anchors() -> list[dict]:
+    return [{"item": a.item, "weight": a.weight}
+            for a in _get_config().dock_anchors]
+
+
+# TODO(Phase C): remove; callers should receive CustomizeConfig.
+def DOCK_CATEGORIES_FALLBACK() -> dict[str, dict]:
+    return {k: c.as_dict() for k, c in _get_config().default_dock_categories.items()}
+
+
+# TODO(Phase C): remove; CustomizationPage should receive resolved categories.
+def load_dock_categories() -> dict[str, dict]:
+    """Read /org/sudhanix/dock/categories/* from dconf via a fresh runner;
+    fall back to the customize.yml categories when the user-db isn't seeded
+    yet. Shape preserved (dict-of-dicts) so existing callers keep working."""
+    registry = DconfRegistry(CommandRunner())
+    cats = registry.read_dock_categories()
+    if cats is None or not cats:
+        return DOCK_CATEGORIES_FALLBACK()
+    return cats
+
+
+# TODO(Phase C): remove; callers should sort DockCategory objects directly.
 def ordered_category_keys(cats: dict[str, dict]) -> list[str]:
-    """Sort by weight (preferred) or legacy `order` field."""
     return sorted(
         cats.keys(),
-        key=lambda k: (
-            cats[k].get("weight", cats[k].get("order", 999)),
-            k,
-        ),
+        key=lambda k: (cats[k].get("weight", 999), k),
     )
+
+
+# ─── PlankDock ─────────────────────────────────────────────────────────────
+# Facade over the per-user plank launchers dir + the clear → seed → replace
+# lifecycle. replace_items(items) is the single entry point Apply uses; the
+# refresh_from_skel() helper preserves the session-start behaviour where a
+# migrated user with stale ~/.config/plank/ gets re-aligned with /etc/skel
+# before the panel paints.
+
+
+class PlankDock:
+    def __init__(
+        self,
+        runner: CommandRunner,
+        *,
+        skel_dir: Path = PLANK_SKEL_DIR,
+        user_dir: Path | None = None,
+    ) -> None:
+        self._runner = runner
+        self._skel_dir = skel_dir
+        self._user_dir = user_dir if user_dir is not None else PLANK_USER_DIR
+        self._launchers_dir = self._user_dir / "dock1" / "launchers"
+        self._skel_launchers_dir = self._skel_dir / "dock1" / "launchers"
+
+    @property
+    def launchers_dir(self) -> Path:
+        return self._launchers_dir
+
+    @property
+    def skel_launchers_dir(self) -> Path:
+        return self._skel_launchers_dir
+
+    @property
+    def skel_items(self) -> set[str]:
+        if not self._skel_launchers_dir.is_dir():
+            return set()
+        return {p.name for p in self._skel_launchers_dir.glob("*.dockitem")}
+
+    @property
+    def user_items(self) -> set[str]:
+        if not self._launchers_dir.is_dir():
+            return set()
+        return {p.name for p in self._launchers_dir.glob("*.dockitem")}
+
+    def ensure_user_dir(self) -> None:
+        self._user_dir.mkdir(parents=True, exist_ok=True)
+        self._launchers_dir.mkdir(parents=True, exist_ok=True)
+
+    def _clear(self) -> list[str]:
+        if not self._launchers_dir.is_dir():
+            log(f"PlankDock._clear: launchers dir absent ({self._launchers_dir}); nothing to do")
+            return []
+        removed: list[str] = []
+        for existing in self._launchers_dir.glob("*.dockitem"):
+            try:
+                existing.unlink()
+                removed.append(existing.name)
+            except Exception as exc:
+                log(f"PlankDock._clear: unlink {existing.name} failed: {exc}")
+        log(f"PlankDock._clear: removed={len(removed)} ({removed!r})")
+        return removed
+
+    def _seed(self, items: list[str]) -> list[str]:
+        if not self._skel_launchers_dir.is_dir():
+            log(f"PlankDock._seed: skel launchers missing ({self._skel_launchers_dir}); skip")
+            return []
+        self.ensure_user_dir()
+        seeded: list[str] = []
+        for name in items:
+            src = self._skel_launchers_dir / name
+            if not src.is_file():
+                log(f"PlankDock._seed: skel missing {name}; skip")
+                continue
+            dst = self._launchers_dir / name
+            try:
+                dst.write_bytes(src.read_bytes())
+                seeded.append(name)
+            except Exception as exc:
+                log(f"PlankDock._seed: copy {name} failed: {exc}")
+        log(f"PlankDock._seed: seeded={len(seeded)} ({seeded!r})")
+        return seeded
+
+    def replace_items(self, items: list[str]) -> bool:
+        """clear → seed → plank --replace. Returns True on full success."""
+        try:
+            self._clear()
+            self._seed(items)
+            self._runner.dispatch(["plank", "--replace"])
+            return True
+        except Exception as exc:
+            log(f"PlankDock.replace_items: top-level error: {exc}")
+            return False
+
+    def refresh_from_skel(self) -> None:
+        """Strict mirror of skel launchers/ into the user's launchers/. Seeds
+        every canonical file AND prunes anything Plank's auto-detect dropped
+        in. Called at session start, before Apply, so a migrated user with a
+        stale ~/.config/plank/ ends up with a clean canonical set."""
+        if not self._skel_dir.is_dir():
+            log(f"PlankDock.refresh_from_skel: skel dir missing ({self._skel_dir}); skip")
+            return
+        try:
+            self._user_dir.mkdir(parents=True, exist_ok=True)
+            if not self._skel_launchers_dir.is_dir():
+                return
+            self._launchers_dir.mkdir(parents=True, exist_ok=True)
+            canonical = {p.name for p in self._skel_launchers_dir.glob("*.dockitem")}
+
+            seeded = 0
+            for src in self._skel_launchers_dir.glob("*.dockitem"):
+                dst = self._launchers_dir / src.name
+                try:
+                    dst.write_bytes(src.read_bytes())
+                    seeded += 1
+                except Exception as exc:
+                    log(f"PlankDock.refresh_from_skel: copy {src.name} failed: {exc}")
+
+            pruned: list[str] = []
+            for existing in self._launchers_dir.glob("*.dockitem"):
+                if existing.name not in canonical:
+                    try:
+                        existing.unlink()
+                        pruned.append(existing.name)
+                    except Exception as exc:
+                        log(f"PlankDock.refresh_from_skel: prune {existing.name} failed: {exc}")
+            log(f"PlankDock.refresh_from_skel: seeded={seeded} pruned={len(pruned)} ({pruned!r})")
+        except Exception as exc:
+            log(f"PlankDock.refresh_from_skel: top-level error: {exc}")
+
+
+# TODO(Phase C): remove; main() should construct PlankDock and call refresh_from_skel directly.
+def refresh_plank_skel() -> None:
+    PlankDock(CommandRunner()).refresh_from_skel()
 
 # ── Colour palette ───────────────────────────────────────────────────────────
 # Dark + Light CSS blobs share structure; only colour tokens differ. Auto maps
@@ -786,37 +1098,33 @@ def token_path(uid: int) -> Path | None:
     return p
 
 
-def already_dismissed(user_dn: str, tok: Path) -> bool | None:
+def already_dismissed(user_dn: str, tok: Path, runner: CommandRunner | None = None) -> bool | None:
     """Returns True/False/None (None = couldn't query)."""
-    cmd = [
-        "ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
-        "-D", user_dn, "-y", str(tok),
-        "-b", user_dn, "-s", "base",
-        "(objectClass=*)", WELCOME_FLAG_ATTR,
-    ]
-    try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-    except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
-        log(f"ldapsearch failed: {exc}")
+    r = (runner or CommandRunner()).run_text(
+        ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
+         "-D", user_dn, "-y", str(tok),
+         "-b", user_dn, "-s", "base",
+         "(objectClass=*)", WELCOME_FLAG_ATTR],
+        timeout=10,
+    )
+    if not r.ok:
         return None
-    if proc.returncode != 0:
-        log(f"ldapsearch rc={proc.returncode}: {proc.stderr.strip()}")
-        return None
-    for line in proc.stdout.splitlines():
+    for line in r.stdout.splitlines():
         if line.lower().startswith(f"{WELCOME_FLAG_ATTR.lower()}:"):
             _, _, value = line.partition(":")
             return value.strip().upper() == "TRUE"
     return False
 
 
-def write_dismissal(user_dn: str, tok: Path) -> None:
-    proc = subprocess.run(
+def write_dismissal(user_dn: str, tok: Path, runner: CommandRunner | None = None) -> None:
+    runner = runner or CommandRunner()
+    probe = runner.run_text(
         ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
          "-D", user_dn, "-y", str(tok),
          "-b", user_dn, "-s", "base", "(objectClass=*)", "objectClass"],
-        capture_output=True, text=True, timeout=10,
+        timeout=10,
     )
-    needs_oc = SUDHANIX_USER_OC.lower() not in proc.stdout.lower()
+    needs_oc = SUDHANIX_USER_OC.lower() not in probe.stdout.lower()
 
     parts = [f"dn: {user_dn}", "changetype: modify"]
     if needs_oc:
@@ -829,13 +1137,11 @@ def write_dismissal(user_dn: str, tok: Path) -> None:
         ldif_path = fh.name
     try:
         os.chmod(ldif_path, 0o600)
-        proc = subprocess.run(
+        runner.run_text(
             ["ldapmodify", "-x", "-ZZ", "-H", LDAP_URI,
              "-D", user_dn, "-y", str(tok), "-f", ldif_path],
-            capture_output=True, text=True, timeout=10,
+            timeout=10,
         )
-        if proc.returncode != 0:
-            log(f"ldapmodify rc={proc.returncode}: {proc.stderr.strip()}")
     finally:
         try:
             os.unlink(ldif_path)
@@ -844,87 +1150,80 @@ def write_dismissal(user_dn: str, tok: Path) -> None:
 
 
 # ── Settings applicator ───────────────────────────────────────────────────────
-def apply_settings(values: dict) -> None:
+def apply_settings(
+    values: dict,
+    runner: CommandRunner | None = None,
+    registry: DconfRegistry | None = None,
+    dock: PlankDock | None = None,
+    config: CustomizeConfig | None = None,
+) -> None:
     """
     Apply user preferences collected from the Customization dialog.
     Each setting is applied independently; a failure in one does not abort
-    the rest. All errors are logged to stderr only.
+    the rest. All errors are logged via the runner / log() function.
+
+    Phase A: runtime objects are passed in by the caller (main() builds them
+    at startup; UI handlers construct them locally per-Apply).
     """
+    runner = runner or CommandRunner()
+    registry = registry or DconfRegistry(runner)
+    dock = dock or PlankDock(runner)
+    config = config or _get_config()
+
     log(f"apply theme={values.get('theme')!r} browser={values.get('browser')!r} "
         f"dock={values.get('dock')!r}")
     # 1. Theme — set GTK widget theme, icon theme, and xfwm4 window decorations
     # together so the user sees a single consistent Light/Dark switch.
-    theme = values.get("theme", default_theme_id())
-    gtk_theme, icon_theme, xfwm_theme = theme_triple(theme)
-    for cmd in [
+    theme_id = values.get("theme", config.default_theme_id)
+    gtk_theme, icon_theme, xfwm_theme = config.theme_triple(theme_id)
+    for argv in [
         ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName",     "-s", gtk_theme],
         ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", icon_theme],
         ["xfconf-query", "-c", "xfwm4",     "-p", "/general/theme",     "-s", xfwm_theme],
     ]:
-        try:
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-            if r.returncode != 0:
-                log(f"xfconf theme set failed: {r.stderr.strip()}")
-        except Exception as exc:
-            log(f"xfconf theme exception: {exc}")
+        runner.run_text(argv)
 
     # 2. Wallpaper rotation
     # Enumerate xfce4-desktop monitor paths via xfconf-query, then write
     # random-order. Falls through to a comment if enumeration fails.
     rotate = values.get("wallpaper_rotate", True)
-    try:
-        lv = subprocess.run(
-            ["xfconf-query", "-c", "xfce4-desktop", "-lv"],
-            capture_output=True, text=True, timeout=5,
-        )
-        monitor_paths = set()
+    lv = runner.run_text(["xfconf-query", "-c", "xfce4-desktop", "-lv"])
+    monitor_paths: set[str] = set()
+    if lv.ok:
         for line in lv.stdout.splitlines():
             # e.g. /backdrop/screen0/monitorVGA-1/workspace0/image-style
             parts = line.strip().split()
             if not parts:
                 continue
             prop = parts[0]
-            # grab parent up to workspaceN
             segs = prop.split("/")
             if len(segs) >= 5 and segs[1] == "backdrop":
                 parent = "/".join(segs[:5])
                 monitor_paths.add(parent)
-        if not monitor_paths:
-            log("wallpaper rotation: no monitor paths found in xfconf")
-        for parent in monitor_paths:
-            rotate_prop = f"{parent}/random-order"
-            val = "true" if rotate else "false"
-            r = subprocess.run(
-                ["xfconf-query", "-c", "xfce4-desktop", "-p", rotate_prop,
-                 "--create", "-t", "bool", "-s", val],
-                capture_output=True, text=True, timeout=5,
-            )
-            if r.returncode != 0:
-                log(f"wallpaper rotation set failed ({rotate_prop}): {r.stderr.strip()}")
-    except Exception as exc:
-        log(f"wallpaper rotation exception: {exc}")
+    if not monitor_paths:
+        log("wallpaper rotation: no monitor paths found in xfconf")
+    for parent in monitor_paths:
+        rotate_prop = f"{parent}/random-order"
+        val = "true" if rotate else "false"
+        runner.run_text(
+            ["xfconf-query", "-c", "xfce4-desktop", "-p", rotate_prop,
+             "--create", "-t", "bool", "-s", val],
+        )
 
     # 3. Dock categories — rewrite plank dock-items in the user's dconf
     # user-db from the chip state. Always-on categories (essentials) are
     # included regardless; other categories follow the user's chip choices.
-    # The result is wrapped with the dock_anchors framing icons (app finder
+    # The result is wrapped with the dock_anchors framing icons (thunar
     # left, trash right). Items not present in ~/.config/plank/dock1/launchers/
     # are filtered out so missing .dockitem files don't show up as broken
     # slots in Plank. If every category resolves to zero items (or the user
     # disabled all toggleable categories AND essentials yields nothing on
-    # this host), we ship a blank dock — no anchors, by design. dconf load
-    # is idempotent and Plank watches dconf, so the dock updates without
-    # a restart.
-    dock = values.get("dock", {})  # {"office": True, "code": False, ...}
+    # this host), we ship a blank dock — no anchors, by design.
+    user_dock = values.get("dock", {})  # {"office": True, "code": False, ...}
     try:
         cats = load_dock_categories()
-        present_items: set[str] = set()
-        if PLANK_LAUNCHERS_DIR.exists():
-            present_items = {p.name for p in PLANK_LAUNCHERS_DIR.glob("*.dockitem")}
-        skel_launchers_dir = PLANK_SKEL_DIR / "dock1" / "launchers"
-        skel_items: set[str] = set()
-        if skel_launchers_dir.is_dir():
-            skel_items = {p.name for p in skel_launchers_dir.glob("*.dockitem")}
+        present_items = dock.user_items
+        skel_items = dock.skel_items
 
         # Build (weight, items[]) groups. Each enabled category contributes
         # one group; each anchor entry contributes a single-item group.
@@ -935,28 +1234,25 @@ def apply_settings(values: dict) -> None:
             if cat.get("always_on"):
                 enabled = True
             else:
-                enabled = bool(dock.get(key, cat.get("default_enabled", False)))
+                enabled = bool(user_dock.get(key, cat.get("default_enabled", False)))
             if not enabled:
                 continue
-            cat_w = int(cat.get("weight", cat.get("order", 999)))
-            cat_items = [
-                i for i in cat.get("items", []) if i in present_items
-            ]
+            cat_w = int(cat.get("weight", 999))
+            cat_items = [i for i in cat.get("items", []) if i in present_items]
             if cat_items:
                 category_groups.append((cat_w, cat_items))
 
         target: list[str] = []
         if category_groups:
             anchor_groups: list[tuple[int, list[str]]] = []
-            for a in dock_anchors():
-                item = a.get("item", "")
+            for anchor in config.dock_anchors:
                 # Filter anchors against the canonical skel set, not the
                 # user's current launchers dir: anchors are framing icons
                 # that should land in the dock as long as the canonical
                 # .dockitem exists, even if the user's previous dock
                 # happened not to include them.
-                if item and item in (skel_items or present_items):
-                    anchor_groups.append((int(a.get("weight", 0)), [item]))
+                if anchor.item and anchor.item in (skel_items or present_items):
+                    anchor_groups.append((anchor.weight, [anchor.item]))
             for _w, group_items in sorted(
                 category_groups + anchor_groups, key=lambda g: g[0]
             ):
@@ -967,71 +1263,18 @@ def apply_settings(values: dict) -> None:
         # Always write — including the empty list — so that toggling every
         # category off actually produces the blank dock the user asked for,
         # rather than leaving the prior dock-items in place. Also flip
-        # hide-mode back to 'none' so the dock becomes visible: the
-        # site-default starts it auto-hidden until the user has either
-        # chosen or accepted the default through the welcome flow.
-        # An empty array needs the @as GVariant type annotation so dconf
-        # can infer the element type.
-        if target:
-            quoted = ", ".join(f"'{i}'" for i in target)
-            items_value = f"[{quoted}]"
-        else:
-            items_value = "@as []"
-        seed = (
-            "[docks/dock1]\n"
-            f"dock-items={items_value}\n"
-            "hide-mode='none'\n"
-        ).encode()
-        r = subprocess.run(
-            ["dconf", "load", "/net/launchpad/plank/"],
-            input=seed, capture_output=True, timeout=5,
-        )
-        if r.returncode != 0:
-            log("dconf dock load failed: "
-                + r.stderr.decode(errors="replace").strip())
-        else:
+        # hide-mode back to 'none' so the dock becomes visible.
+        if registry.write_plank_dock_items(target, hide_mode="none"):
             log(f"dock-items rewritten: {len(target)} items")
+        else:
+            log("dconf dock load failed")
 
-        # Wipe the user's launchers dir to a blank slate, then seed
-        # exactly the .dockitem files referenced by the dock-items
-        # list we just wrote. Seeding the full skel here would
-        # re-introduce every canonical .dockitem regardless of chip
-        # choices and surface as stale/duplicate launchers. Plank
-        # won't recreate launchers from dock-items entries on its
-        # own, so the explicit seed is required.
-        clear_plank()
-        seed_plank_items(target)
-
-        # Restart plank so it re-reads dconf + scans the launchers dir.
-        # `plank --replace` exits any existing instance and starts a new
-        # one. If no instance is running (autostart skipped or user
-        # killed it), this is the same as a fresh start. Detached from
-        # the welcome process so closing welcome doesn't kill the dock.
-        try:
-            subprocess.Popen(
-                ["plank", "--replace"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                stdin=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-            log("plank --replace dispatched")
-        except FileNotFoundError:
-            log("plank binary not on PATH; dock will not reload until next session")
-        except Exception as exc:
-            log(f"plank restart exception: {exc}")
+        # clear → seed → plank --replace as a single facade call.
+        dock.replace_items(target)
 
         # Persist the user's category choices into their dconf so vajra and
         # future tools can read them back without re-deriving.
-        choices_lines = []
-        for key, enabled in dock.items():
-            choices_lines.append(f"{key}={'true' if enabled else 'false'}")
-        if choices_lines:
-            choices_seed = ("[enabled]\n" + "\n".join(choices_lines) + "\n").encode()
-            subprocess.run(
-                ["dconf", "load", "/org/sudhanix/dock/"],
-                input=choices_seed, capture_output=True, timeout=5,
-            )
+        registry.write_dock_choices(user_dock)
     except Exception as exc:
         log(f"dock dconf exception: {exc}")
 
@@ -1039,38 +1282,22 @@ def apply_settings(values: dict) -> None:
     # runs that want to reproduce a user's choices.
     try:
         SUDHANIX_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        DOCK_PREFS_FILE.write_text(json.dumps(dock, indent=2))
+        DOCK_PREFS_FILE.write_text(json.dumps(user_dock, indent=2))
     except Exception as exc:
         log(f"dock prefs write failed: {exc}")
 
     # 4. Default browser + terminal emulator
     # Two-track for each: xdg-settings / xdg-mime for the freedesktop
-    # MIME/scheme registry (covers most apps that ask "open a URL" or
-    # "spawn a terminal"), and ~/.config/xfce4/helpers.rc for XFCE's
+    # MIME/scheme registry, and ~/.config/xfce4/helpers.rc for XFCE's
     # exo-helper which Thunar / xfce4-panel / vajra use directly.
-    # Browser
-    browser = values.get("browser", default_browser_id())
-    desktop_file = browser_desktop(browser) or browser_desktop(default_browser_id())
-    try:
-        r = subprocess.run(
-            ["xdg-settings", "set", "default-web-browser", desktop_file],
-            capture_output=True, text=True, timeout=5,
-        )
-        if r.returncode != 0:
-            log(f"xdg-settings browser set failed: {r.stderr.strip()}")
-    except Exception as exc:
-        log(f"xdg-settings exception: {exc}")
+    browser_id = values.get("browser", config.default_browser_id)
+    desktop_file = config.browser_desktop(browser_id) or config.browser_desktop(config.default_browser_id)
+    runner.run_text(["xdg-settings", "set", "default-web-browser", desktop_file])
     # Terminal emulator — xfce4-terminal is the Sudhanix default; future
     # work can surface a chip for this. xdg-mime registration covers
     # `x-scheme-handler/terminal` (used by Files → Open Terminal etc).
     term_desktop = "xfce4-terminal.desktop"
-    try:
-        subprocess.run(
-            ["xdg-mime", "default", term_desktop, "x-scheme-handler/terminal"],
-            capture_output=True, text=True, timeout=5,
-        )
-    except Exception as exc:
-        log(f"xdg-mime terminal set failed: {exc}")
+    runner.run_text(["xdg-mime", "default", term_desktop, "x-scheme-handler/terminal"])
 
     # XFCE helpers.rc — exo-open / exo-helper-1 consults this for "Run
     # in terminal", "Open in browser", etc. Keyed by the helper category
@@ -1360,8 +1587,9 @@ class CustomizationPage(Gtk.Box):
         self._dock_categories = cats  # apply path reads category items from here
         # Read prior user choices from /org/sudhanix/dock/enabled/* if any.
         prior_enabled: dict[str, bool] = {}
+        _prior_reg = DconfRegistry(CommandRunner())
         for k in cats.keys():
-            v = _dconf_read_scalar(f"/org/sudhanix/dock/enabled/{k}")
+            v = _prior_reg.read_scalar(f"/org/sudhanix/dock/enabled/{k}")
             if v is not None:
                 prior_enabled[k] = v.lower() == "true"
 
@@ -1485,7 +1713,13 @@ class CustomizationPage(Gtk.Box):
             },
             "browser": self._selected_browser,
         }
-        apply_settings(values)
+        # Phase A: construct runtime objects locally per-Apply. Phase C will
+        # thread them through the constructor.
+        runner = CommandRunner()
+        registry = DconfRegistry(runner)
+        dock = PlankDock(runner)
+        apply_settings(values, runner=runner, registry=registry, dock=dock,
+                       config=_get_config())
         # Tell the surrounding WelcomeWindow that the user customised
         # explicitly — otherwise dismiss would re-apply the all-categories
         # default and stomp the user's chip choices.
@@ -1870,12 +2104,19 @@ class WelcomeWindow(Gtk.Window):
             dock_choices = {
                 key: True for key, val in cats.items() if not val.get("always_on")
             }
-            apply_settings({
-                "theme": default_theme_id(),
-                "wallpaper_rotate": True,
-                "dock": dock_choices,
-                "browser": default_browser_id(),
-            })
+            runner = CommandRunner()
+            registry = DconfRegistry(runner)
+            dock = PlankDock(runner)
+            config = _get_config()
+            apply_settings(
+                {
+                    "theme": config.default_theme_id,
+                    "wallpaper_rotate": True,
+                    "dock": dock_choices,
+                    "browser": config.default_browser_id,
+                },
+                runner=runner, registry=registry, dock=dock, config=config,
+            )
         except Exception as exc:
             log(f"default-layout apply failed: {exc}")
 
@@ -2027,6 +2268,11 @@ def main() -> int:
 
     user_dn = LDAP_DN_TEMPLATE.format(uid=username)
 
+    # Long-lived runtime objects. Phase A: also constructed locally inside the
+    # UI handlers because CustomizationPage / WelcomeWindow constructors are
+    # not yet DI-aware (Phase C). The duplication is intentional and small.
+    runner = CommandRunner()
+
     # SUDHANIX_WELCOME_FORCE bypasses the dismissal/token gate so vajra's
     # test_welcome_preview "Show window" action and any future preview path
     # can render the panel regardless of LDAP state. The Continue button still
@@ -2039,7 +2285,7 @@ def main() -> int:
             log("no cached PAM token; can't reach LDAP this session")
             return 0
 
-        state = already_dismissed(user_dn, tok)
+        state = already_dismissed(user_dn, tok, runner=runner)
         if state is True:
             return 0
         if state is None:
@@ -2053,7 +2299,7 @@ def main() -> int:
     # migrated user with a stale or empty .config/plank/ ends up with
     # Plank's auto-detect garbage in user-db, which dconf write can't
     # cleanly recover from.
-    refresh_plank_skel()
+    PlankDock(runner).refresh_from_skel()
 
     apply_css_safe()
 
@@ -2063,7 +2309,7 @@ def main() -> int:
 
     if win.dismiss_on_continue and not force:
         try:
-            write_dismissal(user_dn, tok)
+            write_dismissal(user_dn, tok, runner=runner)
         except Exception as exc:
             log(f"write_dismissal failed: {exc}")
 
