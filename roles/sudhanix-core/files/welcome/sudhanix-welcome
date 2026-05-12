@@ -91,8 +91,8 @@ _FALLBACK_DEFAULT_BROWSER = "Chrome"
 # 1000 = rightmost, 500 = center. Anchors only appear when at least one
 # category is enabled (see apply_settings).
 _FALLBACK_DOCK_ANCHORS = [
-    {"item": "xfce4-appfinder.dockitem", "weight": 0},
-    {"item": "Trash.dockitem",           "weight": 1000},
+    {"item": "thunar.dockitem", "weight": 0},
+    {"item": "Trash.dockitem",  "weight": 1000},
 ]
 
 
@@ -347,6 +347,59 @@ def refresh_plank_skel() -> None:
         )
     except Exception as exc:
         log(f"refresh_plank_skel: top-level error: {exc}")
+
+
+def clear_plank() -> None:
+    """Wipe ~/.config/plank/dock1/launchers/ to a blank slate so the
+    Apply path can insert exactly the .dockitem set implied by the
+    user's category choices. Used in place of refresh_plank_skel on
+    Apply: seeding the full skel here would re-introduce already
+    existing launchers and fight the dock-items list we just wrote
+    into dconf."""
+    target = PLANK_LAUNCHERS_DIR
+    if not target.is_dir():
+        log(f"clear_plank: launchers dir absent ({target}); nothing to do")
+        return
+    removed: list[str] = []
+    try:
+        for existing in target.glob("*.dockitem"):
+            try:
+                existing.unlink()
+                removed.append(existing.name)
+            except Exception as exc:
+                log(f"clear_plank: unlink {existing.name} failed: {exc}")
+        log(f"clear_plank: removed={len(removed)} ({removed!r})")
+    except Exception as exc:
+        log(f"clear_plank: top-level error: {exc}")
+
+
+def seed_plank_items(items: list[str]) -> None:
+    """Copy the named .dockitem files from /etc/skel/.config/plank/dock1/launchers/
+    into the user's launchers dir. Run after clear_plank() so plank
+    --replace has actual files backing the dock-items entries we just
+    wrote. Items missing from skel are skipped — they'd have been
+    filtered out of dock-items already."""
+    skel_launchers = PLANK_SKEL_DIR / "dock1" / "launchers"
+    if not skel_launchers.is_dir():
+        log(f"seed_plank_items: skel launchers missing ({skel_launchers}); skip")
+        return
+    try:
+        PLANK_LAUNCHERS_DIR.mkdir(parents=True, exist_ok=True)
+        seeded: list[str] = []
+        for name in items:
+            src = skel_launchers / name
+            if not src.is_file():
+                log(f"seed_plank_items: skel missing {name}; skip")
+                continue
+            dst = PLANK_LAUNCHERS_DIR / name
+            try:
+                dst.write_bytes(src.read_bytes())
+                seeded.append(name)
+            except Exception as exc:
+                log(f"seed_plank_items: copy {name} failed: {exc}")
+        log(f"seed_plank_items: seeded={len(seeded)} ({seeded!r})")
+    except Exception as exc:
+        log(f"seed_plank_items: top-level error: {exc}")
 
 
 def _dconf_read_array(key: str) -> list[str] | None:
@@ -868,6 +921,10 @@ def apply_settings(values: dict) -> None:
         present_items: set[str] = set()
         if PLANK_LAUNCHERS_DIR.exists():
             present_items = {p.name for p in PLANK_LAUNCHERS_DIR.glob("*.dockitem")}
+        skel_launchers_dir = PLANK_SKEL_DIR / "dock1" / "launchers"
+        skel_items: set[str] = set()
+        if skel_launchers_dir.is_dir():
+            skel_items = {p.name for p in skel_launchers_dir.glob("*.dockitem")}
 
         # Build (weight, items[]) groups. Each enabled category contributes
         # one group; each anchor entry contributes a single-item group.
@@ -893,7 +950,12 @@ def apply_settings(values: dict) -> None:
             anchor_groups: list[tuple[int, list[str]]] = []
             for a in dock_anchors():
                 item = a.get("item", "")
-                if item and item in present_items:
+                # Filter anchors against the canonical skel set, not the
+                # user's current launchers dir: anchors are framing icons
+                # that should land in the dock as long as the canonical
+                # .dockitem exists, even if the user's previous dock
+                # happened not to include them.
+                if item and item in (skel_items or present_items):
                     anchor_groups.append((int(a.get("weight", 0)), [item]))
             for _w, group_items in sorted(
                 category_groups + anchor_groups, key=lambda g: g[0]
@@ -930,13 +992,15 @@ def apply_settings(values: dict) -> None:
         else:
             log(f"dock-items rewritten: {len(target)} items")
 
-        # Refresh the user's plank launchers from /etc/skel/.config/plank
-        # so that any .dockitem the role added since last login lands in
-        # the user's dir BEFORE plank reloads. Without this step, items
-        # newly enabled by the customizer that aren't yet in the user's
-        # launchers dir get filtered out and look like the apply did
-        # nothing.
-        refresh_plank_skel()
+        # Wipe the user's launchers dir to a blank slate, then seed
+        # exactly the .dockitem files referenced by the dock-items
+        # list we just wrote. Seeding the full skel here would
+        # re-introduce every canonical .dockitem regardless of chip
+        # choices and surface as stale/duplicate launchers. Plank
+        # won't recreate launchers from dock-items entries on its
+        # own, so the explicit seed is required.
+        clear_plank()
+        seed_plank_items(target)
 
         # Restart plank so it re-reads dconf + scans the launchers dir.
         # `plank --replace` exits any existing instance and starts a new
