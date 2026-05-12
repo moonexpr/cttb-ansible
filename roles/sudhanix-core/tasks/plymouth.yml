@@ -1,0 +1,75 @@
+---
+# Sudhanix boot splash via Plymouth.
+# Theme assets live in files/plymouth/sudhanix/; this file wires them up.
+
+- name: install plymouth packages
+  apt:
+    name:
+      - plymouth
+      - plymouth-themes
+      - plymouth-label
+    state: present
+  tags:
+    - sudhanix-core
+    - plymouth
+    - install
+
+- name: ensure plymouth themes dir exists
+  file:
+    path: /usr/share/plymouth/themes/sudhanix
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  tags:
+    - sudhanix-core
+    - plymouth
+    - install
+
+- name: deploy plymouth theme files
+  copy:
+    src: "plymouth/sudhanix/{{ item }}"
+    dest: "/usr/share/plymouth/themes/sudhanix/{{ item }}"
+    mode: 0644
+    owner: root
+    group: root
+  loop:
+    - sudhanix.plymouth
+    - sudhanix.script
+    - amitabha.png
+    - progress-bg.png
+    - progress-fill.png
+  tags:
+    - sudhanix-core
+    - plymouth
+    - install
+
+- name: set sudhanix as default plymouth theme
+  shell: plymouth-set-default-theme -R sudhanix
+  args:
+    creates: /etc/alternatives/default.plymouth
+  register: plymouth_set
+  changed_when: "'sudhanix' in plymouth_set.stdout or plymouth_set.rc == 0"
+  tags:
+    - sudhanix-core
+    - plymouth
+    - install
+
+- name: ensure quiet splash on kernel cmdline
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"'
+  register: grub_cmdline
+  tags:
+    - sudhanix-core
+    - plymouth
+    - install
+
+- name: update-grub if cmdline changed
+  command: update-grub
+  when: grub_cmdline.changed
+  tags:
+    - sudhanix-core
+    - plymouth
+    - install

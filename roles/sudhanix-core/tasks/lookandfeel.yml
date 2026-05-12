@@ -42,6 +42,39 @@
         - sudhanix-core
         - shortcuts
 
+  # WhiteSur theme has to land before any lightdm-greeter task because the
+  # CSS deploy writes into /usr/share/themes/{{desktop_theme}}/gtk-3.0/.
+  # Theme install + casing-alias symlinks moved here from below (2026-05-12).
+  - name: install WhiteSur GTK theme
+    unarchive:
+      remote_src: yes
+      src: "{{ansible_assets_url}}/WhiteSur-gtk-theme.tar.gz"
+      dest: /usr/share/themes/
+      creates: /usr/share/themes/WhiteSur
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+      - theme
+
+  - name: bidirectional WhiteSur theme/icon casing symlinks
+    file:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      state: link
+      force: yes
+    loop:
+      - { src: WhiteSur,      dest: /usr/share/themes/WhiteSur-light }
+      - { src: WhiteSur,      dest: /usr/share/themes/WhiteSur-Light }
+      - { src: WhiteSur-Dark, dest: /usr/share/themes/WhiteSur-dark }
+      - { src: WhiteSur-light, dest: /usr/share/icons/WhiteSur-Light }
+      - { src: WhiteSur-dark,  dest: /usr/share/icons/WhiteSur-Dark }
+    tags:
+      - sudhanix-core
+      - theme
+      - config
+      - lookandfeel
+
   - name: configure lightdm
     template:
       src: lightdm.j2
@@ -173,45 +206,6 @@
     tags:
       - sudhanix-core
       - icons
-
-  - name: install WhiteSur GTK theme
-    unarchive:
-      remote_src: yes
-      src: "{{ansible_assets_url}}/WhiteSur-gtk-theme.tar.gz"
-      dest: /usr/share/themes/
-      creates: /usr/share/themes/WhiteSur
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - theme
-
-  # Theme casing is split across the two upstream tarballs: the GTK package
-  # ships /usr/share/themes/WhiteSur (light) + /WhiteSur-Dark (capital D),
-  # while the icon package ships /usr/share/icons/WhiteSur-light + -dark
-  # (lowercase). xfwm4 reads the GTK theme dir for window decorations, so
-  # window decor follows GTK casing. Add bidirectional symlinks so any tool
-  # (xfconf-query, the welcome panel, vajra theme.lua) can use either
-  # casing and resolve to the same backing dir.
-  - name: bidirectional WhiteSur theme/icon casing symlinks
-    file:
-      src: "{{ item.src }}"
-      dest: "{{ item.dest }}"
-      state: link
-      force: yes
-    loop:
-      # GTK theme dir aliases (real: WhiteSur, WhiteSur-Dark)
-      - { src: WhiteSur,      dest: /usr/share/themes/WhiteSur-light }
-      - { src: WhiteSur,      dest: /usr/share/themes/WhiteSur-Light }
-      - { src: WhiteSur-Dark, dest: /usr/share/themes/WhiteSur-dark }
-      # Icon theme dir aliases (real: WhiteSur-light, WhiteSur-dark)
-      - { src: WhiteSur-light, dest: /usr/share/icons/WhiteSur-Light }
-      - { src: WhiteSur-dark,  dest: /usr/share/icons/WhiteSur-Dark }
-    tags:
-      - sudhanix-core
-      - theme
-      - config
-      - lookandfeel
 
   - name: install WhiteSur icon theme (includes dark variant)
     unarchive:
@@ -403,6 +397,16 @@
   - name: ensure xfce4 kiosk directory exists
     file:
       path: /etc/xdg/xfce4/kiosk
+      state: directory
+      mode: 0755
+      owner: root
+      group: root
+    tags:
+      - sudhanix-core
+
+  - name: ensure /etc/xdg/gtk-3.0 exists
+    file:
+      path: /etc/xdg/gtk-3.0
       state: directory
       mode: 0755
       owner: root

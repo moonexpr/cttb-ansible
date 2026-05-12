@@ -147,6 +147,16 @@
       - config
       - lookandfeel
 
+  # Plymouth boot splash — Sudhanix branding. Self-contained (apt install +
+  # asset copy + default-theme + grub cmdline). See roles/sudhanix-core/tasks/plymouth.yml.
+  - include_tasks:
+      file: plymouth.yml
+      apply:
+        tags: [install]
+    tags:
+      - install
+      - plymouth
+
   - include_tasks:
       file: sw.yml
       apply:
