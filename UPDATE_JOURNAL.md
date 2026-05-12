@@ -3636,6 +3636,21 @@ Log: `logs/sx26-install-<timestamp>.log`. Baseline from 2026-05-09 was `ok=261 c
 
 Sections A–F still hold. If LDAP-login works post-reboot we walk through tomorrow as planned. If not, we demo as `administrator` and the only bullet that doesn't survive is "B. LDAP login" — every other surface (Plymouth, panel branding, vajra demo, watchdog, theme) is independent of LDAP and works either way.
 
+### Afternoon polish round
+
+After the reboot fixed LDAP login (stale-session in-memory state, not a config bug — the partial config run had nothing to do with it), the on-screen demo turned up four more rough edges. All commits on `release/sudhanix26`.
+
+| # | Issue | Root cause | Fix | Commit |
+|---|-------|-----------|-----|--------|
+| 1 | Plymouth showed old lotus before sx26 globe | `plymouth-set-default-theme -R` guarded by `creates:` skipped on hosts with existing symlink → initramfs kept stale assets; the helper binary isn't on root's PATH in Noble either | Split into `community.general.alternatives` + explicit `update-initramfs -u`; both gate on `plymouth_assets.changed` | `61f6e2af` |
+| 2 | Welcome wordmark sat awkwardly inside the padded sidebar | Wordmark packed into `inner` (18px margin) instead of the sidebar itself | Hero treatment — pack wordmark directly into sidebar at 240px wide; image breaks the inner margin and fills top-left | `61f6e2af` |
+| 3 | Alt+Tab no-op | xfce4-keyboard-shortcuts xml replaced xfwm4/custom and wiped upstream `<Alt>Tab → cycle_windows_key` default | Added explicit `<Alt>Tab` and `<Alt><Shift>Tab` to the template | (this commit) |
+| 4 | Same wallpaper every session | xfdesktop persists `last-image` between sessions; cycle timer only fires during a live session | New `/usr/local/bin/sudhanix-randomize-wallpaper` + XDG autostart that picks a random wallpaper from `/usr/share/backgrounds/cttb/` at every XFCE session start | (this commit) |
+| 5 | Welcome customizer "Apply" did nothing to the dock | Plank package never installed despite role README advertising it; customizer's dconf writes hit a path nothing was reading | Added `plank` to `lubuntu.yml` apt list. Same class as #58 — feature staged but not wired | (this commit) |
+| 6 | Emoji rendered as boxes | lubuntu-core minimal ships zero emoji fonts | Added `fonts-noto-color-emoji` to `lubuntu.yml` | (this commit) |
+
+After re-auth + reboot: alt+tab works (new session reads xml), randomizer fires at session start, plank starts via its autostart and the welcome customizer's writes are honored, emoji render correctly.
+
 ### Tomorrow (demo) — walkthrough script
 
 Demo is **show, not install**. The machine is already in its final Sudhanix 26 state. The script below is the order to walk the audience through, mapped to remaining open Release issues (#19, #34, #40) so each gets a live demo moment.

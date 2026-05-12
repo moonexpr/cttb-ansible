@@ -61,6 +61,16 @@
       - xfdesktop4
       - xfce4-settings
       - thunar
+      # Plank — the dock. README advertises XFCE4 + Plank, the welcome
+      # panel's customizer writes to /net/launchpad/plank/ dconf, but no
+      # task was actually installing the package. Without this Plank's
+      # dconf entries are read by nothing and the dock never shows.
+      - plank
+      # Color emoji — lubuntu-core minimal ships with no emoji glyphs at
+      # all, so the welcome panel chips, vajra Testing icons, and any
+      # user-typed emoji render as missing-glyph boxes. Pulls in the
+      # standard Noto color emoji set.
+      - fonts-noto-color-emoji
       - xfce4-panel
       - xfce4-power-manager
       - xfce4-appmenu-plugin
