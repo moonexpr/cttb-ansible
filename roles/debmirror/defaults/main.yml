@@ -40,8 +40,8 @@ debmirrors:
     proto: http
     gpgkeys: "871920D1991BC93C"
     arch: amd64
-    sections: "main,restricted,universe,multiverse"
-    releases: "noble,noble-security,noble-updates"
+    sections: "main,restricted,universe,multiverse,main/debian-installer,restricted/debian-installer,universe/debian-installer,multiverse/debian-installer"
+    releases: "noble,noble-security,noble-updates,noble-backports"
     src_path: /ubuntu
     dst_path: /ubuntu
     source: False
