@@ -1,4 +1,13 @@
 ---
+# sudhanix-core role entry point.
+#
+# Architectural contract (issue #57): the role is a Template Method —
+# every role runs install() then configure() in strict order. Filesystem
+# state is the pipe between the two phases. `meta: flush_handlers` after
+# install guarantees rebuild-font-cache / restart-lightdm /
+# restart-pulseaudio / update-grub-config / update-initramfs have fired
+# before any configure task reads from the artifacts install left behind.
+#
 # Tag strategy across this role + sudhanix-vajra-tool dep:
 #   install — apt, tarballs, binary deploys, PAM hooks (one-off / rare)
 #   config  — xfconf, dconf, polkit rules, JSONs, theme settings (frequent)
@@ -18,8 +27,14 @@
   tags:
     - always
 
-- name: Run shared setup tasks
-  ansible.builtin.import_tasks: setup/default.yml
+- name: Install phase
+  ansible.builtin.import_tasks: install.yml
+
+- name: Flush install-phase handlers before configure begins
+  ansible.builtin.meta: flush_handlers
+
+- name: Configure phase
+  ansible.builtin.import_tasks: configure.yml
 
 - name: Run platform-specific setup tasks
   ansible.builtin.include_tasks: "{{ item }}"

@@ -1,0 +1,46 @@
+---
+# Configure phase — settings side of sudhanix-core.
+#
+# Templates, copies of config files, lineinfile mutations, polkit/pkla
+# privilege rules, dconf system defaults, autostart entries. Reads from
+# artifacts the install phase left on disk.
+#
+# Pre-condition: install.yml has run to completion AND main.yml's
+# `meta: flush_handlers` has fired (so font cache rebuilt, lightdm
+# restarted if greeter changed, pulseaudio restarted on pre-24.04).
+#
+# Tag strategy: each include directive carries the same tag set the
+# prior setup/default.yml orchestrator used. `apply:` propagates the
+# config tag to dynamically-included files.
+
+  # Polkit / pkla / network-manager privilege rules — extracted from the
+  # prior setup/default.yml top-level inline block. These are pure
+  # configure-phase tasks: they write rules files that polkit (already
+  # installed by lubuntu.yml's package batch) reads at runtime.
+  - import_tasks: policy.yml
+    tags:
+      - config
+
+  # UX session glue — appfinder/notifyd/power-manager/session xml,
+  # dconf-db site defaults (Plank dock, GNOME interface, light-locker),
+  # devilspie2 rules, chrome NFS-lock cleanup, session watchdog.
+  - include_tasks:
+      file: sudhanix-ux.yml
+      apply:
+        tags: [config]
+    tags:
+      - config
+      - sudhanix-ux
+
+  # Wallpaper — xfdesktop rotation xml, randomizer autostart, plank
+  # autostart entry, legacy feh cleanup. wallpaper.yml is mixed today
+  # (it also has the cttb-wallpapers.tar.gz unarchive); apply config
+  # filters out the unarchive on --tags config runs but the directive's
+  # wallpaper tag still fires it on --tags wallpaper.
+  - include_tasks:
+      file: wallpaper.yml
+      apply:
+        tags: [config]
+    tags:
+      - config
+      - wallpaper

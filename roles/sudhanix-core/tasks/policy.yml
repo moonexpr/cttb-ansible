@@ -1,0 +1,92 @@
+---
+# Policy / privilege configuration.
+#
+# Polkit rules (24.04+) and legacy pkla files (<24.04) for:
+#   - network manager (regular users may not disable/modify networking)
+#   - root crontab power-off (optional, gated by allow_root_crontab_power_off)
+#   - hostnamectl (IT group may change hostname via pkexec)
+#
+# Pre-condition: polkit / policykit-1 packages installed (provided by the
+# lubuntu.yml base apt batch during the install phase).
+#
+# Extracted from the prior setup/default.yml orchestrator on 2026-05-12 as
+# part of the install→configure phase-gate refactor (issue #57). Tags
+# preserved verbatim so existing `--tags network_manager_permission`,
+# `--tags allow_root_crontab_power_off`, and `--tags polkit_hostnamectl`
+# invocations continue to drive the same tasks.
+
+  - name: Disallow regular user to disable/modify networking (polkit rules, 24.04+)
+    copy:
+      src: "config/10-network-manager.rules"
+      dest: /etc/polkit-1/rules.d/10-network-manager.rules
+      mode: 0644
+      owner: root
+      group: root
+    when: ansible_distribution_major_version | int >= 24
+    tags:
+      - config
+      - network_manager_permission
+
+  - name: Disallow regular user to disable/modify networking (pkla, pre-24.04)
+    copy:
+      src: "config/10-network-manager.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/10-network-manager.pkla
+      mode: 0644
+      owner: root
+      group: root
+    when: ansible_distribution_major_version | int < 24
+    tags:
+      - config
+      - network_manager_permission
+
+  - name: Allow root to power off/reboot/... in crontab (polkit rules, 24.04+)
+    copy:
+      src: "config/20-allow-root-cron-to-power-off.rules"
+      dest: /etc/polkit-1/rules.d/20-allow-root-cron-to-power-off.rules
+      mode: 0644
+      owner: root
+      group: root
+    when:
+      - allow_root_crontab_power_off is defined
+      - ansible_distribution_major_version | int >= 24
+    tags:
+      - config
+      - allow_root_crontab_power_off
+
+  - name: Allow root to power off/reboot/... in crontab (pkla, pre-24.04)
+    copy:
+      src: "config/20-allow-root-cron-to-power-off.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/20-allow-root-cron-to-power-off.pkla
+      mode: 0644
+      owner: root
+      group: root
+    when:
+      - allow_root_crontab_power_off is defined
+      - ansible_distribution_major_version | int < 24
+    tags:
+      - config
+      - allow_root_crontab_power_off
+
+  - name: Allow IT group to change hostname via pkexec (polkit rules, 24.04+)
+    copy:
+      src: "config/30-hostnamectl.rules"
+      dest: /etc/polkit-1/rules.d/30-hostnamectl.rules
+      mode: 0644
+      owner: root
+      group: root
+    when: ansible_distribution_major_version | int >= 24
+    tags:
+      - config
+      - polkit_hostnamectl
+
+  - name: Allow IT group to change hostname via pkexec (pkla, pre-24.04)
+    copy:
+      src: "config/30-hostnamectl.pkla"
+      dest: /var/lib/polkit-1/localauthority/50-local.d/30-hostnamectl.pkla
+      mode: 0644
+      owner: root
+      group: root
+    when: ansible_distribution_major_version | int < 24
+    tags:
+      - config
+      - polkit_hostnamectl
