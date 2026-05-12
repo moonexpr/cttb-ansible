@@ -183,6 +183,30 @@ a:visited       { color: var(--cttb-link-visited); }
 .vector-menu-tabs .selected a,
 .mw-list-item.selected a { color: var(--cttb-fg); }
 
+/* Body-content link emphasis — both palettes share fg and link colors
+ * in the same warm-earth register, so prose-embedded links don't stand
+ * out by color alone. Underline at thin weight + small offset gives
+ * the necessary distinction without dominating the line. Scoped to
+ * `.mw-parser-output` so sidebar nav, TOC, footer, and skin chrome
+ * (where links *are* the content) stay un-underlined.
+ */
+.mw-parser-output a {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+}
+.mw-parser-output a:hover {
+    text-decoration-thickness: 2px;
+}
+/* External links keep MediaWiki's arrow icon; underline reads naturally
+ * with it. Internal section-edit `[edit]` brackets and file thumbnails
+ * are not text links — opt them out. */
+.mw-parser-output .mw-editsection a,
+.mw-parser-output a.image,
+.mw-parser-output a.mw-file-description {
+    text-decoration: none;
+}
+
 /* ── Headings ────────────────────────────────────────────────────── */
 .mw-body h1,
 .mw-body h2,
