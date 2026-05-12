@@ -16,6 +16,7 @@ Behaviour preserved from v1:
 
 from __future__ import annotations
 
+import abc
 import json
 import os
 import pwd
@@ -812,6 +813,289 @@ class PlankDock:
 def refresh_plank_skel() -> None:
     PlankDock(CommandRunner()).refresh_from_skel()
 
+
+# ─── ApplyResult + SettingsApplier base ────────────────────────────────────
+# Strategy interface for the four Apply subsystems (theme / wallpaper / dock /
+# browser+terminal). Each applier owns its own injected deps; the coordinator
+# (below) walks them in list order. Result objects are aggregated by the UI
+# to drive the "Applied!" vs "Applied (with errors)" button feedback.
+
+
+@dataclass(frozen=True)
+class ApplyResult:
+    applier: str
+    ok: bool
+    summary: str
+    error: Exception | None = None
+
+
+class SettingsApplier(abc.ABC):
+    name: str = ""
+
+    @abc.abstractmethod
+    def apply(self, values: dict) -> ApplyResult:
+        ...
+
+
+# ─── ThemeApplier ──────────────────────────────────────────────────────────
+# Sets GTK widget theme, icon theme, and xfwm window-decoration theme as a
+# single Light/Dark switch. Does NOT touch the in-panel CSS preview — that
+# stays under _ACTIVE_PROVIDER / apply_css_safe until Phase C migrates it.
+
+
+class ThemeApplier(SettingsApplier):
+    name = "theme"
+
+    def __init__(self, runner: CommandRunner, config: CustomizeConfig) -> None:
+        self._runner = runner
+        self._config = config
+
+    def apply(self, values: dict) -> ApplyResult:
+        if "theme" not in values:
+            return ApplyResult(applier=self.name, ok=True,
+                               summary="theme: no change requested")
+        try:
+            theme_id = values["theme"]
+            theme = self._config.theme(theme_id) or self._config.default_theme()
+            gtk_theme, icon_theme, xfwm_theme = theme.triple()
+            results = [
+                self._runner.run_text(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName",
+                     "-s", gtk_theme]),
+                self._runner.run_text(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName",
+                     "-s", icon_theme]),
+                self._runner.run_text(
+                    ["xfconf-query", "-c", "xfwm4", "-p", "/general/theme",
+                     "-s", xfwm_theme]),
+            ]
+            ok = all(r.ok for r in results)
+            return ApplyResult(applier=self.name, ok=ok,
+                               summary=f"theme set to {theme.label}")
+        except Exception as exc:
+            log(f"ThemeApplier: {exc}")
+            return ApplyResult(applier=self.name, ok=False,
+                               summary="theme failed", error=exc)
+
+
+# ─── WallpaperApplier ──────────────────────────────────────────────────────
+# Enumerates per-monitor backdrop paths via `xfconf-query -lv` and writes
+# random-order per monitor. xfconf monitor paths look like
+# /backdrop/screen0/monitorVGA-1/workspace0/image-style; we grab the first
+# five segments as the parent and write random-order under it.
+
+
+class WallpaperApplier(SettingsApplier):
+    name = "wallpaper"
+
+    def __init__(self, runner: CommandRunner) -> None:
+        self._runner = runner
+
+    def apply(self, values: dict) -> ApplyResult:
+        if "wallpaper_rotate" not in values:
+            return ApplyResult(applier=self.name, ok=True,
+                               summary="wallpaper: no change requested")
+        try:
+            rotate = bool(values["wallpaper_rotate"])
+            lv = self._runner.run_text(
+                ["xfconf-query", "-c", "xfce4-desktop", "-lv"])
+            monitor_paths: set[str] = set()
+            if lv.ok:
+                for line in lv.stdout.splitlines():
+                    parts = line.strip().split()
+                    if not parts:
+                        continue
+                    prop = parts[0]
+                    segs = prop.split("/")
+                    if len(segs) >= 5 and segs[1] == "backdrop":
+                        monitor_paths.add("/".join(segs[:5]))
+            if not monitor_paths:
+                log("WallpaperApplier: no monitor paths found in xfconf")
+            val = "true" if rotate else "false"
+            ok_all = True
+            for parent in monitor_paths:
+                r = self._runner.run_text(
+                    ["xfconf-query", "-c", "xfce4-desktop", "-p",
+                     f"{parent}/random-order", "--create", "-t", "bool",
+                     "-s", val])
+                if not r.ok:
+                    ok_all = False
+            state = "enabled" if rotate else "disabled"
+            return ApplyResult(
+                applier=self.name, ok=ok_all,
+                summary=f"rotation {state} on {len(monitor_paths)} monitors")
+        except Exception as exc:
+            log(f"WallpaperApplier: {exc}")
+            return ApplyResult(applier=self.name, ok=False,
+                               summary="wallpaper failed", error=exc)
+
+
+# ─── PlankDockApplier ──────────────────────────────────────────────────────
+# Resolves chip choices into a sorted, deduped dock-items list, writes the
+# Plank dconf seed via DconfRegistry, then calls PlankDock.replace_items for
+# the clear → seed → plank --replace lifecycle, and finally persists the
+# user's category choices to /org/sudhanix/dock/enabled/* for read-back.
+#
+# Filter split (per the user's prior call): categories filter against
+# dock.user_items (the user needs a baseline that already exists in their
+# launchers dir); anchors filter against dock.skel_items (anchors are
+# canonical framing icons that should always join when the skel ships them).
+
+
+class PlankDockApplier(SettingsApplier):
+    name = "dock"
+
+    def __init__(self, registry: DconfRegistry, dock: PlankDock,
+                 config: CustomizeConfig) -> None:
+        self._registry = registry
+        self._dock = dock
+        self._config = config
+
+    def apply(self, values: dict) -> ApplyResult:
+        if "dock" not in values:
+            return ApplyResult(applier=self.name, ok=True,
+                               summary="dock: no change requested")
+        try:
+            user_dock = values["dock"] or {}
+            cats = self._registry.read_dock_categories()
+            if cats is None or not cats:
+                cats = {k: c.as_dict() for k, c
+                        in self._config.default_dock_categories.items()}
+            present_items = self._dock.user_items
+            skel_items = self._dock.skel_items
+
+            category_groups: list[tuple[int, list[str]]] = []
+            for key, cat in cats.items():
+                if cat.get("always_on"):
+                    enabled = True
+                else:
+                    enabled = bool(
+                        user_dock.get(key, cat.get("default_enabled", False)))
+                if not enabled:
+                    continue
+                cat_w = int(cat.get("weight", 999))
+                cat_items = [i for i in cat.get("items", []) if i in present_items]
+                if cat_items:
+                    category_groups.append((cat_w, cat_items))
+
+            target: list[str] = []
+            if category_groups:
+                anchor_groups: list[tuple[int, list[str]]] = []
+                for anchor in self._config.dock_anchors:
+                    if anchor.item and anchor.item in (skel_items or present_items):
+                        anchor_groups.append((anchor.weight, [anchor.item]))
+                for _w, group_items in sorted(
+                        category_groups + anchor_groups, key=lambda g: g[0]):
+                    for item in group_items:
+                        if item not in target:
+                            target.append(item)
+
+            wrote_seed = self._registry.write_plank_dock_items(
+                target, hide_mode="none")
+            self._dock.replace_items(target)
+            self._registry.write_dock_choices(user_dock)
+            summary = ("dock blank" if not target
+                       else f"dock has {len(target)} items")
+            return ApplyResult(applier=self.name, ok=wrote_seed,
+                               summary=summary)
+        except Exception as exc:
+            log(f"PlankDockApplier: {exc}")
+            return ApplyResult(applier=self.name, ok=False,
+                               summary="dock failed", error=exc)
+
+
+# ─── BrowserTerminalApplier ────────────────────────────────────────────────
+# Two-track default registration: xdg-settings / xdg-mime for the freedesktop
+# registry, and ~/.config/xfce4/helpers.rc for XFCE's exo-helper which Thunar,
+# xfce4-panel, and vajra consult directly. Terminal is hard-wired to
+# xfce4-terminal for now (no chip exposed yet).
+
+
+class BrowserTerminalApplier(SettingsApplier):
+    name = "browser"
+
+    _BROWSER_HELPER_MAP = {
+        "google-chrome.desktop": "google-chrome",
+        "firefox.desktop": "firefox",
+        "firefox-esr.desktop": "firefox",
+        "zen-browser.desktop": "zen-browser",
+    }
+
+    def __init__(self, runner: CommandRunner, config: CustomizeConfig) -> None:
+        self._runner = runner
+        self._config = config
+
+    def apply(self, values: dict) -> ApplyResult:
+        if "browser" not in values:
+            return ApplyResult(applier=self.name, ok=True,
+                               summary="browser: no change requested")
+        try:
+            browser_id = values["browser"]
+            browser = (self._config.browser(browser_id)
+                       or self._config.default_browser())
+            desktop_file = browser.desktop
+            term_desktop = "xfce4-terminal.desktop"
+
+            r1 = self._runner.run_text(
+                ["xdg-settings", "set", "default-web-browser", desktop_file])
+            r2 = self._runner.run_text(
+                ["xdg-mime", "default", term_desktop,
+                 "x-scheme-handler/terminal"])
+            helpers_ok = self._patch_helpers_rc(desktop_file)
+            ok = r1.ok and r2.ok and helpers_ok
+            return ApplyResult(
+                applier=self.name, ok=ok,
+                summary=f"browser set to {browser.label}; terminal set to xfce4-terminal")
+        except Exception as exc:
+            log(f"BrowserTerminalApplier: {exc}")
+            return ApplyResult(applier=self.name, ok=False,
+                               summary="browser failed", error=exc)
+
+    def _patch_helpers_rc(self, desktop_file: str) -> bool:
+        helpers_path = Path.home() / ".config" / "xfce4" / "helpers.rc"
+        try:
+            helpers_path.parent.mkdir(parents=True, exist_ok=True)
+            lines: dict[str, str] = {}
+            if helpers_path.exists():
+                for ln in helpers_path.read_text().splitlines():
+                    if "=" in ln and not ln.lstrip().startswith("#"):
+                        k, v = ln.split("=", 1)
+                        lines[k.strip()] = v.strip()
+            lines["TerminalEmulator"] = "xfce4-terminal"
+            if desktop_file in self._BROWSER_HELPER_MAP:
+                lines["WebBrowser"] = self._BROWSER_HELPER_MAP[desktop_file]
+            helpers_path.write_text(
+                "\n".join(f"{k}={v}" for k, v in lines.items()) + "\n")
+            return True
+        except Exception as exc:
+            log(f"helpers.rc write failed: {exc}")
+            return False
+
+
+# ─── SettingsCoordinator ───────────────────────────────────────────────────
+# Mediator: walks the strategy list in order, isolates per-applier failures
+# so one broken subsystem doesn't abort the rest. Strategies' own try/except
+# already produces ApplyResult on failure; the outer catch here is defense
+# in depth for unexpected escapes.
+
+
+class SettingsCoordinator:
+    def __init__(self, appliers: list[SettingsApplier]) -> None:
+        self._appliers = appliers
+
+    def apply_all(self, values: dict) -> list[ApplyResult]:
+        results: list[ApplyResult] = []
+        for applier in self._appliers:
+            try:
+                results.append(applier.apply(values))
+            except Exception as exc:
+                log(f"SettingsCoordinator: {applier.name} crashed: {exc}")
+                results.append(ApplyResult(
+                    applier=applier.name, ok=False,
+                    summary=f"{applier.name} crashed", error=exc))
+        return results
+
+
 # ── Colour palette ───────────────────────────────────────────────────────────
 # Dark + Light CSS blobs share structure; only colour tokens differ. Auto maps
 # to Dark per THEME_MAP until a portal/sunset switcher lands (TODO v2).
@@ -1149,186 +1433,6 @@ def write_dismissal(user_dn: str, tok: Path, runner: CommandRunner | None = None
             pass
 
 
-# ── Settings applicator ───────────────────────────────────────────────────────
-def apply_settings(
-    values: dict,
-    runner: CommandRunner | None = None,
-    registry: DconfRegistry | None = None,
-    dock: PlankDock | None = None,
-    config: CustomizeConfig | None = None,
-) -> None:
-    """
-    Apply user preferences collected from the Customization dialog.
-    Each setting is applied independently; a failure in one does not abort
-    the rest. All errors are logged via the runner / log() function.
-
-    Phase A: runtime objects are passed in by the caller (main() builds them
-    at startup; UI handlers construct them locally per-Apply).
-    """
-    runner = runner or CommandRunner()
-    registry = registry or DconfRegistry(runner)
-    dock = dock or PlankDock(runner)
-    config = config or _get_config()
-
-    log(f"apply theme={values.get('theme')!r} browser={values.get('browser')!r} "
-        f"dock={values.get('dock')!r}")
-    # 1. Theme — set GTK widget theme, icon theme, and xfwm4 window decorations
-    # together so the user sees a single consistent Light/Dark switch.
-    theme_id = values.get("theme", config.default_theme_id)
-    gtk_theme, icon_theme, xfwm_theme = config.theme_triple(theme_id)
-    for argv in [
-        ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName",     "-s", gtk_theme],
-        ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", icon_theme],
-        ["xfconf-query", "-c", "xfwm4",     "-p", "/general/theme",     "-s", xfwm_theme],
-    ]:
-        runner.run_text(argv)
-
-    # 2. Wallpaper rotation
-    # Enumerate xfce4-desktop monitor paths via xfconf-query, then write
-    # random-order. Falls through to a comment if enumeration fails.
-    rotate = values.get("wallpaper_rotate", True)
-    lv = runner.run_text(["xfconf-query", "-c", "xfce4-desktop", "-lv"])
-    monitor_paths: set[str] = set()
-    if lv.ok:
-        for line in lv.stdout.splitlines():
-            # e.g. /backdrop/screen0/monitorVGA-1/workspace0/image-style
-            parts = line.strip().split()
-            if not parts:
-                continue
-            prop = parts[0]
-            segs = prop.split("/")
-            if len(segs) >= 5 and segs[1] == "backdrop":
-                parent = "/".join(segs[:5])
-                monitor_paths.add(parent)
-    if not monitor_paths:
-        log("wallpaper rotation: no monitor paths found in xfconf")
-    for parent in monitor_paths:
-        rotate_prop = f"{parent}/random-order"
-        val = "true" if rotate else "false"
-        runner.run_text(
-            ["xfconf-query", "-c", "xfce4-desktop", "-p", rotate_prop,
-             "--create", "-t", "bool", "-s", val],
-        )
-
-    # 3. Dock categories — rewrite plank dock-items in the user's dconf
-    # user-db from the chip state. Always-on categories (essentials) are
-    # included regardless; other categories follow the user's chip choices.
-    # The result is wrapped with the dock_anchors framing icons (thunar
-    # left, trash right). Items not present in ~/.config/plank/dock1/launchers/
-    # are filtered out so missing .dockitem files don't show up as broken
-    # slots in Plank. If every category resolves to zero items (or the user
-    # disabled all toggleable categories AND essentials yields nothing on
-    # this host), we ship a blank dock — no anchors, by design.
-    user_dock = values.get("dock", {})  # {"office": True, "code": False, ...}
-    try:
-        cats = load_dock_categories()
-        present_items = dock.user_items
-        skel_items = dock.skel_items
-
-        # Build (weight, items[]) groups. Each enabled category contributes
-        # one group; each anchor entry contributes a single-item group.
-        # Anchors only join the sort when at least one category contributes
-        # items — toggling everything off yields a blank dock by design.
-        category_groups: list[tuple[int, list[str]]] = []
-        for key, cat in cats.items():
-            if cat.get("always_on"):
-                enabled = True
-            else:
-                enabled = bool(user_dock.get(key, cat.get("default_enabled", False)))
-            if not enabled:
-                continue
-            cat_w = int(cat.get("weight", 999))
-            cat_items = [i for i in cat.get("items", []) if i in present_items]
-            if cat_items:
-                category_groups.append((cat_w, cat_items))
-
-        target: list[str] = []
-        if category_groups:
-            anchor_groups: list[tuple[int, list[str]]] = []
-            for anchor in config.dock_anchors:
-                # Filter anchors against the canonical skel set, not the
-                # user's current launchers dir: anchors are framing icons
-                # that should land in the dock as long as the canonical
-                # .dockitem exists, even if the user's previous dock
-                # happened not to include them.
-                if anchor.item and anchor.item in (skel_items or present_items):
-                    anchor_groups.append((anchor.weight, [anchor.item]))
-            for _w, group_items in sorted(
-                category_groups + anchor_groups, key=lambda g: g[0]
-            ):
-                for item in group_items:
-                    if item not in target:
-                        target.append(item)
-
-        # Always write — including the empty list — so that toggling every
-        # category off actually produces the blank dock the user asked for,
-        # rather than leaving the prior dock-items in place. Also flip
-        # hide-mode back to 'none' so the dock becomes visible.
-        if registry.write_plank_dock_items(target, hide_mode="none"):
-            log(f"dock-items rewritten: {len(target)} items")
-        else:
-            log("dconf dock load failed")
-
-        # clear → seed → plank --replace as a single facade call.
-        dock.replace_items(target)
-
-        # Persist the user's category choices into their dconf so vajra and
-        # future tools can read them back without re-deriving.
-        registry.write_dock_choices(user_dock)
-    except Exception as exc:
-        log(f"dock dconf exception: {exc}")
-
-    # Also keep the JSON marker for sysadmin inspection / future ansible
-    # runs that want to reproduce a user's choices.
-    try:
-        SUDHANIX_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        DOCK_PREFS_FILE.write_text(json.dumps(user_dock, indent=2))
-    except Exception as exc:
-        log(f"dock prefs write failed: {exc}")
-
-    # 4. Default browser + terminal emulator
-    # Two-track for each: xdg-settings / xdg-mime for the freedesktop
-    # MIME/scheme registry, and ~/.config/xfce4/helpers.rc for XFCE's
-    # exo-helper which Thunar / xfce4-panel / vajra use directly.
-    browser_id = values.get("browser", config.default_browser_id)
-    desktop_file = config.browser_desktop(browser_id) or config.browser_desktop(config.default_browser_id)
-    runner.run_text(["xdg-settings", "set", "default-web-browser", desktop_file])
-    # Terminal emulator — xfce4-terminal is the Sudhanix default; future
-    # work can surface a chip for this. xdg-mime registration covers
-    # `x-scheme-handler/terminal` (used by Files → Open Terminal etc).
-    term_desktop = "xfce4-terminal.desktop"
-    runner.run_text(["xdg-mime", "default", term_desktop, "x-scheme-handler/terminal"])
-
-    # XFCE helpers.rc — exo-open / exo-helper-1 consults this for "Run
-    # in terminal", "Open in browser", etc. Keyed by the helper category
-    # name (TerminalEmulator, WebBrowser, ...) and the value is the
-    # basename of an .desktop in /usr/share/xfce4/helpers/ — NOT the
-    # binary. xfce4-terminal ships xfce4-terminal.desktop there.
-    browser_helper_map = {
-        "google-chrome.desktop": "google-chrome",
-        "firefox.desktop": "firefox",
-        "firefox-esr.desktop": "firefox",
-        "zen-browser.desktop": "zen-browser",
-    }
-    helpers_path = Path.home() / ".config" / "xfce4" / "helpers.rc"
-    try:
-        helpers_path.parent.mkdir(parents=True, exist_ok=True)
-        lines: dict[str, str] = {}
-        if helpers_path.exists():
-            for ln in helpers_path.read_text().splitlines():
-                if "=" in ln and not ln.lstrip().startswith("#"):
-                    k, v = ln.split("=", 1)
-                    lines[k.strip()] = v.strip()
-        lines["TerminalEmulator"] = "xfce4-terminal"
-        if desktop_file in browser_helper_map:
-            lines["WebBrowser"] = browser_helper_map[desktop_file]
-        helpers_path.write_text(
-            "\n".join(f"{k}={v}" for k, v in lines.items()) + "\n"
-        )
-    except Exception as exc:
-        log(f"helpers.rc write failed: {exc}")
-
-
 # ── Pixbuf helpers ────────────────────────────────────────────────────────────
 def lotus_image(size: int) -> Gtk.Image | None:
     """Return a Gtk.Image at the requested square pixel size, or None on error."""
@@ -1470,8 +1574,8 @@ class AboutPage(Gtk.Box):
 class CustomizationPage(Gtk.Box):
     """
     Inline stack page: theme, wallpaper rotation, dock groups, default browser.
-    Apply button writes apply_settings(); was CustomizationDialog (modal) until
-    #51 wired the sidebar to Gtk.Stack.
+    Apply button drives SettingsCoordinator; was CustomizationDialog (modal)
+    until #51 wired the sidebar to Gtk.Stack.
     """
 
     def __init__(self) -> None:
@@ -1713,13 +1817,21 @@ class CustomizationPage(Gtk.Box):
             },
             "browser": self._selected_browser,
         }
-        # Phase A: construct runtime objects locally per-Apply. Phase C will
-        # thread them through the constructor.
+        # Phase B: build runtime objects locally per-Apply, then drive them
+        # through the Strategy + Mediator family. Phase C will thread them
+        # through the constructor.
         runner = CommandRunner()
         registry = DconfRegistry(runner)
         dock = PlankDock(runner)
-        apply_settings(values, runner=runner, registry=registry, dock=dock,
-                       config=_get_config())
+        config = _get_config()
+        coordinator = SettingsCoordinator([
+            ThemeApplier(runner, config),
+            WallpaperApplier(runner),
+            PlankDockApplier(registry, dock, config),
+            BrowserTerminalApplier(runner, config),
+        ])
+        results = coordinator.apply_all(values)
+        all_ok = all(r.ok for r in results)
         # Tell the surrounding WelcomeWindow that the user customised
         # explicitly — otherwise dismiss would re-apply the all-categories
         # default and stomp the user's chip choices.
@@ -1728,7 +1840,7 @@ class CustomizationPage(Gtk.Box):
             top.applied_during_session = True  # type: ignore[attr-defined]
         # Inline-page feedback: Apply confirms by updating the button label.
         # Reset on next change is out of scope here — apply is idempotent.
-        self._apply_btn.set_label("Applied")
+        self._apply_btn.set_label("Applied!" if all_ok else "Applied (with errors)")
         self._apply_btn.set_sensitive(False)
         GLib.timeout_add_seconds(2, self._reset_apply_button)
 
@@ -2108,15 +2220,18 @@ class WelcomeWindow(Gtk.Window):
             registry = DconfRegistry(runner)
             dock = PlankDock(runner)
             config = _get_config()
-            apply_settings(
-                {
-                    "theme": config.default_theme_id,
-                    "wallpaper_rotate": True,
-                    "dock": dock_choices,
-                    "browser": config.default_browser_id,
-                },
-                runner=runner, registry=registry, dock=dock, config=config,
-            )
+            coordinator = SettingsCoordinator([
+                ThemeApplier(runner, config),
+                WallpaperApplier(runner),
+                PlankDockApplier(registry, dock, config),
+                BrowserTerminalApplier(runner, config),
+            ])
+            coordinator.apply_all({
+                "theme": config.default_theme_id,
+                "wallpaper_rotate": True,
+                "dock": dock_choices,
+                "browser": config.default_browser_id,
+            })
         except Exception as exc:
             log(f"default-layout apply failed: {exc}")
 
