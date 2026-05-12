@@ -3622,6 +3622,20 @@ Log: `logs/sx26-install-<timestamp>.log`. Baseline from 2026-05-09 was `ok=261 c
 - **#57** (P2a, **Blocker**): enforce hard install→configure phase gate in roles. Today's WhiteSur + xdg/gtk-3.0 bugs are both instances; commented on the issue with the second one. Tactical fixes shipped; structural fix is the issue body.
 - **#58** (P2a, Release): plymouth boot splash never wired up (assets-staged, tasks-missing). Fixed in `1004a375`; awaiting tomorrow's visual confirm to close.
 
+### Mid-day surprises (after first install was green)
+
+- **LightDM landed on LXQt, not XFCE4.** `lubuntu.yml` installed `xfce4-panel + xfwm4` + plugins but never `xfce4-session` itself, so `/usr/share/xsessions/` had no `xfce.desktop`; LightDM's `user-session=xfce` silently fell back to `lxqt.desktop`. Result: WhiteSur titlebar + xfwm4 worked, but every xfce4-panel/xfdesktop/xfconf customization the role configured was no-op'd by LXQt. Fixed by adding `xfce4-session`, `xfdesktop4`, `xfce4-settings`, `thunar` to `lubuntu.yml` — commit `8a7d8bc1`. Same family as #58 (feature staged but not wired).
+- **System timezone defaulted to `Etc/UTC`.** No role and no user-data set the TZ. Added `system_timezone: America/Los_Angeles` default + `community.general.timezone` task at the top of `time-server/tasks/main.yml` (skip in LXC). Commit `c18e211d`. Patched dvgs-testmachine ad-hoc with `timedatectl set-timezone`.
+- **Plymouth boot splash never wired** (see #58). Fixed in `1004a375`.
+- **Welcome panel wordmark rendered at native 2006×858**, filling the sidebar. Two-part fix:
+  - Welcome script now loads via `GdkPixbuf.Pixbuf.new_from_file_at_scale(WORDMARK_PATH, -1, 48, True)` to scale to ~48px tall on load (matches lotus visual weight).
+  - Regenerated `wordmark.png` from `branding/sx26/logo.png` to include a globe peek + right padding for breathing room. Added `regen-wordmark.sh` next to the assets so it's reproducible from the source logo.
+- **LDAP login broke after partial `--tags config` run.** john.chandara logged in fine at 10:43 but auth started failing in the 11:00 window. NSS still resolves; `ldapsearch -ZZ` works as both admin and root; but `pam_ldap` silently fails (no log line in the lightdm:auth stack between pam_unix and pam_succeed_if). Same TLS-layer divergence shown in earlier polkitd `nss-ldap: do_start_tls failed: stat=-1` lines. **Rebooting** to clear in-memory state. Demo-day fallback: log in as local `administrator` user, skip the LDAP-login bullet.
+
+### Demo-day script unchanged
+
+Sections A–F still hold. If LDAP-login works post-reboot we walk through tomorrow as planned. If not, we demo as `administrator` and the only bullet that doesn't survive is "B. LDAP login" — every other surface (Plymouth, panel branding, vajra demo, watchdog, theme) is independent of LDAP and works either way.
+
 ### Tomorrow (demo) — walkthrough script
 
 Demo is **show, not install**. The machine is already in its final Sudhanix 26 state. The script below is the order to walk the audience through, mapped to remaining open Release issues (#19, #34, #40) so each gets a live demo moment.
