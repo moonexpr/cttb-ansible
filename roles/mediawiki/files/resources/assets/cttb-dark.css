@@ -304,8 +304,21 @@ main#content > #bodyContent {
     display: flex;
     line-height: 1.6;
     margin: -1rem -1rem 0 -1rem;
-    padding: 1rem 1rem 0.5rem 1rem;
+    padding: 0.5rem 1rem;
     border-radius: 10px 10px 0 0;
+}
+
+/* Left-sidebar + TOC pinnable layout — reset Vector's indents so
+ * the menu/TOC content aligns flush inside the rounded panel
+ * borders that the City Lights theme adds. */
+.vector-column-start .vector-main-menu-container {
+    margin-left: unset;
+}
+.vector-toc .vector-pinnable-header {
+    margin-left: unset;
+}
+.vector-toc .vector-toc-list-item {
+    padding-left: unset;
 }
 .vector-pinnable-header-toggle-button,
 .cdx-button {
