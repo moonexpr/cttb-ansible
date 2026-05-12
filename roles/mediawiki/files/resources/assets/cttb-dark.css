@@ -264,12 +264,14 @@ main#content > #bodyContent {
     margin-top: 0.3rem;
 }
 
-/* ── Body grid (≥1120px) ───────────────────────────────────────
- * Make `.mw-body` a grid container at wide widths so the right
- * sidebar's space can be reclaimed by the body when the sidebar
- * is dismissed. TODO: define grid-template-columns to actually
- * reclaim the empty column — current rule only flips the display
- * mode; the column-template needs follow-up.
+/* ── Body grid (≥1120px) — stub, see gh-59 ─────────────────────
+ * `.mw-body` switches to grid at wide widths so the right
+ * sidebar's space can eventually be reclaimed by the body when
+ * the Tools panel is dismissed. Column template is intentionally
+ * unset here — flipping `display: grid` alone is harmless and
+ * leaves the existing block flow in place visually. The actual
+ * reclaim work (grid-template-columns + child placement + state
+ * detection on the pinnable-header toggle) is tracked at gh-59.
  */
 @media screen and (min-width: 1120px) {
     .mw-body {
