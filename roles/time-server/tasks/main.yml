@@ -1,5 +1,16 @@
 ---
 
+# Set timezone first — display widgets / log timestamps need it from boot 1.
+# Skip in LXC: containers inherit /etc/localtime from the host.
+  - name: set system timezone
+    community.general.timezone:
+      name: "{{ system_timezone }}"
+    when: ansible_virtualization_type != "lxc"
+    tags:
+      - install
+      - time
+      - timezone
+
 # Ubuntu 24.04+ uses systemd-timesyncd (ntp package removed from repos)
   - block:
         - name: remove legacy ntp if present

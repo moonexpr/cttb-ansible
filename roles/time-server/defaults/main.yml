@@ -1,5 +1,7 @@
 ---
 
+system_timezone: America/Los_Angeles
+
 ntp_servers:
   - 3.ubuntu.pool.ntp.org
   - ntp.berkeley.edu
