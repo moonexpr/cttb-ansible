@@ -93,12 +93,19 @@
     - install
 
 # ---------- Sudhanix-specific Vajra tools ---------- #
-# vajra ships as a generic sysadmin shell — any tool that hard-codes a
-# CTTB-only path (sudhanix-welcome, sudhanixWelcomeDismissed, the welcome
-# panel test runners) lives in this role and deploys as a runtime drop-in
-# under /usr/local/lib/vajra/tools/, NOT bundled in the .deb. Keeps the
-# upstream vajra package portable.
-- name: deploy Sudhanix-specific Vajra tools (sidebar + Testing category)
+# Vajra bundles generic sysadmin tools (network_diag, password_reset,
+# ldap_debug, etc). Anything hard-coded to a CTTB-only path (sudhanix-welcome
+# binary, sudhanixWelcomeDismissed LDAP attr, /run/sudhanix-tokens/,
+# /usr/local/sbin/sudhanix-firstlogin, the welcome-panel test runners) lives
+# in THIS role and deploys as a runtime drop-in under
+# /usr/local/lib/vajra/tools/. Vajra's bundled set stays free of Sudhanix
+# responsibilities — if generic-sounding tool code in the bundle starts
+# referencing CTTB paths, move it here.
+#
+# Tool file format: new self-bound API. `local TOOL = {}; function
+# TOOL:action_X(fields) ... self:run(...) ... end; ... registry.register(TOOL)`.
+# See vajra-engine/src/tools/ldap_debug.lua for the canonical shape.
+- name: deploy Sudhanix-specific Vajra tools
   copy:
     src: "tools/{{ item }}"
     dest: "/usr/local/lib/vajra/tools/{{ item }}"
@@ -106,12 +113,14 @@
     group: root
     mode: '0644'
   loop:
-    # Sidebar Sudhanix tools (campus desktop status, launchers, dismissal flag)
-    - sudhanix.lua
-    - welcome_reset.lua
-    # Testing category — IT-only test runners for PAM / welcome / LDAP /
-    # plank DBus. See monogarden#7 for design notes; depends on the LDAP
-    # TLS fix in monogarden#2 for the LDAP-write paths.
+    # Sudhanix-coupled tools migrated out of bundled vajra. The bundle no
+    # longer ships these so the role is now the single source of truth.
+    - sudhanix.lua          # campus desktop status, launchers, set-hostname
+    - welcome_reset.lua     # clear sudhanixWelcomeDismissed LDAP flag
+    - xfce_reset.lua        # quarantine XFCE config + re-run firstlogin
+    # IT-only test runners for PAM / welcome / LDAP / plank DBus.
+    # See monogarden#7 for design notes; depends on the LDAP TLS fix in
+    # monogarden#2 for the LDAP-write paths.
     - test_pam_auth.lua
     - test_token_state.lua
     - test_welcome_preview.lua
@@ -122,23 +131,6 @@
     - vajra-config
     - vajra-sudhanix
     - vajra-testing
-    - config
-
-# theme.lua is bundled in the next vajra release (BUNDLED in src/loader.rs);
-# until that .deb ships, deploy as a runtime drop-in so the tool shows up
-# in the sidebar today. Idempotent — when the bundled version takes over
-# the drop-in path is harmless (loader prefers BUNDLED on collision; remove
-# this task once the .deb ships).
-- name: deploy theme tool (drop-in pre-bundle)
-  copy:
-    src: "tools/theme.lua"
-    dest: "/usr/local/lib/vajra/tools/theme.lua"
-    owner: root
-    group: root
-    mode: '0644'
-  tags:
-    - vajra
-    - vajra-config
     - config
 
 # ---------- config path ---------- #

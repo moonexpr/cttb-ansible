@@ -10,11 +10,17 @@ vajra_ldap_base_dn: "dc=cttb"
 vajra_ldap_people_ou: "ou=People,{{ vajra_ldap_base_dn }}"
 vajra_ldap_group_ou: "ou=Groups,{{ vajra_ldap_base_dn }}"
 
-# Quick-links rendered by the quick_links tool's flow grid. The Lua source
-# (in ~/Garden/app/vajra) ships its own defaults baked into the .deb;
-# whatever's set here is appended to that list at render time. Format:
-# {label, url, icon} — icon is a gtk icon name.
-vajra_quick_links: []
+# Quick-links rendered by vajra's bundled quick_links tool. The tool reads
+# /etc/vajra/quick-links.json — written here from this list — and renders
+# the flow grid; entries with `pinned: true` also show up in the sidebar
+# quick-access strip. Format: {label, url, icon (gtk icon name), pinned?}.
+# Vajra ships free of organization-specific URLs; the campus defaults
+# (previously hardcoded in bundled quick_links.lua) live here now.
+vajra_quick_links:
+  - { label: "Wiki",            url: "http://wiki.cttb",                         icon: "applications-internet", pinned: true }
+  - { label: "Sysadmin Manual", url: "http://wiki.cttb/wiki/IT:Sysadmin_Manual", icon: "help-browser" }
+  - { label: "Storehouse",      url: "http://storehouse.cttb",                   icon: "folder-remote",        pinned: true }
+  - { label: "APT Repository",  url: "http://apt.cttb",                          icon: "folder-remote",        pinned: true }
 
 # IT email address — the "Set hostname" action pre-populates a Thunderbird
 # draft to this address requesting a DNS / DHCP record update.
