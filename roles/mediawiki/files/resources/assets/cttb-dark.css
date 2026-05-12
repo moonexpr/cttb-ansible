@@ -30,9 +30,15 @@
     --cttb-pattern-alpha:   0.18;
 }
 
-/* ── Internal (dark) palette — applied via media query + clientpref ─ */
+/* ── Internal (dark) palette ─────────────────────────────────────────
+ * Applied when:
+ *   (a) the user's OS prefers dark AND no explicit clientpref-day
+ *       override is set — `:not()` keeps the @media block from
+ *       stomping an explicit "Day" toggle on a dark-OS machine; or
+ *   (b) the user has explicitly chosen Night via the skin toggle.
+ */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not(.skin-theme-clientpref-day) {
         --cttb-bg:            #1a1418;
         --cttb-fg:            #d4cfc4;
         --cttb-primary:       #b8a88a;
@@ -52,7 +58,6 @@
     }
 }
 
-/* Explicit user choices (Citizen skin clientpref selectors) */
 html.skin-theme-clientpref-night {
     --cttb-bg:            #1a1418;
     --cttb-fg:            #d4cfc4;
@@ -71,7 +76,30 @@ html.skin-theme-clientpref-night {
     --cttb-link-new:      #a36c3d;
     --cttb-pattern-alpha: 0.10;
 }
-/* clientpref-day overrides nothing — :root defaults already are Sacred. */
+
+/* Defensive: an explicit "Day" toggle MUST land on Sacred even when
+ * the user's OS is in dark mode and the @media rule above is matched.
+ * Restating the Sacred tokens here keeps the cascade resolution stable
+ * regardless of which rule was last to set them.
+ */
+html.skin-theme-clientpref-day {
+    --cttb-bg:            #e8dcc0;
+    --cttb-fg:            #2a1f18;
+    --cttb-primary:       #5c2d1a;
+    --cttb-primary-hover: #7a2e15;
+    --cttb-secondary:     #9e6b14;
+    --cttb-accent:        #5c2d1a;
+    --cttb-muted:         #c8a878;
+    --cttb-muted-text:    #a36c3d;
+    --cttb-surface-0:     rgba(232, 220, 192, 0.82);
+    --cttb-surface-1:     rgba(200, 168, 120, 0.22);
+    --cttb-surface-2:     rgba(200, 168, 120, 0.38);
+    --cttb-border:        rgba(122,  46,  21, 0.30);
+    --cttb-link:          #5c2d1a;
+    --cttb-link-visited:  #7a2e15;
+    --cttb-link-new:      #9e6b14;
+    --cttb-pattern-alpha: 0.18;
+}
 
 /* ── MediaWiki + Citizen/Vector skin variable overrides ──────────── */
 :root,
