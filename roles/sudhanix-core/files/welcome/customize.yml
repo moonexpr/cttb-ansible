@@ -79,7 +79,7 @@ default_browser: Firefox
 # the user toggles every category off, the dock goes empty (no anchors
 # either) — toggling everything off is a deliberate "blank dock" gesture.
 dock_anchors:
-  - item: xfce4-appfinder.dockitem
+  - item: thunar.dockitem
     weight: 0
   - item: Trash.dockitem
     weight: 1000
@@ -93,8 +93,9 @@ dock_anchors:
 # same defaults.
 dock_categories:
   essentials:
-    # xfce4-appfinder lives in dock_anchors, not here — it's the
-    # leftmost framing icon, separate from the category set.
+    # thunar.dockitem is also pinned as the leftmost dock_anchor
+    # (weight 0); the dedup in the Apply path keeps it at the anchor
+    # position and skips the duplicate in this category.
     items:
       - thunar.dockitem
       - thunderbird.dockitem
