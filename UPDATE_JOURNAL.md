@@ -3763,3 +3763,31 @@ While polling for the ansible deploys to finish, fell into a self-trap: the `whi
 * `bugfix/wiki` — #45 (live on wiki.cttb), ready for review.
 * `gh-59` — new follow-up tracking the sidebar-reclaim grid work.
 * `.claude/work-issues-runs/2026-05-12.log` — operator-readable run-log line for the offline drain.
+
+## 2026-05-12 (continued) — sudhanix-welcome refactor: all three phases landed
+
+Three-commit landing on `release/sudhanix26`, following the plan at
+`.claude/plans/welcome-refactor-plan.md` (out of git per project rules).
+
+| Phase | Commit | Tasks | Summary |
+|-------|--------|-------|---------|
+| A | `f6ebe498` | 1-4 | CommandRunner (subprocess adapter, Pure Fabrication), DconfRegistry (Facade over dconf encoding), CustomizeConfig + typed records (Theme / Browser / DockAnchor / DockCategory dataclasses), PlankDock (Facade over clear -> seed -> replace lifecycle). |
+| B | `6d2cfb28` | 5 | Strategy family — `ThemeApplier`, `WallpaperApplier`, `PlankDockApplier`, `BrowserTerminalApplier` — driven by a `SettingsCoordinator` Mediator. Each `apply()` returns an `ApplyResult` with `ok / summary / error`. Replaced the 256-line `apply_settings` monolith. |
+| C | `3fa5e9ec` | 6 | DI cleanup — `WelcomeApplication`, `WelcomeGate`, `ThemePreview` top-level classes; `main()` reduced to 12 lines; `CustomizationPage.__init__` and `WelcomeWindow.__init__` receive deps via constructor. Dead-code sweep: removed `themes()` / `default_theme_id()` / `browsers()` / `default_browser_id()` / `theme_triple()` free-function shims, `_CONFIG_SINGLETON` lazy global, `SUDHANIX_CONFIG_DIR` / `DOCK_PREFS_FILE` JSON stub, `import json`. Added `DockCategory.from_dconf_dict` classmethod for the DI path. |
+
+Cross-cutting acceptance:
+
+- All grep gates pass — no `import subprocess` outside `CommandRunner`, no
+  module-level mutable state, GVariant literals only inside `DconfRegistry`.
+- `python3 -c "import ast; ast.parse(...)"` succeeds on both the controller
+  copy and the deployed `/usr/local/bin/sudhanix-welcome` on dvgs-testmachine.
+- File ended at 2455 lines vs the plan's stretch target of <=1750. Growth
+  defended in the commit message: principled — 22 named classes replacing
+  ~10 procedural sections, each with typed records and docstrings, plus
+  new lifecycle objects (`WelcomeApplication`, `WelcomeGate`, `ThemePreview`)
+  and Strategy / Mediator scaffolding. Compression beyond this would require
+  splitting into a package — engineer-judgment call, left out of scope for
+  day-of demo prep.
+- Behaviour-preservation gate is tomorrow's at-seat: open welcome, click
+  Apply, verify theme / wallpaper / dock / browser surfaces match prior
+  behaviour.
