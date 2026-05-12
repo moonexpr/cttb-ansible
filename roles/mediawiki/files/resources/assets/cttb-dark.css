@@ -28,8 +28,8 @@
     --cttb-link-visited:    #7a2e15;
     --cttb-link-new:        #9e6b14;
     --cttb-pattern-alpha:   0.18;
-    --cttb-panel-body:      #dcc8a5;
-    --cttb-panel-toolbar:   #dfddbf;
+    --cttb-panel-body:      #dfddbf;
+    --cttb-panel-toolbar:   #dcc8a5;
 }
 
 /* ── Internal (dark) palette ─────────────────────────────────────────
@@ -57,8 +57,8 @@
         --cttb-link-visited:  #8b5e1e;
         --cttb-link-new:      #a36c3d;
         --cttb-pattern-alpha: 0.10;
-        --cttb-panel-body:    #12110e;
-        --cttb-panel-toolbar: #1a1714;
+        --cttb-panel-body:    #1a1714;
+        --cttb-panel-toolbar: #12110e;
     }
 }
 
@@ -79,8 +79,8 @@ html.skin-theme-clientpref-night {
     --cttb-link-visited:  #8b5e1e;
     --cttb-link-new:      #a36c3d;
     --cttb-pattern-alpha: 0.10;
-    --cttb-panel-body:    #12110e;
-    --cttb-panel-toolbar: #1a1714;
+    --cttb-panel-body:    #1a1714;
+    --cttb-panel-toolbar: #12110e;
 }
 
 /* Defensive: an explicit "Day" toggle MUST land on Sacred even when
@@ -105,8 +105,8 @@ html.skin-theme-clientpref-day {
     --cttb-link-visited:  #7a2e15;
     --cttb-link-new:      #9e6b14;
     --cttb-pattern-alpha: 0.18;
-    --cttb-panel-body:    #dcc8a5;
-    --cttb-panel-toolbar: #dfddbf;
+    --cttb-panel-body:    #dfddbf;
+    --cttb-panel-toolbar: #dcc8a5;
 }
 
 /* ── MediaWiki + Citizen/Vector skin variable overrides ──────────── */
@@ -193,19 +193,55 @@ main#content > .vector-page-toolbar {
 
 main#content > .vector-body,
 main#content > #bodyContent {
-    background-color: var(--cttb-panel-body);
+    background-color: var(--cttb-panel-toolbar);
+    border: 1px solid var(--cttb-border);
+    border-radius: 0 0 5px 5px;
     padding: 0 1.25rem;
 }
 
-/* Toolbar tab spacing — give the Read / Edit / History links and
- * dropdown labels vertical breathing room against the toolbar bg. */
+/* Toolbar tabs (Read / Edit / History / dropdown) — pull text down
+ * by 1px so the active-tab underline sits flush with the toolbar
+ * border below. */
 @media screen {
     .vector-menu-tabs .mw-list-item.vector-tab-noicon > a,
     .vector-page-toolbar-container .vector-dropdown.vector-tab-noicon > a,
     .vector-menu-tabs .mw-list-item .vector-dropdown-label,
     .vector-page-toolbar-container .vector-dropdown .vector-dropdown-label {
-        margin: 0.5rem 0;
+        margin-bottom: -1px;
     }
+}
+
+/* Article title — slight bottom margin so the firstHeading breathes
+ * before the toolbar/body card begins. */
+.mw-body .firstHeading {
+    margin-bottom: 1rem;
+}
+
+/* Footer — give the wiki-footer container vertical room. */
+.mw-footer-container {
+    padding-top: 82px;
+    padding-bottom: 50px;
+}
+
+/* Sidebar pinnable panels (Tools, TOC, Main menu) — present each
+ * as a card with rounded border. The pinnable header gets the
+ * toolbar tint so it reads as the panel's titlebar. */
+.vector-pinned-container {
+    border: 1px solid var(--cttb-border);
+    border-radius: 10px;
+    padding: 1rem;
+}
+.vector-pinnable-header {
+    background: var(--cttb-panel-toolbar);
+    display: flex;
+    line-height: 1.6;
+    margin: -1rem -1rem 0 -1rem;
+    padding: 1rem 1rem 0.5rem 1rem;
+    border-radius: 10px 10px 0 0;
+}
+.vector-pinnable-header-toggle-button,
+.cdx-button {
+    margin-left: auto;
 }
 
 /* Sidebar nav panels (used by IT Infrastructure / Sudhanix 26 etc.):
