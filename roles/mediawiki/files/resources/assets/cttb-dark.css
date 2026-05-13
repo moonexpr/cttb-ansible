@@ -269,18 +269,28 @@ main#content > #bodyContent {
     margin-top: 0.3rem;
 }
 
-/* ── Body grid (≥1120px) — stub, see gh-59 ─────────────────────
- * `.mw-body` switches to grid at wide widths so the right
- * sidebar's space can eventually be reclaimed by the body when
- * the Tools panel is dismissed. Column template is intentionally
- * unset here — flipping `display: grid` alone is harmless and
- * leaves the existing block flow in place visually. The actual
- * reclaim work (grid-template-columns + child placement + state
- * detection on the pinnable-header toggle) is tracked at gh-59.
+/* ── Body grid (≥1120px) — reclaim Tools-panel gutter (gh-59) ─────
+ * `.mw-body` becomes a two-column grid at wide widths: the article
+ * column on the left (header, toolbar, body-content stacked) and the
+ * Tools sidebar (`.vector-column-end`) on the right spanning all
+ * rows. When Vector hides the Tools panel via the pinnable-header
+ * toggle the auto-track has no contents to size against and the
+ * `1fr` track absorbs the freed width — no blank right gutter.
+ *
+ * `.vector-column-end` is explicitly placed at column 2 / all rows;
+ * the other direct children (`<header>.mw-body-header`,
+ * `.vector-page-toolbar`, `.mw-body-content`) flow into column 1
+ * sequentially via `grid-auto-flow: row` (the default).
  */
 @media screen and (min-width: 1120px) {
     .mw-body {
         display: grid;
+        grid-template-columns: 1fr auto;
+        column-gap: 1rem;
+    }
+    .mw-body > .vector-column-end {
+        grid-column: 2;
+        grid-row: 1 / -1;
     }
 }
 
