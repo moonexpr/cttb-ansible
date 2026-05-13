@@ -3977,3 +3977,91 @@ Validation status at Task 4 landing:
   fonts, bigsur sound theme, plymouth sudhanix theme, /opt/thunderbird)
   and run the full play. Expect `failed=0` and `changed=0` on the
   second pass. Closes #57.
+
+---
+
+### 2026-05-12 — pxe.cttb cutover: legacy 16.04 box → pxe24 LXC, in-place at 10.11.1.23
+
+Promoted the parallel-test PXE server (LXC container `pxe24` on
+`srv-nas`, Ubuntu 24.04 + nginx) to production `pxe.cttb` and retired
+the legacy Ubuntu 16.04 box. The `pxetest.cttb` domain is
+decommissioned. h5ai (manti-X 0.33.0) replaces apache2 directory
+listing, matching the `storehouse.cttb` model.
+
+**IP discipline correction.** First-pass plan kept the container on its
+parallel-test IP (10.11.13.27) and flipped DNS / `dhcp-boot` to chase
+it. That was wrong: 10.11.1.0/24 is the infrastructure subnet and
+every server, switch, and container in that role lives there. The
+parallel-test IP was a hand-picked free address from an unrelated
+range, not a thought-through production assignment. Corrected plan:
+re-IP the container to **10.11.1.23** — the exact address the legacy
+box already owned — so every downstream client (DNS, Frank's dnsmasq
+`dhcp-boot`, hardcoded lab references) reaches the new server
+unchanged. No DNS edit, no DHCP edit, no `dhcp-boot` flip required;
+only the operator-seat actions of powering off the legacy box and
+running `netplan apply` on the container.
+
+**Repository changes (commit `1f4d4623`, then this commit):**
+- `inventory/sudhanix26_hosts.ini` `[pxe-server]`: connect as `root`
+  over the LXC container, `ansible_become=false`. No `ansible_host`
+  pin — DNS resolves `pxe.cttb` to 10.11.1.23 the same way every
+  other host on campus does. No ProxyJump in the committed file
+  (production runs happen from campus; off-campus dev uses
+  `--ssh-common-args` overrides, not inventory edits).
+- `inventory/hosts_pxetest.ini`, `plays/netinstall-pxetest.yml`,
+  `plays/dns-pxetest.yml`: deleted. The parallel-test inventory,
+  deploy play, and DNS-injector play are no longer relevant.
+- `plays/dns-pxe-cutover.yml`: created in the first-pass plan then
+  removed once the IP-discipline correction landed. Hand-editing the
+  deployed `/etc/unbound/unbound.conf.d/cttb` file is the wrong layer
+  — that file is rendered from `roles/unbound/templates/zone_cttb.j2`
+  using `group_vars/unbound`'s `zone_cttb` list, and any out-of-band
+  sed would be clobbered by the next `plays/unbound.yml` run.
+- `group_vars/unbound`: dropped the `- pxetest: "10.11.13.27"` line.
+  `pxe: "10.11.1.23"` stays untouched.
+- `roles/netinstall-2404/defaults/main.yml`: `ni_webserver: nginx`
+  (was `apache2`), `ni_h5ai_enabled: true` (was `false`). The role's
+  apache2 code path is retained for archaeological reasons.
+- `plays/netinstall-2404.yml`: explicit `ni_webserver`,
+  `ni_h5ai_enabled`, `ni_php_version`, `ni_server_name`, and
+  `ansible_assets_url` vars at the play level; usage block updated.
+- `roles/netinstall-2404/templates/nginx/index.html.j2`: footer
+  container fallback `pxetest` → `pxe24`.
+- `inventory/group_vars/pxe-server.yml`: dropped the stale vaulted
+  `ansible_become_password` (the old `jc`-on-10.11.1.23 sudo
+  password, vaulted with a different key than CTTB_VAULT_PASS).
+- `PROJECT.md` key-servers table refreshed.
+
+**Drift discovered during the cutover.** The live
+`/etc/unbound/unbound.conf.d/cttb` on both `ub-adult` (10.11.1.29)
+and `ub-igdvs` (10.11.1.28) is out of sync with what
+`zone_cttb.j2` would render today. Specifically the `pxetest.cttb`
+A + PTR pair sits appended at the file tail (L452-453, after 5
+blank lines) rather than in alphabetical position right after
+`pxe.cttb` — the unmistakable signature of the deleted
+`dns-pxetest.yml`'s `printf … >> $TMP` append from earlier in the
+sprint. Running `plays/unbound.yml -l unbound --diff` from a
+campus workstation will re-render the template, the
+`notify: restart unbound` handler will fire, and the live file
+falls back into sync with the source-of-truth template.
+
+**Operator follow-up (Phase 2 — needs the seat):**
+1. On `srv-nas`, power off the legacy `pxe` LXC container at
+   10.11.1.23 (or wherever the legacy box lives if it's a physical
+   host). Confirm ARP for 10.11.1.23 is dead.
+2. On `pxe24`: edit `/etc/netplan/50-cloud-init.yaml`,
+   `10.11.13.27/16` → `10.11.1.23/16`, `netplan apply`. The
+   container should now answer at the IP every downstream
+   client expects.
+3. `ansible-playbook plays/unbound.yml -i inventory/sudhanix26_hosts.ini -l unbound --diff`
+   to re-render the cttb zone (drops the appended pxetest pair).
+4. `ansible-playbook plays/netinstall-2404.yml -i inventory/sudhanix26_hosts.ini --diff`
+   and `ansible-playbook plays/deploy-netinstall-2404.yml -i inventory/sudhanix26_hosts.ini --diff`
+   to push the h5ai-enabled nginx config and re-render the PXE
+   menu / grub.cfg / autoinstall user-data with `pxe.cttb` URLs
+   (replacing the `pxetest.cttb` hand-edits the parallel-test
+   container is carrying).
+5. PXE-boot one lab machine to confirm the menu loads from the
+   new server. Then decom the legacy host (document + label).
+6. Out of band: update `.claude/sysadmin/cttb-ct.sh` alias for
+   `pxe24` to 10.11.1.23, or merge the `pxe` / `pxe24` aliases.
