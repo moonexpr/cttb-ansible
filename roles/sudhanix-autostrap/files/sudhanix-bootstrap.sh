@@ -117,9 +117,13 @@ remove_count="$(read_pkg_list  "${PKG_REMOVE_LIST}"  | wc -l)"
 log "package lists: install=${install_count} remove=${remove_count}"
 
 if (( install_count > 0 )); then
-    # xargs -r so an empty list is a no-op.
+    # xargs -r so an empty list is a no-op. Recommends are kept (no
+    # --no-install-recommends) so the lab desktop gets a stock-lubuntu
+    # end-state: gimp's helper plugins, libreoffice's full font/dictionary
+    # set, vlc's codec recommends, etc. The role's per-task installs (which
+    # become idempotent no-ops after this) historically used recommends too.
     read_pkg_list "${PKG_INSTALL_LIST}" \
-        | xargs -r apt-get install -y --no-install-recommends \
+        | xargs -r apt-get install -y \
         || die "bulk apt install failed"
 else
     log "install list is empty — skipping apt install"
