@@ -55,15 +55,36 @@
       - config
       - sudhanix-ux
 
-  # Wallpaper — xfdesktop rotation xml, randomizer autostart, plank
-  # autostart entry, legacy feh cleanup. wallpaper.yml is mixed today
-  # (it also has the cttb-wallpapers.tar.gz unarchive); apply config
-  # filters out the unarchive on --tags config runs but the directive's
-  # wallpaper tag still fires it on --tags wallpaper.
+  # Wallpaper configure block — xfdesktop rotation xml, randomizer
+  # autostart, plank autostart, legacy feh cleanup. Install block (in
+  # install.yml) holds the cttb-wallpapers tarball.
   - include_tasks:
       file: wallpaper.yml
-      apply:
-        tags: [config]
+    vars:
+      __sudhanix_phase: config
     tags:
       - config
       - wallpaper
+
+  # Sound configure block — legacy pre-24.04 system-pulseaudio systemd
+  # unit + enable (no-op on Sudhanix 26). Install block (in install.yml)
+  # holds apt deps + bigsur theme.
+  - include_tasks:
+      file: sound.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - sound
+
+  # Plymouth configure block — update-alternatives, update-initramfs,
+  # grub cmdline lineinfile, update-grub. These run after install-phase
+  # asset deploy so the alternatives link points at a populated theme
+  # dir and initramfs rebuild captures the deployed theme files.
+  - include_tasks:
+      file: plymouth.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - plymouth

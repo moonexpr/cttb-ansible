@@ -88,14 +88,13 @@
       - install
       - lookandfeel
 
-  # Plymouth boot splash — Sudhanix branding (apt + asset copy + alternatives
-  # + grub cmdline + initramfs rebuild). plymouth.yml is mixed today but
-  # included only via install path; the alternatives/grub/initramfs steps
-  # are technically configure-shape but currently piggyback the install tag.
+  # Plymouth boot splash — Sudhanix branding. Install block: apt + theme
+  # asset deploy. Configure block (in configure.yml): update-alternatives,
+  # grub cmdline edit, update-initramfs rebuild.
   - include_tasks:
       file: plymouth.yml
-      apply:
-        tags: [install]
+    vars:
+      __sudhanix_phase: install
     tags:
       - install
       - plymouth
@@ -121,15 +120,25 @@
       - install
       - sw_install
 
-  # Sound: modprobe + apt deps + bigsur theme tarball + legacy pulseaudio
-  # systemd service (pre-24.04 only — no-op on Sudhanix 26).
+  # Sound: modprobe quirk + apt deps + bigsur theme tarball. Configure
+  # block (in configure.yml) holds legacy pre-24.04 pulseaudio service.
   - include_tasks:
       file: sound.yml
-      apply:
-        tags: [install]
+    vars:
+      __sudhanix_phase: install
     tags:
       - install
       - sound
+
+  # Wallpaper install block — wallpaper dir mkdir + tarball + macOS
+  # resource-fork purge. Configure block in configure.yml.
+  - include_tasks:
+      file: wallpaper.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - wallpaper
 
   # Role-wide apt upgrade — always last in install phase so it operates on
   # the just-installed package set, not the bare PXE image.
