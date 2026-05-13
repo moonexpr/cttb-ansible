@@ -6,8 +6,15 @@
 #   install: apt plymouth packages, themes-dir mkdir, stale-asset purge,
 #            theme-file deploy.
 #   configure: update-alternatives, /etc/default/grub cmdline edit,
-#              update-grub, update-initramfs (rebuild based on changed
-#              install-block state).
+#              update-grub. The initramfs rebuild is driven by handler
+#              notifications from install-block tasks so it fires once at
+#              end-of-play regardless of phase-tag interleaving.
+#
+# Plymouth modes covered by the same theme via the default.plymouth
+# alternatives link: boot, shutdown, reboot, updates (offline package
+# install), system-upgrade (release upgrade), firmware-upgrade (fwupd
+# UEFI capsule), system-reset, suspend. Per-mode messaging lives in
+# files/plymouth/sudhanix/sudhanix.script via Plymouth.GetMode().
 
 - name: plymouth — install phase
   when: __sudhanix_phase | default("all") in ["install", "all"]
@@ -47,6 +54,7 @@
       loop:
         - lotus.png
         - amitabha.png
+      notify: update initramfs
       tags:
         - sudhanix-core
         - plymouth
@@ -65,7 +73,7 @@
         - global_logo.png
         - progress-bg.png
         - progress-fill.png
-      register: plymouth_assets
+      notify: update initramfs
       tags:
         - sudhanix-core
         - plymouth
@@ -81,34 +89,17 @@
     # Point /etc/alternatives/default.plymouth at our theme. This is the
     # `update-alternatives` half of what plymouth-set-default-theme does —
     # we run it directly because the helper binary isn't on root's PATH in
-    # all Noble installs and the `-R` rebuild half is done explicitly below.
+    # all Noble installs. plymouthd reads this single setting for every
+    # mode (boot/shutdown/reboot/updates/system-upgrade/firmware-upgrade/
+    # system-reset), so this one link covers the full state matrix.
+    # Notifies the initramfs-rebuild handler so a re-pointed alternative
+    # propagates into the early-boot copy as well.
     - name: set sudhanix as default plymouth theme (alternatives)
       community.general.alternatives:
         name: default.plymouth
         path: /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth
         link: /etc/alternatives/default.plymouth
-      register: plymouth_alt
-      tags:
-        - sudhanix-core
-        - plymouth
-        - config
-
-    # Rebuild initramfs whenever ANY plymouth asset changed (or the
-    # alternatives link moved). Without this, initramfs keeps stale theme
-    # files and shows the old splash on the first boot frames before the
-    # real rootfs takes over. Caught on dvgs-testmachine 2026-05-12 where
-    # the old lotus.png stayed baked into initramfs for several boots.
-    #
-    # `plymouth_assets` is registered in install block. Cross-block register
-    # reference works because both blocks live in the same play after
-    # phase-gate evaluation; install block runs first when both phases run.
-    # When run under --tags config alone, plymouth_assets is unset; default
-    # to non-changed so the rebuild only fires when explicitly triggered.
-    - name: rebuild initramfs when plymouth assets changed
-      command: update-initramfs -u
-      environment:
-        PATH: /usr/sbin:/usr/bin:/sbin:/bin
-      when: (plymouth_assets.changed | default(false)) or plymouth_alt.changed
+      notify: update initramfs
       tags:
         - sudhanix-core
         - plymouth
