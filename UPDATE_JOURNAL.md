@@ -3791,3 +3791,189 @@ Cross-cutting acceptance:
 - Behaviour-preservation gate is tomorrow's at-seat: open welcome, click
   Apply, verify theme / wallpaper / dock / browser surfaces match prior
   behaviour.
+
+## 2026-05-12 (continued) — sudhanix-core install→configure phase-gate refactor (issue #57, Tasks 1-4 of 9 landed)
+
+Background and motivation: the 2026-05-12 demo prep on `dvgs-testmachine`
+hit a fresh-host failure when `roles/sudhanix-core/tasks/lookandfeel.yml`
+deployed a greeter CSS file into `/usr/share/themes/WhiteSur-Dark/gtk-3.0/`
+before the unarchive task that creates that directory. The tactical fix
+moved the WhiteSur GTK install block ahead of the lightdm greeter CSS
+block in the same file. Issue [#57](https://github.com/moonexpr/cttb-ansible/issues/57)
+was filed as a Blocker against the P2a milestone to lift that tactical
+fix into a structural one — every role becomes a hard two-phase gate
+(install → flush handlers → configure) so the same bug class can never
+land again. This entry covers landing 4 of the 9 planned tasks; tasks
+5-9 are still in flight.
+
+Architectural recipe: the role is now a **Template Method** at the role
+level (every role exposes `install()` then `configure()` in fixed order)
+implemented as **Pipes and Filters** with the filesystem as the pipe.
+Each subsystem file holds two top-level `block:`s gated by
+`when: __sudhanix_phase | default("all") in ["install"|"config", "all"]`.
+`install.yml` includes each subsystem with `vars: __sudhanix_phase=install`
+(install block fires, configure block skipped); `configure.yml` re-includes
+with `__sudhanix_phase=config` (other block, other direction). Default
+`"all"` preserves direct-invocation behaviour (`--start-at-task` rescue)
+by firing both blocks.
+
+Why the `when:` gate instead of block-level `tags:`? Ansible block-level
+tags are **additive** — they add to each task's effective tag set, they
+don't filter. Under `--tags install` the configure block's tasks would
+still fire if the include directive's own tags included `install` (which
+they do, via apply propagation). The `when:` gate is the only mechanism
+that lets a single file hold two phase-selectable bodies. This invariant
+is documented in each subsystem file's header comment.
+
+### Task 1 — Foundation skeleton — `0cd881ec`
+
+Retired the 234-line `roles/sudhanix-core/tasks/setup/default.yml`
+orchestrator. Its body redistributed to three new files:
+
+- `roles/sudhanix-core/tasks/install.yml` — install-phase orchestrator:
+  inline network-interfaces fix + GS passwd shell tweaks at the top,
+  then `include_tasks` for lubuntu / lang / lookandfeel / plymouth / sw /
+  sw-goldendict (when) / sound, then the role-wide apt autoremove +
+  full-upgrade + autoremove trio at the END (was at the bottom of
+  setup/default.yml; same position but now structurally guaranteed to
+  precede configure).
+- `roles/sudhanix-core/tasks/configure.yml` — configure-phase
+  orchestrator: `import_tasks: policy.yml` first, then includes for
+  sudhanix-ux and wallpaper.
+- `roles/sudhanix-core/tasks/policy.yml` — new file holding the six
+  polkit/pkla copy tasks that previously sat inlined at the top of
+  setup/default.yml. They are pure configure-shape work (write rule
+  files that polkit reads at runtime) but ran before lubuntu installed
+  the polkit packages in the old orchestrator. Moving them post-install
+  fixes that latent ordering hazard.
+
+`roles/sudhanix-core/tasks/main.yml` is now a fixed three-step Template
+skeleton: vars dispatch, `import_tasks install.yml`, `meta: flush_handlers`,
+`import_tasks configure.yml`, then platform setup file dispatch +
+firstlogin / welcome imports (Task 7 will move the last two into
+configure.yml).
+
+### Task 2 — `lookandfeel.yml` two-block phase split — `b93091af`
+
+The 584-line file behind the 2026-05-12 greeter-CSS bug. Reorganised
+into two top-level blocks. Install block: `apt remove gnome-shell`,
+WhiteSur GTK theme unarchive + casing symlinks, lightdm avatar PNG,
+koha icon, InterDisplay + SeriousShanns font tarballs, /usr/share/icons/cttb
+dir + lotus PNG, WhiteSur icon theme + cursors tarballs, Thunar icon
+symlink. Configure block: /etc/skel copy, desktop-shortcuts block,
+lightdm.conf + greeter conf + greeter CSS (the bug site — now
+structurally guaranteed to run AFTER WhiteSur GTK install), gtk.css
+@import lineinfile, /etc/X11/default-display-manager shell, app-menu
+plumbing, xsettings/xfwm4/panel xfconf templates, /etc/environment
+GTK env var lineinfiles, Chrome titlebar policy, panel-hostname genmon,
+kiosk + gtk-3.0 overrides, openbox/lxpanel legacy, NetworkManager
+netplan swap, LXQt legacy templates, xfce4-terminal config,
+app-menu.yml include, administrator account customisation.
+
+Behavioural changes vs pre-refactor:
+- Under `--tags install`: only install-block tasks fire (was: all).
+- Under `--tags config`: only configure-block tasks fire (was: all).
+- Under `--tags lookandfeel`: both blocks fire, install first.
+- Under full play: same task set, install-shape before config-shape.
+
+### Task 3 — `lubuntu.yml` + `lang.yml`; remove orphan `lang-sanskrit.yml` — `1909049f`
+
+`lubuntu.yml`: wrapped in install block. Added `zenity` and `dbus-x11`
+to the consolidated apt batch — Task 6 will remove a duplicate apt task
+from sudhanix-ux.yml that installs them outside the base-packages
+audience. They are session-watchdog deps and belong in the base install.
+
+`lang.yml`: five separate `apt: state=present` calls collapsed into ONE
+consolidated present batch (en/zh/vi locale + fcitx base + fcitx-unikey).
+The dep resolver now runs once per audience instead of five times.
+Wrapped in two-block phase shape: install block holds the apt batches
+and the sogoupinyin source-list cleanup; configure block holds the lone
+`im-config -n fcitx` task. The fcitx-unikey present-then-absent quirk is
+preserved verbatim — looks like a latent bug (task name says "install
+fcitx vietnamese/unikey support" but the absent batch removes it) but
+fixing it is out of scope for issue #57.
+
+`lang-sanskrit.yml`: deleted. It was orphaned — not included from
+anywhere in the orchestrator chain, and its single task (the sanskrit
+apt batch) was already duplicated verbatim in lang.yml gated on
+`when: sanskrit is defined`.
+
+### Task 4 — `sound.yml` + `plymouth.yml` + `wallpaper.yml` two-block split — `1f1182dc`
+
+Each of the three files now exposes an install block and a configure
+block. Notable changes:
+
+- `plymouth.yml`: the grub cmdline lineinfile, `update-grub`, and
+  `update-initramfs` are now in the configure block. Today they ran
+  under `--tags install` because every plymouth task carried the install
+  tag explicitly. They are structurally configure-shape — they react to
+  install-phase asset deploy state. After Task 4 they run in configure
+  phase, after install handlers flush. Cross-block register works:
+  `plymouth_assets` is registered in install block, read by
+  `rebuild initramfs` in configure block via
+  `when: (plymouth_assets.changed | default(false)) or plymouth_alt.changed`.
+- `wallpaper.yml`: the install block (mkdir + cttb-wallpapers.tar.gz
+  unarchive + macOS resource-fork purge) now actually runs in install
+  phase. Pre-refactor `wallpaper.yml` was only included from the
+  config-tagged path of setup/default.yml; an editor who ran
+  `--tags install` would not pull in the wallpaper unarchive.
+- `sound.yml`: the legacy pre-24.04 `pulseaudio.service` systemd unit +
+  enable move to configure block. No-op on Sudhanix 26 anyway (gated
+  on `ansible_distribution_major_version | int < 24`).
+
+### Validation infrastructure
+
+Pre-refactor baselines were captured before any edits:
+`ansible-playbook --list-tasks` for the full play and every salient tag,
+`--list-tags`, `--syntax-check`, and a per-task tag-set inventory built
+by walking each role's YAML files line-by-line. After each task, the
+same captures run again and diff against pre-refactor — they are the
+equivalence proof. `--check --diff` against `dvgs-testmachine.cttb`
+exercises the play live without mutating state.
+
+Validation status at Task 4 landing:
+- syntax-check: ok.
+- `--check --diff` against dvgs-testmachine: `ok=263, changed=9,
+  failed=0, skipped=155`. The skip count climbs as each task adds a
+  two-block split (more cross-phase blocks correctly bypassed):
+  pre-refactor 73 → Task 1: 73 → Task 2: 127 → Task 3: 133 → Task 4: 155.
+- The vault password in macOS Keychain (`CTTB_VAULT_PASS`,
+  `security find-generic-password -s 'CTTB_VAULT_PASS' -w`) doubles as
+  the `ansible_sudo_pass` for `dvgs-testmachine.cttb`. The static value
+  `namo-amituofo` in `group_vars/all.with-password` is **stale** for the
+  Sudhanix 26 fleet and gets rejected as "Incorrect sudo password".
+  Standard invocation:
+  ```
+  SUDOPW="$(security find-generic-password -s 'CTTB_VAULT_PASS' -w)"
+  ansible-playbook -i inventory/sudhanix26_hosts.ini \
+    plays/install-sudhanix-cslabs.yml \
+    -l dvgs-testmachine.cttb \
+    -e "ansible_sudo_pass=$SUDOPW" \
+    --check --diff
+  ```
+  Worth documenting / fixing in `group_vars/all.with-password` as a
+  separate ticket.
+
+### Remaining (Tasks 5-9)
+
+- Task 5: `sw.yml` + `sw-browser.yml` + `sw-thunderbird.yml` +
+  `sw-vscode.yml` + `sw-office.yml` + `sw-goldendict.yml` two-block
+  split. The software family. `sw-thunderbird.yml` is the canonical
+  case (apt absent → snap remove → tarball unarchive → symlink →
+  .desktop write → proxy.js write).
+- Task 6: `sudhanix-ux.yml` + `app-menu.yml` → pure configure. Remove
+  the duplicate `zenity` + `dbus-x11` apt task from sudhanix-ux.yml
+  (already added to lubuntu.yml in Task 3).
+- Task 7: tag corrections — `sudhanix-welcome.yml` and
+  `sudhanix-firstlogin.yml` are currently imported from main.yml with
+  `tags: [install]` but contain only configure-shape work. Move their
+  imports into configure.yml and switch their tags from `install` to
+  `config`. Small documented interface adjustment: `--tags install`
+  will no longer fire welcome / firstlogin tasks.
+- Task 8: `roles/sudhanix-vajra-tool` paired refactor. Same outer split
+  scaled down. Reference implementation of the pattern.
+- Task 9: fresh-host regression on `dvgs-testmachine` — purge install
+  postcondition artifacts (whitesur themes, InterDisplay + SeriousShanns
+  fonts, bigsur sound theme, plymouth sudhanix theme, /opt/thunderbird)
+  and run the full play. Expect `failed=0` and `changed=0` on the
+  second pass. Closes #57.
