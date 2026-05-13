@@ -60,10 +60,17 @@
         tags:
           - app_menu
 
-      - name: hide apps in the app menu
-        lineinfile:
-          dest: "/usr/share/applications/{{ item }}.desktop"
-          line: "NoDisplay=true"
+      # On lubuntu-core minimal installs several of these .desktop files
+      # are absent (software-properties-{drivers,gtk}, gnome-language-selector,
+      # …). lineinfile fails with rc=257 "Destination does not exist" on
+      # those, which we previously swallowed with ignore_errors: yes — noisy.
+      # Pre-filter with `find` so absent files become loop entries that
+      # simply don't exist; lineinfile only runs over the present ones.
+      - name: locate desktop files to hide (only those present)
+        find:
+          paths: /usr/share/applications
+          patterns: "{{ item }}.desktop"
+        register: __hide_app_finds
         loop:
           - fcitx
           # No need to show a generic Leave
@@ -90,6 +97,17 @@
           - xfce4-power-manager-settings
           - lxinput
           - lxqt-config-monitor
-        ignore_errors: yes
+        loop_control:
+          label: "{{ item }}"
+        tags:
+          - app_menu
+
+      - name: hide apps in the app menu
+        lineinfile:
+          dest: "{{ item.path }}"
+          line: "NoDisplay=true"
+        loop: "{{ __hide_app_finds.results | map(attribute='files') | flatten }}"
+        loop_control:
+          label: "{{ item.path | basename }}"
         tags:
           - app_menu
