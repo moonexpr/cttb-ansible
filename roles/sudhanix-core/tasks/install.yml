@@ -54,21 +54,23 @@
       - gs_acct_shell
 
   # Lubuntu core packages — the single biggest apt batch in the role.
+  # lubuntu.yml has no configure block (all install), so no second
+  # include from configure.yml is needed.
   - include_tasks:
       file: lubuntu.yml
-      apply:
-        tags: [install]
+    vars:
+      __sudhanix_phase: install
     tags:
       - install
       - lubuntu
 
-  # Language support. Moved before lookandfeel since fcitx must be installed
-  # before per-user IM configuration writes (handled by skel copy in
-  # lookandfeel).
+  # Language support — install block (consolidated apt batch + absent +
+  # conditional chewing + conditional sanskrit). The configure block
+  # (im-config) is included from configure.yml.
   - include_tasks:
       file: lang.yml
-      apply:
-        tags: [install]
+    vars:
+      __sudhanix_phase: install
     tags:
       - install
       - lang
