@@ -93,11 +93,13 @@
           HEAD
       changed_when: true
 
+    # unarchive: rejects macOS-shipped BSD tar; the module's check is
+    # overzealous for plain `.tar`. Use `tar -xf` directly — BSD tar
+    # extracts fine, and this also works on Linux.
     - name: expand archive into staging dir
-      ansible.builtin.unarchive:
-        src: "{{ sb_staging }}/repo-archive.tar"
-        dest: "{{ sb_staging }}"
-        remote_src: true
+      ansible.builtin.command:
+        cmd: tar -xf {{ sb_staging }}/repo-archive.tar -C {{ sb_staging }}
+      changed_when: true
 
     - name: drop the intermediate tar
       ansible.builtin.file:
