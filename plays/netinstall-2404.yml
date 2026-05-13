@@ -1,10 +1,18 @@
 ---
 # Deploy Ubuntu 24.04 LTS network installation infrastructure to pxe.cttb.
 #
-# pxe.cttb is now the pxe24 LXC container on srv-nas (10.11.13.27),
-# Ubuntu 24.04 + nginx + h5ai. The legacy Ubuntu 16.04 box at 10.11.1.23
-# was decommissioned in the 2026-05-12 cutover; if you need the apache2
-# code path back, override `ni_webserver: apache2` on the command line.
+# pxe.cttb is the pxe24 LXC container on srv-nas (10.11.1.23 since the
+# 2026-05-12 re-IP cutover, which took the infrastructure-subnet IP the
+# legacy Ubuntu 16.04 box used to own). Ubuntu 24.04 + nginx + h5ai.
+# The legacy 16.04 box at 10.11.13.27 was decommissioned in that cutover;
+# if you need the apache2 code path back, override `ni_webserver: apache2`
+# on the command line.
+#
+# Re-IP discipline: after any future re-IP of this container, re-apply this
+# play against pxe-server so the `etc-default-tftpd-hpa.j2` template picks
+# up the new `ansible_default_ipv4.address`. The dnsmasq `dhcp-boot=` lines
+# on dnsmasq.cttb are NOT templated by this play (see gh-60 follow-up) —
+# update them in /etc/dnsmasq.conf by hand at cutover time until they are.
 #
 # Usage (from a campus workstation — no jumphost needed):
 #   ansible-playbook plays/netinstall-2404.yml -i inventory/sudhanix26_hosts.ini --diff
