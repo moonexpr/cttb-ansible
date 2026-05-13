@@ -105,3 +105,19 @@
       - sw_install
       - browser
       - thunderbird
+
+  # First-login + welcome — pure configure (copy, lineinfile, stat,
+  # file:state=absent). Moved here from main.yml in Task 7 of the
+  # issue #57 refactor; they were misleadingly tagged `install` under
+  # the old main.yml dispatch.
+  - name: Sudhanix first-login bootstrap + migration
+    ansible.builtin.import_tasks: sudhanix-firstlogin.yml
+    tags:
+      - config
+      - sudhanix_firstlogin
+
+  - name: Sudhanix welcome window
+    ansible.builtin.import_tasks: sudhanix-welcome.yml
+    tags:
+      - config
+      - sudhanix_welcome
