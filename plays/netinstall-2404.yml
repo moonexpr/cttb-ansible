@@ -1,16 +1,29 @@
 ---
-# Deploy Ubuntu 24.04 LTS network installation infrastructure.
+# Deploy Ubuntu 24.04 LTS network installation infrastructure to pxe.cttb.
 #
-# Run on the PXE server to set up autoinstall-based headless deployment
-# for Computer Lab hosts (dvgs_cs_lab, dvbs_cs_lab, drbu_cs_lab).
+# pxe.cttb is now the pxe24 LXC container on srv-nas (10.11.13.27),
+# Ubuntu 24.04 + nginx + h5ai. The legacy Ubuntu 16.04 box at 10.11.1.23
+# was decommissioned in the 2026-05-12 cutover; if you need the apache2
+# code path back, override `ni_webserver: apache2` on the command line.
 #
-# Usage:
-#   ansible-playbook plays/netinstall-2404.yml
+# Usage (from a campus workstation — no jumphost needed):
+#   ansible-playbook plays/netinstall-2404.yml -i inventory/sudhanix26_hosts.ini --diff
 #
 # After running this playbook, PXE-boot any lab machine and select
 # the desired Ubuntu 24.04 installation profile from the boot menu.
+#
+# This play installs nginx + tftpd-hpa + h5ai and lays the directory tree.
+# To push fresh PXE/grub menu config + autoinstall user-data + ISO extraction,
+# follow up with `plays/deploy-netinstall-2404.yml` (which renders templates
+# locally and rsyncs them up).
 
 - hosts: pxe-server
   become: true
+  vars:
+    ni_webserver: nginx
+    ni_h5ai_enabled: true
+    ni_php_version: "8.1"
+    ni_server_name: "pxe.cttb"
+    ansible_assets_url: "http://storehouse.cttb/ansible"
   roles:
     - netinstall-2404
