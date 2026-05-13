@@ -1,162 +1,36 @@
 ---
-# vajra — sysadmin multi-tool. Now distributed as a .deb from apt.cttb.
+# sudhanix-vajra-tool — sysadmin multi-tool installer + config templater.
 #
-# The vajra source lives in ~/Garden/app/vajra (Rust + Lua tools, not in
-# this repo). Production builds run on storehouse.cttb (cargo build +
-# cargo deb) and the resulting .deb is published to apt.cttb's extras pool.
-# This role just installs the package and templates the host-overridable
-# JSON configs over the .deb-shipped defaults.
+# vajra ships as a .deb from apt.cttb's extras pool. This role:
+#   1. Adds the cttb-extras apt source + signing key, installs the .deb.
+#   2. Cleans up the legacy pre-deb zipapp install paths.
+#   3. Drops Sudhanix-specific Lua tools into /usr/local/lib/vajra/tools/
+#      (CTTB-coupled tools that the upstream .deb does not bundle, kept
+#      out of upstream so the package stays portable).
+#   4. Templates host-overridable JSON configs into /etc/vajra/.
+#
+# Two-phase template (issue #57, Task 8): same Template Method skeleton
+# as sudhanix-core/tasks/main.yml — install runs first, handlers flush
+# at the phase boundary, then configure. Each phase's body is one
+# include_tasks file (install.yml / configure.yml).
 #
 # Layout on disk after this role runs:
 #   /usr/bin/vajra                          — binary (from .deb)
 #   /usr/share/applications/vajra.desktop   — menu entry (from .deb)
-#   /usr/local/lib/vajra/tools/             — drop-in Lua plugin dir (this role)
-#   /etc/vajra/{quick-links,ldap,sudhanix}.json — configs (this role,
-#                                                  override .deb defaults)
+#   /usr/local/lib/vajra/tools/             — drop-in Lua plugin dir
+#   /etc/vajra/{quick-links,ldap,sudhanix}.json — host-overridable configs
 #
-# Tag layout (consistent with sudhanix-core):
+# Tag layout:
 #   vajra            — everything in this role
-#   vajra-install    — apt install vajra + cleanup of legacy zipapp install
-#   vajra-config     — drop-in dir + /etc/vajra/*.json
+#   vajra-install    — apt key + source + .deb install + legacy cleanup
+#   vajra-config     — tool drop-ins + /etc/vajra/*.json
 #   install / config — universal cross-role tags
 
-# ---------- shared: drop-in dir + /etc/vajra ---------- #
+- name: Install phase
+  ansible.builtin.import_tasks: install.yml
 
-- name: ensure vajra runtime dirs
-  file:
-    path: "{{ item }}"
-    state: directory
-    owner: root
-    group: root
-    mode: '0755'
-  loop:
-    - /usr/local/lib/vajra
-    - /usr/local/lib/vajra/tools
-    - /etc/vajra
-  tags:
-    - vajra
-    - vajra-install
-    - vajra-config
-    - install
-    - config
+- name: Flush install-phase handlers before configure begins
+  ansible.builtin.meta: flush_handlers
 
-# ---------- install path ---------- #
-
-- name: deploy cttb-repo apt signing key
-  copy:
-    src: cttb-repo.asc
-    dest: /usr/share/keyrings/cttb-repo.asc
-    owner: root
-    group: root
-    mode: '0644'
-  tags:
-    - vajra
-    - vajra-install
-    - install
-
-- name: drop cttb-extras apt source (provides vajra .deb)
-  copy:
-    dest: /etc/apt/sources.list.d/cttb-extras.list
-    owner: root
-    group: root
-    mode: '0644'
-    content: |
-      deb [arch=amd64 signed-by=/usr/share/keyrings/cttb-repo.asc] http://apt.{{ dns_domain }}/cttb-repos/apt/ubuntu noble main
-  tags:
-    - vajra
-    - vajra-install
-    - install
-
-- name: install vajra (from apt.cttb extras)
-  apt:
-    name: vajra
-    state: latest
-    update_cache: yes
-    cache_valid_time: 3600
-  tags:
-    - vajra
-    - vajra-install
-    - install
-
-- name: remove legacy zipapp install (pre-deb layout)
-  file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /usr/local/bin/vajra
-    - /usr/local/bin/vajra-test
-    - /usr/local/lib/vajra/lib
-    - /usr/local/lib/vajra/tests
-  tags:
-    - vajra
-    - vajra-install
-    - install
-
-# ---------- Sudhanix-specific Vajra tools ---------- #
-# Vajra bundles generic sysadmin tools (network_diag, password_reset,
-# ldap_debug, etc). Anything hard-coded to a CTTB-only path (sudhanix-welcome
-# binary, sudhanixWelcomeDismissed LDAP attr, /run/sudhanix-tokens/,
-# /usr/local/sbin/sudhanix-firstlogin, the welcome-panel test runners) lives
-# in THIS role and deploys as a runtime drop-in under
-# /usr/local/lib/vajra/tools/. Vajra's bundled set stays free of Sudhanix
-# responsibilities — if generic-sounding tool code in the bundle starts
-# referencing CTTB paths, move it here.
-#
-# Tool file format: new self-bound API. `local TOOL = {}; function
-# TOOL:action_X(fields) ... self:run(...) ... end; ... registry.register(TOOL)`.
-# See vajra-engine/src/tools/ldap_debug.lua for the canonical shape.
-- name: deploy Sudhanix-specific Vajra tools
-  copy:
-    src: "tools/{{ item }}"
-    dest: "/usr/local/lib/vajra/tools/{{ item }}"
-    owner: root
-    group: root
-    mode: '0644'
-  loop:
-    # Sudhanix-coupled tools migrated out of bundled vajra. The bundle no
-    # longer ships these so the role is now the single source of truth.
-    - sudhanix.lua          # campus desktop status, launchers, set-hostname
-    - welcome_reset.lua     # clear sudhanixWelcomeDismissed LDAP flag
-    - xfce_reset.lua        # quarantine XFCE config + re-run firstlogin
-    # IT-only test runners for PAM / welcome / LDAP / plank DBus.
-    # See monogarden#7 for design notes; depends on the LDAP TLS fix in
-    # monogarden#2 for the LDAP-write paths.
-    - test_pam_auth.lua
-    - test_token_state.lua
-    - test_welcome_preview.lua
-    - test_ldap_dismissal.lua
-    - test_plank_dbus.lua
-  tags:
-    - vajra
-    - vajra-config
-    - vajra-sudhanix
-    - vajra-testing
-    - config
-
-# ---------- config path ---------- #
-
-- name: deploy host-overridable configs (override .deb defaults)
-  copy:
-    content: "{{ item.content | to_nice_json(indent=2) }}\n"
-    dest: "{{ item.dest }}"
-    owner: root
-    group: root
-    mode: '0644'
-  loop:
-    - dest: /etc/vajra/quick-links.json
-      content: "{{ vajra_quick_links }}"
-    - dest: /etc/vajra/ldap.json
-      content:
-        uri:       "{{ vajra_ldap_uri }}"
-        base_dn:   "{{ vajra_ldap_base_dn }}"
-        people_ou: "{{ vajra_ldap_people_ou }}"
-        group_ou:  "{{ vajra_ldap_group_ou }}"
-    - dest: /etc/vajra/sudhanix.json
-      content:
-        it_email: "{{ vajra_it_email }}"
-  loop_control:
-    label: "{{ item.dest }}"
-  tags:
-    - vajra
-    - vajra-config
-    - config
+- name: Configure phase
+  ansible.builtin.import_tasks: configure.yml

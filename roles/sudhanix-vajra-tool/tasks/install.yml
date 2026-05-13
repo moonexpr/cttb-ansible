@@ -1,0 +1,73 @@
+---
+# sudhanix-vajra-tool — install phase.
+#
+# apt key + apt source + .deb install + legacy zipapp cleanup, plus the
+# two runtime directories (/usr/local/lib/vajra/tools, /etc/vajra) that
+# configure.yml writes into. Mkdir lives in install phase because the
+# configure-phase drop-ins read these paths.
+
+- name: ensure vajra runtime dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /usr/local/lib/vajra
+    - /usr/local/lib/vajra/tools
+    - /etc/vajra
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
+- name: deploy cttb-repo apt signing key
+  copy:
+    src: cttb-repo.asc
+    dest: /usr/share/keyrings/cttb-repo.asc
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
+- name: drop cttb-extras apt source (provides vajra .deb)
+  copy:
+    dest: /etc/apt/sources.list.d/cttb-extras.list
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      deb [arch=amd64 signed-by=/usr/share/keyrings/cttb-repo.asc] http://apt.{{ dns_domain }}/cttb-repos/apt/ubuntu noble main
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
+- name: install vajra (from apt.cttb extras)
+  apt:
+    name: vajra
+    state: latest
+    update_cache: yes
+    cache_valid_time: 3600
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
+- name: remove legacy zipapp install (pre-deb layout)
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /usr/local/bin/vajra
+    - /usr/local/bin/vajra-test
+    - /usr/local/lib/vajra/lib
+    - /usr/local/lib/vajra/tests
+  tags:
+    - vajra
+    - vajra-install
+    - install
