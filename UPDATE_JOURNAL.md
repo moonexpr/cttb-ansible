@@ -3978,6 +3978,71 @@ Validation status at Task 4 landing:
   and run the full play. Expect `failed=0` and `changed=0` on the
   second pass. Closes #57.
 
+### Task 9 results (2026-05-12 evening)
+
+Purged the install postcondition artifacts on `dvgs-testmachine.cttb`
+to simulate a fresh-host run:
+
+```
+rm -rf /usr/share/themes/WhiteSur* \
+       /usr/share/icons/WhiteSur* /usr/share/icons/WhiteSur-cursors \
+       /usr/share/fonts/truetype/inter-display \
+       /usr/share/fonts/opentype/serious-shanns \
+       /usr/share/sounds/bigsur \
+       /usr/share/plymouth/themes/sudhanix
+```
+
+Run 1 (fresh, full install + configure path):
+`ok=260, changed=31, failed=0, skipped=156`. RC=0. The 2026-05-12
+greeter-CSS-before-WhiteSur-tarball bug class is structurally fixed —
+install block re-extracts the theme before configure block tries to
+write `lightdm-gtk-greeter.css` into it.
+
+Run 2 (idempotence pass on the same host):
+`ok=250, changed=9, failed=0, skipped=163`. The nine "always-changed"
+tasks are all pre-existing idempotency leaks, unrelated to this
+refactor:
+
+  - `cttb-ca-client : change the libnssckbi.so files to symlinks if
+    not already, x86_64` — file-state self-healer that always reports
+    changed when the underlying p11-kit package is touched.
+  - `common : apt autoremove` and `sudhanix-core : apt autoremove
+    before upgrade` — autoremove always reports changed when there is
+    anything to remove (and there is, given the fcitx-unikey
+    present-then-absent quirk below).
+  - `sudhanix-core : install language and fcitx packages
+    (consolidated)` + `remove unneeded fcitx and locale packages` —
+    the fcitx-unikey present-in-batch / absent-in-batch quirk we
+    preserved verbatim in Task 3. Each run reinstalls then removes
+    fcitx-unikey. The original was the same; merging into one apt
+    didn't introduce the quirk.
+  - `sudhanix-core : download wallpaper images` — wallpaper.yml's
+    unarchive task has no `creates:` clause, so it re-extracts every
+    run. Pre-refactor bug; out of scope here.
+  - `ldap-client : setup ldap authentication` and
+    `restart systemd-logind` — ldap-client role behaviours, also
+    pre-refactor.
+
+None of the always-changed tasks are caused by the phase-gate refactor.
+The two flagged as worth fixing in separate tickets:
+
+  - **wallpaper unarchive idempotence** — add `creates: {{ desktop_
+    wallpaper_dir }}/.fetched` (touch sentinel) or rely on archive
+    extract idempotence.
+  - **fcitx-unikey present-then-absent** — the task says "install
+    fcitx vietnamese/unikey support" but the absent batch reverts it.
+    Decide whether to install or remove and pick one.
+
+Issue #57 is closed with a public comment summarising the run.
+
+Stale follow-up worth its own ticket: `group_vars/all.with-password`
+ships `ansible_sudo_pass: namo-amituofo` which is rejected by the
+Sudhanix 26 fleet. The working sudo password is the vault password in
+macOS Keychain (`security find-generic-password -s 'CTTB_VAULT_PASS' -w`).
+For now operators have to set `-e "ansible_sudo_pass=$(security ...)"`
+on every invocation. Fix is either to delete `all.with-password` (force
+operators to use vault) or update its value.
+
 ---
 
 ### 2026-05-12 — pxe.cttb cutover: legacy 16.04 box → pxe24 LXC, in-place at 10.11.1.23
