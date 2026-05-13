@@ -9,15 +9,17 @@ ni_isos_baseurl: "{{ansible_assets_url}}/isos"
 ni_www_path: "/var/www/html/netinstall"
 
 # Webserver to serve kernels, initrd, ISOs, and autoinstall configs over HTTP.
-# Supported values: 'apache2' (legacy default — Ubuntu 16.04 pxe.cttb), 'nginx' (Debian/Ubuntu 22+).
-ni_webserver: apache2
+# Supported values: 'nginx' (current default — pxe.cttb is pxe24 on srv-nas, Ubuntu 24.04),
+# 'apache2' (retained for archaeological reasons; the legacy Ubuntu 16.04 pxe.cttb box at
+# 10.11.1.23 was decommissioned in the 2026-05-12 cutover).
+ni_webserver: nginx
 
 # nginx server_name for the netinstall site. Mirrors storehouse_server_name.
 ni_server_name: "pxe.cttb"
 
 # h5ai (manti-X fork) enables a pretty browseable index for /netinstall/.
 # Only meaningful when ni_webserver == 'nginx'. Modeled on the storehouse role.
-ni_h5ai_enabled: false
+ni_h5ai_enabled: true
 ni_h5ai_version: "0.33.0"
 
 # PHP-FPM version. Ubuntu 22.04 ships 8.1; Debian 13 ships 8.2.
