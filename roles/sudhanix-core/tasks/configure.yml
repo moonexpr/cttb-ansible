@@ -88,3 +88,18 @@
     tags:
       - config
       - plymouth
+
+  # sw.yml re-include for configure phase. sw.yml's own install block
+  # skips; sub-includes propagate __sudhanix_phase=config and fire only
+  # the config sub-blocks (Chrome --use-system-title-bar / xdg-settings
+  # default browser; Thunderbird cttb-proxy.js). Pure-install sub-files
+  # (sw-office, sw-vscode, sw-goldendict) have no config block and skip.
+  - include_tasks:
+      file: sw.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - sw_install
+      - browser
+      - thunderbird

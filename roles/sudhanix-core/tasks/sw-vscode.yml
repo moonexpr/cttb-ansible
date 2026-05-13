@@ -1,36 +1,48 @@
 ---
+# Visual Studio Code installation. Pure install (apt key + apt repo +
+# apt install + cleanup of deb822 .sources file the package auto-creates).
+#
+# Two-block phase shape (issue #57, Task 5): single install block, no
+# configure block.
 
-  - block:
-    - name: download Microsoft signing key
-      get_url:
-        url: https://packages.microsoft.com/keys/microsoft.asc
-        dest: /usr/share/keyrings/microsoft.asc
-        mode: '0644'
-
-    - name: add VSCode repository
-      apt_repository:
-        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.asc] https://packages.microsoft.com/repos/code stable main"
-        state: present
-        filename: vscode
-
-    # the code package auto-creates vscode.sources (deb822) with a different key — remove it
-    - name: remove duplicate VSCode repository (auto-created by package)
-      file:
-        path: /etc/apt/sources.list.d/vscode.sources
-        state: absent
-
-    - name: remove stale microsoft.gpg key (package ships its own)
-      file:
-        path: /usr/share/keyrings/microsoft.gpg
-        state: absent
-
-    - name: install Visual Studio Code
-      apt:
-        name: code
-        state: present
-        update_cache: yes
-
-    when: vscode == true
+  - name: sw-vscode — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
     tags:
-      - packages
+      - install
       - vscode
+    block:
+
+      - block:
+        - name: download Microsoft signing key
+          get_url:
+            url: https://packages.microsoft.com/keys/microsoft.asc
+            dest: /usr/share/keyrings/microsoft.asc
+            mode: '0644'
+
+        - name: add VSCode repository
+          apt_repository:
+            repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.asc] https://packages.microsoft.com/repos/code stable main"
+            state: present
+            filename: vscode
+
+        # the code package auto-creates vscode.sources (deb822) with a different key — remove it
+        - name: remove duplicate VSCode repository (auto-created by package)
+          file:
+            path: /etc/apt/sources.list.d/vscode.sources
+            state: absent
+
+        - name: remove stale microsoft.gpg key (package ships its own)
+          file:
+            path: /usr/share/keyrings/microsoft.gpg
+            state: absent
+
+        - name: install Visual Studio Code
+          apt:
+            name: code
+            state: present
+            update_cache: yes
+
+        when: vscode == true
+        tags:
+          - packages
+          - vscode

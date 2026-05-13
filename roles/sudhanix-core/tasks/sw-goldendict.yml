@@ -1,11 +1,22 @@
 ---
+# Goldendict + dictionaries. Pure install (apt only).
+#
+# Two-block phase shape (issue #57, Task 5): single install block, no
+# configure block. Conditional include from sw.yml's parent
+# (`when: goldendict is defined` at the include site).
 
-  - name: install goldendict and dictionaries
-    apt:
-      state: latest
-      name:
-      - goldendict
-      - goldendict-dicts
+  - name: sw-goldendict — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
     tags:
+      - install
       - goldendict
+    block:
 
+      - name: install goldendict and dictionaries
+        apt:
+          state: latest
+          name:
+          - goldendict
+          - goldendict-dicts
+        tags:
+          - goldendict
