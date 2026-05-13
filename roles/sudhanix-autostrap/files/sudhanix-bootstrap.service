@@ -1,0 +1,35 @@
+[Unit]
+Description=Sudhanix 26 second-stage autoinstaller
+Documentation=https://github.com/moonexpr/cttb-ansible/blob/main/plays/build-sudhanix-autobootstrap.yml
+# After the network is genuinely up — we'll be wget'ing from storehouse.cttb
+# and apt-installing through the lab proxy chain. network-online.target waits
+# for systemd-networkd-wait-online (or NetworkManager-wait-online on
+# desktop-minimal installs) so DNS + default route are ready.
+After=network-online.target
+Wants=network-online.target
+
+# One-shot: only run if we haven't already succeeded. The post_tasks block in
+# build-sudhanix-autobootstrap.yml touches this flag on success; if it's
+# present, the unit silently skips. To force a re-run: remove the flag and
+# `systemctl start sudhanix-bootstrap.service`.
+ConditionPathExists=!/var/lib/sudhanix/bootstrap.done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/sudhanix-bootstrap
+# 3 retries with 30s gap, then go to `failed` state and stop trying. The
+# update-motd hook at /etc/update-motd.d/50-sudhanix-bootstrap surfaces the
+# failed state on next TTY/SSH login.
+Restart=on-failure
+RestartSec=30s
+StartLimitBurst=3
+StartLimitIntervalSec=300
+# 30 minutes is a generous ceiling for the apt installs + role runs. Past
+# that, something is genuinely wrong and we'd rather fail loudly.
+TimeoutStartSec=1800
+# stdout/stderr go to the journal; surface via `journalctl -u sudhanix-bootstrap`.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

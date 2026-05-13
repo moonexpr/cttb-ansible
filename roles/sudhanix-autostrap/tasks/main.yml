@@ -1,0 +1,71 @@
+---
+# sudhanix-autostrap — installs the second-stage autoinstaller harness on a
+# Sudhanix 26 host. Two callsites:
+#
+# 1. PXE user-data path (the common case): cloud-init's write_files block in
+#    roles/netinstall-2404/templates/autoinstall/user-data-desktop-minimal.j2
+#    reads files from this role's files/ directory and embeds them into the
+#    installed system. This role's tasks are NOT run during PXE install —
+#    they would be running against a still-being-installed target.
+#
+# 2. Operator ansible-apply path: a clean way to install or refresh the
+#    bootstrap harness on an already-installed box (e.g. dvgs-testmachine
+#    when testing without a full PXE re-install). Idempotent.
+#
+# The flag /var/lib/sudhanix/bootstrap.done is treated as authoritative: if
+# present, the service condition skips re-execution. To force a re-run, the
+# operator removes the flag and `systemctl start sudhanix-bootstrap`.
+
+- name: ensure /var/lib/sudhanix state directory
+  ansible.builtin.file:
+    path: /var/lib/sudhanix
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - sudhanix-autostrap
+    - install
+
+- name: deploy second-stage bootstrap script
+  ansible.builtin.copy:
+    src: sudhanix-bootstrap.sh
+    dest: /usr/local/sbin/sudhanix-bootstrap
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - sudhanix-autostrap
+    - install
+
+- name: deploy bootstrap systemd unit
+  ansible.builtin.copy:
+    src: sudhanix-bootstrap.service
+    dest: /etc/systemd/system/sudhanix-bootstrap.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd
+  tags:
+    - sudhanix-autostrap
+    - install
+
+- name: deploy update-motd bootstrap-status hook
+  ansible.builtin.copy:
+    src: 50-sudhanix-bootstrap
+    dest: /etc/update-motd.d/50-sudhanix-bootstrap
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - sudhanix-autostrap
+    - install
+
+- name: enable bootstrap service (idempotent — Condition guards re-run)
+  ansible.builtin.systemd:
+    name: sudhanix-bootstrap.service
+    enabled: true
+    daemon_reload: true
+  tags:
+    - sudhanix-autostrap
+    - install

@@ -1,0 +1,62 @@
+---
+# Second-stage autoinstaller — runs on the freshly PXE-installed box to
+# transform it from "Ubuntu 24.04 base + administrator user" into a working
+# Sudhanix 26 lab desktop, without operator interaction.
+#
+# Driven by /etc/systemd/system/sudhanix-bootstrap.service (cloud-init writes
+# it at first-boot per the user-data template; see
+# roles/netinstall-2404/files/auto-bootstrap/). The service fetches the
+# repo tarball from storehouse.cttb, extracts it, and runs THIS play with
+# `ansible-playbook -i localhost, --connection=local`.
+#
+# Scope deliberately narrow: HOST-AGNOSTIC roles only — the ones that don't
+# depend on inventory membership in dvgs_cs_lab vs dvbs_cs_lab vs drbu_cs_lab
+# (CUPS print-server target, LDAP bind details, NFS home mount, hostname).
+# Those lab-specific roles run from the operator's workstation later via the
+# normal install-sudhanix-cslabs.yml play, once the box has been assigned a
+# real hostname and inventory group.
+#
+# Usage on-box (the service runs this):
+#   ansible-playbook -i localhost, --connection=local \
+#     plays/build-sudhanix-autobootstrap.yml
+#
+# Usage for testing the play itself against a remote box (operator):
+#   ansible-playbook -i inventory/sudhanix26_hosts.ini \
+#     plays/build-sudhanix-autobootstrap.yml --limit dvgs-testmachine.cttb
+#
+# Companion finalize play (operator runs once box is in an inventory group):
+#   ansible-playbook -i inventory/sudhanix26_hosts.ini \
+#     plays/install-sudhanix-cslabs.yml --limit <newly-installed-host>
+
+- name: Sudhanix 26 second-stage autoinstaller (host-agnostic)
+  hosts: all
+  become: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+    NEEDRESTART_MODE: a
+  vars:
+    # Bootstrap runs against a box whose hostname is still "computer" (the
+    # subiquity-default). The lab-specific assignment happens later.
+    sudhanix_bootstrap: true
+  roles:
+    # sudhanix-core (depends on common + sudhanix-vajra-tool via
+    # meta/main.yml) — desktop, themes, packages, Plymouth splash, vajra
+    # tool, panel layout. Host-agnostic: every Sudhanix lab desktop wants
+    # the same end-state.
+    - sudhanix-core
+
+    # NTP client config — same time-server for the entire campus.
+    - time-server
+
+    # Install CTTB Root CA into the system trust store so https://wiki.cttb
+    # etc. validate. Host-agnostic.
+    - cttb-ca-client
+
+  post_tasks:
+    - name: mark bootstrap success
+      ansible.builtin.file:
+        path: /var/lib/sudhanix/bootstrap.done
+        state: touch
+        mode: "0644"
+      tags:
+        - always

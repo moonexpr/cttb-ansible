@@ -59,3 +59,36 @@ autoinstall:
   # boot (default UID 1000), and ssh.authorized-keys above propagates keys via
   # cloud-init. usermod/authorized_keys writes in late-commands fail with exit 6
   # ("user doesn't exist") because cloud-init hasn't created the user yet.
+  #
+  # ── Second-stage autoinstaller (host-agnostic) ───────────────────────────
+  # Once subiquity has installed the Ubuntu 24.04 base + cloud-init has
+  # created the administrator user, the box reboots and cloud-init runs
+  # again against the cloud-config below. It writes three files to disk
+  # (systemd unit, bootstrap script, MOTD hook) and enables the unit so
+  # network-online.target triggers the actual transformation play
+  # (build-sudhanix-autobootstrap.yml — host-agnostic Sudhanix-26 roles).
+  # The MOTD hook surfaces bootstrap state on every TTY/SSH login.
+  # Source of truth for the embedded files: roles/sudhanix-autostrap/files/.
+  # (Same role can also be applied directly via ansible to refresh a
+  # already-installed box without a full PXE re-install.)
+  user-data:
+    write_files:
+      - path: /etc/systemd/system/sudhanix-bootstrap.service
+        permissions: '0644'
+        owner: root:root
+        content: |
+{{ lookup('file', playbook_dir + '/../roles/sudhanix-autostrap/files/sudhanix-bootstrap.service') | indent(width=10, first=True) }}
+      - path: /usr/local/sbin/sudhanix-bootstrap
+        permissions: '0755'
+        owner: root:root
+        content: |
+{{ lookup('file', playbook_dir + '/../roles/sudhanix-autostrap/files/sudhanix-bootstrap.sh') | indent(width=10, first=True) }}
+      - path: /etc/update-motd.d/50-sudhanix-bootstrap
+        permissions: '0755'
+        owner: root:root
+        content: |
+{{ lookup('file', playbook_dir + '/../roles/sudhanix-autostrap/files/50-sudhanix-bootstrap') | indent(width=10, first=True) }}
+    runcmd:
+      - [ mkdir, -p, /var/lib/sudhanix ]
+      - [ systemctl, daemon-reload ]
+      - [ systemctl, enable, sudhanix-bootstrap.service ]
