@@ -21,6 +21,18 @@
     tags:
       - config
 
+  # lookandfeel.yml configure block — re-include the file with
+  # __sudhanix_phase=config so the configure block's `when:` fires and
+  # the install block's `when:` skips. See install.yml for the install
+  # half of the same gate. (Task 2 of issue #57.)
+  - include_tasks:
+      file: lookandfeel.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - lookandfeel
+
   # UX session glue — appfinder/notifyd/power-manager/session xml,
   # dconf-db site defaults (Plank dock, GNOME interface, light-locker),
   # devilspie2 rules, chrome NFS-lock cleanup, session watchdog.

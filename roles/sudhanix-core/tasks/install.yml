@@ -73,17 +73,17 @@
       - install
       - lang
 
-  # MIXED file: themes/fonts/gnome-shell-removal/netplan-removal install
-  # interleaved with xfconf/lightdm/panel config. Today's per-task tags
-  # disambiguate; no apply propagation here, so each task inside fires
-  # under any tag the directive carries (install, config, or lookandfeel).
-  # Task 2 of the phase-gate refactor splits this file into explicit
-  # install + config blocks.
+  # lookandfeel.yml is one file with two phase-gated blocks (Task 2 of
+  # the issue #57 refactor). __sudhanix_phase=install causes only the
+  # install block to fire here; configure.yml will re-include the same
+  # file with __sudhanix_phase=config to fire the configure block. The
+  # `when:` on each block makes the gate observable in --check output.
   - include_tasks:
       file: lookandfeel.yml
+    vars:
+      __sudhanix_phase: install
     tags:
       - install
-      - config
       - lookandfeel
 
   # Plymouth boot splash — Sudhanix branding (apt + asset copy + alternatives
