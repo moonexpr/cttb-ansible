@@ -3954,29 +3954,123 @@ Validation status at Task 4 landing:
   Worth documenting / fixing in `group_vars/all.with-password` as a
   separate ticket.
 
-### Remaining (Tasks 5-9)
+### Task 5 — `sw-*` family two-block split — `43ffccc7`
 
-- Task 5: `sw.yml` + `sw-browser.yml` + `sw-thunderbird.yml` +
-  `sw-vscode.yml` + `sw-office.yml` + `sw-goldendict.yml` two-block
-  split. The software family. `sw-thunderbird.yml` is the canonical
-  case (apt absent → snap remove → tarball unarchive → symlink →
-  .desktop write → proxy.js write).
-- Task 6: `sudhanix-ux.yml` + `app-menu.yml` → pure configure. Remove
-  the duplicate `zenity` + `dbus-x11` apt task from sudhanix-ux.yml
-  (already added to lubuntu.yml in Task 3).
-- Task 7: tag corrections — `sudhanix-welcome.yml` and
-  `sudhanix-firstlogin.yml` are currently imported from main.yml with
-  `tags: [install]` but contain only configure-shape work. Move their
-  imports into configure.yml and switch their tags from `install` to
-  `config`. Small documented interface adjustment: `--tags install`
-  will no longer fire welcome / firstlogin tasks.
-- Task 8: `roles/sudhanix-vajra-tool` paired refactor. Same outer split
-  scaled down. Reference implementation of the pattern.
-- Task 9: fresh-host regression on `dvgs-testmachine` — purge install
-  postcondition artifacts (whitesur themes, InterDisplay + SeriousShanns
-  fonts, bigsur sound theme, plymouth sudhanix theme, /opt/thunderbird)
-  and run the full play. Expect `failed=0` and `changed=0` on the
-  second pass. Closes #57.
+Six files. `sw.yml` is the orchestrator (its own apt batches for
+Zoom + Skype + the additional/restricted-extras present-batch +
+the absent-purge of cups-browsed/deja-dup/eog/nautilus/etc; then
+dispatches to four sub-files). All of `sw.yml`'s own tasks are
+install-shape; wrapped in a single install block. Sub-includes at
+top level so `__sudhanix_phase` propagates from the parent scope
+and each sub-file's `when:` decides which body fires.
+
+`sw-office.yml`, `sw-vscode.yml`, `sw-goldendict.yml` — pure install
+(apt + repo/key setup + cleanup of the package's auto-created
+.sources file in VSCode's case). Single install block each.
+
+`sw-browser.yml` — mixed:
+  - install: Chrome apt (signing key + mirror repo + install + dup-
+    source-list cleanup), Firefox non-snap, Zen Browser flatpak +
+    filesystem grants for `~/Desktop` and `~/Downloads`.
+  - configure: Chrome `Exec=` edit to add `--use-system-title-bar`
+    to `/usr/share/applications/google-chrome.desktop`, xdg-settings
+    default web browser.
+
+`sw-thunderbird.yml` — mixed:
+  - install: snap-transition-pkg + snap absent, Mozilla tarball
+    unarchive to `/opt/thunderbird/`, `/usr/local/bin/thunderbird`
+    symlink, `thunderbird.desktop` entry.
+  - configure: `cttb-proxy.js` into
+    `/opt/thunderbird/defaults/pref/` (when `global_proxy is defined`).
+
+Behavioural correction: Chrome's `--use-system-title-bar` `.desktop`
+edit and the xdg-settings default-browser command, plus Thunderbird's
+`cttb-proxy.js`, all previously fired under `--tags install`
+because their parent include directive carried that tag. After
+Task 5 they only fire under `--tags config` or their granular
+browser/thunderbird tags — in configure phase, after install-phase
+Chrome apt has actually deposited the `.desktop` file the edit
+mutates.
+
+### Task 6 — `sudhanix-ux.yml` + `app-menu.yml` pure configure — `16f0a699`
+
+Both files are pure configure (every task is template / copy /
+lineinfile / dconf mutation / shell-edit on installed state).
+Single configure block per file gated by
+`when: __sudhanix_phase in [config, all]`.
+
+The lone install-shape task in `sudhanix-ux.yml` — `apt: name: [zenity,
+dbus-x11]` for the session watchdog — moved to `lubuntu.yml`'s
+consolidated base-packages batch in Task 3. Removed from
+`sudhanix-ux.yml` here. Session-watchdog script and autostart
+desktop entry stay in `sudhanix-ux.yml` (configure-shape).
+
+`app-menu.yml`: no content changes, just the block wrap.
+Transitively included from `lookandfeel.yml`'s configure block, so
+`__sudhanix_phase=config` propagates through the call chain.
+
+`configure.yml`'s `sudhanix-ux` include switched from
+`apply: tags: [config]` to `vars: __sudhanix_phase: config` for
+consistency with the Task 2-5 pattern.
+
+### Task 7 — welcome + firstlogin tag corrections — `4840efc1`
+
+Both files are pure configure work — copy, lineinfile, stat,
+`file: state=absent`. The old `main.yml` imported them with
+`tags: [install, sudhanix_*]` so `--tags install` pulled them in
+even though their tasks deploy PAM hooks, autostart entries, scripts,
+and tmpfiles entries (configure-shape, not install-shape).
+
+Moved `import_tasks` directives out of `main.yml` and into
+`configure.yml`, under the `sw.yml` configure-pass include. Tags
+switched from `install` → `config`. Static `import_tasks` tag
+propagation gives every imported task an effective tag set of
+`{sudhanix_firstlogin, config}` or `{sudhanix_welcome, config}`:
+
+  - `--tags install` no longer fires welcome / firstlogin tasks
+    (was: 22 tasks fired, now: 0).
+  - `--tags config` fires them (was: 0, now: 22).
+  - `--tags sudhanix_firstlogin` / `--tags sudhanix_welcome`
+    unchanged — granular tags still drive the same per-component
+    tasks.
+
+Small interface adjustment documented: any caller scripting
+`--tags install --skip-tags config` to deploy welcome / firstlogin
+scripts (no known user) must switch to `--tags config` or the
+granular `sudhanix_*` tag.
+
+### Task 8 — `sudhanix-vajra-tool` paired refactor — `c0c1407e`
+
+Same Template Method skeleton as `sudhanix-core`, scaled down.
+Reference implementation of the pattern.
+
+`tasks/main.yml` — 3-step skeleton:
+```
+import_tasks install.yml
+meta: flush_handlers
+import_tasks configure.yml
+```
+
+`tasks/install.yml` — apt signing key + cttb-extras apt source +
+`apt: name: vajra state: latest` + legacy zipapp cleanup. Plus the
+two runtime-dir mkdirs (`/usr/local/lib/vajra/tools`, `/etc/vajra`)
+that configure.yml writes into.
+
+`tasks/configure.yml` — Sudhanix-specific Lua tool drop-ins
+(`sudhanix.lua`, `welcome_reset.lua`, `xfce_reset.lua` + five test
+runners under the `vajra-testing` tag) + host-overridable
+`/etc/vajra/*.json` configs (`quick-links`, `ldap`, `sudhanix`).
+
+Run-log proof of correct ordering at Task 8 landing: vajra install
+tasks at lines 246-260, vajra `flush_handlers` at 266, vajra
+configure tasks at 268-278 — install block fires first, handlers
+flush at the phase boundary, configure block fires second.
+
+Pre-refactor `main.yml` separated install / config sections by
+comment dividers only. The ordering was correct but unenforced; an
+editor inserting a `.json` deploy at the top "next to the mkdir"
+would break fresh-host runs. The file split lifts the gate into the
+filesystem.
 
 ### Task 9 results (2026-05-12 evening)
 
