@@ -46,6 +46,7 @@
         state: absent
       loop:
         - lotus.png
+        - amitabha.png
       tags:
         - sudhanix-core
         - plymouth
@@ -61,7 +62,7 @@
       loop:
         - sudhanix.plymouth
         - sudhanix.script
-        - amitabha.png
+        - global_logo.png
         - progress-bg.png
         - progress-fill.png
       register: plymouth_assets
