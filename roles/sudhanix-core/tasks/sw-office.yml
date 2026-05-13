@@ -1,37 +1,48 @@
 ---
+# Office suite installation. Pure install (apt only).
+#
+# Two-block phase shape (issue #57, Task 5): single install block, no
+# configure block.
 
-  # if we install anything more powerful get rid of abiword/gnumeric
-  - name: remove default office suite
-    apt:
-      state: absent
-      purge: yes
-      name:
-      - abiword
-      - gnumeric
-    when: libreoffice == true or openoffice == true or wpsoffice == true
+  - name: sw-office — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
     tags:
+      - install
       - office
+    block:
 
-  - name: install libreoffice
-    apt:
-      state: present
-      install_recommends: no
-      name:
-      - libreoffice-writer
-      - libreoffice-impress
-      - libreoffice-calc
-      - libreoffice-gtk3
-      - libreoffice-help-en-us
-    when: libreoffice == true
-    tags:
-      - office
+      # if we install anything more powerful get rid of abiword/gnumeric
+      - name: remove default office suite
+        apt:
+          state: absent
+          purge: yes
+          name:
+          - abiword
+          - gnumeric
+        when: libreoffice == true or openoffice == true or wpsoffice == true
+        tags:
+          - office
 
-  # since it's installed by default it matters if we said no to it. It will also conflict with openoffice
-  - name: uninstall libreoffice
-    apt:
-      name: libreoffice*
-      state: absent
-      purge: yes
-    when: libreoffice == false
-    tags:
-      - office
+      - name: install libreoffice
+        apt:
+          state: present
+          install_recommends: no
+          name:
+          - libreoffice-writer
+          - libreoffice-impress
+          - libreoffice-calc
+          - libreoffice-gtk3
+          - libreoffice-help-en-us
+        when: libreoffice == true
+        tags:
+          - office
+
+      # since it's installed by default it matters if we said no to it. It will also conflict with openoffice
+      - name: uninstall libreoffice
+        apt:
+          name: libreoffice*
+          state: absent
+          purge: yes
+        when: libreoffice == false
+        tags:
+          - office

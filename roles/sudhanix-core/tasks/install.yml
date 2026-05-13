@@ -99,10 +99,15 @@
       - install
       - plymouth
 
+  # sw.yml: its own apt batches (Zoom/Skype/additional + the apt-absent
+  # purge list) plus dispatch to sw-office / sw-browser / sw-thunderbird /
+  # sw-vscode. sw-browser and sw-thunderbird are mixed (install + config);
+  # configure.yml re-includes sw.yml with __sudhanix_phase=config so the
+  # config sub-blocks fire.
   - include_tasks:
       file: sw.yml
-      apply:
-        tags: [install]
+    vars:
+      __sudhanix_phase: install
     tags:
       - install
       - sw_install
@@ -113,8 +118,8 @@
 
   - include_tasks:
       file: sw-goldendict.yml
-      apply:
-        tags: [install]
+    vars:
+      __sudhanix_phase: install
     when: goldendict is defined
     tags:
       - install
