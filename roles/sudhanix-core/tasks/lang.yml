@@ -1,119 +1,125 @@
 ---
+# Language / input-method packages for sudhanix-core.
 #
-#  ############### LANGUAGE STUFF ####################
-#  Xenial defaults to fcitx
-#  install packages required by sogoupinyin
-#
-#  FCITX default options for users are set in the relevant skel files
-#  these are copied over by the look&feel tasks
+# Consolidated per-audience apt batching (issue #57, Task 3): five
+# separate apt: state=present tasks in the prior file are now ONE
+# consolidated present batch, ONE absent batch, and two conditional
+# install batches (chewing, sanskrit). The fcitx-unikey present-then-
+# absent pattern is preserved verbatim — fcitx-unikey is in both the
+# present and absent lists today, with net result absent. That looks
+# like a latent bug (the task name says "install fcitx vietnamese/
+# unikey support") but it's pre-refactor behavior and fixing it is
+# out of scope for #57.
 
-  # installing hant, which is traditional, but still can type simplified (hans)
-  - name: install language packages for en,zh,vi,zhuyin
-    apt:
-      name:
-      - gimp-help-en
-      - hyphen-en-us
-      - mythes-en-us
-      state: present
-      install_recommends: no
+  - name: lang — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
     tags:
+      - install
       - lang
+    block:
 
-  - name: install base fcitx packages
-    apt:
-      state: present
-      install_recommends: no
-      name:
-      - fcitx
-      - fcitx-bin
-      - fcitx-config-common
-      - fcitx-config-gtk
-      - fcitx-data
-      - fcitx-frontend-gtk2
-      - fcitx-frontend-gtk3
-      - fcitx-frontend-qt5  # -qt4 absent in 20.04, but has -qt5
-      - fcitx-libs
-      #- fcitx-libs-qt  # absent in 20.04
-      - fcitx-module-dbus
-      - fcitx-module-kimpanel
-      - fcitx-module-x11
-      - fcitx-modules
-      - fcitx-pinyin # Rui changed back to use pinyin instead of sogou as pinyin is more stable.
-      - fcitx-table
-      - fcitx-table-cangjie
-      - fcitx-ui-classic
-      - fonts-arphic-ukai
-      - fonts-arphic-uming
-      - fonts-noto-cjk   # already installed
-      #- qtdeclarative5-qtquick2-plugin  # absent in 20.04
-      - im-config   # already installed
-    tags:
-      - lang
+      # Consolidated present batch: prior file's en/zh/vi locale packages +
+      # fcitx base + fcitx-unikey are now a single apt: name: [list] task.
+      - name: install language and fcitx packages (consolidated)
+        apt:
+          state: present
+          install_recommends: no
+          name:
+            - gimp-help-en
+            - hyphen-en-us
+            - mythes-en-us
+            - fcitx
+            - fcitx-bin
+            - fcitx-config-common
+            - fcitx-config-gtk
+            - fcitx-data
+            - fcitx-frontend-gtk2
+            - fcitx-frontend-gtk3
+            - fcitx-frontend-qt5  # -qt4 absent in 20.04, but has -qt5
+            - fcitx-libs
+            - fcitx-module-dbus
+            - fcitx-module-kimpanel
+            - fcitx-module-x11
+            - fcitx-modules
+            - fcitx-pinyin  # Rui changed back to use pinyin instead of sogou as pinyin is more stable.
+            - fcitx-table
+            - fcitx-table-cangjie
+            - fcitx-ui-classic
+            - fonts-arphic-ukai
+            - fonts-arphic-uming
+            - fonts-noto-cjk  # already installed via base
+            - im-config       # already installed via base
+            - fcitx-unikey    # immediately reverted by the absent batch below — preserved for behavioral parity
+        tags:
+          - lang
 
-  - name: set fcitx as default input method
-    command: im-config -n fcitx
-    changed_when: false
-    tags:
-      - lang
+      - name: remove sogoupingyin installed mirror
+        file:
+          path: /etc/apt/sources.list.d/sogoupinyin.list
+          state: absent
+        tags:
+          - lang
 
-  - name: remove sogoupingyin installed mirror
-    file:
-      path: /etc/apt/sources.list.d/sogoupinyin.list
-      state: absent
-    tags:
-      - lang
+      - name: remove unneeded fcitx and locale packages
+        apt:
+          state: absent
+          name:
+            - hunspell-en-au
+            - hunspell-en-ca
+            - hunspell-en-gb
+            - hunspell-en-za
+            - hyphen-en-gb
+            - mythes-en-au
+            - libreoffice-help-en-gb
+            - libreoffice-l10n-en-gb
+            - libreoffice-l10n-en-za
+            - fcitx-chewing
+            - fcitx-unikey
+            - sogoupinyin
+        tags:
+          - lang
 
-  - name: install fcitx vietnamese/unikey support
-    apt:
-      name: fcitx-unikey
-      state: present
-    tags:
-      - lang
+      - name: install fcitx chewing support
+        apt:
+          name: fcitx-chewing
+          state: present
+        when: chewing is defined
+        tags:
+          - lang
+          - chewing
 
-  - name: remove unneeded fcitx packages
-    apt:
-      state: absent
-      name:
-      - hunspell-en-au
-      - hunspell-en-ca
-      - hunspell-en-gb
-      - hunspell-en-za
-      - hyphen-en-gb
-      - mythes-en-au
-      - libreoffice-help-en-gb
-      - libreoffice-l10n-en-gb
-      - libreoffice-l10n-en-za
-      - fcitx-chewing
-      - fcitx-unikey
-      - sogoupinyin
-    tags:
-      - lang
+      - name: install Sanskrit language support
+        apt:
+          state: present
+          name:
+            - fcitx-m17n
+            - fonts-deva
+            - firefox-locale-hi
+            - hunspell-hi
+            - hyphen-hi
+            - libreoffice-l10n-hi
+            - libreoffice-help-hi
+            - language-pack-hi
+            - language-pack-hi-base
+            - language-pack-gnome-hi
+            - language-pack-gnome-hi-base
+        when: sanskrit is defined
+        tags:
+          - lang
+          - sanskrit
 
-  - name: install fcitx chewing support
-    apt:
-      name: fcitx-chewing
-      state: present
-    when: chewing is defined
+  - name: lang — configure phase
+    when: __sudhanix_phase | default("all") in ["config", "all"]
     tags:
+      - config
       - lang
-      - chewing
+    block:
 
-  - name: install Sanskrit language support
-    apt:
-      state: present
-      name:
-      - fcitx-m17n
-      - fonts-deva
-      - firefox-locale-hi
-      - hunspell-hi
-      - hyphen-hi
-      - libreoffice-l10n-hi
-      - libreoffice-help-hi
-      - language-pack-hi
-      - language-pack-hi-base
-      - language-pack-gnome-hi
-      - language-pack-gnome-hi-base
-    when: sanskrit is defined
-    tags:
-      - lang
-      - sanskrit
+      # im-config writes /etc/X11/xinit/xinput.d state; reads installed fcitx
+      # packages. Configure-phase task because it's deploying the active-IM
+      # selection on top of the installed fcitx packages.
+      - name: set fcitx as default input method
+        command: im-config -n fcitx
+        changed_when: false
+        tags:
+          - lang

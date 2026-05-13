@@ -33,6 +33,17 @@
       - config
       - lookandfeel
 
+  # lang.yml configure block — im-config -n fcitx. Configure-phase
+  # because it deploys the active-IM selection on top of installed
+  # fcitx packages. (Task 3 of issue #57.)
+  - include_tasks:
+      file: lang.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - lang
+
   # UX session glue — appfinder/notifyd/power-manager/session xml,
   # dconf-db site defaults (Plank dock, GNOME interface, light-locker),
   # devilspie2 rules, chrome NFS-lock cleanup, session watchdog.
