@@ -4130,3 +4130,256 @@ falls back into sync with the source-of-truth template.
    new server. Then decom the legacy host (document + label).
 6. Out of band: update `.claude/sysadmin/cttb-ct.sh` alias for
    `pxe24` to 10.11.1.23, or merge the `pxe` / `pxe24` aliases.
+
+---
+
+### 2026-05-12 (evening) — pxe.cttb cutover Phase 2 partial; hand-off
+
+#### What landed in production (verified)
+
+- **Legacy `pxe` LXC container on srv-nas: STOPPED.** Persistent
+  state preserved (`sudo lxc start pxe` brings it back if needed
+  for rollback or to fish data out). Snapshot count = 1 in
+  `lxc list`.
+- **pxe24 container re-IP'd from 10.11.13.27 → 10.11.1.23.**
+  `/etc/netplan/50-cloud-init.yaml` rewritten, backup at
+  `50-cloud-init.yaml.pxe-cutover-bak`. `netplan apply` failed at
+  the `udevadm control --reload` step (typical unprivileged-LXC
+  quirk) but the networkd config did get generated under
+  `/run/systemd/network/10-netplan-eth0.network`;
+  `systemctl restart systemd-networkd` made the new address live.
+  Stale IPs (`10.11.13.27/16` static + `10.11.13.150/16` DHCP
+  secondary) cleared with `ip addr del`; sole IP on eth0 now
+  `10.11.1.23/16`.
+- **End-to-end checks from `ssh cttb`:**
+  - `dig +short pxe.cttb @10.11.1.29` → `10.11.1.23`.
+  - `dig +short -x 10.11.1.23 @10.11.1.29` → `pxe.cttb.`.
+  - `curl -sS -o /dev/null -w "%{http_code} %{remote_ip}\n" http://pxe.cttb/healthz`
+    → `200 10.11.1.23`.
+- **No DNS / DHCP / dhcp-boot edits were needed** — the
+  IP-discipline correction (commit `05428c89`) shifted the whole
+  cutover to "re-IP the container in place at the address every
+  downstream client already expects." Frank's dnsmasq stays at
+  its current `dhcp-boot 10.11.1.23` pointer with zero action
+  required from him.
+
+#### What FAILED in this session and was REVERTED
+
+- **Hand-deploy of the re-rendered cttb zone to ub-adult / ub-igdvs.**
+  Tried to push the Python-rendered output of `zone_cttb.j2`
+  (md5 `89a91442210a15fc09fb19b0057e5816`) and call
+  `systemctl reload unbound`. **`systemctl reload unbound` on
+  these SysV-init unbound services is a quiet outage**: it calls
+  the init.d `reload` action which stops the listener without
+  restarting it cleanly. Both `systemctl is-active unbound` and
+  `systemctl status unbound` report `active`, but `ss -tlnp`
+  shows no `:53` socket and queries time out. The deleted
+  `plays/dns-pxetest.yml` had been lucky — it used
+  `systemctl reload unbound 2>&1 || systemctl restart unbound`.
+- **Production impact:** brief outage on `ub-igdvs` (the second
+  resolver hand-deployed) until I ran `systemctl restart unbound`
+  on it. `ub-adult` had already been recovered by the time the
+  outage was noticed.
+- **Revert action:**
+  - Both resolvers:
+    `cp /etc/unbound/unbound.conf.d/cttb.pre-render-bak /etc/unbound/unbound.conf.d/cttb && systemctl restart unbound`.
+  - Listening verified (`ss -tlnp | grep :53`), self-dig
+    verified (`dig +short pxe.cttb @127.0.0.1` returns
+    `10.11.1.23` on both).
+- The deployed `/etc/unbound/unbound.conf.d/cttb` on both
+  resolvers is therefore back to its pre-session state — the
+  hand-appended `pxetest.cttb` tail (L452-453, five blank lines
+  in front) is still present, and `wiki.cttb` is still at the
+  correct `10.11.1.34` via the same hand-edit drift.
+
+#### What is uncommitted in the working tree
+
+- `group_vars/unbound` L153: `- wiki: "10.11.1.31"` →
+  `- wiki: "10.11.1.34"`. Source-of-truth correction — the live
+  unbound zone has had wiki at `10.11.1.34` for the entire
+  2026-05 wiki-2404 migration, but the group_vars file was never
+  updated alongside. Confirmed against
+  `dig +short wiki.cttb @10.11.1.29` from `ssh cttb`.
+- The `pxetest.cttb` line removal is **already in tree**
+  (committed as `05428c89`); only the wiki edit is pending.
+- Pre-existing local-only paths (untouched by this session):
+  `.worktrees/`, `NOTE.md`,
+  `roles/sudhanix-vajra-tool/files/vajra_1.0.0-1_amd64.deb`.
+
+#### What also happened out of band
+
+- `~/.claude/CLAUDE.md` gained a "Commit Signing" section
+  between Goal-Driven Sessions and Memory Management — documents
+  the loopback unlock for `gpg: signing failed: Timeout` so
+  future agents don't paper over it with `--no-gpg-sign`. The
+  edit is in the deployed config only; mirror into
+  `~/Garden/external/claude-config/CLAUDE.md` (source repo)
+  before the next `install.sh --claude-only` run or it vanishes
+  on redeploy.
+
+---
+
+### Hand-off: open work for the next agent
+
+**Branch:** `release/sudhanix26`. Two new pxe-cutover commits on
+top of (now-merged) sudhanix-core Task 6-9 work:
+
+- `1f4d4623` — pxe.cttb cutover (inventory / plays /
+  role-defaults / index.html.j2 footer).
+- `05428c89` — IP-discipline correction (re-IP plan, not DNS
+  flip).
+
+#### Decision pending before any further deploy
+
+The uncommitted `group_vars/unbound` wiki line
+(`10.11.1.31` → `10.11.1.34`) is a correct source-of-truth fix,
+but committing it means the next `plays/unbound.yml` run will
+not change wiki's deployed address (live is already
+`10.11.1.34`). Pick one:
+
+- **Keep + commit.** Next `plays/unbound.yml` brings live into
+  formal sync with template; no behavior change for wiki.
+  Recommended.
+- **Revert** (`git checkout -- group_vars/unbound`). Leave the
+  drift in place for a future audit pass.
+
+#### Remaining production work (Phase 2 steps 3-5)
+
+All of this needs to run from **on-campus** because:
+- The unbound containers (`lxc-ub-adult`, `lxc-ub-igdvs`) have
+  no `ansible_host` or external SSH key — they are reachable
+  only via `lxc exec` on `srv-vm`, OR from the campus network
+  where their hostnames resolve.
+- Off-campus hand-deploys are exactly the reload-vs-restart trap
+  this evening fell into.
+
+##### Step 3 — re-render the unbound cttb zone via the role
+
+```bash
+source utils/setup-env
+ansible-playbook plays/unbound.yml -i inventory/hosts \
+    -l unbound -t zone_cttb --diff
+```
+
+- The `notify: restart unbound` handler is `state: restarted`
+  (see `roles/unbound/handlers/main.yml`) — NOT
+  `state: reloaded`. Ansible will safely restart the service on
+  each resolver. Verify after each:
+  `ss -tlnp | grep :53` (expect a listener),
+  `dig +short pxetest.cttb @127.0.0.1` (expect empty / NXDOMAIN),
+  `dig +short pxe.cttb @127.0.0.1` (expect `10.11.1.23`),
+  `dig +short wiki.cttb @127.0.0.1` (expect `10.11.1.34`).
+- The deployed file will lose the hand-appended pxetest tail
+  and gain whatever else `group_vars/unbound` describes.
+- If any other drift exists between source and live (this
+  session caught one — the wiki entry), the diff will surface
+  it. **Stop, audit, fix `group_vars/unbound`, run again.**
+
+##### Step 4 — push h5ai + re-render PXE menu URLs
+
+```bash
+ansible-playbook plays/netinstall-2404.yml \
+    -i inventory/sudhanix26_hosts.ini --diff
+ansible-playbook plays/deploy-netinstall-2404.yml \
+    -i inventory/sudhanix26_hosts.ini --diff
+```
+
+- `plays/netinstall-2404.yml` installs the package set + lays
+  down nginx + h5ai (role defaults are now `ni_webserver: nginx`
+  + `ni_h5ai_enabled: true`).
+- `plays/deploy-netinstall-2404.yml` does the local-render +
+  rsync of `pxelinux.cfg/default`, `grub/grub.cfg`,
+  `menu/ubuntu-live-server-amd64-noble.menu`, autoinstall
+  `user-data` and `meta-data`. URLs come from
+  `group_vars/all`'s `ni_server = http://pxe.cttb` — so the
+  re-render replaces the `pxetest.cttb` hand-edits the
+  parallel-test container is still carrying in
+  `/srv/netinstall/grub/grub.cfg`,
+  `/srv/netinstall/pxelinux.cfg/default`,
+  `/srv/netinstall/menu/*.menu`, and the autoinstall trees.
+- **Live grub.cfg path is `/srv/netinstall/grub/grub.cfg`**,
+  NOT `/srv/netinstall/boot/grub/grub.cfg` — see memory
+  `reference_pxe_grub_cfg_path.md`. The deploy play was
+  corrected for this earlier in the sprint.
+- Verify the homepage `<title>` flips from
+  `pxetest.cttb — CTTB PXE / Network Install` to
+  `pxe.cttb — CTTB PXE / Network Install`:
+  ```bash
+  curl -sS http://pxe.cttb/ | grep -oE '<title>[^<]*</title>'
+  ```
+- Verify h5ai index loads:
+  `curl -sS http://pxe.cttb/netinstall/ | head -20` should
+  return HTML containing `_h5ai`.
+
+##### Step 5 — PXE-boot test + decom
+
+- Power-cycle one lab machine that boots from network (e.g.
+  `dvgs-testmachine.cttb`). Expect to see the Ubuntu 24.04
+  autoinstall menu served from pxe.cttb. If it shows the old
+  Apr-23 menu, suspect the grub.cfg path issue above and verify
+  the deploy hit `/srv/netinstall/grub/grub.cfg`.
+- Once the PXE boot succeeds, archive + delete the legacy `pxe`
+  container on srv-nas:
+  ```bash
+  sudo lxc list pxe
+  sudo lxc snapshot pxe pxe-decom-2026-05-12
+  sudo lxc publish pxe/pxe-decom-2026-05-12 \
+      --alias pxe-decom-2026-05-12
+  sudo lxc delete pxe
+  ```
+  Don't be in a hurry to delete — the published image lives on
+  srv-nas's image store at near-zero cost.
+
+##### Cleanup once Phase 2 is verified
+
+- Per-resolver backups on `ub-adult` + `ub-igdvs`:
+  `/etc/unbound/unbound.conf.d/cttb.pre-render-bak`,
+  `/etc/unbound/unbound.conf.d/cttb.pxe-cutover-bak`. Keep
+  through one production day, then `rm`.
+- On pxe24: `/etc/netplan/50-cloud-init.yaml.pxe-cutover-bak`.
+  Same — keep one day, then `rm`.
+- `.claude/sysadmin/cttb-ct.sh` private tooling: update the
+  `pxe24` alias to `10.11.1.23`, or merge `pxe` / `pxe24` since
+  the legacy container is gone. Private repo edit — out of
+  band from this Ansible branch.
+
+#### Traps and rules of thumb for the next agent
+
+- **NEVER `systemctl reload unbound`** on these resolvers. SysV
+  init quietly drops the listener. Always
+  `systemctl restart unbound`, or run the Ansible role (which
+  notifies a `state: restarted` handler).
+- **The `cttb-ct.sh` wrapper does NOT preserve `&&` chains
+  across the LXC boundary** — only the first command before
+  `&&` goes through `lxc exec`; the rest run on the LXD host
+  (srv-vm / srv-nas), which silently no-ops for paths that
+  don't exist there. Either run a single command per
+  `cttb-ct.sh exec` invocation, or use
+  `bash -c "$(cat <<'EOF'...EOF)"` so the whole script is one
+  argv element.
+- **`netplan apply` in unprivileged LXC fails at
+  `udevadm control --reload`** with a Python traceback. This is
+  cosmetic — the generated networkd configs under
+  `/run/systemd/network/` are correct, and
+  `systemctl restart systemd-networkd` activates them. Don't
+  be fooled by the traceback into thinking the change failed.
+- **Drift audit before deploy.** This session caught the wiki
+  entry. Run a quick diff between live and rendered before any
+  unbound deploy. The cttb zone has ~150 entries, mostly
+  switches; the high-value names to verify by dig are
+  `wiki`, `pxe`, `ldap`, `storehouse`, `apt`, `time`, `gw`,
+  `fileserver`, `dns`, `cups-*`, `srv-*`.
+- **Inventory rules:** no `ProxyJump` in committed inventory
+  files (`feedback_no_jumphost_in_inventory.md`). Off-campus
+  dev uses `--ssh-common-args='-o ProxyJump=rui-desktop2'` on
+  the command line.
+- **Commit signing:** `gpg: signing failed: Timeout` on
+  `git commit` — unlock with
+  `echo "a" | gpg --pinentry-mode loopback --passphrase-fd 0 -bsau 381BD21E694041A3EC2991C5142C40CB37E61E9A`
+  and retry the same commit unchanged. Never pass
+  `--no-gpg-sign`. (Now documented in `~/.claude/CLAUDE.md`'s
+  Commit Signing section.)
+- **Hook gating.** Production-DNS edits get hook-blocked even
+  with broad authorization phrases like "Proceed". Explicit
+  re-confirmation per command is the path of least resistance;
+  don't try to evade.
