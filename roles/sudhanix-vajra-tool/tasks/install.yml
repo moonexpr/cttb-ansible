@@ -47,6 +47,19 @@
     - vajra-install
     - install
 
+- name: install plymouth runtime + themes (vajra boot-splash tool dep)
+  apt:
+    name:
+      - plymouth
+      - plymouth-themes
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
 - name: install vajra (from apt.cttb extras)
   apt:
     name: vajra

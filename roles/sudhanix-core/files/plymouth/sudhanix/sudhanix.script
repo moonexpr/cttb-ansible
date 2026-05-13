@@ -12,7 +12,7 @@ screen_h = Window.GetHeight();
 
 # ── Amitabha logo ─────────────────────────────────────────────────────────
 # Render at ~22% of screen height (matches Apple's relative sizing).
-logo.image_raw = Image("amitabha.png");
+logo.image_raw = Image("global_logo.png");
 logo_target_h = screen_h * 0.22;
 logo_scale = logo_target_h / logo.image_raw.GetHeight();
 logo.image = logo.image_raw.Scale(logo.image_raw.GetWidth() * logo_scale, logo_target_h);
