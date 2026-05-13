@@ -1,225 +1,459 @@
-/* City Lights dark theme for CTTB Wiki — based on citylights-theme palette */
+/* City Lights theme for CTTB Wiki
+ *
+ *   Dark mode:  Internal palette — warm-grey on near-black, muted brass.
+ *   Light mode: Sacred  palette  — paper-tan base, warm-brown ink.
+ *   Pattern:    p31m-pattern.svg, repeating, fixed-attachment, both modes.
+ *
+ * Palette tokens are defined as `--cttb-*` CSS variables. The :root block
+ * sets Sacred (light) defaults; the dark-mode block and the explicit
+ * `clientpref-night` selector swap them to Internal. Surface rules below
+ * reference the tokens — no hardcoded mode-specific hex literals.
+ */
 
-/* Sidebar margin fix */
-.vector-column-start, .vector-column-end { margin-top: 0 !important; }
+/* ── Sacred (light) palette — :root defaults ─────────────────────── */
+:root {
+    --cttb-bg:              #e8dcc0;
+    --cttb-fg:              #2a1f18;
+    --cttb-primary:         #5c2d1a;
+    --cttb-primary-hover:   #7a2e15;
+    --cttb-secondary:       #9e6b14;
+    --cttb-accent:          #5c2d1a;
+    --cttb-muted:           #c8a878;
+    --cttb-muted-text:      #a36c3d;
+    --cttb-surface-0:       rgba(232, 220, 192, 0.82);
+    --cttb-surface-1:       rgba(200, 168, 120, 0.22);
+    --cttb-surface-2:       rgba(200, 168, 120, 0.38);
+    --cttb-border:          rgba(122,  46,  21, 0.30);
+    --cttb-link:            #5c2d1a;
+    --cttb-link-visited:    #7a2e15;
+    --cttb-link-new:        #9e6b14;
+    --cttb-pattern-alpha:   0.18;
+    --cttb-panel-body:      #dfddbf;
+    --cttb-panel-toolbar:   #dcc8a5;
+}
 
-/* Sticky footer */
-.mw-page-container-inner { min-height: 100vh; }
-.mw-content-container { flex: 1; }
-
-/* Content area surface */
+/* ── Internal (dark) palette ─────────────────────────────────────────
+ * Applied when:
+ *   (a) the user's OS prefers dark AND no explicit clientpref-day
+ *       override is set — `:not()` keeps the @media block from
+ *       stomping an explicit "Day" toggle on a dark-OS machine; or
+ *   (b) the user has explicitly chosen Night via the skin toggle.
+ */
 @media (prefers-color-scheme: dark) {
-    html.skin-theme-clientpref-os main #bodyContent,
-    html.skin-theme-clientpref-night main #bodyContent {
-        background: #1b1a18;
-        padding: 1rem;
-        border: 1px solid rgba(184,168,138,.15);
-        border-radius: 6px;
-    }
-}
-html.skin-theme-clientpref-night main #bodyContent {
-    background: #1b1a18;
-    padding: 1rem;
-    border: 1px solid rgba(184,168,138,.15);
-    border-radius: 6px;
-}
-
-/* Dark mode overrides */
-@media (prefers-color-scheme: dark) {
-    html.skin-theme-clientpref-os,
-    html.skin-theme-clientpref-night {
-
-        /* Base surfaces */
-        --background-color-base: #131210;
-        --color-base: #d4cfc4;
-        --color-base--subtle: #b8a88a;
-        --border-color-base: #3a3731;
-        --color-surface-0: #131210;
-        --color-surface-1: #12110e;
-        --color-surface-2: #1a1714;
-        --color-surface-3: #22201b;
-        --color-surface-4: #3a3731;
-        --background-color-interactive: #1a1714;
-        --background-color-interactive-subtle: #12110e;
-        --background-color-neutral-subtle: #131210;
-
-        /* Links — gold/amber */
-        --color-link: #dbb930;
-        --color-link--visited: #c7a505;
-        --color-link-new: #c47a3a;
-        --color-link-new--visited: #a66830;
-
-        /* Progressive/destructive */
-        --color-progressive: #dbb930;
-        --color-progressive--hover: #e8ca4a;
-        --color-progressive--active: #c7a505;
-        --color-destructive: #c47a3a;
-    }
-
-    /* Page container */
-    html.skin-theme-clientpref-os .mw-page-container,
-    html.skin-theme-clientpref-night .mw-page-container {
-        background-color: #131210;
-        color: #d4cfc4;
-    }
-
-    /* Header */
-    html.skin-theme-clientpref-os .vector-header,
-    html.skin-theme-clientpref-night .vector-header {
-        background-color: #131210;
-        border-bottom-color: #3a3731;
-    }
-
-    /* Sidebar */
-    html.skin-theme-clientpref-os .vector-column-start,
-    html.skin-theme-clientpref-night .vector-column-start {
-        background-color: #131210;
-    }
-
-    /* Links */
-    html.skin-theme-clientpref-os a,
-    html.skin-theme-clientpref-night a {
-        color: #dbb930;
-    }
-    html.skin-theme-clientpref-os a:visited,
-    html.skin-theme-clientpref-night a:visited {
-        color: #c7a505;
-    }
-    html.skin-theme-clientpref-os .new,
-    html.skin-theme-clientpref-night .new {
-        color: #c47a3a;
-    }
-
-    /* Active/selected tab */
-    html.skin-theme-clientpref-os .vector-menu-tabs .selected a,
-    html.skin-theme-clientpref-night .vector-menu-tabs .selected a,
-    html.skin-theme-clientpref-os .mw-list-item.selected a,
-    html.skin-theme-clientpref-night .mw-list-item.selected a {
-        color: #d4cfc4;
-    }
-
-    /* Headings */
-    html.skin-theme-clientpref-os .mw-body h1,
-    html.skin-theme-clientpref-os .mw-body h2,
-    html.skin-theme-clientpref-os .mw-body h3,
-    html.skin-theme-clientpref-os .mw-body h4,
-    html.skin-theme-clientpref-night .mw-body h1,
-    html.skin-theme-clientpref-night .mw-body h2,
-    html.skin-theme-clientpref-night .mw-body h3,
-    html.skin-theme-clientpref-night .mw-body h4 {
-        color: #d4cfc4;
-        border-bottom-color: #3a3731;
-    }
-
-    /* Code blocks */
-    html.skin-theme-clientpref-os code,
-    html.skin-theme-clientpref-os pre,
-    html.skin-theme-clientpref-night code,
-    html.skin-theme-clientpref-night pre {
-        background-color: rgba(58, 55, 49, 0.6);
-        color: #d4cfc4;
-        border-color: rgba(184, 168, 138, 0.15);
-    }
-
-    /* Search box */
-    html.skin-theme-clientpref-os .vector-search-box-input,
-    html.skin-theme-clientpref-night .vector-search-box-input {
-        background-color: #1a1714;
-        color: #d4cfc4;
-        border-color: #3a3731;
-    }
-
-    /* Buttons */
-    html.skin-theme-clientpref-os .vector-pinnable-header-toggle-button,
-    html.skin-theme-clientpref-os .cdx-button,
-    html.skin-theme-clientpref-night .vector-pinnable-header-toggle-button,
-    html.skin-theme-clientpref-night .cdx-button {
-        color: #b8a88a;
-        border-color: #3a3731;
-    }
-    html.skin-theme-clientpref-os .cdx-button:hover,
-    html.skin-theme-clientpref-night .cdx-button:hover {
-        background-color: rgba(199, 165, 5, 0.1);
-        border-color: rgba(199, 165, 5, 0.25);
-    }
-
-    /* Section edit links */
-    html.skin-theme-clientpref-os .mw-body-content .mw-editsection a,
-    html.skin-theme-clientpref-night .mw-body-content .mw-editsection a {
-        color: #8b5e1e;
-    }
-
-    /* TOC */
-    html.skin-theme-clientpref-os .vector-toc,
-    html.skin-theme-clientpref-night .vector-toc {
-        background-color: #131210;
-    }
-    html.skin-theme-clientpref-os .vector-toc .vector-toc-link,
-    html.skin-theme-clientpref-night .vector-toc .vector-toc-link {
-        color: #b8a88a;
-    }
-    html.skin-theme-clientpref-os .vector-toc .vector-toc-link:hover,
-    html.skin-theme-clientpref-night .vector-toc .vector-toc-link:hover {
-        color: #dbb930;
-    }
-
-    /* Tables */
-    html.skin-theme-clientpref-os table.wikitable,
-    html.skin-theme-clientpref-night table.wikitable {
-        background-color: #12110e;
-        border-color: #3a3731;
-        color: #d4cfc4;
-    }
-    html.skin-theme-clientpref-os table.wikitable th,
-    html.skin-theme-clientpref-night table.wikitable th {
-        background-color: #1a1714;
-        border-color: #3a3731;
-    }
-    html.skin-theme-clientpref-os table.wikitable td,
-    html.skin-theme-clientpref-night table.wikitable td {
-        border-color: #3a3731;
-    }
-
-    /* Thumb/figure borders */
-    html.skin-theme-clientpref-os .thumb,
-    html.skin-theme-clientpref-night .thumb {
-        border-color: #3a3731;
-    }
-    html.skin-theme-clientpref-os .thumbinner,
-    html.skin-theme-clientpref-night .thumbinner {
-        background-color: #12110e;
-        border-color: #3a3731;
-    }
-
-    /* Footer */
-    html.skin-theme-clientpref-os .vector-footer,
-    html.skin-theme-clientpref-night .vector-footer {
-        border-top-color: #3a3731;
-        color: #8b5e1e;
-    }
-
-    /* Notices / message boxes */
-    html.skin-theme-clientpref-os .mw-message-box,
-    html.skin-theme-clientpref-night .mw-message-box {
-        background-color: #1a1714;
-        border-color: #8b5e1e;
-        color: #d4cfc4;
-    }
-
-    /* Diff / history */
-    html.skin-theme-clientpref-os .diff-context,
-    html.skin-theme-clientpref-night .diff-context {
-        background-color: #131210;
-        color: #b8a88a;
+    :root:not(.skin-theme-clientpref-day) {
+        --cttb-bg:            #1a1418;
+        --cttb-fg:            #d4cfc4;
+        --cttb-primary:       #b8a88a;
+        --cttb-primary-hover: #cdb99a;
+        --cttb-secondary:     #8b5e1e;
+        --cttb-accent:        #8b5e1e;
+        --cttb-muted:         #3a3731;
+        --cttb-muted-text:    #8a8477;
+        --cttb-surface-0:     #131210;
+        --cttb-surface-1:     #12110e;
+        --cttb-surface-2:     #1a1714;
+        --cttb-border:        rgba(184, 168, 138, 0.15);
+        --cttb-link:          #b8a88a;
+        --cttb-link-visited:  #8b5e1e;
+        --cttb-link-new:      #a36c3d;
+        --cttb-pattern-alpha: 0.10;
+        --cttb-panel-body:    #1a1714;
+        --cttb-panel-toolbar: #12110e;
     }
 }
 
-/* Also apply when user explicitly selects night mode */
 html.skin-theme-clientpref-night {
-    --background-color-base: #131210;
-    --color-base: #d4cfc4;
-    --color-base--subtle: #b8a88a;
-    --border-color-base: #3a3731;
-    --color-link: #dbb930;
-    --color-link--visited: #c7a505;
+    --cttb-bg:            #1a1418;
+    --cttb-fg:            #d4cfc4;
+    --cttb-primary:       #b8a88a;
+    --cttb-primary-hover: #cdb99a;
+    --cttb-secondary:     #8b5e1e;
+    --cttb-accent:        #8b5e1e;
+    --cttb-muted:         #3a3731;
+    --cttb-muted-text:    #8a8477;
+    --cttb-surface-0:     #131210;
+    --cttb-surface-1:     #12110e;
+    --cttb-surface-2:     #1a1714;
+    --cttb-border:        rgba(184, 168, 138, 0.15);
+    --cttb-link:          #b8a88a;
+    --cttb-link-visited:  #8b5e1e;
+    --cttb-link-new:      #a36c3d;
+    --cttb-pattern-alpha: 0.10;
+    --cttb-panel-body:    #1a1714;
+    --cttb-panel-toolbar: #12110e;
+}
+
+/* Defensive: an explicit "Day" toggle MUST land on Sacred even when
+ * the user's OS is in dark mode and the @media rule above is matched.
+ * Restating the Sacred tokens here keeps the cascade resolution stable
+ * regardless of which rule was last to set them.
+ */
+html.skin-theme-clientpref-day {
+    --cttb-bg:            #e8dcc0;
+    --cttb-fg:            #2a1f18;
+    --cttb-primary:       #5c2d1a;
+    --cttb-primary-hover: #7a2e15;
+    --cttb-secondary:     #9e6b14;
+    --cttb-accent:        #5c2d1a;
+    --cttb-muted:         #c8a878;
+    --cttb-muted-text:    #a36c3d;
+    --cttb-surface-0:     rgba(232, 220, 192, 0.82);
+    --cttb-surface-1:     rgba(200, 168, 120, 0.22);
+    --cttb-surface-2:     rgba(200, 168, 120, 0.38);
+    --cttb-border:        rgba(122,  46,  21, 0.30);
+    --cttb-link:          #5c2d1a;
+    --cttb-link-visited:  #7a2e15;
+    --cttb-link-new:      #9e6b14;
+    --cttb-pattern-alpha: 0.18;
+    --cttb-panel-body:    #dfddbf;
+    --cttb-panel-toolbar: #dcc8a5;
+}
+
+/* ── MediaWiki + Citizen/Vector skin variable overrides ──────────── */
+:root,
+html.skin-theme-clientpref-os,
+html.skin-theme-clientpref-night,
+html.skin-theme-clientpref-day {
+    --background-color-base:               var(--cttb-bg);
+    --color-base:                          var(--cttb-fg);
+    --color-base--subtle:                  var(--cttb-primary);
+    --border-color-base:                   var(--cttb-muted);
+    --color-surface-0:                     var(--cttb-surface-0);
+    --color-surface-1:                     var(--cttb-surface-1);
+    --color-surface-2:                     var(--cttb-surface-2);
+    --color-surface-3:                     var(--cttb-muted);
+    --background-color-interactive:        var(--cttb-surface-2);
+    --background-color-interactive-subtle: var(--cttb-surface-1);
+    --background-color-neutral-subtle:     var(--cttb-surface-0);
+    --color-link:                          var(--cttb-link);
+    --color-link--visited:                 var(--cttb-link-visited);
+    --color-link-new:                      var(--cttb-link-new);
+    --color-link-new--visited:             var(--cttb-link-new);
+    --color-progressive:                   var(--cttb-primary);
+    --color-progressive--hover:            var(--cttb-primary-hover);
+    --color-progressive--active:           var(--cttb-secondary);
+    --color-destructive:                   var(--cttb-secondary);
+}
+
+/* ── Structural (no color) ───────────────────────────────────────── */
+.vector-column-start,
+.vector-column-end          { margin-top: 0 !important; }
+.mw-page-container-inner    { min-height: 100vh; }
+.mw-content-container       { flex: 1; }
+
+/* ── p31m pagoda tiling — both modes ─────────────────────────────── */
+body {
+    background-color: var(--cttb-bg);
+    background-image: url("p31m-pattern.svg");
+    background-repeat: repeat;
+    background-attachment: fixed;
+    background-size: 125px 216px;
+}
+body::before {
+    /* dimming layer so the pattern reads at the per-mode alpha */
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-color: var(--cttb-bg);
+    opacity: calc(1 - var(--cttb-pattern-alpha));
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* ── Page chrome ─────────────────────────────────────────────────── */
+.mw-page-container {
+    background-color: transparent;
+    color: var(--cttb-fg);
+}
+/* ── Content panel — toolbar is the box, body flows below ────────
+ * The page title floats freely on the page bg (no border, no
+ * card). The toolbar (Read / Edit / History tabs) is the rounded
+ * top of the panel — full border with `border-radius: 6px 6px 0 0`.
+ * The body extends below sharing the toolbar's bottom edge: same
+ * border-color isn't required since the body has its own bg that
+ * reads as a continuation of the panel.
+ *
+ * `.vector-column-end` (the right-side Tools sidebar, also a child
+ * of `main#content`) stays unstyled here so it can sit beside the
+ * panel without being clipped — no `overflow: hidden` anywhere.
+ *
+ * Hex values come through `--cttb-panel-body` and
+ * `--cttb-panel-toolbar`, which adapt to the active palette.
+ */
+.vector-page-titlebar::after {
+    background-color: var(--cttb-panel-body);
+}
+
+main#content > .vector-page-toolbar {
+    background-color: var(--cttb-panel-toolbar);
+    border: 1px solid var(--cttb-border);
+    border-radius: 6px 6px 0 0;
+    padding: 0 1.25rem;
+}
+
+main#content > .vector-body,
+main#content > #bodyContent {
+    background-color: var(--cttb-panel-body);
+    border: 1px solid var(--cttb-border);
+    border-radius: 0 0 5px 5px;
+    padding: 1.25rem;
+}
+
+/* Toolbar tab + dropdown links — inherit display from the flex
+ * containers (#left-navigation / #right-navigation), with top
+ * padding so the tab text sits centered against the toolbar
+ * height, and a small bottom margin separating it from the
+ * toolbar's bottom border. */
+@media screen {
+    .vector-menu-tabs .mw-list-item.vector-tab-noicon > a,
+    .vector-page-toolbar-container .vector-dropdown.vector-tab-noicon > a,
+    .vector-menu-tabs .mw-list-item .vector-dropdown-label,
+    .vector-page-toolbar-container .vector-dropdown .vector-dropdown-label {
+        display: inherit;
+        padding: 12px 0 0 0;
+        margin-bottom: 8px;
+    }
+}
+
+/* ── Toolbar layout — flex the left/right navigation groups ────
+ * Vector's default toolbar layout doesn't align the tab links and
+ * the action buttons cleanly when the panel is bordered. Use flex
+ * containers on both sides + justify-content: space-between on
+ * the toolbar so tabs cluster left, actions cluster right.
+ */
+#left-navigation {
+    margin-left: -8px;
+    display: flex;
+    align-items: center;
+}
+
+#right-navigation {
+    margin-right: unset;
+    display: flex;
+    align-items: center;
+}
+
+#right-navigation div {
+    display: inline;
+}
+
+.vector-page-toolbar-container {
+    align-content: center;
+    justify-content: space-between;
+}
+
+/* Icon-only action buttons (star, watch, etc.) — drop the Vector
+ * default block margin and align inline with the tab text. */
+.vector-menu-tabs .mw-list-item .cdx-button--icon-only {
+    margin: unset;
+    margin-top: 8px;
+}
+.vector-menu-content .cdx-button--icon-only {
+    display: inline;
+}
+.vector-menu-content .cdx-button--icon-only span {
+    height: 1rem !important;
+    width: 1rem !important;
+}
+.vector-menu-content #right-navigation label.cdx-button {
+    padding: 0;
+    display: flex;
+}
+
+/* Dropdown caret (▾) — tighten the indicator size and pull it up
+ * so it sits next to its label rather than below baseline. */
+.vector-dropdown .vector-dropdown-label:not(.cdx-button--icon-only)::after {
+    margin-left: 0;
+    width: 0.6rem;
+    height: 0.6rem;
+    margin-top: 0.3rem;
+}
+
+/* ── Body grid (≥1120px) — stub, see gh-59 ─────────────────────
+ * `.mw-body` switches to grid at wide widths so the right
+ * sidebar's space can eventually be reclaimed by the body when
+ * the Tools panel is dismissed. Column template is intentionally
+ * unset here — flipping `display: grid` alone is harmless and
+ * leaves the existing block flow in place visually. The actual
+ * reclaim work (grid-template-columns + child placement + state
+ * detection on the pinnable-header toggle) is tracked at gh-59.
+ */
+@media screen and (min-width: 1120px) {
+    .mw-body {
+        display: grid;
+    }
+}
+
+/* Article title — slight bottom margin so the firstHeading breathes
+ * before the toolbar/body card begins. */
+.mw-body .firstHeading {
+    margin-bottom: 1rem;
+}
+
+/* Footer — give the wiki-footer container vertical room. */
+.mw-footer-container {
+    padding-top: 82px;
+    padding-bottom: 50px;
+}
+
+/* Sidebar pinnable panels (Tools, TOC, Main menu) — present each
+ * as a card with rounded border. The pinnable header gets the
+ * toolbar tint so it reads as the panel's titlebar. */
+.vector-pinned-container {
+    border: 1px solid var(--cttb-border);
+    border-radius: 10px;
+    padding: 1rem;
+}
+.vector-pinnable-header {
+    background: var(--cttb-panel-toolbar);
+    display: flex;
+    line-height: 1.6;
+    margin: -1rem -1rem 0 -1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px 10px 0 0;
+}
+
+/* Left-sidebar + TOC pinnable layout — reset Vector's indents so
+ * the menu/TOC content aligns flush inside the rounded panel
+ * borders that the City Lights theme adds. */
+.vector-column-start .vector-main-menu-container {
+    margin-left: unset;
+}
+.vector-toc .vector-pinnable-header {
+    margin-left: -1rem;
+}
+.vector-toc .vector-toc-list-item {
+    padding-left: unset;
+}
+.vector-pinnable-header-toggle-button,
+.cdx-button {
+    margin-left: auto;
+}
+
+/* Sidebar nav panels (used by IT Infrastructure / Sudhanix 26 etc.):
+ * give the body of the nav a soft page-tinted bg so the panel reads
+ * as a card on the textured background. */
+.cttb-sidebar-nav-body {
+    background: var(--cttb-bg);
+}
+.vector-header {
+    background-color: var(--cttb-surface-0);
+    border-bottom-color: var(--cttb-muted);
+}
+.vector-column-start {
+    background-color: transparent;
+}
+.vector-search-box-input {
+    background-color: var(--cttb-surface-2);
+    color: var(--cttb-fg);
+    border-color: var(--cttb-muted);
+}
+
+/* ── Links ───────────────────────────────────────────────────────── */
+a               { color: var(--cttb-link); }
+a:visited       { color: var(--cttb-link-visited); }
+.new            { color: var(--cttb-link-new); }
+.vector-menu-tabs .selected a,
+.mw-list-item.selected a { color: var(--cttb-fg); }
+
+/* Body-content link emphasis — both palettes share fg and link colors
+ * in the same warm-earth register, so prose-embedded links don't stand
+ * out by color alone. Underline at thin weight + small offset gives
+ * the necessary distinction without dominating the line. Scoped to
+ * `.mw-parser-output` so sidebar nav, TOC, footer, and skin chrome
+ * (where links *are* the content) stay un-underlined.
+ */
+.mw-parser-output a {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+}
+.mw-parser-output a:hover {
+    text-decoration-thickness: 2px;
+}
+/* External links keep MediaWiki's arrow icon; underline reads naturally
+ * with it. Internal section-edit `[edit]` brackets and file thumbnails
+ * are not text links — opt them out. */
+.mw-parser-output .mw-editsection a,
+.mw-parser-output a.image,
+.mw-parser-output a.mw-file-description {
+    text-decoration: none;
+}
+
+/* ── Headings ────────────────────────────────────────────────────── */
+.mw-body h1,
+.mw-body h2,
+.mw-body h3,
+.mw-body h4 {
+    color: var(--cttb-fg);
+    border-bottom-color: var(--cttb-muted);
+}
+
+/* ── Code blocks ─────────────────────────────────────────────────── */
+code,
+pre {
+    background-color: var(--cttb-surface-1);
+    color: var(--cttb-fg);
+    border-color: var(--cttb-border);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.vector-pinnable-header-toggle-button,
+.cdx-button {
+    color: var(--cttb-primary);
+    border-color: var(--cttb-muted);
+}
+.cdx-button:hover {
+    background-color: var(--cttb-surface-1);
+    border-color: var(--cttb-accent);
+}
+
+/* ── Section-edit links ──────────────────────────────────────────── */
+.mw-body-content .mw-editsection a {
+    color: var(--cttb-secondary);
+}
+
+/* ── Table of contents ───────────────────────────────────────────── */
+.vector-toc                        { background-color: var(--cttb-surface-0); }
+.vector-toc .vector-toc-link       { color: var(--cttb-primary); }
+.vector-toc .vector-toc-link:hover { color: var(--cttb-primary-hover); }
+
+/* ── Tables ──────────────────────────────────────────────────────── */
+table.wikitable {
+    background-color: var(--cttb-surface-1);
+    border-color: var(--cttb-muted);
+    color: var(--cttb-fg);
+}
+table.wikitable th {
+    background-color: var(--cttb-surface-2);
+    border-color: var(--cttb-muted);
+}
+table.wikitable td {
+    border-color: var(--cttb-muted);
+}
+
+/* ── Thumb / figure ──────────────────────────────────────────────── */
+.thumb       { border-color: var(--cttb-muted); }
+.thumbinner  {
+    background-color: var(--cttb-surface-1);
+    border-color: var(--cttb-muted);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.vector-footer {
+    border-top-color: var(--cttb-muted);
+    color: var(--cttb-secondary);
+}
+
+/* ── Notices / message boxes ─────────────────────────────────────── */
+.mw-message-box {
+    background-color: var(--cttb-surface-2);
+    border-color: var(--cttb-accent);
+    color: var(--cttb-fg);
+}
+
+/* ── Diff / history ──────────────────────────────────────────────── */
+.diff-context {
+    background-color: var(--cttb-surface-0);
+    color: var(--cttb-primary);
 }
