@@ -1,317 +1,324 @@
 ---
-# Sudhanix UX: keyboard shortcuts, window tiling, Thunar defaults, devilspie2,
-# system dconf defaults (Plank dock layout)
+# Sudhanix UX — settings glue for the XFCE session.
+#
+# Keyboard shortcuts, window tiling, Thunar defaults, devilspie2 rules,
+# system dconf defaults (Plank dock layout, light-locker, GNOME interface),
+# xfconf templates (appfinder, notifyd, power-manager, session),
+# session-watchdog + chrome-locks autostart, GRUB cmdline tweaks.
+#
+# Pure configure (issue #57, Task 6): every task here reads from
+# install-phase state and writes settings. No apt / unarchive / binary
+# deploy. The single previous install-shape task (apt zenity + dbus-x11)
+# moved to lubuntu.yml's consolidated batch in Task 3 — the deps belong
+# in the base-packages audience, not interleaved into a configure file.
 
-  - name: ensure dconf site db directory exists
-    file:
-      path: /etc/dconf/db/site.d
-      state: directory
-      mode: '0755'
-      owner: root
-      group: root
+  - name: sudhanix-ux — configure phase
+    when: __sudhanix_phase | default("all") in ["config", "all"]
     tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - dconf
-
-  - name: deploy plank dock1 system dconf default
-    copy:
-      src: dconf-db/00-plank-dock1
-      dest: /etc/dconf/db/site.d/00-plank-dock1
-      mode: '0644'
-      owner: root
-      group: root
-    register: plank_dconf
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - dconf
-
-  - name: deploy light-locker idle/lock policy dconf default
-    copy:
-      src: dconf-db/05-light-locker
-      dest: /etc/dconf/db/site.d/05-light-locker
-      mode: '0644'
-      owner: root
-      group: root
-    register: lightlocker_dconf
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - dconf
-
-  - name: deploy GNOME interface (theme + monospace font) dconf default
-    copy:
-      src: dconf-db/10-gnome-interface
-      dest: /etc/dconf/db/site.d/10-gnome-interface
-      mode: '0644'
-      owner: root
-      group: root
-    register: gnome_iface_dconf
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - dconf
-
-  - name: deploy dconf user profile (user-db + system-db:site)
-    copy:
-      src: dconf-db/profile-user
-      dest: /etc/dconf/profile/user
-      mode: '0644'
-      owner: root
-      group: root
-    register: dconf_profile
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - dconf
-
-  - name: regenerate dconf system db
-    command: dconf update
-    when: >
-      plank_dconf is changed or
-      dconf_profile is changed or
-      lightlocker_dconf is changed or
-      gnome_iface_dconf is changed
-    changed_when: false
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - dconf
-
-  - name: configure keyboard shortcuts (Super key opens app menu, window tiling)
-    template:
-      src: xfce4-keyboard-shortcuts.xml.j2
-      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: configure Thunar file manager (list view default)
-    template:
-      src: thunar.xml.j2
-      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/thunar.xml
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: create system-wide devilspie2 config directory
-    file:
-      path: /etc/xdg/devilspie2
-      state: directory
-      mode: 0755
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: deploy devilspie2 rule to hide panel from Plank dock
-    copy:
-      src: config/devilspie2/panel-skip-taskbar.lua
-      dest: /etc/xdg/devilspie2/panel-skip-taskbar.lua
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: deploy Chrome stale NFS lock cleanup script
-    copy:
-      src: config/clean-chrome-locks.sh
-      dest: /usr/local/bin/clean-chrome-locks.sh
-      mode: '0755'
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: autostart Chrome lock cleanup on login
-    copy:
-      content: |
-        [Desktop Entry]
-        Type=Application
-        Name=Clean Chrome Locks
-        Exec=/usr/local/bin/clean-chrome-locks.sh
-        Hidden=false
-        NoDisplay=true
-        X-GNOME-Autostart-enabled=true
-      dest: /etc/xdg/autostart/clean-chrome-locks.desktop
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: install session watchdog dependencies
-    apt:
-      name:
-        - zenity
-        - dbus-x11
-      state: present
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: deploy session watchdog script
-    copy:
-      src: config/sudhanix-session-watchdog.sh
-      dest: /usr/local/bin/sudhanix-session-watchdog
-      mode: '0755'
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: autostart session watchdog on graphical login
-    copy:
-      content: |
-        [Desktop Entry]
-        Type=Application
-        Name=Sudhanix Session Watchdog
-        Exec=/usr/local/bin/sudhanix-session-watchdog
-        Hidden=false
-        NoDisplay=true
-        X-GNOME-Autostart-enabled=true
-        OnlyShowIn=XFCE;
-      dest: /etc/xdg/autostart/sudhanix-session-watchdog.desktop
-      mode: '0644'
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-
-  - name: deploy Super-key application menu toggle wrapper
-    # xfce4-popup-applicationsmenu (4.18) has no dismiss flag; pressing the
-    # bound Super key a second time is a no-op. The wrapper inspects the
-    # active-window class and sends Escape if the menu is already up.
-    copy:
-      src: bin/sudhanix-toggle-appmenu
-      dest: /usr/local/bin/sudhanix-toggle-appmenu
-      mode: '0755'
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
       - config
-
-  - name: autostart devilspie2 for all users
-    # devilspie2 only reads ONE folder per process; default is ~/.config/devilspie2.
-    # An empty user folder makes it exit with "No script files found" instead of
-    # falling back to /etc/xdg/devilspie2. Pass --folder explicitly so the
-    # system-wide rule set is loaded for every user without per-home seeding.
-    copy:
-      content: |
-        [Desktop Entry]
-        Type=Application
-        Name=Devilspie2
-        Exec=devilspie2 --folder=/etc/xdg/devilspie2
-        Hidden=false
-        NoDisplay=true
-        X-GNOME-Autostart-enabled=true
-      dest: /etc/xdg/autostart/devilspie2.desktop
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
       - sudhanix-ux
-      - config
+    block:
 
-  - name: configure xfce4-appfinder (icon view, centered, no categories)
-    template:
-      src: xfce4-appfinder.xml.j2
-      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-appfinder.xml
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
+      - name: ensure dconf site db directory exists
+        file:
+          path: /etc/dconf/db/site.d
+          state: directory
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - dconf
 
-  - name: configure xfce4-notifyd (notification policy)
-    template:
-      src: xfce4-notifyd.xml.j2
-      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
+      - name: deploy plank dock1 system dconf default
+        copy:
+          src: dconf-db/00-plank-dock1
+          dest: /etc/dconf/db/site.d/00-plank-dock1
+          mode: '0644'
+          owner: root
+          group: root
+        register: plank_dconf
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - dconf
 
-  - name: configure xfce4-power-manager (brightness-switch policy)
-    template:
-      src: xfce4-power-manager.xml.j2
-      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
+      - name: deploy light-locker idle/lock policy dconf default
+        copy:
+          src: dconf-db/05-light-locker
+          dest: /etc/dconf/db/site.d/05-light-locker
+          mode: '0644'
+          owner: root
+          group: root
+        register: lightlocker_dconf
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - dconf
 
-  - name: configure xfce4-session (SaveOnExit, default session)
-    template:
-      src: xfce4-session.xml.j2
-      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml
-      mode: 0644
-      owner: root
-      group: root
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
+      - name: deploy GNOME interface (theme + monospace font) dconf default
+        copy:
+          src: dconf-db/10-gnome-interface
+          dest: /etc/dconf/db/site.d/10-gnome-interface
+          mode: '0644'
+          owner: root
+          group: root
+        register: gnome_iface_dconf
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - dconf
 
-  # GRUB defaults for desktops: brief menu, graphical Plymouth splash.
-  # The server role overrides /etc/default/grub for headless hosts.
-  - name: GRUB — show menu briefly (timeout style)
-    lineinfile:
-      path: /etc/default/grub
-      regexp: '^#?GRUB_TIMEOUT_STYLE='
-      line: 'GRUB_TIMEOUT_STYLE=menu'
-    when: ansible_virtualization_type != "lxc"
-    notify:
-      - update grub
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - grub
+      - name: deploy dconf user profile (user-db + system-db:site)
+        copy:
+          src: dconf-db/profile-user
+          dest: /etc/dconf/profile/user
+          mode: '0644'
+          owner: root
+          group: root
+        register: dconf_profile
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - dconf
 
-  - name: GRUB — 3-second menu timeout
-    lineinfile:
-      path: /etc/default/grub
-      regexp: '^#?GRUB_TIMEOUT='
-      line: 'GRUB_TIMEOUT=3'
-    when: ansible_virtualization_type != "lxc"
-    notify:
-      - update grub
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - grub
+      - name: regenerate dconf system db
+        command: dconf update
+        when: >
+          plank_dconf is changed or
+          dconf_profile is changed or
+          lightlocker_dconf is changed or
+          gnome_iface_dconf is changed
+        changed_when: false
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - dconf
 
-  - name: GRUB — quiet splash for Plymouth
-    lineinfile:
-      path: /etc/default/grub
-      regexp: '^#?GRUB_CMDLINE_LINUX_DEFAULT='
-      line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"'
-    when: ansible_virtualization_type != "lxc"
-    notify:
-      - update grub
-    tags:
-      - sudhanix-core
-      - sudhanix-ux
-      - grub
-      - appfinder
+      - name: configure keyboard shortcuts (Super key opens app menu, window tiling)
+        template:
+          src: xfce4-keyboard-shortcuts.xml.j2
+          dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: configure Thunar file manager (list view default)
+        template:
+          src: thunar.xml.j2
+          dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/thunar.xml
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: create system-wide devilspie2 config directory
+        file:
+          path: /etc/xdg/devilspie2
+          state: directory
+          mode: 0755
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: deploy devilspie2 rule to hide panel from Plank dock
+        copy:
+          src: config/devilspie2/panel-skip-taskbar.lua
+          dest: /etc/xdg/devilspie2/panel-skip-taskbar.lua
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: deploy Chrome stale NFS lock cleanup script
+        copy:
+          src: config/clean-chrome-locks.sh
+          dest: /usr/local/bin/clean-chrome-locks.sh
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: autostart Chrome lock cleanup on login
+        copy:
+          content: |
+            [Desktop Entry]
+            Type=Application
+            Name=Clean Chrome Locks
+            Exec=/usr/local/bin/clean-chrome-locks.sh
+            Hidden=false
+            NoDisplay=true
+            X-GNOME-Autostart-enabled=true
+          dest: /etc/xdg/autostart/clean-chrome-locks.desktop
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: deploy session watchdog script
+        copy:
+          src: config/sudhanix-session-watchdog.sh
+          dest: /usr/local/bin/sudhanix-session-watchdog
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: autostart session watchdog on graphical login
+        copy:
+          content: |
+            [Desktop Entry]
+            Type=Application
+            Name=Sudhanix Session Watchdog
+            Exec=/usr/local/bin/sudhanix-session-watchdog
+            Hidden=false
+            NoDisplay=true
+            X-GNOME-Autostart-enabled=true
+            OnlyShowIn=XFCE;
+          dest: /etc/xdg/autostart/sudhanix-session-watchdog.desktop
+          mode: '0644'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: deploy Super-key application menu toggle wrapper
+        # xfce4-popup-applicationsmenu (4.18) has no dismiss flag; pressing the
+        # bound Super key a second time is a no-op. The wrapper inspects the
+        # active-window class and sends Escape if the menu is already up.
+        copy:
+          src: bin/sudhanix-toggle-appmenu
+          dest: /usr/local/bin/sudhanix-toggle-appmenu
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - config
+
+      - name: autostart devilspie2 for all users
+        # devilspie2 only reads ONE folder per process; default is ~/.config/devilspie2.
+        # An empty user folder makes it exit with "No script files found" instead of
+        # falling back to /etc/xdg/devilspie2. Pass --folder explicitly so the
+        # system-wide rule set is loaded for every user without per-home seeding.
+        copy:
+          content: |
+            [Desktop Entry]
+            Type=Application
+            Name=Devilspie2
+            Exec=devilspie2 --folder=/etc/xdg/devilspie2
+            Hidden=false
+            NoDisplay=true
+            X-GNOME-Autostart-enabled=true
+          dest: /etc/xdg/autostart/devilspie2.desktop
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - config
+
+      - name: configure xfce4-appfinder (icon view, centered, no categories)
+        template:
+          src: xfce4-appfinder.xml.j2
+          dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-appfinder.xml
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: configure xfce4-notifyd (notification policy)
+        template:
+          src: xfce4-notifyd.xml.j2
+          dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-notifyd.xml
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: configure xfce4-power-manager (brightness-switch policy)
+        template:
+          src: xfce4-power-manager.xml.j2
+          dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      - name: configure xfce4-session (SaveOnExit, default session)
+        template:
+          src: xfce4-session.xml.j2
+          dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml
+          mode: 0644
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+
+      # GRUB defaults for desktops: brief menu, graphical Plymouth splash.
+      # The server role overrides /etc/default/grub for headless hosts.
+      - name: GRUB — show menu briefly (timeout style)
+        lineinfile:
+          path: /etc/default/grub
+          regexp: '^#?GRUB_TIMEOUT_STYLE='
+          line: 'GRUB_TIMEOUT_STYLE=menu'
+        when: ansible_virtualization_type != "lxc"
+        notify:
+          - update grub
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - grub
+
+      - name: GRUB — 3-second menu timeout
+        lineinfile:
+          path: /etc/default/grub
+          regexp: '^#?GRUB_TIMEOUT='
+          line: 'GRUB_TIMEOUT=3'
+        when: ansible_virtualization_type != "lxc"
+        notify:
+          - update grub
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - grub
+
+      - name: GRUB — quiet splash for Plymouth
+        lineinfile:
+          path: /etc/default/grub
+          regexp: '^#?GRUB_CMDLINE_LINUX_DEFAULT='
+          line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"'
+        when: ansible_virtualization_type != "lxc"
+        notify:
+          - update grub
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - grub
+          - appfinder

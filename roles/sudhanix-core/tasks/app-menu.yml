@@ -1,83 +1,96 @@
 ---
-# Customize the applications menu in lxqt-panel
+# Application-menu customization for lxqt-panel — hide items in the top
+# menu, fix Categories= on Lock Screen, NoDisplay=true on entries we
+# don't want visible.
+#
+# Pure configure (issue #57, Task 6): every task mutates .desktop or
+# .menu files. Included transitively from lookandfeel.yml's configure
+# block, so __sudhanix_phase=config when this fires.
 
-  - name: ensure desktop file ends with newline
-    shell: |
-      FILE=/usr/share/applications/light-locker-settings.desktop
-      [ -f "$FILE" ] && [ -n "$(tail -c1 "$FILE")" ] && echo >> "$FILE"
-    args:
-      executable: /bin/bash
-    changed_when: false
-    ignore_errors: yes
+  - name: app-menu — configure phase
+    when: __sudhanix_phase | default("all") in ["config", "all"]
     tags:
+      - config
       - app_menu
+    block:
 
-  # First, update the lxqt-applications.menu file itself;
-  # Then, update the individual .desktop files.
-  # Note: Lubuntu 24.04 uses lxde-applications.menu, not lxqt-applications.menu.
+      - name: ensure desktop file ends with newline
+        shell: |
+          FILE=/usr/share/applications/light-locker-settings.desktop
+          [ -f "$FILE" ] && [ -n "$(tail -c1 "$FILE")" ] && echo >> "$FILE"
+        args:
+          executable: /bin/bash
+        changed_when: false
+        ignore_errors: yes
+        tags:
+          - app_menu
 
-  - name: find lxqt applications menu file
-    stat:
-      path: /etc/xdg/menus/lxqt-applications.menu
-    register: lxqt_menu_file
+      # First, update the lxqt-applications.menu file itself;
+      # Then, update the individual .desktop files.
+      # Note: Lubuntu 24.04 uses lxde-applications.menu, not lxqt-applications.menu.
 
-  - name: hide 'Lock Screen' from top menu
-    lineinfile:
-      path: /etc/xdg/menus/lxqt-applications.menu
-      regexp: '^\s+<Menuname(.*)>Screensaver</Menuname>'
-      line: '                        <!-- <Menuname\1>Screensaver</Menuname> -->'
-      backrefs: yes
-    when: lxqt_menu_file.stat.exists
-    tags:
-      - app_menu
+      - name: find lxqt applications menu file
+        stat:
+          path: /etc/xdg/menus/lxqt-applications.menu
+        register: lxqt_menu_file
 
-  - name: comment out the Screensaver category in the top menu
-    replace:
-      path: /etc/xdg/menus/lxqt-applications.menu
-      regexp: '^\s+<!-- Screensaver -->[^"]*<!-- End Screensaver -->\s+$'
-      replace: ''
-    when: lxqt_menu_file.stat.exists
-    tags:
-      - app_menu
+      - name: hide 'Lock Screen' from top menu
+        lineinfile:
+          path: /etc/xdg/menus/lxqt-applications.menu
+          regexp: '^\s+<Menuname(.*)>Screensaver</Menuname>'
+          line: '                        <!-- <Menuname\1>Screensaver</Menuname> -->'
+          backrefs: yes
+        when: lxqt_menu_file.stat.exists
+        tags:
+          - app_menu
 
-  - name: move 'Lock Screen' into Leave
-    lineinfile:
-      path: /usr/share/applications/lxqt-lockscreen.desktop
-      regexp: '^Categories='
-      line: Categories=System;X-Leave
-    tags:
-      - app_menu
+      - name: comment out the Screensaver category in the top menu
+        replace:
+          path: /etc/xdg/menus/lxqt-applications.menu
+          regexp: '^\s+<!-- Screensaver -->[^"]*<!-- End Screensaver -->\s+$'
+          replace: ''
+        when: lxqt_menu_file.stat.exists
+        tags:
+          - app_menu
 
-  - name: hide apps in the app menu
-    lineinfile:
-      dest: "/usr/share/applications/{{ item }}.desktop"
-      line: "NoDisplay=true"
-    loop:
-      - fcitx
-      # No need to show a generic Leave
-      - lxqt-leave
-      # Hibernate does not work.
-      - lxqt-hibernate
-      #- qlipper
-      # TeXInfo
-      - info
-      - vim
-      # Additional Device Drivers
-      - software-properties-drivers
-      - nm-connection-editor
-      - org.freedesktop.IBus.Setup
-      - im-config
-      - time
-      - software-properties-gtk
-      - users
-      - obconf
-      - fcitx-configtool
-      - lightdm-gtk-greeter-settings
-      - light-locker-settings
-      - gnome-language-selector
-      - xfce4-power-manager-settings
-      - lxinput
-      - lxqt-config-monitor
-    ignore_errors: yes
-    tags:
-      - app_menu
+      - name: move 'Lock Screen' into Leave
+        lineinfile:
+          path: /usr/share/applications/lxqt-lockscreen.desktop
+          regexp: '^Categories='
+          line: Categories=System;X-Leave
+        tags:
+          - app_menu
+
+      - name: hide apps in the app menu
+        lineinfile:
+          dest: "/usr/share/applications/{{ item }}.desktop"
+          line: "NoDisplay=true"
+        loop:
+          - fcitx
+          # No need to show a generic Leave
+          - lxqt-leave
+          # Hibernate does not work.
+          - lxqt-hibernate
+          #- qlipper
+          # TeXInfo
+          - info
+          - vim
+          # Additional Device Drivers
+          - software-properties-drivers
+          - nm-connection-editor
+          - org.freedesktop.IBus.Setup
+          - im-config
+          - time
+          - software-properties-gtk
+          - users
+          - obconf
+          - fcitx-configtool
+          - lightdm-gtk-greeter-settings
+          - light-locker-settings
+          - gnome-language-selector
+          - xfce4-power-manager-settings
+          - lxinput
+          - lxqt-config-monitor
+        ignore_errors: yes
+        tags:
+          - app_menu

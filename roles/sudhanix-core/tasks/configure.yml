@@ -46,11 +46,13 @@
 
   # UX session glue — appfinder/notifyd/power-manager/session xml,
   # dconf-db site defaults (Plank dock, GNOME interface, light-locker),
-  # devilspie2 rules, chrome NFS-lock cleanup, session watchdog.
+  # devilspie2 rules, chrome NFS-lock cleanup, session watchdog, GRUB
+  # cmdline tweaks. Pure configure (Task 6 of issue #57); no install
+  # block. zenity + dbus-x11 apt deps moved to lubuntu.yml in Task 3.
   - include_tasks:
       file: sudhanix-ux.yml
-      apply:
-        tags: [config]
+    vars:
+      __sudhanix_phase: config
     tags:
       - config
       - sudhanix-ux
