@@ -1,0 +1,24 @@
+# export-ignore lines apply to `git archive --worktree-attributes`. Anything
+# matching here is excluded from the tarball produced by
+# plays/build-sudhanix-bootstrap-tarball.yml — the tarball is uploaded to
+# storehouse and downloaded by every freshly-PXE-installed lab desktop, so
+# don't ship anything confidential, large-and-irrelevant, or operator-only.
+
+# Confidential — credentials, vault, AI-assistant artefacts.
+inventory/group_vars/all.with-password   export-ignore
+inventory/group_vars/backup/             export-ignore
+*.with-password                          export-ignore
+.claude/                                 export-ignore
+CLAUDE.md                                export-ignore
+GEMINI.md                                export-ignore
+PROJECT.md                               export-ignore
+
+# Build artefacts + journals — not needed on-box.
+logs/                                    export-ignore
+tmp/                                     export-ignore
+UPDATE_JOURNAL.md                        export-ignore
+NOTE.md                                  export-ignore
+
+# Large pre-built binaries (the on-box bootstrap apt-installs vajra from
+# the cttb-extras repo; no need to ship the .deb in the tarball too).
+roles/sudhanix-vajra-tool/files/*.deb    export-ignore

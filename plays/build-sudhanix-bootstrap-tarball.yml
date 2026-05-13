@@ -1,0 +1,205 @@
+---
+# Build the sudhanix-bootstrap-26.tar.gz tarball and deploy it to
+# storehouse.cttb so newly-PXE-installed boxes can fetch + run it.
+#
+# Re-run on every Sudhanix update (role change, new package, etc.). The play:
+#   1. extracts the host-agnostic apt-install + apt-remove lists from the
+#      role tree (utils/extract-sudhanix-packages), so the lists never drift
+#      from the actual role contents.
+#   2. produces a clean snapshot of the repo via `git archive HEAD`. Tracked
+#      content only — uncommitted edits and worktree state are NEVER in the
+#      tarball.
+#   3. layers the generated package lists into the snapshot at
+#      roles/sudhanix-autostrap/files/.
+#   4. tars everything as sudhanix-bootstrap-26.tar.gz and rsyncs to
+#      storehouse.cttb:/srv/storehouse/ansible/.
+#
+# Usage:
+#   source utils/setup-env
+#   ansible-playbook plays/build-sudhanix-bootstrap-tarball.yml \
+#     -i inventory/hosts \
+#     --vault-password-file <vault-pw-file>
+#
+# Outputs:
+#   storehouse.cttb:/srv/storehouse/ansible/sudhanix-bootstrap-26.tar.gz
+#   storehouse.cttb:/srv/storehouse/ansible/sudhanix-bootstrap-26.tar.gz.sha256
+#
+# The on-box bootstrap script (roles/sudhanix-autostrap/files/sudhanix-bootstrap.sh)
+# fetches the tarball from the above URL on first boot.
+
+- name: Build sudhanix-bootstrap tarball locally
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    sb_repo_root: "{{ playbook_dir | dirname }}"
+    sb_staging:   "{{ lookup('env', 'TMPDIR') | default('/tmp', true) }}/sudhanix-bootstrap-build"
+    sb_archive_basename: "sudhanix-bootstrap-26"
+    # Anything matching these glob patterns inside the staging tree gets
+    # removed before tar. Catches confidential bits that .gitattributes
+    # export-ignore should already handle, but belt-and-suspenders against
+    # someone forgetting to set the attribute on a new sensitive file.
+    sb_strip_globs:
+      - "inventory/group_vars/all.with-password"
+      - "inventory/group_vars/backup/*.with-password"
+      - "**/*.gpg"
+      - "**/*.key"
+      - "**/*.pem"
+      - ".claude/**"
+      - "NOTE.md"
+
+  tasks:
+    - name: assert we are at the repo root with a clean tree marker
+      ansible.builtin.stat:
+        path: "{{ sb_repo_root }}/ansible.cfg"
+      register: cfg_stat
+      failed_when: not cfg_stat.stat.exists
+
+    - name: assert HEAD is clean enough to archive
+      ansible.builtin.command:
+        cmd: git -C "{{ sb_repo_root }}" status --porcelain
+      register: git_porcelain
+      changed_when: false
+      check_mode: false
+
+    - name: warn if uncommitted tracked changes present (these are NOT in the tarball)
+      ansible.builtin.debug:
+        msg: |
+          uncommitted tracked changes detected — the tarball is built from
+          `git archive HEAD`, so these edits will NOT be in the artifact.
+          Commit first if you want them shipped.
+
+          {{ git_porcelain.stdout }}
+      when: git_porcelain.stdout != ''
+
+    - name: reset staging directory
+      ansible.builtin.file:
+        path: "{{ sb_staging }}"
+        state: "{{ item }}"
+      loop:
+        - absent
+        - directory
+
+    # ── 1. clean repo snapshot via git archive ────────────────────────────
+    # `--worktree-attributes` honors `.gitattributes export-ignore` so paths
+    # like .claude/ never enter the tarball.
+    - name: snapshot repo via git archive
+      ansible.builtin.command:
+        cmd: >-
+          git -C {{ sb_repo_root | quote }}
+          archive --format=tar --worktree-attributes
+          --prefix={{ sb_archive_basename }}/
+          --output={{ sb_staging }}/repo-archive.tar
+          HEAD
+      changed_when: true
+
+    - name: expand archive into staging dir
+      ansible.builtin.unarchive:
+        src: "{{ sb_staging }}/repo-archive.tar"
+        dest: "{{ sb_staging }}"
+        remote_src: true
+
+    - name: drop the intermediate tar
+      ansible.builtin.file:
+        path: "{{ sb_staging }}/repo-archive.tar"
+        state: absent
+
+    # ── 2. regenerate apt package lists from role tree ────────────────────
+    - name: extract host-agnostic apt-install + apt-remove lists
+      ansible.builtin.command:
+        cmd: >-
+          {{ sb_repo_root }}/utils/extract-sudhanix-packages
+          --repo-root {{ sb_staging }}/{{ sb_archive_basename }}
+          --output-dir {{ sb_staging }}/{{ sb_archive_basename }}/roles/sudhanix-autostrap/files
+      register: extract_run
+      changed_when: true
+
+    - name: show package-list counts
+      ansible.builtin.debug:
+        var: extract_run.stdout_lines
+
+    # ── 3. belt-and-suspenders strip of confidential paths ────────────────
+    - name: enumerate paths to strip
+      ansible.builtin.find:
+        paths: "{{ sb_staging }}/{{ sb_archive_basename }}"
+        recurse: true
+        hidden: true
+        patterns: "{{ sb_strip_globs }}"
+        use_regex: false
+      register: strip_find
+
+    - name: remove confidential paths from staging tree
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ strip_find.files }}"
+      loop_control:
+        label: "{{ item.path | regex_replace('^' + sb_staging + '/', '') }}"
+
+    # ── 4. build the final tarball + sha256 ───────────────────────────────
+    - name: build sudhanix-bootstrap-26.tar.gz
+      ansible.builtin.archive:
+        path: "{{ sb_staging }}/{{ sb_archive_basename }}"
+        dest: "{{ sb_staging }}/{{ sb_archive_basename }}.tar.gz"
+        format: gz
+        mode: "0644"
+
+    - name: compute sha256 sum
+      ansible.builtin.stat:
+        path: "{{ sb_staging }}/{{ sb_archive_basename }}.tar.gz"
+        checksum_algorithm: sha256
+      register: tarball_stat
+
+    - name: write checksum sidecar
+      ansible.builtin.copy:
+        content: "{{ tarball_stat.stat.checksum }}  {{ sb_archive_basename }}.tar.gz\n"
+        dest: "{{ sb_staging }}/{{ sb_archive_basename }}.tar.gz.sha256"
+        mode: "0644"
+
+    - name: report local artifact
+      ansible.builtin.debug:
+        msg:
+          - "tarball  : {{ sb_staging }}/{{ sb_archive_basename }}.tar.gz"
+          - "size     : {{ (tarball_stat.stat.size / 1024 / 1024) | round(1) }} MiB"
+          - "sha256   : {{ tarball_stat.stat.checksum }}"
+          - "remove   : {{ extract_run.stdout_lines | join(' / ') }}"
+
+
+- name: Deploy tarball to storehouse
+  hosts: storehouse
+  become: true
+  vars:
+    sb_staging:   "{{ lookup('env', 'TMPDIR') | default('/tmp', true) }}/sudhanix-bootstrap-build"
+    sb_archive_basename: "sudhanix-bootstrap-26"
+    sb_storehouse_dir: "/srv/storehouse/ansible"
+
+  tasks:
+    - name: ensure storehouse ansible asset dir exists
+      ansible.builtin.file:
+        path: "{{ sb_storehouse_dir }}"
+        state: directory
+        owner: root
+        group: www-data
+        mode: "0755"
+
+    - name: copy tarball to storehouse
+      ansible.builtin.copy:
+        src: "{{ sb_staging }}/{{ sb_archive_basename }}.tar.gz"
+        dest: "{{ sb_storehouse_dir }}/{{ sb_archive_basename }}.tar.gz"
+        owner: root
+        group: www-data
+        mode: "0644"
+
+    - name: copy checksum sidecar
+      ansible.builtin.copy:
+        src: "{{ sb_staging }}/{{ sb_archive_basename }}.tar.gz.sha256"
+        dest: "{{ sb_storehouse_dir }}/{{ sb_archive_basename }}.tar.gz.sha256"
+        owner: root
+        group: www-data
+        mode: "0644"
+
+    - name: report live URL
+      ansible.builtin.debug:
+        msg:
+          - "fetch URL: http://storehouse.cttb/ansible/{{ sb_archive_basename }}.tar.gz"
+          - "sha256:    http://storehouse.cttb/ansible/{{ sb_archive_basename }}.tar.gz.sha256"
