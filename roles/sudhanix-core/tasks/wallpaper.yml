@@ -1,92 +1,112 @@
 ---
-# Wallpaper setup — syncs images and configures xfdesktop native rotation
+# Wallpaper setup — syncs images and configures xfdesktop native rotation.
+#
+# Two-block phase shape (issue #57, Task 4):
+#   install: wallpaper-dir mkdir, cttb-wallpapers tarball unarchive,
+#            macOS-resource-fork purge after unarchive.
+#   configure: xfdesktop xml, legacy feh cleanup, randomizer autostart,
+#              plank autostart.
 
-  - name: create wallpaper directory
-    file:
-      path: "{{ desktop_wallpaper_dir }}"
-      state: directory
-      mode: '0755'
-      owner: root
-      group: root
+  - name: wallpaper — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
     tags:
+      - install
       - wallpaper
+    block:
 
-  - name: download wallpaper images
-    unarchive:
-      src: "{{ ansible_assets_url }}/cttb-wallpapers.tar.gz"
-      dest: "{{ desktop_wallpaper_dir }}/"
-      remote_src: yes
-      extra_opts:
-        - --strip-components=1
-    tags:
-      - wallpaper
+      - name: create wallpaper directory
+        file:
+          path: "{{ desktop_wallpaper_dir }}"
+          state: directory
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - wallpaper
 
-  - name: remove macOS resource fork files from wallpapers
-    shell: rm -f {{ desktop_wallpaper_dir }}/._*
-    changed_when: false
-    tags:
-      - wallpaper
+      - name: download wallpaper images
+        unarchive:
+          src: "{{ ansible_assets_url }}/cttb-wallpapers.tar.gz"
+          dest: "{{ desktop_wallpaper_dir }}/"
+          remote_src: yes
+          extra_opts:
+            - --strip-components=1
+        tags:
+          - wallpaper
 
-  - name: configure xfdesktop wallpaper rotation
-    template:
-      src: xfce4-desktop.xml.j2
-      dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-      mode: '0644'
-      owner: root
-      group: root
-    tags:
-      - wallpaper
+      - name: remove macOS resource fork files from wallpapers
+        shell: rm -f {{ desktop_wallpaper_dir }}/._*
+        changed_when: false
+        tags:
+          - wallpaper
 
-  - name: remove legacy feh wallpaper rotation cron
-    file:
-      path: /etc/cron.d/wallpaper-rotation
-      state: absent
+  - name: wallpaper — configure phase
+    when: __sudhanix_phase | default("all") in ["config", "all"]
     tags:
+      - config
       - wallpaper
+    block:
 
-  - name: remove legacy feh wallpaper rotation script
-    file:
-      path: /usr/local/bin/rotate-wallpaper.sh
-      state: absent
-    tags:
-      - wallpaper
+      - name: configure xfdesktop wallpaper rotation
+        template:
+          src: xfce4-desktop.xml.j2
+          dest: /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+          mode: '0644'
+          owner: root
+          group: root
+        tags:
+          - wallpaper
 
-  # xfdesktop's backdrop-cycle-timer rotates wallpapers during a session
-  # but persists last-image across sessions, so each new session starts
-  # on whatever was showing at logout. This autostart script randomizes
-  # the starting wallpaper on every XFCE session start; in-session
-  # rotation continues from there.
-  - name: deploy session-start wallpaper randomizer
-    copy:
-      src: config/sudhanix-randomize-wallpaper.sh
-      dest: /usr/local/bin/sudhanix-randomize-wallpaper
-      mode: '0755'
-      owner: root
-      group: root
-    tags:
-      - wallpaper
+      - name: remove legacy feh wallpaper rotation cron
+        file:
+          path: /etc/cron.d/wallpaper-rotation
+          state: absent
+        tags:
+          - wallpaper
 
-  - name: autostart wallpaper randomizer (system-wide XDG)
-    copy:
-      src: desktop-entries/sudhanix-randomize-wallpaper.desktop
-      dest: /etc/xdg/autostart/sudhanix-randomize-wallpaper.desktop
-      mode: '0644'
-      owner: root
-      group: root
-    tags:
-      - wallpaper
+      - name: remove legacy feh wallpaper rotation script
+        file:
+          path: /usr/local/bin/rotate-wallpaper.sh
+          state: absent
+        tags:
+          - wallpaper
 
-  # plank's Noble package only ships /usr/share/applications/plank.desktop
-  # (app launcher), not an autostart entry. Without this the dock never
-  # appears at session start even though the package is installed and the
-  # welcome customizer's dconf writes are valid.
-  - name: autostart plank dock (system-wide XDG)
-    copy:
-      src: desktop-entries/plank.desktop
-      dest: /etc/xdg/autostart/plank.desktop
-      mode: '0644'
-      owner: root
-      group: root
-    tags:
-      - wallpaper
-      - plank-autostart
+      # xfdesktop's backdrop-cycle-timer rotates wallpapers during a session
+      # but persists last-image across sessions, so each new session starts
+      # on whatever was showing at logout. This autostart script randomizes
+      # the starting wallpaper on every XFCE session start; in-session
+      # rotation continues from there.
+      - name: deploy session-start wallpaper randomizer
+        copy:
+          src: config/sudhanix-randomize-wallpaper.sh
+          dest: /usr/local/bin/sudhanix-randomize-wallpaper
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - wallpaper
+
+      - name: autostart wallpaper randomizer (system-wide XDG)
+        copy:
+          src: desktop-entries/sudhanix-randomize-wallpaper.desktop
+          dest: /etc/xdg/autostart/sudhanix-randomize-wallpaper.desktop
+          mode: '0644'
+          owner: root
+          group: root
+        tags:
+          - wallpaper
+
+      # plank's Noble package only ships /usr/share/applications/plank.desktop
+      # (app launcher), not an autostart entry. Without this the dock never
+      # appears at session start even though the package is installed and the
+      # welcome customizer's dconf writes are valid.
+      - name: autostart plank dock (system-wide XDG)
+        copy:
+          src: desktop-entries/plank.desktop
+          dest: /etc/xdg/autostart/plank.desktop
+          mode: '0644'
+          owner: root
+          group: root
+        tags:
+          - wallpaper
+          - plank-autostart

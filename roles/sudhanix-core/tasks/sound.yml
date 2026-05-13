@@ -1,66 +1,83 @@
 ---
+# Sound — sudhanix-core.
 #
-#  ############### Sound STUFF ####################
-#  1. Dell 2450 All-in-ones require a module option for the sound to work:
-#     add a file alsa.conf in /etc/modprobe.d/ with the content:
-#         options snd-hda-intel model=dell-headset-multi
-#  2. Add a system pulseaudio service for all users to have sounds.
+# Two-block phase shape (issue #57, Task 4):
+#   install: snd-hda-intel modprobe quirk (Dell AIO only), apt deps,
+#            bigsur sound-theme tarball.
+#   configure: legacy system-pulseaudio systemd service (pre-24.04 only;
+#              no-op on Sudhanix 26).
 
-  - name: add /etc/modprobe.d/alsa.conf with a option for sound to work
-    copy:
-      content: "options snd-hda-intel model=dell-headset-multi\n"
-      dest: /etc/modprobe.d/alsa.conf
-      mode: 0644
-      owner: root
-      group: root
-    when: dell_aio is defined
+  - name: sound — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
     tags:
+      - install
       - sound
+    block:
 
-  - name: install sound theme dependencies
-    apt:
-      name:
-        - libcanberra-gtk3-module
-        - sound-theme-freedesktop
-        - sox
-      state: present
+      # Dell 2450 All-in-ones require an snd-hda-intel module option for
+      # sound to work. Drop a modprobe.d snippet.
+      - name: add /etc/modprobe.d/alsa.conf with a option for sound to work
+        copy:
+          content: "options snd-hda-intel model=dell-headset-multi\n"
+          dest: /etc/modprobe.d/alsa.conf
+          mode: 0644
+          owner: root
+          group: root
+        when: dell_aio is defined
+        tags:
+          - sound
+
+      - name: install sound theme dependencies
+        apt:
+          name:
+            - libcanberra-gtk3-module
+            - sound-theme-freedesktop
+            - sox
+          state: present
+        tags:
+          - sound
+
+      - name: install macOS bigsur sound theme
+        unarchive:
+          remote_src: yes
+          src: "{{ ansible_assets_url }}/macos-bigsur-sound-theme.tar.gz"
+          dest: /usr/share/sounds/
+          creates: /usr/share/sounds/bigsur
+          owner: root
+          group: root
+        when: desktop_sound_theme == 'bigsur'
+        tags:
+          - sound
+          - sudhanix-core
+
+  - name: sound — configure phase
+    when: __sudhanix_phase | default("all") in ["config", "all"]
     tags:
+      - config
       - sound
+    block:
 
-  - name: install macOS bigsur sound theme
-    unarchive:
-      remote_src: yes
-      src: "{{ ansible_assets_url }}/macos-bigsur-sound-theme.tar.gz"
-      dest: /usr/share/sounds/
-      creates: /usr/share/sounds/bigsur
-      owner: root
-      group: root
-    when: desktop_sound_theme == 'bigsur'
-    tags:
-      - sound
-      - sudhanix-core
+      # Ubuntu 24.04+ uses PipeWire/PulseAudio per-user; system-wide
+      # service not needed. These two tasks only fire on pre-24.04 hosts.
+      - name: add a system service for pulseaudio
+        copy:
+          src: "config/pulseaudio.service"
+          dest: /etc/systemd/system/pulseaudio.service
+          mode: 0644
+          owner: root
+          group: root
+          force: no
+        when: ansible_distribution_major_version | int < 24
+        tags:
+          - sound
 
-  # Ubuntu 24.04+ uses PipeWire/PulseAudio per-user; system-wide service not needed
-  - name: add a system service for pulseaudio
-    copy:
-      src: "config/pulseaudio.service"
-      dest: /etc/systemd/system/pulseaudio.service
-      mode: 0644
-      owner: root
-      group: root
-      force: no
-    when: ansible_distribution_major_version | int < 24
-    tags:
-      - sound
-
-  - name: enable the system pulseaudio service
-    systemd:
-      name: pulseaudio.service
-      enabled: yes
-      state: started
-      scope: system
-    notify: restart pulseaudio
-    when: ansible_distribution_major_version | int < 24
-    tags:
-      - sound
-
+      - name: enable the system pulseaudio service
+        systemd:
+          name: pulseaudio.service
+          enabled: yes
+          state: started
+          scope: system
+        notify: restart pulseaudio
+        when: ansible_distribution_major_version | int < 24
+        tags:
+          - sound
