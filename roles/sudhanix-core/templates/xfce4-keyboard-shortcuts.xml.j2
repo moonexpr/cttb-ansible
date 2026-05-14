@@ -2,7 +2,13 @@
 <channel name="xfce4-keyboard-shortcuts" version="1.0">
   <property name="commands" type="empty">
     <property name="custom" type="empty">
-      <property name="Super_L" type="string" value="sudhanix-toggle-appmenu"/>
+      <!-- Super_L points at xfce4-popup-whiskermenu (Path B from #36 — the
+           whiskermenu plugin installed at fb1174d7). Whiskermenu's own
+           popup binary toggles open/close on repeated invocation, which
+           sidesteps the GTK XGrabKeyboard masking that the wrapper-based
+           approach hit on the xfce4-panel applicationsmenu plugin. -->
+      <property name="Super_L" type="string" value="xfce4-popup-whiskermenu"/>
+      <property name="&lt;Super&gt;l" type="string" value="xflock4"/>
       <property name="&lt;Super&gt;space" type="string" value="xfce4-appfinder"/>
     </property>
   </property>
