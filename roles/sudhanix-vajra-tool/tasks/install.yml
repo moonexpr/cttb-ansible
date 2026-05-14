@@ -42,6 +42,20 @@
     mode: '0644'
     content: |
       deb [arch=amd64 signed-by=/usr/share/keyrings/cttb-repo.asc] http://apt.{{ dns_domain }}/cttb-repos/apt/ubuntu noble main
+  register: cttb_extras_source
+  tags:
+    - vajra
+    - vajra-install
+    - install
+
+# cache_valid_time on the install tasks below would skip apt-update when
+# cloud-init has just run one — leaving the freshly-dropped cttb-extras
+# source unindexed and `vajra` apparently missing. Force a refresh when
+# the source file is created or updated.
+- name: refresh apt cache when cttb-extras source changes
+  apt:
+    update_cache: yes
+  when: cttb_extras_source is changed
   tags:
     - vajra
     - vajra-install
