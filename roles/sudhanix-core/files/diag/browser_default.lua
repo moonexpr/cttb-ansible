@@ -30,7 +30,7 @@
 local function trim(s) return (s or ""):gsub("%s+$", "") end
 
 local function exists(path)
-  return ctx:run({"test", "-e", path}).rc == 0
+  return ctx:run({"test", "-e", path}).ok
 end
 
 local function head(path, n)
@@ -96,7 +96,7 @@ print("=== xdg-mime query default — resolved chain ===")
 for _, mime in ipairs(MIMES) do
   local rr = ctx:run({"xdg-mime", "query", "default", mime})
   print(string.format("  %-35s -> %s", mime,
-    (rr.rc == 0 and #rr.stdout > 0) and trim(rr.stdout) or "<none>"))
+    (rr.ok and #rr.stdout > 0) and trim(rr.stdout) or "<none>"))
 end
 
 print()
@@ -124,12 +124,12 @@ for _, desktop in ipairs(CANDIDATES) do
     local bin = exec_line:match("Exec=([^ ]+)")
     if bin then
       local w = ctx:run({"which", bin})
-      if w.rc == 0 then
+      if w.ok then
         print(string.format("    binary on PATH: %s (OK)", trim(w.stdout)))
       else
         -- Could be an absolute path inside the .desktop.
         local abs_check = ctx:run({"test", "-x", bin})
-        if abs_check.rc == 0 then
+        if abs_check.ok then
           print(string.format("    binary on PATH: %s (absolute, OK)", bin))
         else
           print(string.format("    binary on PATH: MISSING — Exec=%s not found", bin))
@@ -145,7 +145,7 @@ print("=== summary ===")
 local html_handler = ""
 do
   local rr = ctx:run({"xdg-mime", "query", "default", "text/html"})
-  html_handler = (rr.rc == 0) and trim(rr.stdout) or "<none>"
+  html_handler = (rr.ok) and trim(rr.stdout) or "<none>"
 end
 print(string.format("  Default web browser (text/html): %s", html_handler))
 
@@ -164,7 +164,7 @@ if html_handler ~= "" and html_handler ~= "<none>" then
     local bin = trim(exec.stdout):match("Exec=([^ ]+)")
     local ok = false
     if bin then
-      ok = (ctx:run({"which", bin}).rc == 0) or (ctx:run({"test", "-x", bin}).rc == 0)
+      ok = (ctx:run({"which", bin}).ok) or (ctx:run({"test", "-x", bin}).ok)
     end
     if ok then
       print("  [✓] Resolved handler's Exec target exists — should dispatch cleanly.")
