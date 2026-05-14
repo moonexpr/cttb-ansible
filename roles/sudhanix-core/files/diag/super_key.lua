@@ -29,25 +29,33 @@ local EXPECTED = {
 local function trim(s) return (s or ""):gsub("%s+$", "") end
 
 local function file_exists(path)
-  return ctx:run({"test", "-e", path}).rc == 0
+  return ctx:run({"test", "-e", path}).ok
 end
 
 local function xfconf_get(channel, prop)
   local r = ctx:run({"xfconf-query", "-c", channel, "-p", prop})
-  return (r.rc == 0) and trim(r.stdout) or "<not set>"
+  return (r.ok) and trim(r.stdout) or "<not set>"
 end
 
 local function which(bin)
   local r = ctx:run({"which", bin})
-  return (r.rc == 0) and trim(r.stdout) or nil
+  return (r.ok) and trim(r.stdout) or nil
+end
+
+-- xfconf XML stores bindings as NESTED <property> elements keyed by leaf
+-- name, not by the path-form xfconf-query uses (/commands/custom/<key>).
+-- This pulls the leaf name out of a path like "/commands/custom/Super_L".
+local function leaf_of(path)
+  return path:match("([^/]+)$") or path
 end
 
 local function grep_template(path, key)
   if not file_exists(path) then return nil end
+  local leaf = leaf_of(key)
   -- xfconf XML stores < as &lt; and > as &gt;.
-  local literal = key:gsub("<", "&lt;"):gsub(">", "&gt;")
+  local literal = leaf:gsub("<", "&lt;"):gsub(">", "&gt;")
   local r = ctx:run({"grep", "-F", string.format([[name="%s"]], literal), path})
-  return (r.rc == 0) and trim(r.stdout) or nil
+  return (r.ok) and trim(r.stdout) or nil
 end
 
 print("=== environment (matters: live xfconfd needs DISPLAY+DBUS) ===")
@@ -57,7 +65,7 @@ print(string.format("  DISPLAY     : %s", os.getenv("DISPLAY")     or "<unset>")
 print(string.format("  XDG_DATA_DIRS: %s", (os.getenv("XDG_DATA_DIRS") or "<unset>"):sub(1, 100)))
 print(string.format("  XDG_RUNTIME_DIR: %s", os.getenv("XDG_RUNTIME_DIR") or "<unset>"))
 print(string.format("  xfconfd running: %s",
-  ctx:run({"pgrep", "-u", ctx.user, "xfconfd"}).rc == 0 and "yes" or "no"))
+  ctx:run({"pgrep", "-u", ctx.user, "xfconfd"}).ok and "yes" or "no"))
 
 print()
 print("=== system template (role-deployed at /etc/xdg/...) ===")
