@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Restart
+Comment=Restart the computer
+Type=Application
+Exec=xfce4-session-logout --reboot
+Icon=system-shutdown
+Categories=X-Xfce-Toplevel;
+StartupNotify=false
+Terminal=false

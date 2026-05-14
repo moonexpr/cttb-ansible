@@ -329,6 +329,7 @@
           - cttb-signoff.desktop
           - cttb-sleep.desktop
           - cttb-shutdown.desktop
+          - cttb-reboot.desktop
         tags:
           - sudhanix-core
           - app_menu
