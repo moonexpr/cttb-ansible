@@ -622,6 +622,25 @@
         tags:
           - sudhanix-core
 
+      # /etc/xdg/mimeapps.list — pin gedit as the default text/plain
+      # handler (so .txt / .md / .conf / .log open in gedit, not
+      # LibreOffice Writer); also pin google-chrome.desktop for the
+      # http/https/about/mailto schemes as a system-level fallback
+      # behind ~/.config/mimeapps.list. Touches #71 directly and the
+      # browser side of #62. Lubuntu 24.04 ships no system file, so
+      # the mimeinfo.cache alphabetical-first fallback was landing
+      # text/plain on LibreOffice.
+      - name: deploy system mimeapps.list (gedit text/plain, chrome web)
+        copy:
+          src: config/mimeapps.list
+          dest: /etc/xdg/mimeapps.list
+          mode: '0644'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - mimeapps
+
       - include_tasks: app-menu.yml
         tags:
           - app_menu
