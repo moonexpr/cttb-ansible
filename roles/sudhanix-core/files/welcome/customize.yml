@@ -57,7 +57,10 @@ browsers:
     desktop: firefox.desktop
   - id: Zen
     label: Zen
-    desktop: zen-browser.desktop
+    # Flatpak from Flathub (app.zen_browser.zen). The .desktop filename
+    # on Sudhanix 26 hosts is the Flatpak-canonical reverse-DNS form;
+    # `zen-browser.desktop` was an older guess that does not exist.
+    desktop: app.zen_browser.zen.desktop
 
 default_browser: Firefox
 
