@@ -641,6 +641,36 @@
           - sudhanix-core
           - mimeapps
 
+      # Operator-facing diagnostic scripts for the Super-key family
+      # (gh-61, gh-63) and default-browser dispatch (gh-62). Invoke via
+      # `vajra lua /usr/local/share/sudhanix/diag/<name>.lua` over SSH
+      # (with `bash -lc` to get a login env) or from inside a desktop
+      # session. World-readable; the scripts make no privileged calls.
+      - name: ensure sudhanix diag dir
+        file:
+          path: /usr/local/share/sudhanix/diag
+          state: directory
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - diag
+
+      - name: deploy sudhanix diag scripts
+        copy:
+          src: "diag/{{ item }}"
+          dest: "/usr/local/share/sudhanix/diag/{{ item }}"
+          mode: '0644'
+          owner: root
+          group: root
+        loop:
+          - super_key.lua          # gh-61 (Super+L lock) + gh-63 (Super menu toggle)
+          - browser_default.lua    # gh-62 (default-browser dispatch failures)
+        tags:
+          - sudhanix-core
+          - diag
+
       - include_tasks: app-menu.yml
         tags:
           - app_menu
