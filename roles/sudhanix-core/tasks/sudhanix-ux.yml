@@ -93,12 +93,13 @@
           - dconf
 
       - name: regenerate dconf system db
+        # gh-16 fresh-PXE: do NOT gate this on the *_dconf copies being
+        # `changed` this run. If a copy changed in a run where `dconf
+        # update` then failed/was interrupted (e.g. before dconf-cli was
+        # installed), the next run sees the sources unchanged and skips
+        # forever — /etc/dconf/db/site never compiles. `dconf update` is
+        # cheap and idempotent; always run it and report no change.
         command: dconf update
-        when: >
-          plank_dconf is changed or
-          dconf_profile is changed or
-          lightlocker_dconf is changed or
-          gnome_iface_dconf is changed
         changed_when: false
         tags:
           - sudhanix-core
