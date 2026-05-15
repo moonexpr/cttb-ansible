@@ -41,6 +41,13 @@
           # makes LightDM use the org.freedesktop.Accounts D-Bus path
           # instead, which does not stat every home.
           - accountsservice
+          # gh-16 fresh-PXE: sudhanix-ux runs `dconf update` to compile the
+          # system db (theme/plank/light-locker defaults), but nothing
+          # installed the dconf CLI. The lubuntu-core minimal base does not
+          # pull it; the long-lived testmachine masked this (dconf survived
+          # from the old image). dconf-cli ships /usr/bin/dconf — must be
+          # present before the sudhanix-ux dconf tasks.
+          - dconf-cli
           # Audio stack made explicit: these are Recommends of pipewire/alsa
           # that install_recommends:no silently dropped — wireplumber is
           # PipeWire's session manager (no audio at all without it). Listed
