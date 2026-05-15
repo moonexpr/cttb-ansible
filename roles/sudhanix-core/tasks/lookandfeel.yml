@@ -182,6 +182,71 @@
           - sudhanix-core
           - theme
 
+      # The WhiteSur-cursors tarball was built on macOS: it ships a stunted
+      # index.theme (no Inherits, "WhiteSur Cursors" display name that
+      # doesn't match the dir), no cursor.theme at all, and ~600 AppleDouble
+      # ._* turds. xcursor resolves by dir name so cursors render, but the
+      # missing cursor.theme + AppleDouble noise fail the issue's acceptance
+      # and leave the greeter falling back to the default arrow. Ship correct
+      # metadata and purge the resource-fork files.
+      - name: deploy correct WhiteSur-cursors theme metadata
+        copy:
+          src: WhiteSur-cursors.theme
+          dest: "/usr/share/icons/WhiteSur-cursors/{{ item }}"
+          mode: '0644'
+          owner: root
+          group: root
+        loop:
+          - cursor.theme
+          - index.theme
+        tags:
+          - sudhanix-core
+          - theme
+
+      - name: purge AppleDouble turds from WhiteSur-cursors tree
+        shell: find /usr/share/icons/WhiteSur-cursors -name '._*' -delete -print
+        register: whitesur_appledouble_purge
+        changed_when: whitesur_appledouble_purge.stdout | length > 0
+        tags:
+          - sudhanix-core
+          - theme
+
+      - name: register WhiteSur-cursors as the system default x-cursor-theme
+        community.general.alternatives:
+          name: x-cursor-theme
+          path: /usr/share/icons/WhiteSur-cursors/cursor.theme
+          link: /usr/share/icons/default/index.theme
+          priority: 100
+        tags:
+          - sudhanix-core
+          - theme
+
+      # Plank custom dock theme — sourced from
+      # https://github.com/jothi-prasath/SmallSur/tree/master/plank/mcOS-BS-iMacM1-Black
+      # The dconf seeds in files/dconf-db/00-plank-dock1 and
+      # files/firstlogin/dconf-seeds/plank.txt select this theme by name.
+      - name: ensure plank custom-themes dir
+        file:
+          path: /usr/share/plank/themes/mcOS-BS-iMacM1-Black
+          state: directory
+          owner: root
+          group: root
+          mode: '0755'
+        tags:
+          - sudhanix-core
+          - theme
+
+      - name: deploy plank mcOS-BS-iMacM1-Black dock theme
+        copy:
+          src: plank-themes/mcOS-BS-iMacM1-Black/dock.theme
+          dest: /usr/share/plank/themes/mcOS-BS-iMacM1-Black/dock.theme
+          owner: root
+          group: root
+          mode: '0644'
+        tags:
+          - sudhanix-core
+          - theme
+
       - name: symlink Thunar icon to WhiteSur Finder-style file-manager icon
         file:
           src: file-manager.svg
@@ -596,6 +661,55 @@
           group: root
         tags:
           - sudhanix-core
+
+      # /etc/xdg/mimeapps.list — pin gedit as the default text/plain
+      # handler (so .txt / .md / .conf / .log open in gedit, not
+      # LibreOffice Writer); also pin google-chrome.desktop for the
+      # http/https/about/mailto schemes as a system-level fallback
+      # behind ~/.config/mimeapps.list. Touches #71 directly and the
+      # browser side of #62. Lubuntu 24.04 ships no system file, so
+      # the mimeinfo.cache alphabetical-first fallback was landing
+      # text/plain on LibreOffice.
+      - name: deploy system mimeapps.list (gedit text/plain, chrome web)
+        copy:
+          src: config/mimeapps.list
+          dest: /etc/xdg/mimeapps.list
+          mode: '0644'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - mimeapps
+
+      # Operator-facing diagnostic scripts for the Super-key family
+      # (gh-61, gh-63) and default-browser dispatch (gh-62). Invoke via
+      # `vajra lua /usr/local/share/sudhanix/diag/<name>.lua` over SSH
+      # (with `bash -lc` to get a login env) or from inside a desktop
+      # session. World-readable; the scripts make no privileged calls.
+      - name: ensure sudhanix diag dir
+        file:
+          path: /usr/local/share/sudhanix/diag
+          state: directory
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - diag
+
+      - name: deploy sudhanix diag scripts
+        copy:
+          src: "diag/{{ item }}"
+          dest: "/usr/local/share/sudhanix/diag/{{ item }}"
+          mode: '0644'
+          owner: root
+          group: root
+        loop:
+          - super_key.lua          # gh-61 (Super+L lock) + gh-63 (Super menu toggle)
+          - browser_default.lua    # gh-62 (default-browser dispatch failures)
+        tags:
+          - sudhanix-core
+          - diag
 
       - include_tasks: app-menu.yml
         tags:

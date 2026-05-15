@@ -322,3 +322,33 @@
           - sudhanix-ux
           - grub
           - appfinder
+
+      # Mask systemd-networkd-wait-online.service — closes #76's 2-minute
+      # graphical.target delay. NetworkManager owns every interface on a
+      # Sudhanix 26 host (`networkctl` reports every link as `unmanaged`,
+      # `/etc/systemd/network/` is empty), so `systemd-networkd` runs but
+      # has no interface to declare online. The unit is `Wants=` of
+      # `network-online.target` and blocks the target for its full 120s
+      # default timeout before failing. `NetworkManager-wait-online`
+      # already handles network-online correctly (5.8s on the
+      # testmachine), so masking networkd-wait-online is safe and the
+      # 2-minute boot delay disappears.
+      #
+      # Verified live (no cold-boot) per Step 5.5 H1/H0 falsification:
+      #   - `time systemctl restart systemd-networkd-wait-online`
+      #     reproduces the 120s timeout deterministically.
+      #   - `systemctl show network-online.target` confirms `Wants=`
+      #     the unit; `Before=` includes autofs.service and the NFS
+      #     mount units that gate remote-fs.target → multi-user.target.
+      #   - `systemd-analyze blame` second-place is 33s apt-daily
+      #     (parallel, non-gating); nothing else is near 120s.
+      - name: mask systemd-networkd-wait-online (NetworkManager-wait-online is the active path)
+        systemd:
+          name: systemd-networkd-wait-online.service
+          enabled: no
+          masked: yes
+          state: stopped
+        tags:
+          - sudhanix-core
+          - sudhanix-ux
+          - boot-time
