@@ -73,13 +73,7 @@
     <property name="shadow_delta_x" type="int" value="0"/>
     <property name="shadow_delta_y" type="int" value="-3"/>
     <property name="show_app_icon" type="bool" value="false"/>
-    {# show_dock_shadow=false: Plank reserves an ~80px transparent zoom-canvas
-       above its visible icon row (window is ~140px tall, strut only 60px).
-       With shadow=true, xfwm4 paints a compositor shadow around the full
-       window, including the transparent region — visible as a phantom dark
-       rectangle floating above the dock on dark wallpapers. See follow-up
-       issue on Plank's canvas height for the deeper fix. #}
-    <property name="show_dock_shadow" type="bool" value="false"/>
+    <property name="show_dock_shadow" type="bool" value="true"/>
     <property name="show_popup_shadow" type="bool" value="false"/>
     <property name="snap_resist" type="bool" value="false"/>
     <property name="snap_width" type="int" value="10"/>
