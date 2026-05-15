@@ -4559,3 +4559,42 @@ started in code.
 `canberra-gtk-play`; #16 final clean run on a fresh PXE image + existing-
 fleet remediation plan; visual cluster #66/#67/#68/#85 needs an at-seat
 operator (not SSH-verifiable).
+
+---
+
+### 2026-05-15 (later) — #78 closed; #16 task-1 verified at HEAD
+
+**#78 `canberra-gtk-play` — CLOSED.** Root-caused the provider: the binary
+is **not** in any noble libcanberra package (`0.30-10ubuntu10` ships only
+the GTK module `.so`). It lives in **`gnome-session-canberra`**
+(`/usr/bin/canberra-gtk-play`) — confirmed by `dpkg -c` against the cttb
+mirror and cross-checked on packages.ubuntu.com noble Contents. Earlier
+"libcanberra-pulse companion" guess was wrong.
+
+- Added `gnome-session-canberra` explicitly to
+  `roles/sudhanix-core/tasks/lubuntu.yml` (commit `779f12f2`, GPG-signed,
+  pushed) — same explicit-add pattern as the audio stack so already-imaged
+  hosts backfill it; rewrote the stale gh-78 comment block.
+- Verified on dvgs-testmachine (`--tags lubuntu`): `ok=9 changed=1
+  failed=0`; `which canberra-gtk-play` → `/usr/bin/canberra-gtk-play`.
+- Closed #78 with full status table. Parts 1–4 done; terminal-replace was
+  already verified OK 2026-05-15; theme/Yaru residual is owned by **#66**
+  (bidirectional cross-ref already in place there) — no orphaned scope.
+
+**#16 task 1 — VERIFIED at current HEAD.** Re-ran the **full**
+`install-sudhanix-cslabs.yml --skip-tags zoom` on dvgs-testmachine (the
+freshly-PXE'd host) at `release/sudhanix26` HEAD, i.e. including every fix
+this cycle + the gh-78 commit: `ok=264 changed=10 unreachable=0 failed=0
+skipped=175 ignored=1`. Acceptance bullet 1 met.
+
+- Posted #16 update: task-1 result + the existing-fleet remediation plan.
+  Documented two rollout paths — **A: reimage via PXE** (full Recommends
+  parity, recommended for the cut) vs **B: targeted sweep**
+  `--tags lubuntu,sound,sw,lang` (backfills the explicit critical set only;
+  documented fallback). #16 stays **OPEN** — tasks 2–4 (DVGS/DVBS/DRBU
+  fleet rollout) are operator-gated full-play deploys; no code action
+  outstanding on the issue.
+
+**Pending/next:** #88 GPU drivers (design safely per issue, parked
+mid-recon — unchanged); #16 fleet rollout is operator-scheduled (reimage
+preferred); visual cluster #66/#67/#68/#85 needs an at-seat operator.
