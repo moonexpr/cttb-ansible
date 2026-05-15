@@ -19,13 +19,22 @@
       - sudhanix-ux
     block:
 
-      - name: ensure dconf site db directory exists
+      - name: ensure dconf site db + profile directories exist
+        # copy: does not create parent dirs. /etc/dconf/db/site.d AND
+        # /etc/dconf/profile must both exist before the deploys below.
+        # The dconf pkg ships neither on a fresh image — a long-lived host
+        # masked this because the dirs survived from a prior run (gh-16
+        # fresh-PXE regression: "Destination directory /etc/dconf/profile
+        # does not exist").
         file:
-          path: /etc/dconf/db/site.d
+          path: "{{ item }}"
           state: directory
           mode: '0755'
           owner: root
           group: root
+        loop:
+          - /etc/dconf/db/site.d
+          - /etc/dconf/profile
         tags:
           - sudhanix-core
           - sudhanix-ux
