@@ -4629,3 +4629,34 @@ return on a fresh image (~20–40 min; SSH host key will change — use
 --diff` against the fresh OS as the true clean-deploy validation of the
 gh-78 + Recommends/no-snap-pin posture. This is the canonical fleet-parity
 test (fresh image, not a re-run).
+
+---
+
+### 2026-05-15 (later still) — plays/ rename pass
+
+Operator-directed cleanup of `plays/` naming. `git mv` (history preserved):
+
+| Old | New |
+|-----|-----|
+| `pxe-reinstall-and-deploy.yml` | `sudhanix26-rollout.yml` |
+| `pxe-reboot.yml` | `sudhanix26-rollout-stage1.yml` |
+| `install-sudhanix-cslabs.yml` | `sudhanix26-rollout-stage2.yml` |
+| `publish-vajra-deb.yml` | `vajra-publish2apt_cttb.yml` |
+| `install-ldap-schema-sudhanix.yml` | `ldap-install-sudhanix26-scheme.yml` |
+| `wiki-add-group-users.yml` | `mediawiki-add-group-users.yml` |
+| `wiki-config.yml` | `mediawiki-config.yml` |
+| `wiki-migrate.yml` | `mediawiki-migrate.yml` |
+| `wiki-upgrade-patch.yml` | `mediawiki-upgrade-patch.yml` |
+
+Reference updates: `sudhanix26-rollout.yml` `import_playbook` lines now
+point at stage1/stage2; all renamed files' header usage blocks rewritten;
+`README.md` table row + 12 `DEPLOYMENT.md` command examples updated. All 9
+`--syntax-check` clean (orchestrator's renamed imports resolve). Past
+journal entries left as-is (historical record); this entry is the rename's
+forward pointer. `.claude/settings.local.json` syntax-check allowlist entry
+still names the old play — edit was blocked by the self-modification guard;
+harmless (one-time prompt), operator can update if desired.
+
+The in-flight `sudhanix26-rollout` validation run (started as
+`pxe-reinstall-and-deploy.yml`) is unaffected — `import_playbook` is
+parse-time, so that process holds the pre-rename content in memory.

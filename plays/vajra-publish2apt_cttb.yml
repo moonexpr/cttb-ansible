@@ -1,11 +1,11 @@
 ---
-# publish-vajra-deb — build the vajra .deb on dvgs-testmachine, copy it to
-# the apt.cttb pool (lxc-debmirror container, hosted on srv-nas), reprepro-
+# vajra-publish2apt_cttb — build the vajra .deb on dvgs-testmachine, copy it
+# to the apt.cttb pool (lxc-debmirror container, hosted on srv-nas), reprepro-
 # include it under the noble distribution, then apt-install it back on
 # dvgs-testmachine via the new pool source.
 #
 # Run with:
-#   pb publish-vajra-deb -l "dvgs-testmachine,srv-nas" -K --become-method=sudo
+#   pb vajra-publish2apt_cttb -l "dvgs-testmachine,srv-nas" -K --become-method=sudo
 #
 # Adds /etc/apt/sources.list.d/cttb-extras.list to dvgs-testmachine. The
 # apt source is cttb-repos noble main, signed by the existing cttb-repo key

@@ -5,9 +5,9 @@
 # This is the canonical fleet-parity flow (fresh image, not a re-run) — see
 # the "Deployment Model" section in PROJECT.md. It chains three stages:
 #
-#   1. plays/pxe-reboot.yml        — efibootmgr one-time NIC boot + reboot
-#   2. wait                        — host goes DOWN, autoinstalls, returns UP
-#   3. plays/install-sudhanix-cslabs.yml  — sudhanix-core + lab roles
+#   1. plays/sudhanix26-rollout-stage1.yml — efibootmgr one-time NIC boot + reboot
+#   2. wait                                — host goes DOWN, autoinstalls, returns UP
+#   3. plays/sudhanix26-rollout-stage2.yml — sudhanix-core + lab roles
 #
 # DESTRUCTIVE: stage 1 wipes the target. Only run against hosts you intend
 # to reimage. Always scope with -l.
@@ -15,13 +15,13 @@
 # Usage:
 #   source utils/setup-env
 #   ansible-playbook -i inventory/sudhanix26_hosts.ini \
-#     plays/pxe-reinstall-and-deploy.yml -l dvgs-testmachine.cttb \
+#     plays/sudhanix26-rollout.yml -l dvgs-testmachine.cttb \
 #     --skip-tags zoom --diff \
 #     --vault-password-file .claude/sysadmin/vault-pass.sh \
 #     -e ansible_become_pass="$(.claude/sysadmin/vault-pass.sh)"
 #
-#   # dry-run the trigger only (no wipe — pxe-reboot supports --check):
-#   ansible-playbook ... plays/pxe-reinstall-and-deploy.yml -l <host> --check
+#   # dry-run the trigger only (no wipe — stage1 supports --check):
+#   ansible-playbook ... plays/sudhanix26-rollout.yml -l <host> --check
 #
 # Tunables (override with -e):
 #   pxe_down_timeout    seconds to wait for the host to drop off (default 600)
@@ -31,7 +31,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1 — trigger the one-time PXE netboot and reboot.
 # ---------------------------------------------------------------------------
-- import_playbook: pxe-reboot.yml
+- import_playbook: sudhanix26-rollout-stage1.yml
 
 # ---------------------------------------------------------------------------
 # Stage 2 — wait for the reinstall to complete and the host to return.
@@ -100,4 +100,4 @@
 # ---------------------------------------------------------------------------
 # Stage 3 — apply the Sudhanix 26 post-install configuration.
 # ---------------------------------------------------------------------------
-- import_playbook: install-sudhanix-cslabs.yml
+- import_playbook: sudhanix26-rollout-stage2.yml

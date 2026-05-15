@@ -1,13 +1,15 @@
 ---
-# Trigger a one-time PXE network boot and reboot.
+# sudhanix26-rollout stage 1 — trigger a one-time PXE network boot + reboot.
 #
 # Uses efibootmgr to set the UEFI "next boot" to the onboard NIC,
 # then reboots. The boot order reverts automatically after one boot.
+# Stage 1 of plays/sudhanix26-rollout.yml; runnable standalone to just
+# re-image a host without the follow-on config.
 #
 # Usage:
-#   ansible-playbook plays/pxe-reboot.yml -l dvgs-lab3.cttb
-#   ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab
-#   ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab --check  # dry run
+#   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs-lab3.cttb
+#   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs_cs_lab
+#   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs_cs_lab --check  # dry run
 
 - hosts: all
   become: true

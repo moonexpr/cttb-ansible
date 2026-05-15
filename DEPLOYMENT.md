@@ -21,16 +21,16 @@ Use `efibootmgr` to set a one-time network boot — no physical access needed:
 
 ```bash
 # Single machine
-ansible-playbook plays/pxe-reboot.yml -l dvgs-lab3.cttb
+ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs-lab3.cttb
 
 # Dry run (shows what would happen without rebooting)
-ansible-playbook plays/pxe-reboot.yml -l dvgs-lab3.cttb --check
+ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs-lab3.cttb --check
 
 # Batch: all DVGS lab machines
-ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab
+ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs_cs_lab
 
 # All labs at all sites
-ansible-playbook plays/pxe-reboot.yml -l dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
+ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
 ```
 
 The playbook installs `efibootmgr` if missing, finds the NIC(IPV4) boot entry automatically, sets it as one-shot next boot (`-n`), and reboots. Boot order reverts to disk after one boot.
@@ -75,7 +75,7 @@ If the machine is powered off or SSH is unreachable:
 
 ```bash
 source utils/setup-env
-ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs-labN.cttb --diff
+ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit dvgs-labN.cttb --diff
 ```
 
 This runs 6 roles in order:
@@ -122,16 +122,16 @@ Other per-site vars: `cups_srv`, `cups_default_queue`, `nfs_homes_host`, `nfs_ho
 
 ```bash
 # All DVGS lab machines
-ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs_cs_lab --diff
+ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit dvgs_cs_lab --diff
 
 # All labs at all sites
-ansible-playbook plays/install-sudhanix-cslabs.yml --diff
+ansible-playbook plays/sudhanix26-rollout-stage2.yml --diff
 
 # Specific machines
-ansible-playbook plays/install-sudhanix-cslabs.yml --limit "dvgs-lab1.cttb,dvgs-lab2.cttb" --diff
+ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit "dvgs-lab1.cttb,dvgs-lab2.cttb" --diff
 ```
 
-PXE install is per-machine (F12 or `pxe-reboot.yml`), but Phase 3 (Ansible) can run against all machines in parallel once they're PXE'd and SSH-reachable.
+PXE install is per-machine (F12 or `sudhanix26-rollout-stage1.yml`), but Phase 3 (Ansible) can run against all machines in parallel once they're PXE'd and SSH-reachable.
 
 ---
 
@@ -170,13 +170,13 @@ ansible-inventory --graph
 ansible-inventory --host dvgs-lab3.cttb
 
 # Dry run (check mode) with diff
-ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs-lab3.cttb --check --diff
+ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit dvgs-lab3.cttb --check --diff
 
 # Actual deployment
-ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs-lab3.cttb --diff
+ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit dvgs-lab3.cttb --diff
 
 # Deploy with verbose output
-ansible-playbook plays/install-sudhanix-cslabs.yml --limit dvgs-lab3.cttb --diff -vvv
+ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit dvgs-lab3.cttb --diff -vvv
 ```
 
 ### Host Recovery
