@@ -4477,3 +4477,85 @@ ansible-playbook plays/deploy-netinstall-2404.yml \
   with broad authorization phrases like "Proceed". Explicit
   re-confirmation per command is the path of least resistance;
   don't try to evade.
+
+---
+
+### 2026-05-15 — Sudhanix 26 final-test: #86/#62/#76 closed, Recommends policy reversed
+
+Branch `release/sudhanix26`. Test host `dvgs-testmachine` (10.11.30.60),
+fresh PXE Ubuntu 24.04.2, via `install-sudhanix-cslabs.yml`.
+
+**Deployment test:** full play on a fresh PXE box came back clean
+(`ok=306 changed=141 unreachable=0 failed=0`) after the fixes below.
+
+**Issues closed (root-caused + verified):**
+
+- **#86 (Blocker) Firefox** — apt `firefox` on noble is a snap-transitional
+  stub; root cause was operational: `firefox-latest.tar.xz` was never staged
+  on `storehouse.cttb`. Staged Mozilla 150.0.3
+  (`/srv/storehouse/ansible/firefox-latest.tar.xz`, owner 998:999 mode 644,
+  Thunderbird-asset pattern). `/opt/firefox/firefox` verified.
+- **#62 (Release) default-browser** — not reproducible on a clean deploy
+  (`xdg-settings set` exits 0 for Chrome+Firefox; `x-www-browser`
+  configured). Was per-user `mimeapps.list` corruption on the old
+  in-place-upgraded box.
+- **#76 (Blocker) NFS-home fan-out** — every boot, nobody logged in, ~400
+  LDAP homes NFS-mounted (fileserver thundering herd at fleet scale). Root
+  cause: `accountsservice` not installed → LightDM greeter fell back to NSS
+  `getpwent()` + per-`$HOME` stat to build the user list, tripping the
+  `/nfs/home` autofs wildcard per user. Proven by a kprobe on
+  `autofs_d_automount` (triggering-process context). Fix: `accountsservice`
+  added to `sudhanix-core`. Verified: cold boot 0 logins → 0 mounts; LDAP
+  login / `id` / on-demand home mount all still work.
+
+**Config changes (deploy-affecting):**
+
+- `ansible.cfg` — SSH keepalive added to `ssh_args` (`ServerAliveInterval=15
+  ServerAliveCountMax=4 TCPKeepAlive=yes ControlMaster=auto
+  ControlPersist=60s`). A control-node network change mid-run (operator
+  roaming off-campus) previously wedged the whole play forever on a
+  half-open socket; now fails as a recoverable task error in ~60s.
+- `roles/nfs-home/files/autofs.conf` — `[ autofs ]`→`[autofs]`,
+  `[ amd ]`→`[amd]`. Inner spaces made autofs's parser ignore the section,
+  silently dropping `timeout = 300` (defaulted to 600) and `browse_mode`.
+  Separate bug from #76; now applied.
+
+**Policy change — Recommends ENABLED for lab desktop:** reverses
+`install_recommends: no` on the lab-desktop batches. A hand-curated
+no-recommends list silently dropped transitive desktop integration — how
+#76 lost `accountsservice`, #78 lost `canberra-gtk-play`, and PipeWire lost
+`wireplumber` (its session manager → audio broken on every lab box).
+
+- `install_recommends: yes` on `roles/sudhanix-core/tasks/{lubuntu,sw,lang,
+  sw-office}.yml`.
+- New `roles/sudhanix-core/files/cttb-no-snap.pref` →
+  `/etc/apt/preferences.d/`, Pin -1 on `snapd`/`gnome-software-plugin-snap`/
+  `firefox`/`thunderbird`, deployed before the first recommends batch.
+  No-snap policy now enforced by APT itself. Verified
+  `snapd Candidate:(none)`; `ubuntu-desktop-minimal` sim can't pull snapd.
+- Audio stack added **explicitly** to `lubuntu.yml` (`wireplumber`,
+  `alsa-ucm-conf`, `alsa-topology-conf`) — not relying on the recommends
+  flip, so already-imaged hosts get it on the next run. (SOF firmware is
+  the hard-dep `firmware-sof-signed`, already present; no Ubuntu package
+  is literally named `sof-firmware`.)
+
+**Forward-only caveat (critical for #16 rollout):** Ansible's apt module
+does not backfill Recommends onto already-installed packages. The flip only
+affects **fresh PXE images**. Pre-existing imaged hosts do not retroactively
+gain Recommends on a plain re-run — only explicitly-listed packages
+(accountsservice, audio stack) backfill. The final clean run (#16) must be
+validated on a freshly-PXE'd host; not-yet-reimaged fleet members need
+reimage or a targeted package sweep.
+
+**GitHub:** closed #86/#62/#76 (evidence on each). Updated #78 (recommends
+class addressed; recommend explicit `canberra-gtk-play` add + split theme
+sub-item to #66) and #16 (rollout summary + forward-only caveat). Filed
+**#88** (Unscheduled, P2a) — install GPU drivers when a dedicated GPU is
+present; includes risk analysis (unattended NVIDIA proprietary + Secure
+Boot + DKMS + mirror coverage on a no-seat fleet). Parked mid-recon, not
+started in code.
+
+**Pending/next:** #88 GPU drivers (design safely per issue); #78 explicit
+`canberra-gtk-play`; #16 final clean run on a fresh PXE image + existing-
+fleet remediation plan; visual cluster #66/#67/#68/#85 needs an at-seat
+operator (not SSH-verifiable).

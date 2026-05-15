@@ -23,7 +23,7 @@
       - name: install language and fcitx packages (consolidated)
         apt:
           state: present
-          install_recommends: no
+          install_recommends: yes
           name:
             - gimp-help-en
             - hyphen-en-us
