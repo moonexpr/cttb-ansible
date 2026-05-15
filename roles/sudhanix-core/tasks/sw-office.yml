@@ -26,7 +26,7 @@
       - name: install libreoffice
         apt:
           state: present
-          install_recommends: no
+          install_recommends: yes
           name:
           - libreoffice-writer
           - libreoffice-impress

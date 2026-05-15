@@ -15,11 +15,42 @@
       - lubuntu
     block:
 
+      # Must land BEFORE the first recommends:yes apt batch below so
+      # Recommends can never drag snap machinery back in (no-snap policy).
+      - name: deploy no-snap apt pin (guardrail for install_recommends:yes)
+        copy:
+          src: cttb-no-snap.pref
+          dest: /etc/apt/preferences.d/cttb-no-snap.pref
+          owner: root
+          group: root
+          mode: 0644
+        tags:
+          - apt
+          - no_snap
+
       - name: install lubuntu
         apt:
           state: present
-          install_recommends: no
+          install_recommends: yes
           name:
+          # gh-76: without accountsservice, LightDM's greeter falls back to
+          # NSS getpwent() + per-$HOME stat to build the user list. On LDAP
+          # hosts that enumerates ~400 users and stat-trips the /nfs/home
+          # autofs wildcard → ~400 NFS mounts on every boot (fileserver
+          # thundering herd at fleet scale). Installing accountsservice
+          # makes LightDM use the org.freedesktop.Accounts D-Bus path
+          # instead, which does not stat every home.
+          - accountsservice
+          # Audio stack made explicit: these are Recommends of pipewire/alsa
+          # that install_recommends:no silently dropped — wireplumber is
+          # PipeWire's session manager (no audio at all without it). Listed
+          # explicitly (not relying on the recommends flip) so ALREADY-imaged
+          # hosts get them on the next run, not just fresh PXE installs.
+          # (SOF firmware is the hard-dep `firmware-sof-signed`, already
+          # present — there is no Ubuntu pkg literally named `sof-firmware`.)
+          - wireplumber
+          - alsa-ucm-conf
+          - alsa-topology-conf
           - alsa-utils
           - alsamixergui
           - desktop-file-utils

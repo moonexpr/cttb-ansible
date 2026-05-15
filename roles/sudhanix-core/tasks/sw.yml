@@ -19,7 +19,7 @@
       - name: install additional software
         apt:
           state: present
-          install_recommends: no
+          install_recommends: yes
           name:
           - audacious
           - audacity
