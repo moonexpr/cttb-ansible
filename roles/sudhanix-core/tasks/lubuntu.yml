@@ -69,12 +69,23 @@
           # (CLI). gpicview = images, mpv = video; evince (above) = PDF.
           - gpicview
           - mpv
-          # gh-78 (parts 2-4): advertised lab apps absent from the default
-          # set. canberra-gtk-play, terminal-replace and theme-not-applying
-          # parts of #78 remain Need-More-Info — tracked on the issue.
+          # gh-78: advertised lab apps + sound binary absent from the
+          # default set. Listed explicitly (not via the recommends flip)
+          # so ALREADY-imaged hosts get them on the next run, not just
+          # fresh PXE installs.
+          #   parts 2-4: kdenlive / blender / pavucontrol.
+          #   part 1: canberra-gtk-play. On noble the binary is NOT in
+          #   any libcanberra pkg (the 0.30-10ubuntu10 module pkg ships
+          #   only the .so) — it lives in `gnome-session-canberra`
+          #   (/usr/bin/canberra-gtk-play, confirmed via dpkg -c off the
+          #   cttb mirror). The sound layer at sound.yml wires up
+          #   libcanberra-gtk3-module; this provides the CLI player.
+          #   terminal-replace + theme-not-applying (Yaru leak) are
+          #   cross-linked to #66 — not in this scope.
           - kdenlive
           - blender
           - pavucontrol
+          - gnome-session-canberra
           - file-roller
           - gedit
           - devilspie2
