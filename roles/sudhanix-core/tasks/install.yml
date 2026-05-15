@@ -104,6 +104,16 @@
   # sw-vscode. sw-browser and sw-thunderbird are mixed (install + config);
   # configure.yml re-includes sw.yml with __sudhanix_phase=config so the
   # config sub-blocks fire.
+  #
+  # gh-16 fresh-PXE: do NOT tag this include `zoom`. include_tasks tags are
+  # inherited by every child, so `--skip-tags zoom` (mandated for clean
+  # runs by PROJECT.md + #16 acceptance, to skip only the broken Zoom .deb
+  # upgrade) was skipping the ENTIRE install-phase software batch —
+  # Chrome/Firefox/Zen/office/vscode/thunderbird never installed. The
+  # actual Zoom tasks in sw.yml are individually `zoom`-tagged
+  # (sw.yml: "upgrade/install Zoom client"), so `--skip-tags zoom` still
+  # skips precisely those without nuking the rest. The long-lived
+  # testmachine masked this (Chrome survived from prior non-skipped runs).
   - include_tasks:
       file: sw.yml
     vars:
@@ -111,7 +121,6 @@
     tags:
       - install
       - sw_install
-      - zoom
       - browser
       - thunderbird
       - vscode
