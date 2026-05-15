@@ -4598,3 +4598,34 @@ skipped=175 ignored=1`. Acceptance bullet 1 met.
 **Pending/next:** #88 GPU drivers (design safely per issue, parked
 mid-recon — unchanged); #16 fleet rollout is operator-scheduled (reimage
 preferred); visual cluster #66/#67/#68/#85 needs an at-seat operator.
+
+---
+
+### 2026-05-15 (later still) — deploy model recorded; fresh PXE rollout test started
+
+**PROJECT.md — new "## Deployment Model" section.** Operator clarified the
+fleet deploy model: **a fleet deploy is always a destructive PXE reinstall
++ Ansible config run** — lab hosts are never reconfigured in place. Therefore
+the forward-only Recommends caveat does **not** apply to the fleet (every
+host is a fresh image at deploy time → always gets the full Recommends
+closure). Path A (reimage) *is* the rollout; there is no path B for the
+fleet. The "Ansible doesn't backfill Recommends" nuance is a **testbench
+artifact** (long-lived ad-hoc targets like `dvgs-testmachine` re-run without
+reimaging), not a rollout risk. Recorded in PROJECT.md (gitignored, local
+deploy reference — not committed); posted a correction comment on #16 so the
+issue is not misleading.
+
+**Fresh PXE rollout test started on dvgs-testmachine.** Ran
+`plays/pxe-reboot.yml -l dvgs-testmachine.cttb` — efibootmgr one-time
+next-boot set to `0004 (NIC IPV4)`, reboot fired. RECAP `ok=7 changed=1
+failed=0 ignored=1` (the `reboot`-task timeout is the documented expected
+outcome — host does not return on the same OS). dvgs-testmachine is now
+wiping and PXE-autoinstalling Ubuntu unattended.
+
+**Next step (in-flight):** wait for the host to finish autoinstall and
+return on a fresh image (~20–40 min; SSH host key will change — use
+`StrictHostKeyChecking=no`), then run the full
+`install-sudhanix-cslabs.yml -l dvgs-testmachine.cttb --skip-tags zoom
+--diff` against the fresh OS as the true clean-deploy validation of the
+gh-78 + Recommends/no-snap-pin posture. This is the canonical fleet-parity
+test (fresh image, not a re-run).
