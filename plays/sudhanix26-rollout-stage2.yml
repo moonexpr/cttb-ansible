@@ -1,0 +1,27 @@
+---
+# sudhanix26-rollout stage 2 — post-install configuration for Computer Lab
+# hosts running Sudhanix 26.
+#
+# Run this after PXE-installing Sudhanix 26 (Ubuntu 24.04 base) on lab machines.
+# Applies the sudhanix-core role plus lab-specific roles (CUPS, LDAP, NFS home,
+# CA certificates). Stage 2 of plays/sudhanix26-rollout.yml; runnable
+# standalone against any already-PXE'd host.
+#
+# Usage:
+#   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l dvgs_cs_lab
+#   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l dvbs_cs_lab
+#   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l drbu_cs_lab
+#   ansible-playbook plays/sudhanix26-rollout-stage2.yml  # all labs
+
+- hosts: dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
+  become: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+    NEEDRESTART_MODE: a
+  roles:
+    - sudhanix-core
+    - time-server
+    - cups-client
+    - cttb-ca-client
+    - ldap-client
+    - nfs-home

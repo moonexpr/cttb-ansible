@@ -3,7 +3,7 @@
 # on the LDAP server. Idempotent — re-running is a no-op once installed.
 #
 # Usage:
-#   ansible-playbook plays/install-ldap-schema-sudhanix.yml -l lxc-ldap
+#   ansible-playbook plays/ldap-install-sudhanix26-scheme.yml -l lxc-ldap
 #
 # Requires SASL EXTERNAL via ldapi:/// — the play must run as root on the
 # slapd host, which is what `become: true` + a working sudo path provides.
