@@ -1,0 +1,103 @@
+---
+# End-to-end fleet deploy: destructive PXE reinstall, wait for the host to
+# autoinstall and return on a fresh image, then apply the Sudhanix 26 role.
+#
+# This is the canonical fleet-parity flow (fresh image, not a re-run) — see
+# the "Deployment Model" section in PROJECT.md. It chains three stages:
+#
+#   1. plays/pxe-reboot.yml        — efibootmgr one-time NIC boot + reboot
+#   2. wait                        — host goes DOWN, autoinstalls, returns UP
+#   3. plays/install-sudhanix-cslabs.yml  — sudhanix-core + lab roles
+#
+# DESTRUCTIVE: stage 1 wipes the target. Only run against hosts you intend
+# to reimage. Always scope with -l.
+#
+# Usage:
+#   source utils/setup-env
+#   ansible-playbook -i inventory/sudhanix26_hosts.ini \
+#     plays/pxe-reinstall-and-deploy.yml -l dvgs-testmachine.cttb \
+#     --skip-tags zoom --diff \
+#     --vault-password-file .claude/sysadmin/vault-pass.sh \
+#     -e ansible_become_pass="$(.claude/sysadmin/vault-pass.sh)"
+#
+#   # dry-run the trigger only (no wipe — pxe-reboot supports --check):
+#   ansible-playbook ... plays/pxe-reinstall-and-deploy.yml -l <host> --check
+#
+# Tunables (override with -e):
+#   pxe_down_timeout    seconds to wait for the host to drop off (default 600)
+#   pxe_install_timeout seconds to wait for autoinstall + return (default 3600)
+#   pxe_probe_delay     seconds to hold off probing after reboot (default 120)
+
+# ---------------------------------------------------------------------------
+# Stage 1 — trigger the one-time PXE netboot and reboot.
+# ---------------------------------------------------------------------------
+- import_playbook: pxe-reboot.yml
+
+# ---------------------------------------------------------------------------
+# Stage 2 — wait for the reinstall to complete and the host to return.
+# ---------------------------------------------------------------------------
+- name: Wait for PXE reinstall to complete
+  hosts: all
+  gather_facts: false
+  become: false
+  vars:
+    pxe_down_timeout: 600
+    pxe_install_timeout: 3600
+    pxe_probe_delay: 120
+    _target_addr: "{{ ansible_host | default(ansible_address) | default(inventory_hostname) }}"
+
+  tasks:
+    - name: Drop stale SSH host keys (the OS is being reinstalled)
+      ansible.builtin.known_hosts:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ inventory_hostname }}"
+        - "{{ _target_addr }}"
+      delegate_to: localhost
+      changed_when: false
+      failed_when: false
+
+    - name: Wait for the host to go DOWN (PXE boot taking over)
+      ansible.builtin.wait_for:
+        host: "{{ _target_addr }}"
+        port: 22
+        state: stopped
+        timeout: "{{ pxe_down_timeout }}"
+      delegate_to: localhost
+
+    - name: Hold off probing while the unattended autoinstall runs
+      ansible.builtin.pause:
+        seconds: "{{ pxe_probe_delay }}"
+
+    - name: Wait for SSH to come back UP on the fresh image
+      ansible.builtin.wait_for:
+        host: "{{ _target_addr }}"
+        port: 22
+        state: started
+        delay: 0
+        sleep: 15
+        timeout: "{{ pxe_install_timeout }}"
+      delegate_to: localhost
+
+    - name: Wait until SSH actually authenticates (first boot settling)
+      ansible.builtin.wait_for_connection:
+        delay: 15
+        sleep: 10
+        timeout: 600
+
+    - name: Gather facts now that the fresh host is reachable
+      ansible.builtin.setup:
+
+    - name: Confirm we are on a freshly installed image
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} back up:
+          {{ ansible_distribution }} {{ ansible_distribution_version }},
+          kernel {{ ansible_kernel }},
+          uptime {{ ansible_uptime_seconds | default('?') }}s
+
+# ---------------------------------------------------------------------------
+# Stage 3 — apply the Sudhanix 26 post-install configuration.
+# ---------------------------------------------------------------------------
+- import_playbook: install-sudhanix-cslabs.yml
