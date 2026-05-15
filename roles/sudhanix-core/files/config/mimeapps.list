@@ -37,3 +37,22 @@ x-scheme-handler/https=google-chrome.desktop
 x-scheme-handler/about=google-chrome.desktop
 x-scheme-handler/unknown=google-chrome.desktop
 x-scheme-handler/mailto=thunderbird.desktop
+
+# gh-73: viewers. A fresh lubuntu-core had image/* + application/pdf
+# pointed at Chrome and video/mp4 at an uninstalled vlc.desktop, so
+# double-click "opened on the desktop" or did nothing. Pin the
+# installed single-purpose viewers (gpicview / mpv / evince).
+image/jpeg=gpicview.desktop
+image/png=gpicview.desktop
+image/gif=gpicview.desktop
+image/bmp=gpicview.desktop
+image/tiff=gpicview.desktop
+image/webp=gpicview.desktop
+image/x-xpixmap=gpicview.desktop
+video/mp4=mpv.desktop
+video/x-matroska=mpv.desktop
+video/webm=mpv.desktop
+video/quicktime=mpv.desktop
+video/x-msvideo=mpv.desktop
+video/mpeg=mpv.desktop
+application/pdf=org.gnome.Evince.desktop

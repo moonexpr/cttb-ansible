@@ -25,6 +25,25 @@
           - desktop-file-utils
           - dmz-cursor-theme
           - evince
+          # gh-72: Thunar thumbnailer stack. lubuntu-core minimal pulls
+          # none of these transitively, so Thunar shows generic MIME
+          # icons. tumbler is the DBus thumbnail daemon; -plugins-extra
+          # adds poppler/epub/font thumbnailers; ffmpegthumbnailer is
+          # auto-discovered by tumbler for video first-frames.
+          - tumbler
+          - tumbler-plugins-extra
+          - ffmpegthumbnailer
+          # gh-73: lightweight single-purpose viewers. Without an image
+          # viewer, image double-click falls back to ImageMagick `display`
+          # (CLI). gpicview = images, mpv = video; evince (above) = PDF.
+          - gpicview
+          - mpv
+          # gh-78 (parts 2-4): advertised lab apps absent from the default
+          # set. canberra-gtk-play, terminal-replace and theme-not-applying
+          # parts of #78 remain Need-More-Info — tracked on the issue.
+          - kdenlive
+          - blender
+          - pavucontrol
           - file-roller
           - gedit
           - devilspie2
