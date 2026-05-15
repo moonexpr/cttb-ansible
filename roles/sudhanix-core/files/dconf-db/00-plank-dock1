@@ -21,3 +21,4 @@ dock-items=['xfce4-appfinder.dockitem', 'thunar.dockitem', 'thunderbird.dockitem
 hide-mode='none'
 auto-pinning=false
 pinned-only=true
+theme='mcOS-BS-iMacM1-Black'

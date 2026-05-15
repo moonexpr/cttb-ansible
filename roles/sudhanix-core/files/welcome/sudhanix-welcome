@@ -1008,8 +1008,32 @@ class BrowserTerminalApplier(SettingsApplier):
         "google-chrome.desktop": "google-chrome",
         "firefox.desktop": "firefox",
         "firefox-esr.desktop": "firefox",
-        "zen-browser.desktop": "zen-browser",
+        "app.zen_browser.zen.desktop": "zen-browser",
     }
+
+    # MIME types the chosen browser should claim in ~/.config/mimeapps.list.
+    # xdg-settings set default-web-browser only writes a small subset
+    # (text/html + x-scheme-handler/{http,https,about,unknown}); this list
+    # is the comprehensive set we want a freshly-chosen browser to own,
+    # mirroring the system /etc/xdg/mimeapps.list browser section. Without
+    # the wider set, switching browsers in welcome leaves stale handlers
+    # for xhtml/xml/extension-based opens — the user sees Chrome on a
+    # double-click even after picking Firefox or Zen.
+    _BROWSER_MIME_DEFAULTS = (
+        "text/html",
+        "application/xhtml+xml",
+        "application/xml",
+        "x-scheme-handler/http",
+        "x-scheme-handler/https",
+        "x-scheme-handler/about",
+        "x-scheme-handler/unknown",
+        "x-scheme-handler/ftp",
+        "application/x-extension-htm",
+        "application/x-extension-html",
+        "application/x-extension-shtml",
+        "application/x-extension-xhtml",
+        "application/x-extension-xht",
+    )
 
     def __init__(self, runner: CommandRunner, config: CustomizeConfig) -> None:
         self._runner = runner
@@ -1031,8 +1055,9 @@ class BrowserTerminalApplier(SettingsApplier):
             r2 = self._runner.run_text(
                 ["xdg-mime", "default", term_desktop,
                  "x-scheme-handler/terminal"])
+            mime_ok = self._write_browser_mimeapps(desktop_file)
             helpers_ok = self._patch_helpers_rc(desktop_file)
-            ok = r1.ok and r2.ok and helpers_ok
+            ok = r1.ok and r2.ok and mime_ok and helpers_ok
             return ApplyResult(
                 applier=self.name, ok=ok,
                 summary=f"browser set to {browser.label}; terminal set to xfce4-terminal")
@@ -1040,6 +1065,23 @@ class BrowserTerminalApplier(SettingsApplier):
             log(f"BrowserTerminalApplier: {exc}")
             return ApplyResult(applier=self.name, ok=False,
                                summary="browser failed", error=exc)
+
+    def _write_browser_mimeapps(self, desktop_file: str) -> bool:
+        """Register the chosen browser for every MIME in _BROWSER_MIME_DEFAULTS.
+
+        xdg-mime writes ~/.config/mimeapps.list, which takes precedence over
+        /etc/xdg/mimeapps.list per the freedesktop spec. Each call is one
+        line in the user file; we call once per MIME so failures of one
+        unknown type don't poison the rest.
+        """
+        ok = True
+        for mime in self._BROWSER_MIME_DEFAULTS:
+            r = self._runner.run_text(
+                ["xdg-mime", "default", desktop_file, mime])
+            if not r.ok:
+                log(f"xdg-mime default {desktop_file} {mime} failed: {r}")
+                ok = False
+        return ok
 
     def _patch_helpers_rc(self, desktop_file: str) -> bool:
         helpers_path = Path.home() / ".config" / "xfce4" / "helpers.rc"

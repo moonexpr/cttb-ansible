@@ -25,6 +25,25 @@
           - desktop-file-utils
           - dmz-cursor-theme
           - evince
+          # gh-72: Thunar thumbnailer stack. lubuntu-core minimal pulls
+          # none of these transitively, so Thunar shows generic MIME
+          # icons. tumbler is the DBus thumbnail daemon; -plugins-extra
+          # adds poppler/epub/font thumbnailers; ffmpegthumbnailer is
+          # auto-discovered by tumbler for video first-frames.
+          - tumbler
+          - tumbler-plugins-extra
+          - ffmpegthumbnailer
+          # gh-73: lightweight single-purpose viewers. Without an image
+          # viewer, image double-click falls back to ImageMagick `display`
+          # (CLI). gpicview = images, mpv = video; evince (above) = PDF.
+          - gpicview
+          - mpv
+          # gh-78 (parts 2-4): advertised lab apps absent from the default
+          # set. canberra-gtk-play, terminal-replace and theme-not-applying
+          # parts of #78 remain Need-More-Info — tracked on the issue.
+          - kdenlive
+          - blender
+          - pavucontrol
           - file-roller
           - gedit
           - devilspie2
@@ -76,6 +95,13 @@
           - xfdesktop4
           - xfce4-settings
           - thunar
+          # xfce4-terminal — operator-intended primary terminal. Without
+          # this, `/usr/bin/x-terminal-emulator` lands on whichever of
+          # lxterminal/zutty/xterm wins alternatives auto-mode (zutty in
+          # current 24.04 state, which has crashed repeatedly on the
+          # testmachine — see #82). The follow-on alternatives task in
+          # this file pins it as the default after install.
+          - xfce4-terminal
           # Plank — the dock. README advertises XFCE4 + Plank, the welcome
           # panel's customizer writes to /net/launchpad/plank/ dconf, but no
           # task was actually installing the package. Without this Plank's
@@ -132,6 +158,34 @@
         tags:
           - packages
           - lubuntu
+
+      # Pin x-terminal-emulator to xfce4-terminal so the menu entry, Thunar
+      # "Open Terminal Here", and any .desktop Exec=x-terminal-emulator
+      # path lands the operator-intended themed terminal (config in
+      # /etc/xdg/xfce4/terminal/terminalrc — Man Page colours, SeriousShanns
+      # 10pt) instead of the alternatives auto-mode pick (lxterminal/zutty,
+      # see #64, #65, #82). Also clears the green-on-black lxterminal
+      # surprise from #65 because the entry point no longer resolves there.
+      # The xfce4-terminal package registers itself as
+      # `/usr/bin/xfce4-terminal.wrapper` (Debian shell wrapper) — that
+      # is the path update-alternatives knows. Pinning is via --set.
+      - name: read current x-terminal-emulator alternative
+        command: update-alternatives --query x-terminal-emulator
+        register: x_term_alt
+        changed_when: false
+        check_mode: false
+        tags:
+          - packages
+          - lubuntu
+          - terminal
+
+      - name: select xfce4-terminal as the system default terminal
+        command: update-alternatives --set x-terminal-emulator /usr/bin/xfce4-terminal.wrapper
+        when: '"Value: /usr/bin/xfce4-terminal.wrapper" not in x_term_alt.stdout'
+        tags:
+          - packages
+          - lubuntu
+          - terminal
 
       # Did not exist in Lubuntu 20.04. lookandfeel's install-phase avatar
       # copy writes /usr/share/lubuntu/images/avatar.png; the parent dir
