@@ -4660,3 +4660,33 @@ harmless (one-time prompt), operator can update if desired.
 The in-flight `sudhanix26-rollout` validation run (started as
 `pxe-reinstall-and-deploy.yml`) is unaffected — `import_playbook` is
 parse-time, so that process holds the pre-rename content in memory.
+
+---
+
+### 2026-05-15 (end of session) — #16 task 1 GOLD-STANDARD verified
+
+The pristine orchestrator run (launched as `pxe-reinstall-and-deploy.yml`,
+now `sudhanix26-rollout.yml`) completed end-to-end: stage 1 PXE wipe →
+stage 2 wait (host down → autoinstall → up → facts) → stage 3 single-pass
+deploy. **`PLAY RECAP ok=336 changed=226 unreachable=0 failed=0
+skipped=169 ignored=1`** — the only `fatal:` is the by-design ignored
+stage-1 reboot timeout; `ignored=1` is the standing `ignore_errors` task.
+
+Posture verified on the pristine single-pass image: Chrome
+148.0.7778.167-1 + Firefox tarball genuinely installed (not pre-existing),
+`/usr/bin/canberra-gtk-play` + `/usr/bin/dconf` present,
+`/etc/dconf/db/site` compiled GVariant DB, `snapd Candidate:(none)`,
+hostname `dvgs-testmachine.cttb`, OS `Sudhanix 26`.
+
+**This is the definitive #16 task-1 evidence** — earlier "verified" runs
+on the long-lived testmachine masked 5 fresh-image defects (dconf profile
+dir `893bc188`; `dconf-cli` `41c87335`; the over-broad `zoom` tag that
+made `--skip-tags zoom` skip the whole software batch `c7fccbf0`;
+change-gated `dconf update` `4f0690e6`). The fresh-PXE bar in #16 did
+exactly its job. Posted the consolidated gold-standard update on #16;
+task 1 DONE, tasks 2–4 unchanged (operator-scheduled fleet rollout, now
+one `sudhanix26-rollout.yml` command per host).
+
+The orchestrator was both the validation vehicle and a delivered
+artifact — proven end-to-end in this run. Session close: no code action
+outstanding on #16.
