@@ -437,6 +437,39 @@ sfl_migrate_snap_apps() {
 
 # ----- Top-level orchestrator ----------------------------------------------
 
+# gh-36: the Super_L → app-menu binding was corrected in the role's
+# /etc/xdg xfce4-keyboard-shortcuts.xml template (gh-61/gh-63: whiskermenu,
+# which self-toggles on a second press). But xfconfd reads the per-user
+# cache at ~/.config/xfce4/xfconf/.../xfce4-keyboard-shortcuts.xml first,
+# and an already-bootstrapped user's stale cache still points Super_L at
+# the old sudhanix-toggle-appmenu wrapper — so the corrected system
+# default never wins. Removing the per-user cache once lets xfconfd
+# re-seed from the (fixed) /etc/xdg template at the next panel start.
+# Self-sentineled so it fires exactly once per user, INCLUDING users
+# already past the firstlogin marker gate.
+sfl_reseed_keyboard_shortcuts() {
+    _sentinel="${HOME}/.config/sudhanix/kb-shortcuts-gh36-reseeded"
+    [ -f "${_sentinel}" ] && return 0
+    _kb="${HOME}/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml"
+    if [ "${SFL_DRY_RUN}" = "1" ]; then
+        printf '[dry-run] would: rm %s ; mark %s\n' "${_kb}" "${_sentinel}"
+        return 0
+    fi
+    mkdir -p "${HOME}/.config/sudhanix" 2>/dev/null || return 0
+    if [ -f "${_kb}" ]; then
+        rm -f "${_kb}" 2>/dev/null \
+            && sfl_log "gh-36: removed stale per-user xfce4-keyboard-shortcuts.xml (reseed from /etc/xdg)"
+        # Nudge xfconfd/panel to re-read if a live session is present;
+        # fail-soft when there is no DISPLAY (TTY/ssh bootstrap).
+        if [ -n "${DISPLAY}" ] && command -v xfce4-panel >/dev/null 2>&1; then
+            xfce4-panel --restart >/dev/null 2>&1 || true
+        fi
+    else
+        sfl_log "gh-36: no per-user kb-shortcuts cache; system /etc/xdg default already authoritative"
+    fi
+    : > "${_sentinel}" 2>/dev/null || true
+}
+
 sfl_run_bootstrap() {
     # Sanity: $HOME must be set and exist. In dry-run we don't need write
     # access (we make no changes); in real-run we do.
@@ -445,6 +478,10 @@ sfl_run_bootstrap() {
     if [ "${SFL_DRY_RUN}" != "1" ]; then
         [ -w "${HOME}" ] || return 0
     fi
+
+    # gh-36 corrective reseed runs for EVERY user exactly once, before the
+    # firstlogin marker gate — already-bootstrapped users need it too.
+    sfl_reseed_keyboard_shortcuts
 
     if sfl_already_bootstrapped; then
         if [ "${SFL_DRY_RUN}" = "1" ]; then
