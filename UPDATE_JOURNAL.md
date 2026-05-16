@@ -4690,3 +4690,28 @@ one `sudhanix26-rollout.yml` command per host).
 The orchestrator was both the validation vehicle and a delivered
 artifact — proven end-to-end in this run. Session close: no code action
 outstanding on #16.
+
+---
+
+### 2026-05-15 (season close) — #74 verified solved; core dev closed
+
+#74 (`sudhanix-vajra-tool` `cache_valid_time` race — Blocker, the last
+open blocker before season close) **verified and closed**. The fix
+(`81eaa505`, on HEAD via merge `2caab5be`): explicit `apt update` (no
+`cache_valid_time`) gated `when: cttb_extras_source is changed`, right
+after the cttb-extras source drop.
+
+Proof came free from the gold-standard `sudhanix26-rollout` pristine run:
+it deployed at **uptime 17s** — the worst case of the #74 race (apt cache
+seconds old, far inside the 3600s window), not the accidental 2h49m gap
+that masked it before. In that run the refresh task fired
+(`changed: cttb_extras_source is changed` true on the fresh host), vajra
+resolved and installed, `failed=0`. Host: `apt-cache policy vajra`
+Installed/Candidate `1.0.0-1`, `vajra --version` → `vajra 1.0.0 (stable)`.
+The CONFIRMED comment's stricter "within the same hour" bar was exceeded
+(17s). Blocker cleared.
+
+**Core development for the Sudhanix 26 season is officially complete.**
+Remaining work is operator-gated only: #16 tasks 2–4 (fleet rollout, one
+`sudhanix26-rollout.yml` per host), and visual cluster #66/#67/#68/#85
+(at-seat operator verification). No outstanding code action.
