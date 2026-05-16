@@ -2157,7 +2157,7 @@ class WelcomeWindow(Gtk.Window):
 
         action_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self._skip_checkbox = Gtk.CheckButton(
-            label="Got it — skip this on next sign‑in"
+            label="Got it, skip this on next sign‑in"
         )
         self._skip_checkbox.set_active(True)
         action_row.pack_start(self._skip_checkbox, False, False, 0)
@@ -2208,12 +2208,12 @@ class WelcomeWindow(Gtk.Window):
         body_rows = [
             (
                 "Your files follow you.",
-                " Documents, Desktop, and Downloads live on the campus server "
-                "— sign in at any lab machine and they’ll be there.",
+                " Documents, Desktop, and Downloads live on the campus server. "
+                "Sign in at any lab machine and they’ll be there.",
             ),
             (
                 "One CTTB account, every machine.",
-                " Same username and password as before — the look is new, the login isn’t.",
+                " Same username and password as before. The look is new, the login isn’t.",
             ),
             (
                 "Stuck or curious?",
@@ -2259,8 +2259,8 @@ class WelcomeWindow(Gtk.Window):
                  "apps you reach for daily. Right-click any open app to pin."),
                 ("snap-package",
                  "Snap removed; faster cold-launch",
-                 "Firefox, Software, and friends are now apt or Flatpak — "
-                 "first launch is seconds, not a minute."),
+                 "Firefox, Software, and friends are now apt or Flatpak. "
+                 "First launch is seconds, not a minute."),
             ],
             footer_text="Full notes:",
             footer_label="wiki.cttb / Sudhanix 26 Release Notes",
