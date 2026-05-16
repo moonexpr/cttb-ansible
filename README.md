@@ -1,6 +1,6 @@
 # CTTB Ansible
 
-Configuration management for the CTTB campus network: computer labs, servers, and network services across three institutions -- DVGS (Girls School), DVBS (Boys School), and DRBU (Dharm Realm Buddhist University).
+Configuration management for the CTTB campus network: computer labs, servers, and network services across three institutions, DVGS (Girls School), DVBS (Boys School), and DRBU (Dharma Realm Buddhist University).
 
 Built on [Ansible](https://docs.ansible.com/ansible/latest/index.html). Inspired by [ansible-best-practises](https://github.com/enginyoyen/ansible-best-practises) and the [Ansible best practices guide](https://docs.ansible.com/ansible/latest/tips_tricks/ansible_tips_tricks.html).
 
@@ -27,7 +27,7 @@ The `utils/pb` wrapper sources the environment (`utils/setup-env`), sets up path
 
 ```
 cttb-ansible/
-├── plays/           Playbooks -- the entry points for all operations
+├── plays/           Playbooks, the entry points for all operations
 ├── roles/           Reusable roles implementing infrastructure components
 ├── inventory/       Host inventory files (INI format)
 ├── group_vars/      Variables applied per host group
@@ -75,12 +75,16 @@ All playbooks live in `plays/`. Key categories:
 
 ### Deployment
 
+Sudhanix 26 lab machines are deployed by `sudhanix26-rollout`, one command that reimages a host and returns it configured. The deployment is a destructive fresh install, not an in-place upgrade. The disk is wiped, a clean Ubuntu 24.04 base is PXE-installed, and the CTTB personality is layered on by Ansible. The configuration is frozen at the `sudhanix26.0.0` tag, and `DEPLOYMENT.md` carries the full procedure.
+
 | Playbook               | Purpose                                               |
 |------------------------|-------------------------------------------------------|
+| `sudhanix26-rollout`   | Canonical Sudhanix 26 deploy: PXE reimage, wait for autoinstall, then configure. One command per host |
+| `sudhanix26-rollout-stage1` | Stage 1 alone: trigger the one-time PXE reimage  |
+| `sudhanix26-rollout-stage2` | Stage 2 alone: apply the Sudhanix 26 roles to an already-imaged host |
 | `dvgs-cs-lab`          | Full DVGS lab: desktop, printing, LDAP, NFS, CA       |
 | `dvbs-3rd-9th`         | DVBS upper grades lab                                 |
 | `drbu-sw-cslab`        | DRBU CS lab switch configuration                      |
-| `sudhanix26-rollout-stage2` | Apply Sudhanix 26 settings to all CS labs (stage 2 of `sudhanix26-rollout`) |
 | `netinstall-2404`      | Deploy Ubuntu 24.04 PXE/autoinstall infrastructure    |
 
 ### Infrastructure
@@ -201,18 +205,15 @@ See the [Ansible variable precedence docs](https://docs.ansible.com/ansible/late
 
 ### Deploying a New Lab Machine
 
-1. Define the host in the inventory with `mac_addr` and `ansible_address`.
-2. Add it to the appropriate group.
-3. Wake it up and copy the SSH key:
+1. Define the host in the inventory with `mac_addr` and `ansible_address`, and add it to the appropriate group.
+2. Reimage and configure it in one command:
    ```bash
-   utils/pb util-wakeonlan --limit <hostname>
-   # Then copy SSH key (password auth needed for first run)
-   ansible <hostname> -m raw -a 'mkdir -p ~/.ssh && ...' -e 'ansible_ssh_pass=<password>'
+   ansible-playbook -i inventory/sudhanix26_hosts.ini plays/sudhanix26-rollout.yml \
+       -l <hostname>.cttb --skip-tags zoom --diff \
+       --vault-password-file <vault-pw-file> --ask-become-pass
    ```
-4. Run the lab playbook:
-   ```bash
-   utils/pb dvgs-cs-lab --limit <hostname>
-   ```
+
+`sudhanix26-rollout` triggers the PXE reimage, waits for the host to autoinstall and return, then applies the roles. The host must be SSH-reachable and UEFI for the stage-1 trigger. The become password is required, since the autoinstalled `administrator` account is an ordinary sudoer rather than a passwordless one. `DEPLOYMENT.md` covers the staged path, batch rollout, and recovery.
 
 ### Running a Hardware Survey
 
@@ -258,7 +259,7 @@ utils/pb gw --ask-vault-pass
 
 ## Notes
 
-- Hosts are migrating from **Ubuntu 20.04 LTS** to **24.04 LTS** (noble). Test machine (`dvgs-testmachine`) is on 24.04.
+- **Sudhanix 26** (Ubuntu 24.04 LTS, noble) is the current release. Core configuration is frozen at the `sudhanix26.0.0` tag. The fleet is being reimaged to it from the legacy 20.04 installs, and `dvgs-testmachine` is the validation host.
 - Desktop environment: **XFCE4** with WhiteSur-Dark theme, Plank dock, macOS-style greeter.
 - The `administrator` user is the default `remote_user` for all SSH connections.
 - Host key checking is disabled in `ansible.cfg` for ease of reprovisioning.

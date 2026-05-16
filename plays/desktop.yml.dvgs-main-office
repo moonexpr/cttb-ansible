@@ -1,5 +1,0 @@
----
-
-- hosts: dvgs-main-office
-  roles:
-    - sudhanix-core
