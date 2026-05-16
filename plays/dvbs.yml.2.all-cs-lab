@@ -1,8 +1,0 @@
----
-
-- hosts: dvbs-3rd-pc02 dvbs-lab04 dvbs-lab13 dvbs-lab05 dvbs-lab11 dvbs-lab10 dvbs-lab08 dvbs-lab02 dvbs-lab03 dvbs-lab06 dvbs-lab12
-  roles:
-    - sudhanix-core
-    - ldap-client
-    - nfs-home
-    - cups-client

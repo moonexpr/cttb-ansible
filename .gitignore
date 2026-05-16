@@ -1,5 +1,6 @@
 logs/
 tmp/
+.worktrees/
 *.pyc
 plays/autogen.yml
 
@@ -16,3 +17,5 @@ PROJECT.md
 WORKPLAN.md
 .claude/
 SPRINT_PLAN.md
+NOTE.md
+WIKI_UPDATE.toon
