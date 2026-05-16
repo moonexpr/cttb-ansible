@@ -2,6 +2,10 @@
 
 Configures XFCE4 desktop workstations for CTTB campus labs (DVGS, DVBS, DRBU).
 
+![Sudhanix 26 desktop and Welcome panel](welcome-panel.jpg)
+
+*The Sudhanix 26 desktop this role produces, WhiteSur-Dark with the Plank dock and the first-login Welcome panel over the rotating campus wallpaper. Captured on a freshly imaged host through a real LDAP login.*
+
 ## Desktop Environment
 
 - **Window manager**: xfwm4 (WhiteSur-Dark theme, compositing, centered placement, window snapping)
