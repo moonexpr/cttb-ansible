@@ -96,7 +96,19 @@
     tags:
       - blacklist
 
-  - name: deploy cttb local zone
+  # gh-47: cttb. zone duplication. unbound.conf ALREADY ships
+  # `forward-zone: name: "cttb." forward-addr: 10.11.1.19` (dnsmasq) but
+  # ALSO includes this zone_cttb local-data copy — and Unbound local-data
+  # takes precedence over forward-zone, so the var-driven copy shadows
+  # dnsmasq and a campus A-record must be edited in TWO places.
+  #
+  # Option A (issue's "lowest churn"; dnsmasq stays authoritative): set
+  # `unbound_cttb_single_source: true` and Unbound stops carrying its own
+  # copy — the pre-existing forward-zone resolves all cttb. names, one
+  # source of truth. Default FALSE preserves current behaviour byte-for-
+  # byte until the operator picks the direction and verifies on the live
+  # dns.cttb resolver (production DNS — never auto-flipped).
+  - name: deploy cttb local zone (legacy dual-source — default)
     template:
       src: zone_cttb.j2
       dest: /etc/unbound/unbound.conf.d/cttb
@@ -104,6 +116,17 @@
       owner: root
       group: unbound
       force: yes
+    when: not (unbound_cttb_single_source | default(false) | bool)
+    notify:
+    - restart unbound
+    tags:
+      - zone_cttb
+
+  - name: gh-47 single-source — drop Unbound's cttb local-data copy (forward-zone → dnsmasq only)
+    file:
+      path: /etc/unbound/unbound.conf.d/cttb
+      state: absent
+    when: unbound_cttb_single_source | default(false) | bool
     notify:
     - restart unbound
     tags:
