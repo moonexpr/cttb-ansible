@@ -64,6 +64,17 @@
       - install
       - lubuntu
 
+  # gh-88: discrete-GPU driver install. No-op on Intel-integrated hosts
+  # (the fleet norm); AMD discrete gets firmware-amd-graphics; NVIDIA is
+  # hard-gated (Secure Boot off + host opt-in + mirrored driver).
+  - include_tasks:
+      file: gpu.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - gpu
+
   # Language support — install block (consolidated apt batch + absent +
   # conditional chewing + conditional sanskrit). The configure block
   # (im-config) is included from configure.yml.

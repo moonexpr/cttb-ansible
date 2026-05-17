@@ -1,0 +1,143 @@
+---
+# gh-88: install GPU drivers when a dedicated GPU is present.
+#
+# Lab AIOs are overwhelmingly Intel-integrated (no-op path). Some hosts
+# have discrete NVIDIA/AMD. `ubuntu-drivers autoinstall` unattended on a
+# no-seat fleet is unsafe (NVIDIA DKMS + Secure-Boot MOK enrollment is
+# interactive at the console → black greeter with nobody to fix it), so
+# this is deliberately conservative:
+#
+#   Intel-only / no discrete   → no-op (no driver churn).
+#   AMD discrete               → ensure firmware-amd-graphics; rely on the
+#                                in-kernel amdgpu (low risk, no DKMS).
+#   NVIDIA discrete            → install the recommended -server driver
+#                                ONLY when ALL of: Secure Boot is OFF
+#                                (else MOK enrollment is an at-seat black
+#                                screen), the host opted in via
+#                                `sudhanix_nvidia_optin: true` (host_var),
+#                                and the recommended driver is actually in
+#                                the apt.cttb mirror. Otherwise: skip and
+#                                warn — never leave a host with no display.
+
+- name: gh-88 detect display controllers
+  ansible.builtin.shell: |
+    set -o pipefail
+    lspci -mm -nn | grep -iE 'VGA compatible controller|3D controller|Display controller' || true
+  args:
+    executable: /bin/bash
+  register: __gpu_lspci
+  changed_when: false
+  check_mode: false
+  tags:
+    - install
+    - gpu
+
+- name: gh-88 classify GPUs (vendor IDs — 10de NVIDIA, 1002 AMD/ATI, 8086 Intel)
+  ansible.builtin.set_fact:
+    __gpu_has_nvidia: "{{ __gpu_lspci.stdout is search('10de') }}"
+    __gpu_has_amd: "{{ __gpu_lspci.stdout is search('1002') }}"
+    __gpu_only_intel: "{{ (__gpu_lspci.stdout is search('8086')) and not (__gpu_lspci.stdout is search('10de')) and not (__gpu_lspci.stdout is search('1002')) }}"
+  tags:
+    - install
+    - gpu
+
+- name: gh-88 Intel-only / no discrete GPU — no-op
+  ansible.builtin.debug:
+    msg: >-
+      No discrete GPU detected (Intel-integrated or none) — no driver
+      changes. lspci: {{ __gpu_lspci.stdout_lines | default([]) }}
+  when: not __gpu_has_nvidia and not __gpu_has_amd
+  tags:
+    - install
+    - gpu
+
+# ---- AMD discrete: low-risk, in-kernel amdgpu just needs firmware ----
+- name: gh-88 AMD discrete — ensure firmware-amd-graphics
+  ansible.builtin.apt:
+    name: firmware-amd-graphics
+    state: present
+  when: __gpu_has_amd
+  tags:
+    - install
+    - gpu
+
+# ---- NVIDIA discrete: hard-gated ----
+- name: gh-88 NVIDIA discrete — read Secure Boot state
+  ansible.builtin.command: mokutil --sb-state
+  register: __gpu_sb
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: __gpu_has_nvidia
+  tags:
+    - install
+    - gpu
+
+- name: gh-88 NVIDIA discrete — resolve the recommended driver package
+  ansible.builtin.shell: |
+    set -o pipefail
+    ubuntu-drivers devices 2>/dev/null \
+      | awk '/recommended/ && /nvidia-driver/ {print $3; exit}'
+  args:
+    executable: /bin/bash
+  register: __gpu_nv_pkg
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: __gpu_has_nvidia
+  tags:
+    - install
+    - gpu
+
+- name: gh-88 NVIDIA discrete — gate decision
+  ansible.builtin.set_fact:
+    __gpu_nv_safe: >-
+      {{ __gpu_has_nvidia
+         and (sudhanix_nvidia_optin | default(false) | bool)
+         and (__gpu_sb.stdout | default('') is search('SecureBoot disabled'))
+         and (__gpu_nv_pkg.stdout | default('') | trim | length > 0) }}
+  when: __gpu_has_nvidia
+  tags:
+    - install
+    - gpu
+
+- name: gh-88 NVIDIA discrete — install recommended -server driver (only when safe)
+  ansible.builtin.apt:
+    name: "{{ (__gpu_nv_pkg.stdout | trim) ~ '-server' if not (__gpu_nv_pkg.stdout | trim).endswith('-server') else (__gpu_nv_pkg.stdout | trim) }}"
+    state: present
+    update_cache: true
+  register: __gpu_nv_install
+  when:
+    - __gpu_has_nvidia
+    - __gpu_nv_safe | default(false) | bool
+  tags:
+    - install
+    - gpu
+
+- name: gh-88 NVIDIA discrete — SKIPPED (unsafe to auto-install), warn loudly
+  ansible.builtin.debug:
+    msg: >-
+      NVIDIA GPU present but driver auto-install was SKIPPED to avoid an
+      unattended black greeter. Reasons —
+      opt-in={{ sudhanix_nvidia_optin | default(false) }},
+      secure_boot='{{ __gpu_sb.stdout | default('unknown') | trim }}',
+      recommended_pkg='{{ __gpu_nv_pkg.stdout | default('') | trim }}'.
+      To enable: set host_var `sudhanix_nvidia_optin: true`, ensure Secure
+      Boot is OFF (or the module is signable), confirm the driver is in
+      apt.cttb, then re-run --tags gpu. A reboot is required after install.
+  when:
+    - __gpu_has_nvidia
+    - not (__gpu_nv_safe | default(false) | bool)
+  tags:
+    - install
+    - gpu
+
+- name: gh-88 NVIDIA discrete — flag reboot required after driver install
+  ansible.builtin.debug:
+    msg: "NVIDIA driver installed — a REBOOT is required before the display stack uses it."
+  when:
+    - __gpu_has_nvidia
+    - __gpu_nv_install is defined and __gpu_nv_install is changed
+  tags:
+    - install
+    - gpu
