@@ -1,0 +1,15 @@
+---
+# gh-69: dnsmasq-pxe-boot role defaults.
+#
+# The dnsmasq `dhcp-boot=` lines (legacy DHCP siaddr+filename fields)
+# carry the PXE server IP. The Dell PXE ROM on the lab desktops honours
+# siaddr, NOT DHCP option 66, so these MUST track the PXE server IP or
+# clients fall through PXE → Dell Onboard Diagnostics (see gh-60).
+#
+# pxe_server_ip is the single source of truth — set it once in
+# group_vars/all and a future PXE re-IP propagates here automatically.
+dnsmasq_conf_path: /etc/dnsmasq.conf
+
+# BIOS + EFI boot file names served over TFTP from the PXE server.
+dnsmasq_pxe_bios_file: pxelinux.0
+dnsmasq_pxe_efi_file: grubx64.efi

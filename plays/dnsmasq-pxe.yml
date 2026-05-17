@@ -1,0 +1,22 @@
+---
+# gh-69: render dnsmasq's PXE dhcp-boot= lines from the single
+# pxe_server_ip variable (group_vars/all). Eliminates the "did we update
+# both lines" hand-sed that resolved gh-60 in-flight.
+#
+# dnsmasq.cttb is an LXC on srv-vm and is NOT in the shared
+# sudhanix26_hosts.ini (keeping it out of `hosts: all` plays). Run with
+# the dedicated stub inventory:
+#
+#   ansible-playbook plays/dnsmasq-pxe.yml \
+#     -i inventory/dnsmasq.ini -i inventory/sudhanix26_hosts.ini \
+#     --vault-password-file <vault-pw>
+#
+# To re-point the PXE server after a re-IP: change pxe_server_ip in
+# group_vars/all and re-run this play — both dhcp-boot= lines + a
+# dnsmasq restart follow automatically.
+- name: Render dnsmasq PXE dhcp-boot lines from pxe_server_ip
+  hosts: dnsmasq_servers
+  become: true
+  gather_facts: false
+  roles:
+    - dnsmasq-pxe-boot

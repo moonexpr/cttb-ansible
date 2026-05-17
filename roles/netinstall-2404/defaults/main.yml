@@ -37,6 +37,9 @@ ni_2404_images:
     # casper paths inside the live server ISO
     kernel_path: casper/vmlinuz
     initrd_path: casper/initrd
+    # gh-56: casper fetches the squashfs directly (fetch=) and skips the
+    # ~3.2 GB ISO download. Extracted alongside vmlinuz/initrd.
+    squashfs_path: casper/filesystem.squashfs
     autoinstall:
       - name: desktop-minimal
         description: "Sudhanix 26 Desktop"

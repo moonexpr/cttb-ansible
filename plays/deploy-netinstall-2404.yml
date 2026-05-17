@@ -4,30 +4,55 @@
 # Uses raw module throughout because the PXE server (Ubuntu 16.04) has
 # Python 3.5 which is incompatible with Ansible 2.20+ modules.
 #
-# Usage:
+# gh-70: this is now a SINGLE play targeting `pxe-server`. The template
+# render formerly lived in a separate `hosts: localhost` play, which
+# `--limit pxe.cttb` filtered out entirely (stale/empty staging dir got
+# deployed). The render tasks are now `pre_tasks` with
+# `delegate_to: localhost`, so `-l pxe.cttb` renders locally AND deploys.
+#
+# Usage (a `--limit pxe.cttb` is now safe and sufficient):
 #   ansible-playbook plays/deploy-netinstall-2404.yml \
-#     -i inventory/sudhanix26_hosts.ini --vault-password-file <vault-pass>
+#     -i inventory/sudhanix26_hosts.ini --limit pxe.cttb \
+#     --vault-password-file <vault-pass>
 #
 # To enable auto-install on PXE boot (for upgrade rollouts):
 #   ansible-playbook plays/deploy-netinstall-2404.yml \
-#     -i inventory/sudhanix26_hosts.ini --vault-password-file <vault-pass> \
+#     -i inventory/sudhanix26_hosts.ini --limit pxe.cttb \
+#     --vault-password-file <vault-pass> \
 #     -e ni_pxe_default=Autoinstall-noble-desktop
 #
 # To restore safe local-boot default after rollout:
 #   ansible-playbook plays/deploy-netinstall-2404.yml \
-#     -i inventory/sudhanix26_hosts.ini --vault-password-file <vault-pass> \
+#     -i inventory/sudhanix26_hosts.ini --limit pxe.cttb \
+#     --vault-password-file <vault-pass> \
 #     -e ni_pxe_default=BootLocal -t ni_pxe_menu
 
-- name: Render netinstall-2404 templates locally
-  hosts: localhost
-  connection: local
+- name: Deploy netinstall-2404 to PXE server
+  hosts: pxe-server
   gather_facts: false
-  roles:
-    - role: netinstall-2404
-      delegate_to: skip
+  become: true
+  # gh-70: load the netinstall-2404 role defaults (ni_2404_images, …) for
+  # the render pre_tasks without executing the role on the PXE server.
+  vars_files:
+    - "{{ playbook_dir }}/../roles/netinstall-2404/defaults/main.yml"
   vars:
-    ni_staging_dir: "{{ lookup('env', 'TMPDIR') | default('/tmp') }}/netinstall-2404-stage"
-  tasks:
+    ni_staging_dir: "{{ lookup('env', 'TMPDIR') | default('/tmp', true) }}/netinstall-2404-stage"
+    ni_root_dir: /srv/netinstall
+    ni_www_path: /var/www/html/netinstall
+    ni_iso_url: "http://storehouse.cttb/ansible/isos/ubuntu-24.04.2-live-server-amd64.iso"
+    ni_iso_local: "/srv/storehouse/ansible/isos/ubuntu-24.04.2-live-server-amd64.iso"
+    # gh-70: macOS ships rsync 2.6.9 which has no `--chmod=D...,F...`
+    # (landed in rsync 3.0). The controller's uname decides whether the
+    # flag is passed; Linux CI runners still get it. Dropping it is safe:
+    # `synchronize` is archive-mode, so the 0644/0755 perms the templates
+    # are rendered with in the staging dir are preserved on the wire.
+    ni_rsync_chmod: "{{ [] if lookup('pipe', 'uname') == 'Darwin' else ['--chmod=D755,F644'] }}"
+
+  pre_tasks:
+    # ---- gh-70: local template render (delegated to the controller) ----
+    # Runs on the controller regardless of `--limit`, because the play
+    # host is `pxe-server` (matched by `-l pxe.cttb`) and these tasks
+    # delegate to localhost.
     - name: create local staging directory tree
       file:
         path: "{{ ni_staging_dir }}/{{ item }}"
@@ -39,6 +64,9 @@
         - menu
         - pxelinux.cfg
         - grub
+      delegate_to: localhost
+      run_once: true
+      become: false
       tags: always
 
     - name: render autoinstall user-data files
@@ -49,6 +77,9 @@
       loop:
         - desktop-minimal
         - server
+      delegate_to: localhost
+      run_once: true
+      become: false
       tags: ni_autoinstall
 
     - name: render autoinstall meta-data files
@@ -59,22 +90,31 @@
       loop:
         - desktop-minimal
         - server
+      delegate_to: localhost
+      run_once: true
+      become: false
       tags: ni_autoinstall
 
     - name: render pxe install menu
       template:
-        src: "roles/netinstall-2404/templates/pxe/pxe-install-menu-2404.j2"
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/pxe/pxe-install-menu-2404.j2"
         dest: "{{ ni_staging_dir }}/menu/ubuntu-live-server-amd64-noble.menu"
         mode: "0644"
       vars:
         item: "{{ ni_2404_images[0] }}"
+      delegate_to: localhost
+      run_once: true
+      become: false
       tags: ni_pxe_menu
 
     - name: render pxelinux default config
       template:
-        src: "roles/netinstall-2404/templates/pxe/pxelinux-cfg-default-2404.j2"
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/pxe/pxelinux-cfg-default-2404.j2"
         dest: "{{ ni_staging_dir }}/pxelinux.cfg/default"
         mode: "0644"
+      delegate_to: localhost
+      run_once: true
+      become: false
       tags: ni_pxe_menu
 
     - name: render grub.cfg for UEFI EFI PXE boot
@@ -82,6 +122,9 @@
         src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/pxe/grub-cfg-2404.j2"
         dest: "{{ ni_staging_dir }}/grub/grub.cfg"
         mode: "0644"
+      delegate_to: localhost
+      run_once: true
+      become: false
       tags:
         - ni_pxe_menu
         - ni_grub
@@ -91,18 +134,11 @@
         src: "{{ playbook_dir }}/../roles/netinstall-2404/files/autoinstall-postinst.sh"
         dest: "{{ ni_staging_dir }}/autoinstall/postinst.sh"
         mode: "0755"
+      delegate_to: localhost
+      run_once: true
+      become: false
       tags: ni_autoinstall
 
-- name: Deploy netinstall-2404 to PXE server
-  hosts: pxe-server
-  gather_facts: false
-  become: true
-  vars:
-    ni_staging_dir: "{{ lookup('env', 'TMPDIR') | default('/tmp') }}/netinstall-2404-stage"
-    ni_root_dir: /srv/netinstall
-    ni_www_path: /var/www/html/netinstall
-    ni_iso_url: "http://storehouse.cttb/ansible/isos/ubuntu-24.04.2-live-server-amd64.iso"
-    ni_iso_local: "/srv/storehouse/ansible/isos/ubuntu-24.04.2-live-server-amd64.iso"
   tasks:
     # --- Package installation ---
     - name: install required packages
@@ -115,8 +151,7 @@
         src: "{{ ni_staging_dir }}/autoinstall/"
         dest: "{{ ni_root_dir }}/autoinstall/"
         delete: false
-        rsync_opts:
-          - "--chmod=D755,F644"
+        rsync_opts: "{{ ni_rsync_chmod }}"
       tags: ni_autoinstall
 
     - name: sync PXE menu to server
@@ -124,8 +159,7 @@
         src: "{{ ni_staging_dir }}/menu/"
         dest: "{{ ni_root_dir }}/menu/"
         delete: false
-        rsync_opts:
-          - "--chmod=D755,F644"
+        rsync_opts: "{{ ni_rsync_chmod }}"
       tags: ni_pxe_menu
 
     - name: sync pxelinux config to server
@@ -133,10 +167,7 @@
         src: "{{ ni_staging_dir }}/pxelinux.cfg/"
         dest: "{{ ni_root_dir }}/pxelinux.cfg/"
         delete: false
-        rsync_opts:
-          - "--chmod=D755,F644"
-          - "--backup"
-          - "--suffix=.bak"
+        rsync_opts: "{{ ni_rsync_chmod + ['--backup', '--suffix=.bak'] }}"
       tags: ni_pxe_menu
 
     - name: sync grub.cfg to server (UEFI EFI boot)
@@ -144,10 +175,7 @@
         src: "{{ ni_staging_dir }}/grub/"
         dest: "{{ ni_root_dir }}/grub/"
         delete: false
-        rsync_opts:
-          - "--chmod=D755,F644"
-          - "--backup"
-          - "--suffix=.bak"
+        rsync_opts: "{{ ni_rsync_chmod + ['--backup', '--suffix=.bak'] }}"
       tags:
         - ni_pxe_menu
         - ni_grub
@@ -169,12 +197,23 @@
       changed_when: "'COPIED' in iso_copy.stdout"
       tags: ni_isos
 
-    - name: extract kernel and initrd from ISO (if not present)
+    # gh-56: also extract casper/filesystem.squashfs so the boot menus'
+    # fetch= path can pull just the squashfs (~1 GB) instead of the full
+    # ~3.2 GB ISO. The squashfs guard is separate from the casper-dir
+    # guard so an already-extracted (kernel-only) tree still gets the
+    # squashfs added on the next run.
+    - name: extract kernel, initrd and squashfs from ISO (if not present)
       raw: |
         if [ ! -d {{ ni_root_dir }}/ubuntu/live-server-noble-amd64/casper ]; then
           7z x -o{{ ni_root_dir }}/ubuntu/live-server-noble-amd64 \
             {{ ni_root_dir }}/ubuntu-live-server-noble-amd64.iso \
             casper/vmlinuz casper/initrd 2>&1
+          chmod -R 755 {{ ni_root_dir }}/ubuntu/live-server-noble-amd64
+          echo EXTRACTED
+        elif [ ! -f {{ ni_root_dir }}/ubuntu/live-server-noble-amd64/casper/filesystem.squashfs ]; then
+          7z x -o{{ ni_root_dir }}/ubuntu/live-server-noble-amd64 \
+            {{ ni_root_dir }}/ubuntu-live-server-noble-amd64.iso \
+            casper/filesystem.squashfs 2>&1
           chmod -R 755 {{ ni_root_dir }}/ubuntu/live-server-noble-amd64
           echo EXTRACTED
         else
@@ -206,11 +245,13 @@
       raw: systemctl restart tftpd-hpa
       tags: ni_pxe_menu
 
+  post_tasks:
     # --- Cleanup ---
     - name: remove local staging directory
       file:
         path: "{{ ni_staging_dir }}"
         state: absent
       delegate_to: localhost
+      run_once: true
       become: false
       tags: always
