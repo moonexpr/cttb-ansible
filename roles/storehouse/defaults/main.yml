@@ -8,6 +8,12 @@ storehouse_root: "/srv/storehouse"
 storehouse_subdirs:
   - ansible/isos
   - public/coredumps
+  # gh-52: session-watchdog crash-report dropzone. Deliberately OUTSIDE
+  # public/ so nginx h5ai (which serves only the public/ subtree) never
+  # exposes crash bundles. Per-host subdirs are created by the watchdog's
+  # scp on first upload; the dedicated `crashdrop` account + write-only
+  # key are operator-provisioned (secret material).
+  - crash-reports
 
 # Public coredump drop-zone retention. Older files (and now-empty per-host
 # subdirectories) get pruned by /etc/cron.daily/storehouse-coredumps-prune.

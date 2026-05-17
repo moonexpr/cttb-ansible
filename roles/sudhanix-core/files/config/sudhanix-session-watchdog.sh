@@ -53,9 +53,27 @@ recover() {
     rm -rf "$REPORT_DIR"
 
     log "report saved: ${REPORT_DIR}.tar.gz"
-    # Storehouse upload deferred until crash-report dropzone is provisioned.
-    # When ready: scp "${REPORT_DIR}.tar.gz" \
-    #     administrator@storehouse.cttb:/srv/storehouse/crash-reports/$(hostname -s)/
+
+    # gh-52: upload to the storehouse crash-report dropzone. The dropzone
+    # (/srv/storehouse/crash-reports/<host>/) is created by the storehouse
+    # role; the push uses a dedicated write-only key the operator deploys
+    # to /etc/sudhanix/crash-drop.key (key generation/distribution is
+    # secret material, intentionally not auto-provisioned). Until the key
+    # is present this degrades cleanly: log + keep the local bundle, never
+    # block logout.
+    CRASH_DROP_KEY=/etc/sudhanix/crash-drop.key
+    if [ -r "$CRASH_DROP_KEY" ]; then
+        if scp -i "$CRASH_DROP_KEY" \
+               -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+               "${REPORT_DIR}.tar.gz" \
+               "crashdrop@storehouse.cttb:/srv/storehouse/crash-reports/$(hostname -s)/" 2>>"$LOG" ; then
+            log "crash bundle uploaded to storehouse:crash-reports/$(hostname -s)/"
+        else
+            log "crash bundle upload FAILED (kept local: ${REPORT_DIR}.tar.gz)"
+        fi
+    else
+        log "crash-drop key absent ($CRASH_DROP_KEY) — bundle kept local, upload skipped"
+    fi
 
     # User-visible message before logout — block until dialog closes or times out.
     if command -v zenity >/dev/null 2>&1; then
