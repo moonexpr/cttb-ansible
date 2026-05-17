@@ -197,12 +197,23 @@
       changed_when: "'COPIED' in iso_copy.stdout"
       tags: ni_isos
 
-    - name: extract kernel and initrd from ISO (if not present)
+    # gh-56: also extract casper/filesystem.squashfs so the boot menus'
+    # fetch= path can pull just the squashfs (~1 GB) instead of the full
+    # ~3.2 GB ISO. The squashfs guard is separate from the casper-dir
+    # guard so an already-extracted (kernel-only) tree still gets the
+    # squashfs added on the next run.
+    - name: extract kernel, initrd and squashfs from ISO (if not present)
       raw: |
         if [ ! -d {{ ni_root_dir }}/ubuntu/live-server-noble-amd64/casper ]; then
           7z x -o{{ ni_root_dir }}/ubuntu/live-server-noble-amd64 \
             {{ ni_root_dir }}/ubuntu-live-server-noble-amd64.iso \
             casper/vmlinuz casper/initrd 2>&1
+          chmod -R 755 {{ ni_root_dir }}/ubuntu/live-server-noble-amd64
+          echo EXTRACTED
+        elif [ ! -f {{ ni_root_dir }}/ubuntu/live-server-noble-amd64/casper/filesystem.squashfs ]; then
+          7z x -o{{ ni_root_dir }}/ubuntu/live-server-noble-amd64 \
+            {{ ni_root_dir }}/ubuntu-live-server-noble-amd64.iso \
+            casper/filesystem.squashfs 2>&1
           chmod -R 755 {{ ni_root_dir }}/ubuntu/live-server-noble-amd64
           echo EXTRACTED
         else
