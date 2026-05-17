@@ -1,0 +1,10 @@
+---
+# dnsmasq parses `dhcp-boot=` at config-read time; SIGHUP only re-reads
+# /etc/hosts + the lease DB, not the main config — so a dhcp-boot change
+# needs a full service restart. This does NOT drop client leases: dnsmasq
+# persists leases to /var/lib/misc/dnsmasq.leases and reloads them on
+# startup, so active DHCP clients keep their addresses across the restart.
+- name: reload dnsmasq
+  ansible.builtin.systemd_service:
+    name: dnsmasq
+    state: restarted

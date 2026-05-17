@@ -19,6 +19,13 @@ ni_server: "http://pxe.{{dns_domain}}"
 ni_www: "{{ni_server}}/netinstall"
 ni_preseed: "{{ni_server}}/netinstall/preseed"
 
+# gh-69: single source of truth for the PXE server's IP. The Dell PXE ROM
+# on the lab desktops honours the DHCP siaddr field (dnsmasq dhcp-boot=),
+# NOT option 66, so the dnsmasq-pxe-boot role renders dhcp-boot= from this.
+# A future PXE re-IP is a one-line change here. Matches pxe.cttb's A record
+# (pxe24 container's infrastructure-subnet IP since the 2026-05-12 cutover).
+pxe_server_ip: "10.11.1.23"
+
 # various assets like isos, fonts, odd packages, etc, basically anything too
 # big to fit in a repository
 ansible_assets_url: "http://storehouse.{{dns_domain}}/ansible"

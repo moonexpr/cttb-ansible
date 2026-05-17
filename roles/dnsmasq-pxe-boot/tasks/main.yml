@@ -1,0 +1,31 @@
+---
+# gh-69: render the two dnsmasq dhcp-boot= lines from a single
+# pxe_server_ip variable so a PXE-server re-IP propagates automatically
+# instead of needing the hand-sed used to resolve gh-60 in-flight.
+
+- name: gh-69 assert pxe_server_ip is defined
+  ansible.builtin.assert:
+    that:
+      - pxe_server_ip is defined
+      - pxe_server_ip | ansible.utils.ipaddr
+    fail_msg: >-
+      pxe_server_ip must be set (single source of truth, normally in
+      group_vars/all) to a valid IP. Got: {{ pxe_server_ip | default('<unset>') }}
+    quiet: true
+
+- name: gh-69 template dhcp-boot for BIOS clients (tag:bios)
+  ansible.builtin.lineinfile:
+    path: "{{ dnsmasq_conf_path }}"
+    # match any prior IP on the bios line; rewrite to the current var.
+    regexp: '^dhcp-boot=tag:bios,'
+    line: "dhcp-boot=tag:bios,{{ dnsmasq_pxe_bios_file }},,{{ pxe_server_ip }}"
+    backup: true
+  notify: reload dnsmasq
+
+- name: gh-69 template dhcp-boot for UEFI x86_64 clients (tag:efi-x86_64)
+  ansible.builtin.lineinfile:
+    path: "{{ dnsmasq_conf_path }}"
+    regexp: '^dhcp-boot=tag:efi-x86_64,'
+    line: "dhcp-boot=tag:efi-x86_64,{{ dnsmasq_pxe_efi_file }},,{{ pxe_server_ip }}"
+    backup: true
+  notify: reload dnsmasq
