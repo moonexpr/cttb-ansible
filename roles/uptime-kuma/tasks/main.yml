@@ -1,0 +1,47 @@
+---
+# gh-84: provision Uptime Kuma as a single rootless container on srv-vm
+# under systemd, mirroring the storehouse single-service-on-srv-vm shape.
+# Monitors are seeded from host_vars/uptime-kuma.cttb (the issue's
+# service table). This is the role skeleton — the live container
+# stand-up + DNS (gh-47) + email wiring are operator-gated.
+
+- name: gh-84 install container runtime
+  ansible.builtin.apt:
+    name: "{{ 'podman' if uptime_kuma_runtime == 'podman' else 'docker.io' }}"
+    state: present
+    update_cache: true
+
+- name: gh-84 create persistent data dir
+  ansible.builtin.file:
+    path: "{{ uptime_kuma_data_dir }}"
+    state: directory
+    mode: "0750"
+    owner: root
+    group: root
+
+- name: gh-84 deploy systemd unit for the Uptime Kuma container
+  ansible.builtin.template:
+    src: uptime-kuma.service.j2
+    dest: /etc/systemd/system/uptime-kuma.service
+    mode: "0644"
+  notify: restart uptime-kuma
+
+- name: gh-84 enable + start the service
+  ansible.builtin.systemd_service:
+    name: uptime-kuma
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# Monitor seeding (host_vars/uptime-kuma.cttb → uptime_kuma_monitors) is
+# applied via Uptime Kuma's API once the container is healthy. Stubbed
+# here as a clearly-flagged TODO so the role's contract is explicit
+# without a half-working API call landing unverified.
+- name: gh-84 seed monitors from host_var (operator-completes via API token)
+  ansible.builtin.debug:
+    msg: >-
+      {{ uptime_kuma_monitors | default([]) | length }} monitors defined
+      in host_vars/uptime-kuma.cttb. Seeding requires a first-run admin
+      token from the live container — operator step (see issue test plan).
+  tags:
+    - uptime_kuma_seed

@@ -1,0 +1,18 @@
+# gh-84: Uptime Kuma single-container service (managed by Ansible).
+[Unit]
+Description=Uptime Kuma (campus up/down monitor — replaces mon/metrics, gh-30)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Restart=on-failure
+RestartSec=10
+ExecStartPre=-/usr/bin/{{ uptime_kuma_runtime }} rm -f uptime-kuma
+ExecStart=/usr/bin/{{ uptime_kuma_runtime }} run --rm --name uptime-kuma \
+  -p {{ uptime_kuma_port }}:3001 \
+  -v {{ uptime_kuma_data_dir }}:/app/data \
+  {{ uptime_kuma_image }}
+ExecStop=/usr/bin/{{ uptime_kuma_runtime }} stop uptime-kuma
+
+[Install]
+WantedBy=multi-user.target

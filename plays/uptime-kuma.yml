@@ -1,0 +1,9 @@
+---
+# gh-84: stand up Uptime Kuma on srv-vm (replacement for mon/metrics).
+# Operator-gated: production srv-vm container + status.cttb DNS depends
+# on gh-47. inventory host 'uptime-kuma.cttb' resolves to srv-vm.
+- name: Provision Uptime Kuma
+  hosts: uptime-kuma.cttb
+  become: true
+  roles:
+    - uptime-kuma

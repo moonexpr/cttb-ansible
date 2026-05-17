@@ -1,0 +1,20 @@
+---
+# gh-84: monitor definitions (the issue's "first pass" service table).
+# Consumed by roles/uptime-kuma once the container is up + an API token
+# exists. Probe types: http (expect 200), tcp (port connect), dns, ntp.
+uptime_kuma_monitors:
+  - { name: wiki.cttb,        type: http, url: "https://wiki.cttb/",  expect: 200 }
+  - { name: storehouse.cttb,  type: http, url: "http://storehouse.cttb/", expect: 200 }
+  - { name: ldap.cttb,        type: tcp,  host: ldap.cttb, port: 389 }
+  - { name: dns.cttb,         type: dns,  query: wiki.cttb }
+  - { name: pxe.cttb,         type: http, url: "http://pxe.cttb/", expect: 200 }
+  - { name: git.cttb,         type: tcp,  host: git.cttb, port: 22 }
+  - { name: koha.cttb,        type: http, url: "https://koha.cttb/", expect: 200 }
+  - { name: apt.cttb,         type: http, url: "http://apt.cttb/ubuntu/dists/noble/Release", expect: 200 }
+  - { name: squid.cttb,       type: tcp,  host: squid.cttb, port: 3128 }
+  - { name: e2guardian.cttb,  type: tcp,  host: e2guardian.cttb, port: 8080 }
+  - { name: time.cttb,        type: ntp,  host: time.cttb }
+  - { name: cups-server,      type: tcp,  host: cups-server, port: 631 }
+  # infra host-up only
+  - { name: srv-vm,   type: ping, host: srv-vm }
+  - { name: srv-nas,  type: ping, host: srv-nas }
