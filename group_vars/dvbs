@@ -41,3 +41,19 @@ additional_sw:
   # The eclipse-platform pkg requires openjdk-8-jdk, so JDK 8 is also installed.
   #- eclipse-platform
   - fbreader
+
+# gh-79: high-school audience app extras (unioned with sudhanix_apps_base
+# by roles/sudhanix-core/tasks/sw.yml). Concrete starting list — tune in review.
+sudhanix_apps_extra:
+  - ghostwriter
+  - focuswriter
+  - texstudio
+  - texlive-latex-recommended
+  - step
+  - celestia
+  - scribus
+  - openshot
+  - build-essential
+  - sqlitebrowser
+  - jupyter
+  - default-jdk

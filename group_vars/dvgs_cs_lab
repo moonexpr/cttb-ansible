@@ -21,3 +21,11 @@ cups_default_queue: Girl_School_CSLab
 #additional_apt_repo:
   # To install pycharm.
   #- ppa:mystic-mirage/pycharm
+
+# gh-79: DVGS CS-lab sub-group app overlay (unioned on top of base + dvgs extra).
+sudhanix_apps_extra_subgroup:
+  - gh
+  - nodejs
+  - npm
+  - cmake
+  - clang

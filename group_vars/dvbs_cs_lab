@@ -14,3 +14,11 @@ additional_sw:
   # netbeans Java IDE is requested by Dr. Koay for teaching AP Comp Sci course.
   - netbeans
   - fbreader
+
+# gh-79: DVBS CS-lab sub-group app overlay (unioned on top of base + dvbs extra).
+sudhanix_apps_extra_subgroup:
+  - gh
+  - nodejs
+  - npm
+  - cmake
+  - clang

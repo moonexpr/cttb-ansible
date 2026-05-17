@@ -31,3 +31,19 @@ global_proxy:
   - "https_proxy=http://10.11.1.1:8080/"
   - "ftp_proxy=http://10.11.1.1:8080/"
   - "no_proxy=localhost,127.0.0.1,10.11.0.0/16,.cttb"
+
+# gh-79: high-school audience app extras (unioned with sudhanix_apps_base
+# by roles/sudhanix-core/tasks/sw.yml). Concrete starting list — tune in review.
+sudhanix_apps_extra:
+  - ghostwriter
+  - focuswriter
+  - texstudio
+  - texlive-latex-recommended
+  - step
+  - celestia
+  - scribus
+  - openshot
+  - build-essential
+  - sqlitebrowser
+  - jupyter
+  - default-jdk

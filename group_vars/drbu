@@ -38,3 +38,27 @@ additional_desktop_sw:
   - stellarium
   - musescore3
   - anki
+
+# gh-79: DRBU university app extras (unioned with sudhanix_apps_base
+# by roles/sudhanix-core/tasks/sw.yml). Concrete starting list — tune in review.
+sudhanix_apps_extra:
+  - texstudio
+  - texlive-latex-recommended
+  - texlive-fonts-extra
+  - octave
+  - maxima
+  - wxmaxima
+  - jupyter
+  - r-base
+  - build-essential
+  - cmake
+  - clang
+  - default-jdk
+  - nodejs
+  - npm
+  - sqlitebrowser
+  - gh
+  - freecad
+  - kicad
+  - darktable
+  - scribus

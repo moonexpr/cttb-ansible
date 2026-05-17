@@ -46,6 +46,26 @@
           - packages
           - additional_desktop_sw
 
+      # gh-79: audience-bucketed app sets. Union of the universal base
+      # (group_vars/all), the audience extra (group_vars/{dvbs,dvgs,drbu})
+      # and the sub-group overlay (group_vars/{*_cs_lab,dvgs_art_room}).
+      # Three DISTINCT var names + this union — Ansible does NOT merge
+      # same-named list vars across group tiers, so a sub-group cannot
+      # clobber its audience's list. No audience-specific package name is
+      # hard-coded in the role; the role only knows the three var names.
+      - name: gh-79 install audience-bucketed app set
+        apt:
+          name: "{{ (sudhanix_apps_base | default([]))
+                    + (sudhanix_apps_extra | default([]))
+                    + (sudhanix_apps_extra_subgroup | default([]))
+                    | unique }}"
+          state: present
+          install_recommends: yes
+        when: (sudhanix_apps_base | default([])) | length > 0
+        tags:
+          - packages
+          - sudhanix-apps
+
       # removing bunch of sw I don't need
       - name: remove other apps
         apt:

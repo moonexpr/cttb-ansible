@@ -3,3 +3,7 @@
 # printing settings
 cups_default_queue: GuestHouse_CSLab
 
+
+# gh-79: DRBU CS-lab sub-group app overlay (unioned on top of base + drbu extra).
+sudhanix_apps_extra_subgroup:
+  - dbeaver-ce

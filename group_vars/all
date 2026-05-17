@@ -29,3 +29,36 @@ ntp_servers:
 # Zoom .deb — served from storehouse so lab machines don't hit zoom.us directly.
 # Matches the zoom role's override var in roles/sudhanix-core/tasks/sw.yml.
 zoom_deb_url: "{{ansible_assets_url}}/zoom_amd64.deb"
+
+# gh-79: audience-bucketed app sets. Universal, K-12 → university,
+# low-controversy base installed on every Sudhanix lab desktop. Per-
+# audience additions live in group_vars/{dvbs,dvgs,drbu} as
+# sudhanix_apps_extra; per-sub-group additions in
+# group_vars/{dvbs_cs_lab,dvgs_cs_lab,drbu_cs_lab,dvgs_art_room} as
+# sudhanix_apps_extra_subgroup. NOTE (resolves the issue's "Ansible
+# normal group-merge" assumption — which is incorrect for list vars
+# without hash_behaviour=merge): the three tiers use DISTINCT var names
+# and roles/sudhanix-core/tasks/sw.yml unions them, so a sub-group does
+# not clobber its audience's list. Lists below are the issue's concrete
+# starting set — tune in review.
+sudhanix_apps_base:
+  - flameshot
+  - qalculate-gtk
+  - meld
+  - xournalpp
+  - pandoc
+  - anki
+  - calibre
+  - foliate
+  - krita
+  - mypaint
+  - obs-studio
+  - handbrake
+  - stellarium
+  - kalzium
+  - gnome-games
+  - supertux
+  - supertuxkart
+  - thonny
+  - geany
+  - git

@@ -6,3 +6,7 @@ lightdm_hide_users: true
 # printing settings
 cups_default_queue: ArtRoom_Xerox
 
+
+# gh-79: DVGS art-room sub-group app overlay (unioned on top of base + dvgs extra).
+sudhanix_apps_extra_subgroup:
+  - darktable
