@@ -567,6 +567,34 @@
         tags:
           - sudhanix-core
 
+      # gh-85: lxqt-panel is installed (lubuntu.yml package set) but on a
+      # Sudhanix XFCE session it is never configured (the lxpanel task above
+      # is `when: desktop_session != 'xfce'`). Its pkg-shipped autostart entry
+      # /etc/xdg/autostart/lxqt-panel.desktop carries no OnlyShowIn/NotShowIn
+      # guard, so it still launches inside startxfce4 and reserves a default
+      # bottom-edge strut — invisible, but it pushes the Plank dock up off the
+      # edge by a variable amount. Per the XDG autostart spec a Hidden=true
+      # entry of the same name MUST be ignored, so overwrite the autostart
+      # entry with a Hidden override. Not removing the lxqt-panel package
+      # (other lubuntu-core deps reference it; removal risks desktop regress).
+      - name: gh-85 suppress vestigial lxqt-panel autostart in XFCE session
+        copy:
+          dest: /etc/xdg/autostart/lxqt-panel.desktop
+          mode: 0644
+          owner: root
+          group: root
+          content: |
+            [Desktop Entry]
+            Type=Application
+            Name=lxqt-panel (disabled — Sudhanix uses xfce4-panel + Plank)
+            Exec=true
+            Hidden=true
+            X-GNOME-Autostart-enabled=false
+        when: desktop_session == 'xfce'
+        tags:
+          - sudhanix-core
+          - lxqt-panel-suppress
+
       # Use NetworkManager to manage networks instead of the default netplan on 20.04.
       - name: remove netplan's default config file
         file:
