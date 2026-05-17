@@ -1,0 +1,17 @@
+# gh-49: appmenu-gtk-module (vala-panel-appmenu 0.7.6) crashes xfdesktop's
+# desktop root menu. `xfdesktop --menu` builds a rootless GtkMenu; the
+# module hooks every GtkMenuShell to export it over DBus and dereferences
+# a NULL widget->window (SIGSEGV, si_addr=0x38, deterministic). Sudhanix
+# force-loads the module globally (GTK_MODULES=appmenu-gtk-module in
+# /etc/environment) for the macOS-style global menubar, so it cannot be
+# removed wholesale.
+#
+# appmenu-gtk-module exposes a per-binary blacklist GSettings array
+# (schema org.appmenu.gtk-module, key `blacklist`; see upstream
+# subprojects/appmenu-gtk-module/src/blacklist.c is_blacklisted()). The
+# stock list already excludes apps that break with the module
+# (anjuta/glade/gwyddion/freeciv). xfdesktop is the same class — add it.
+# The global menu still works for every other GTK app (whitelist is empty,
+# so non-blacklisted apps are still exported).
+[org.appmenu.gtk-module]
+blacklist=['anjuta', 'freeciv', 'freeciv-gtk2', 'freeciv-gtk3', 'glade', 'gwyddion', 'xfdesktop']

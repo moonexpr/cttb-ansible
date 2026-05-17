@@ -446,6 +446,31 @@
         tags:
           - sudhanix-core
 
+      # gh-49: blacklist xfdesktop in appmenu-gtk-module so the desktop
+      # root menu (`xfdesktop --menu`) is never exported by the module —
+      # it has no toplevel GdkWindow and the module NULL-derefs it
+      # (deterministic SIGSEGV, si_addr=0x38). System-wide GSettings
+      # default via a glib schema override; preserves the upstream
+      # blacklist entries and the global menu for every other app.
+      - name: gh-49 deploy appmenu-gtk-module schema override (blacklist xfdesktop)
+        copy:
+          src: config/90_sudhanix-appmenu.gschema.override
+          dest: /usr/share/glib-2.0/schemas/90_sudhanix-appmenu.gschema.override
+          mode: 0644
+          owner: root
+          group: root
+        register: __gh49_appmenu_override
+        tags:
+          - sudhanix-core
+          - appmenu-blacklist
+
+      - name: gh-49 recompile glib schemas after appmenu override
+        command: glib-compile-schemas /usr/share/glib-2.0/schemas/
+        when: __gh49_appmenu_override is changed
+        tags:
+          - sudhanix-core
+          - appmenu-blacklist
+
       - name: force system window decorations for GTK apps
         lineinfile:
           path: /etc/environment
