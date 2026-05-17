@@ -35,3 +35,21 @@
   - name: configure new ssh key as RW+ admin key
     become_user: git
     command: "gitolite setup -pk {{git_root_dir}}/{{git_admin_key}}"
+
+  # gh-31: the Debian gitolite3 `update` hook fails on push with
+  # `Can't locate Gitolite/...pm in @INC` — access controls / commit
+  # rules silently don't fire (pushes succeed because the hook *errors*,
+  # the worst combination). gitolite-shell runs hooks over ssh in the
+  # git user's login env, so putting the packaged lib on PERL5LIB in
+  # ~git/.profile makes `Gitolite::*` resolvable for every hook without
+  # patching gitolite-generated hook files (which `gitolite setup`
+  # regenerates). Idempotent (lineinfile), survives re-setup.
+  - name: gh-31 ensure gitolite3 lib on PERL5LIB for the git user's hook env
+    lineinfile:
+      path: "{{git_root_dir}}/.profile"
+      create: true
+      owner: git
+      group: git
+      mode: "0644"
+      regexp: '^export PERL5LIB=.*gitolite3/lib'
+      line: 'export PERL5LIB="/usr/share/gitolite3/lib${PERL5LIB:+:$PERL5LIB}"'
