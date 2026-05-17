@@ -1,0 +1,13 @@
+---
+# gh-77 Phase 0: ansible callsite. Phase 0 only proves the package
+# pipeline, so this is a guarded stub — it installs sudhanix-meta from
+# the cttb-extras apt source ONLY when explicitly opted in, so adding
+# the role to a play is harmless until the real phases land.
+- name: sudhanix-meta — install from cttb-extras (Phase 0 stub, opt-in)
+  ansible.builtin.apt:
+    name: sudhanix-meta
+    state: present
+    update_cache: true
+  when: sudhanix_meta_install | default(false) | bool
+  tags:
+    - sudhanix-meta

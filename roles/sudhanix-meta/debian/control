@@ -1,0 +1,17 @@
+Source: sudhanix-meta
+Section: metapackages
+Priority: optional
+Maintainer: CTTB IT <it@cttb.us>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+
+Package: sudhanix-meta
+Architecture: all
+Depends: ${misc:Depends}
+Description: Sudhanix 26 lab-desktop transformation metapackage
+ Phase 0 skeleton (gh-77). Installs nothing of substance yet — it exists
+ to prove the build + apt.cttb/cttb-repos publish pipeline end to end
+ (same path as the vajra .deb). Subsequent phases add the Depends:
+ closure (gh-77 Phase 1), bundled data/ payload, and the postinst
+ configuration that replaces roles/sudhanix-core.

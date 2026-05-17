@@ -1,0 +1,10 @@
+sudhanix-meta (26.0.0) noble; urgency=medium
+
+  * gh-77 Phase 0: package skeleton. Builds a ~minimal .deb that installs
+    a marker file and a hello-world postinst — proves the
+    dpkg-buildpackage → reprepro → apt.cttb/cttb-repos pipeline (same as
+    vajra) before any real config migration (Phases 1-9).
+  * Version scheme: aligned to the Sudhanix release (26.0.0), per the
+    issue's "Version numbering" open item.
+
+ -- CTTB IT <it@cttb.us>  Sun, 17 May 2026 05:00:00 +0000

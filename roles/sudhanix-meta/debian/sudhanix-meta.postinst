@@ -1,0 +1,13 @@
+#!/bin/sh
+# gh-77 Phase 0: hello-world postinst. Real config migration (xfconf,
+# update-alternatives, MIME defaults, …) lands in Phases 5-7.
+set -e
+case "$1" in
+  configure)
+    mkdir -p /var/lib/sudhanix-meta
+    echo "sudhanix-meta Phase 0 installed $(date -u +%FT%TZ)" \
+      > /var/lib/sudhanix-meta/installed
+    ;;
+esac
+#DEBHELPER#
+exit 0

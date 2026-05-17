@@ -1,0 +1,5 @@
+#!/usr/bin/make -f
+# gh-77 Phase 0: minimal dh sequencer. data/ is installed via
+# debian/sudhanix-meta.install; postinst is a hello-world marker.
+%:
+	dh $@
