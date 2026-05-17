@@ -1,2 +1,2 @@
 [PlankDockItemPreferences]
-Launcher=trash://
+Launcher=docklet://trash
