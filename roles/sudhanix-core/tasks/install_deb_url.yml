@@ -1,0 +1,93 @@
+---
+# gh-80: reusable third-party .deb installer primitive.
+#
+# Installs a single upstream .deb (Obsidian, Zotero, GeoGebra, Scratch,
+# dbeaver-ce, …) that ships outside the Ubuntu archive. Mirror the .deb
+# to `ansible_assets_url` (storehouse) rather than hot-linking upstream —
+# lab IPs have no outbound HTTPS, a campus-only PXE run must still work.
+#
+# Contract (call with include_tasks + vars:):
+#   deb_name    required  logical name, used for the staging filename + msgs
+#   deb_url     required  full URL to the .deb (typically "{{ ansible_assets_url }}/<file>.deb")
+#   deb_creates required  idempotency probe — a path the package installs
+#                         (e.g. /opt/Obsidian/obsidian). If it exists the
+#                         whole include is a no-op: no download, no apt.
+#   deb_sha256  required  expected sha256 of the .deb. get_url verifies it
+#                         and fails the play with a checksum error BEFORE
+#                         apt runs, so a tampered/stale mirror never installs.
+#
+# Example:
+#   - name: install Obsidian
+#     ansible.builtin.include_tasks: install_deb_url.yml
+#     vars:
+#       deb_name: obsidian
+#       deb_url:  "{{ ansible_assets_url }}/obsidian_1.5.12_amd64.deb"
+#       deb_creates: /opt/Obsidian/obsidian
+#       deb_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+- name: "install_deb_url ({{ deb_name }}) — validate caller arguments"
+  ansible.builtin.assert:
+    that:
+      - deb_name    is defined and deb_name    | length > 0
+      - deb_url     is defined and deb_url     | length > 0
+      - deb_creates is defined and deb_creates | length > 0
+      - deb_sha256  is defined and deb_sha256  | length == 64
+    fail_msg: >-
+      install_deb_url.yml requires deb_name, deb_url, deb_creates and a
+      64-hex-char deb_sha256. Got name={{ deb_name | default('<unset>') }}
+      sha256={{ deb_sha256 | default('<unset>') }}.
+    quiet: true
+  tags:
+    - sudhanix-core
+    - sw_install
+    - deb_url
+
+- name: "install_deb_url ({{ deb_name }}) — idempotency probe"
+  ansible.builtin.stat:
+    path: "{{ deb_creates }}"
+  register: __deb_url_present
+  tags:
+    - sudhanix-core
+    - sw_install
+    - deb_url
+
+# Everything below is skipped wholesale when deb_creates already exists —
+# no re-download, no re-install, changed=0 on every subsequent run.
+- name: "install_deb_url ({{ deb_name }}) — fetch + install"
+  when: not __deb_url_present.stat.exists
+  block:
+
+    - name: "install_deb_url ({{ deb_name }}) — staging dir"
+      ansible.builtin.file:
+        path: /var/cache/sudhanix/deb
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+
+    # get_url with `checksum:` validates the sha256 itself. A mismatch
+    # fails THIS task (clear "The checksum for <file> did not match")
+    # before the apt task below ever runs — bad mirror never installs.
+    - name: "install_deb_url ({{ deb_name }}) — download + verify sha256"
+      ansible.builtin.get_url:
+        url: "{{ deb_url }}"
+        dest: "/var/cache/sudhanix/deb/{{ deb_name }}.deb"
+        checksum: "sha256:{{ deb_sha256 }}"
+        mode: "0644"
+        owner: root
+        group: root
+        timeout: 60
+      register: __deb_url_fetch
+      until: __deb_url_fetch is succeeded
+      retries: 2
+      delay: 5
+
+    - name: "install_deb_url ({{ deb_name }}) — apt install the .deb"
+      ansible.builtin.apt:
+        deb: "/var/cache/sudhanix/deb/{{ deb_name }}.deb"
+        state: present
+
+  tags:
+    - sudhanix-core
+    - sw_install
+    - deb_url
