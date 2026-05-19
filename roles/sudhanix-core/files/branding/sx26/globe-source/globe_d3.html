@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; }
+  button { padding: 10px 24px; background: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: sans-serif; }
+</style>
+</head>
+<body>
+<svg id="globe"></svg>
+<button onclick="exportSVG()">Export SVG</button>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<script>
+const SIZE = 700;
+const svg = d3.select('#globe')
+  .attr('width', SIZE)
+  .attr('height', SIZE)
+  .attr('xmlns', 'http://www.w3.org/2000/svg');
+
+const defs = svg.append('defs');
+
+// Ocean gradient — deep navy to rich blue
+const oceanGrad = defs.append('radialGradient')
+  .attr('id', 'ocean')
+  .attr('cx', '38%').attr('cy', '35%').attr('r', '60%');
+oceanGrad.append('stop').attr('offset', '0%').attr('stop-color', '#4a90d9');
+oceanGrad.append('stop').attr('offset', '50%').attr('stop-color', '#1a5fa8');
+oceanGrad.append('stop').attr('offset', '100%').attr('stop-color', '#0b2e6e');
+
+// Land gradient
+const landGrad = defs.append('radialGradient')
+  .attr('id', 'land')
+  .attr('cx', '38%').attr('cy', '35%').attr('r', '65%');
+landGrad.append('stop').attr('offset', '0%').attr('stop-color', '#b5d68a');
+landGrad.append('stop').attr('offset', '45%').attr('stop-color', '#6aaa3a');
+landGrad.append('stop').attr('offset', '100%').attr('stop-color', '#2d6e1a');
+
+// Atmosphere outer glow
+const atmosGrad = defs.append('radialGradient')
+  .attr('id', 'atmos')
+  .attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
+atmosGrad.append('stop').attr('offset', '82%').attr('stop-color', '#4aa8ff').attr('stop-opacity', '0');
+atmosGrad.append('stop').attr('offset', '93%').attr('stop-color', '#4aa8ff').attr('stop-opacity', '0.25');
+atmosGrad.append('stop').attr('offset', '100%').attr('stop-color', '#a0d4ff').attr('stop-opacity', '0');
+
+// Specular highlight
+const specGrad = defs.append('radialGradient')
+  .attr('id', 'specular')
+  .attr('cx', '32%').attr('cy', '28%').attr('r', '40%');
+specGrad.append('stop').attr('offset', '0%').attr('stop-color', '#fff').attr('stop-opacity', '0.35');
+specGrad.append('stop').attr('offset', '100%').attr('stop-color', '#fff').attr('stop-opacity', '0');
+
+// Clip to sphere
+defs.append('clipPath').attr('id', 'clip')
+  .append('circle').attr('cx', SIZE/2).attr('cy', SIZE/2).attr('r', SIZE/2 - 10);
+
+const projection = d3.geoOrthographic()
+  .scale(SIZE/2 - 12)
+  .translate([SIZE/2, SIZE/2])
+  .rotate([85, -15, 0]); // centered on Americas
+
+const path = d3.geoPath().projection(projection);
+const graticule = d3.geoGraticule().step([15, 15]);
+
+const g = svg.append('g').attr('clip-path', 'url(#clip)');
+
+// Ocean base
+g.append('circle')
+  .attr('cx', SIZE/2).attr('cy', SIZE/2).attr('r', SIZE/2 - 12)
+  .attr('fill', 'url(#ocean)');
+
+// Graticule
+g.append('path')
+  .datum(graticule())
+  .attr('d', path)
+  .attr('fill', 'none')
+  .attr('stroke', '#ffffff18')
+  .attr('stroke-width', 0.5);
+
+// Land (loaded async)
+fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
+  .then(r => r.json())
+  .then(world => {
+    const land = topojson.feature(world, world.objects.land);
+    const borders = topojson.mesh(world, world.objects.countries, (a, b) => a !== b);
+
+    g.append('path')
+      .datum(land)
+      .attr('d', path)
+      .attr('fill', 'url(#land)');
+
+    g.append('path')
+      .datum(borders)
+      .attr('d', path)
+      .attr('fill', 'none')
+      .attr('stroke', '#ffffff30')
+      .attr('stroke-width', 0.4);
+  });
+
+// Specular highlight (on top, inside clip)
+g.append('circle')
+  .attr('cx', SIZE/2).attr('cy', SIZE/2).attr('r', SIZE/2 - 12)
+  .attr('fill', 'url(#specular)');
+
+// Atmosphere (outside clip, full svg)
+svg.append('circle')
+  .attr('cx', SIZE/2).attr('cy', SIZE/2).attr('r', SIZE/2 - 4)
+  .attr('fill', 'url(#atmos)');
+
+// Globe border
+svg.append('circle')
+  .attr('cx', SIZE/2).attr('cy', SIZE/2).attr('r', SIZE/2 - 12)
+  .attr('fill', 'none')
+  .attr('stroke', '#4aa8ff40')
+  .attr('stroke-width', 1.5);
+
+function exportSVG() {
+  const blob = new Blob([svg.node().outerHTML], {type: 'image/svg+xml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'globe_sudhanix26.svg';
+  a.click();
+}
+</script>
+</body>
+</html>
