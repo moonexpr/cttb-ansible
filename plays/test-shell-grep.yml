@@ -1,0 +1,22 @@
+---
+
+- hosts: dvbs-cc-pc1
+  #gather_facts: yes
+  tasks:
+    #- name: ca certificate | Check whether CTTB Root CA certificate is already added
+    #  # Check whether it's already added into the all-containing file.
+    #  shell: grep -E '^1234EH4GBuvisHX1r5NIV5g89uEcsYgUWw5xYi3NgfzyelOBhrUc$' /etc/ssl/certs/ca-certificates.crt || echo no > /tmp/status
+
+    - name: check system cert info whether CTTB Root CA cert is not already added
+      shell: grep -E '^EH4GBuvisHX1r5NIV5g89uEcsYgUWw5xYi3NgfzyelOBhrUc$' /etc/ssl/certs/ca-certificates.crt 
+      register: grep_result
+      ignore_errors: True
+      changed_when: False
+      failed_when: grep_result.rc >= 2
+
+    - name: update system cert info if CTTB Root CA cert is not already added
+      # Update only when the CTTB Root CA is not in the all-containing file.
+      shell: /usr/sbin/update-ca-certificates -f 
+      # "-f" means "fresh". It removes all existing symlinks then regenerate them, thus can delete links for removed authorities.
+      when: "grep_result.rc != 0"
+

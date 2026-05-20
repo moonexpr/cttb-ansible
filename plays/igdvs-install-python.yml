@@ -1,0 +1,11 @@
+---
+
+- hosts: dvbs-lab13 dvbs-lab14
+  gather_facts: no
+  tasks:
+    - name: install python-is-python3
+      apt:
+        state: latest
+        install_recommends: no
+        name:
+        - python-is-python3

@@ -49,10 +49,16 @@
       vtype: boolean
 
   - name: debconf libpam-runtime/profiles multiselect
+    # mkhomedir copies /etc/skel into $HOME on first login for users whose
+    # home directory does not yet exist. Required for LDAP users on lab
+    # machines so Sudhanix dotfiles (Plank dock launchers, fcitx config,
+    # autostart entries) land in the user's home. Existing NFS homes are
+    # untouched — pam_mkhomedir is a no-op when $HOME already exists; those
+    # users are handled by sudhanix-firstlogin (sudhanix-core role).
     debconf:
       name: libpam-runtime
       question: libpam-runtime/profiles
-      value: unix, ldap, systemd
+      value: unix, ldap, systemd, mkhomedir
       vtype: multiselect
 
   - name: install ldap/nss/pam pkgs
@@ -72,7 +78,7 @@
     tags:
       - nsswitch.conf
 
-  - name: configure ldap for nss, on Ubuntu 20.04
+  - name: configure ldap for nss
     lineinfile:
       path: /etc/nsswitch.conf
       regexp: "{{ item.From }}"
@@ -82,7 +88,6 @@
       - { From: '^passwd:.*files systemd', To: 'passwd:         files systemd ldap'}
       - { From: '^group:.*files systemd',  To: 'group:          files systemd ldap'}
       - { From: '^shadow:.*files',         To: 'shadow:         files ldap'}
-    when: ansible_distribution_version == '20.04'
     tags:
       - nsswitch.conf
 
@@ -154,3 +159,18 @@
         mode: 0644
     tags:
         - acl
+
+  - name: grant sudo to LDAP "it" group
+    copy:
+      dest: /etc/sudoers.d/it-group
+      owner: root
+      group: root
+      mode: '0440'
+      content: |
+        # Members of the LDAP cn=it group (gidNumber 2001) get full sudo.
+        # Password required, matching the default %sudo policy.
+        %it ALL=(ALL:ALL) ALL
+      validate: 'visudo -cf %s'
+    tags:
+      - sudoers
+      - acl

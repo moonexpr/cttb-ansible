@@ -1,0 +1,153 @@
+---
+# Browser stack for sudhanix-core.
+#
+# Two-block phase shape (issue #57, Task 5):
+#   install: Chrome apt (key + repo + install + dup-source cleanup),
+#            Firefox apt (non-snap), Zen Browser flatpak install + fs
+#            grants.
+#   configure: Chrome --use-system-title-bar Exec= edit on the package's
+#              .desktop, xdg-settings default web browser.
+
+  - name: sw-browser — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
+    tags:
+      - install
+      - browser
+    block:
+
+      # sort out the browser situation, firefox is a resource hog so we want some form of chrome
+      - block:
+        - block:
+          - name: download Chrome signing key
+            get_url:
+              url: "{{ chrome_signing_key_url | default(apt_url + '/Google-linux_signing_key.pub') }}"
+              dest: /usr/share/keyrings/google-chrome.asc
+              mode: '0644'
+
+          - name: Add chrome mirror
+            apt_repository:
+              repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] {{ chrome_repo | default(apt_url + '/mirrors/chrome') }} stable main"
+              state: present
+
+          - name: install Google Chrome
+            apt:
+              name: google-chrome-stable
+              state: present
+              update_cache: yes
+
+          # remove dup apt mirror file created by the install process (the pkg adds its own)
+          - name: remove original chrome repository
+            file:
+              path: /etc/apt/sources.list.d/google-chrome.list
+              state: absent
+          when: ansible_architecture == "amd64" or ansible_architecture == "x86_64"
+        when: chrome == true
+        tags:
+          - browser
+
+      # Ubuntu 24.04 noble ships only an empty snap-transitional `firefox`
+      # package (1:1snap1-*): no /usr/bin/firefox, no .desktop, just a
+      # Depends on the firefox snap. The no-snap policy removes snap, so
+      # the host ends up with neither. firefox-esr is not in noble main.
+      # Policy-aligned path (PROJECT.md): official Mozilla tarball hosted
+      # on storehouse.cttb/ansible, same shape as Thunderbird.
+      - block:
+        - name: remove firefox snap-transitional package
+          apt:
+            name: firefox
+            state: absent
+            purge: yes
+
+        - name: remove firefox snap (if installed)
+          snap:
+            name: firefox
+            state: absent
+          ignore_errors: true
+
+        - name: download and extract firefox from asset server
+          unarchive:
+            src: "{{ ansible_assets_url }}/firefox-latest.tar.xz"
+            dest: /opt/
+            remote_src: yes
+            creates: /opt/firefox/firefox
+            owner: root
+            group: root
+
+        - name: symlink firefox binary to PATH
+          file:
+            src: /opt/firefox/firefox
+            dest: /usr/local/bin/firefox
+            state: link
+
+        - name: deploy firefox desktop entry
+          copy:
+            content: |
+              [Desktop Entry]
+              Name=Firefox Web Browser
+              Comment=Browse the World Wide Web
+              Exec=/opt/firefox/firefox %u
+              Icon=/opt/firefox/browser/chrome/icons/default/default128.png
+              Terminal=false
+              Type=Application
+              MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+              Categories=Network;WebBrowser;
+              StartupWMClass=firefox
+              StartupNotify=true
+            dest: /usr/share/applications/firefox.desktop
+            mode: '0644'
+            owner: root
+            group: root
+        when: firefox == true
+        tags:
+          - browser
+
+      - name: install Zen Browser via Flatpak
+        block:
+          - name: ensure Flatpak is installed
+            apt:
+              name: flatpak
+              state: present
+
+          - name: add Flathub repository
+            command: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+            changed_when: false
+
+          - name: install Zen Browser from Flathub
+            community.general.flatpak:
+              name: io.github.zen_browser.zen
+              state: present
+              method: system
+
+          # Flatpak sandbox blocks writes outside the sandbox. Without these
+          # filesystem grants, dragging an image from a webpage onto the desktop
+          # (or into ~/Downloads) fails with "The specified location is not
+          # supported". --system applies the override to all users on the host.
+          - name: grant Zen Browser write access to ~/Desktop and ~/Downloads
+            command: flatpak override --system --filesystem=xdg-desktop --filesystem=xdg-download io.github.zen_browser.zen
+            changed_when: false
+        when: zen_browser | default(false)
+        tags:
+          - browser
+
+  - name: sw-browser — configure phase
+    when: __sudhanix_phase | default("all") in ["config", "all"]
+    tags:
+      - config
+      - browser
+    block:
+
+      - name: force Chrome to use system window decorations (rounded corners)
+        replace:
+          path: /usr/share/applications/google-chrome.desktop
+          regexp: '^(Exec=/usr/bin/google-chrome-stable)(?! --use-system-title-bar)'
+          replace: '\1 --use-system-title-bar'
+        when: chrome == true and (ansible_architecture == "amd64" or ansible_architecture == "x86_64")
+        tags:
+          - browser
+
+      - name: set Google Chrome as the default web browser
+        command: xdg-settings set default-web-browser google-chrome.desktop
+        changed_when: false
+        when: chrome == true and (ansible_architecture == "amd64" or ansible_architecture == "x86_64")
+        tags:
+          - browser

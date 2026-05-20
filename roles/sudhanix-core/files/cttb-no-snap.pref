@@ -1,0 +1,27 @@
+# Managed by Ansible — roles/sudhanix-core (CTTB no-snap policy guardrail).
+#
+# Lab desktop apt batches now run with install_recommends: yes (so the
+# transient ops team stops silently losing transitive packages — audio
+# firmware, accountsservice, etc.). The risk: the Ubuntu desktop stack
+# Recommends snap machinery. These negative pins make it impossible for
+# Recommends (or anything short of an explicit hard Depends) to pull snap
+# back in. Firefox/Thunderbird stay tarball-sourced (the apt packages on
+# noble are snap-transitional stubs); pinning them here reinforces that.
+#
+# See PROJECT.md "Software Distribution Policy" and gh-76.
+
+Package: snapd
+Pin: release *
+Pin-Priority: -1
+
+Package: gnome-software-plugin-snap
+Pin: release *
+Pin-Priority: -1
+
+Package: firefox
+Pin: release *
+Pin-Priority: -1
+
+Package: thunderbird
+Pin: release *
+Pin-Priority: -1

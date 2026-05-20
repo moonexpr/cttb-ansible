@@ -1,0 +1,18 @@
+---
+
+- hosts: dvbs-cc-pc5-dell dvbs-cc-pc10-dell dvbs-cc-pc11 dvbs-cc-pc12 dvbs-cc-pc13 dvbs-cc-pc14 dvbs-cc-pc15
+  gather_facts: no
+  tasks:
+    - name: add a cron job to turn off BS-CC PCs at 10:mm PM
+      cron:
+        name: "Shuts down BS-CC PCs nightly at 10:mm pm."
+        hour: "22"
+        minute: "15,30,45"
+        job: "/sbin/shutdown -P now"
+
+    - name: add a cron job to turn off BS-CC PCs at 11pm
+      cron:
+        name: "Shuts down BS-CC PCs nightly at 11pm."
+        hour: "23"
+        minute: "0"
+        job: "/sbin/shutdown -P now"

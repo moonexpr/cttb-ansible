@@ -1,0 +1,105 @@
+---
+# Install Thunderbird from Mozilla tarball hosted on storehouse.cttb/ansible
+# Ubuntu 24.04 ships a snap transition package — unusable on campus (no snap store access)
+# Mozilla Team PPA is unreachable (ppa.launchpad.net blocked by campus firewall)
+# Solution: host official Mozilla tarball on storehouse.cttb/ansible
+#
+# Two-block phase shape (issue #57, Task 5):
+#   install: snap-transition-pkg absent, snap absent (best-effort), tarball
+#            unarchive to /opt/thunderbird/, /usr/local/bin/thunderbird
+#            symlink, /usr/share/applications/thunderbird.desktop.
+#   configure: cttb-proxy.js in /opt/thunderbird/defaults/pref/ (only when
+#              global_proxy is defined).
+
+  - name: sw-thunderbird — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
+    tags:
+      - install
+      - thunderbird
+    block:
+
+      - name: remove thunderbird snap transition package
+        apt:
+          name: thunderbird
+          state: absent
+          purge: yes
+        tags:
+          - thunderbird
+          - packages
+
+      - name: remove thunderbird snap (if installed)
+        snap:
+          name: thunderbird
+          state: absent
+        ignore_errors: true
+        tags:
+          - thunderbird
+          - packages
+
+      - name: download and extract thunderbird from asset server
+        unarchive:
+          src: "{{ ansible_assets_url }}/thunderbird-latest.tar.xz"
+          dest: /opt/
+          remote_src: yes
+          creates: /opt/thunderbird/thunderbird
+          owner: root
+          group: root
+        tags:
+          - thunderbird
+
+      - name: symlink thunderbird binary to PATH
+        file:
+          src: /opt/thunderbird/thunderbird
+          dest: /usr/local/bin/thunderbird
+          state: link
+        tags:
+          - thunderbird
+
+      - name: deploy thunderbird desktop entry
+        copy:
+          content: |
+            [Desktop Entry]
+            Name=Thunderbird Mail
+            Comment=Send and receive mail with Thunderbird
+            Exec=/opt/thunderbird/thunderbird %u
+            Icon=/opt/thunderbird/chrome/icons/default/default128.png
+            Terminal=false
+            Type=Application
+            MimeType=message/rfc822;x-scheme-handler/mailto;
+            Categories=Network;Email;
+            StartupWMClass=thunderbird
+            StartupNotify=true
+          dest: /usr/share/applications/thunderbird.desktop
+          mode: '0644'
+          owner: root
+          group: root
+        tags:
+          - thunderbird
+
+  - name: sw-thunderbird — configure phase
+    when: __sudhanix_phase | default("all") in ["config", "all"]
+    tags:
+      - config
+      - thunderbird
+    block:
+
+      - name: configure Thunderbird to use campus proxy
+        copy:
+          content: |
+            // CTTB campus proxy — deployed by Ansible
+            // network.proxy.type: 1 = manual proxy
+            pref("network.proxy.type", 1);
+            pref("network.proxy.http", "10.11.1.1");
+            pref("network.proxy.http_port", 8080);
+            pref("network.proxy.ssl", "10.11.1.1");
+            pref("network.proxy.ssl_port", 8080);
+            pref("network.proxy.ftp", "10.11.1.1");
+            pref("network.proxy.ftp_port", 8080);
+            pref("network.proxy.no_proxies_on", "localhost, 127.0.0.1, 10.11.0.0/16, .cttb");
+          dest: /opt/thunderbird/defaults/pref/cttb-proxy.js
+          mode: '0644'
+          owner: root
+          group: root
+        when: global_proxy is defined
+        tags:
+          - thunderbird

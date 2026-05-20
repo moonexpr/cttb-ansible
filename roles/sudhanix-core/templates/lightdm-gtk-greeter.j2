@@ -1,0 +1,14 @@
+[greeter]
+background = {{desktop_wallpaper_dir}}/{{desktop_login_background}}
+theme-name = {{desktop_theme}}
+icon-theme-name = {{icon_theme}}
+xcursor-theme-name = {{cursor_theme}}
+font-name = Inter Display 10
+indicators = ~host;~spacer;~clock;~power
+# Greeter-only clock format. The default locale format (e.g. "07 May, 14:29")
+# is visually identical to the xfce4-panel clock in the user session, which
+# makes the greeter look like a live session at first glance (gh-37). A bare
+# 24-hour HH:MM keeps the greeter visually distinct from the panel clock.
+clock-format = %H:%M
+user-background = false
+default-user-image = /usr/share/lubuntu/images/avatar.png

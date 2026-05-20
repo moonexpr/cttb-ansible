@@ -1,0 +1,185 @@
+---
+# Install phase — provisioning side of sudhanix-core.
+#
+# All apt installs, unarchives, get_url, binary deploys, tarball extraction,
+# and one-shot fix-ups of system files that other phases read.
+#
+# Post-condition: every dependency required by configure.yml is on disk.
+# main.yml runs `meta: flush_handlers` immediately after this file so the
+# rebuild-font-cache / restart-lightdm / restart-pulseaudio / update-grub /
+# update-initramfs handlers fire before any configure task reads from the
+# artifacts install left behind.
+#
+# Tag strategy is preserved from the prior setup/default.yml orchestrator:
+# each include directive carries the same tag set, and `apply:` propagates
+# the install tag to dynamically-included files (except for mixed files
+# whose internal per-task tags drive their own filtering — they get no
+# apply here and will be split into explicit install/config blocks in
+# follow-on tasks).
+
+  # When installing mini-ubuntu sometimes stray interface entries end up
+  # in /etc/network/interfaces and NetworkManager refuses to manage them.
+  - name: fix network interfaces
+    copy:
+      content: |
+        auto lo
+        iface lo inet loopback
+      dest: /etc/network/interfaces
+      mode: 0644
+      owner: root
+      group: root
+    tags:
+      - install
+
+  # GS-only: ensure the student/teacher shared accounts have a real shell.
+  # Lives in install phase because it edits /etc/passwd's installed entries.
+  - name: Add /bin/bash as GS "student" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^student:x:2000:2000:Student:/home/student:.*"
+      replace: "student:x:2000:2000:Student:/home/student:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - install
+      - gs_acct_shell
+
+  - name: Add /bin/bash as GS "teacher" account shell
+    replace:
+      dest: /etc/passwd
+      regexp: "^teacher:x:1999:1999:Teacher:/home/teacher:.*"
+      replace: "teacher:x:1999:1999:Teacher:/home/teacher:/bin/bash"
+    when: '"dvgs" in group_names'
+    tags:
+      - install
+      - gs_acct_shell
+
+  # Lubuntu core packages — the single biggest apt batch in the role.
+  # lubuntu.yml has no configure block (all install), so no second
+  # include from configure.yml is needed.
+  - include_tasks:
+      file: lubuntu.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - lubuntu
+
+  # Language support — install block (consolidated apt batch + absent +
+  # conditional chewing + conditional sanskrit). The configure block
+  # (im-config) is included from configure.yml.
+  - include_tasks:
+      file: lang.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - lang
+
+  # lookandfeel.yml is one file with two phase-gated blocks (Task 2 of
+  # the issue #57 refactor). __sudhanix_phase=install causes only the
+  # install block to fire here; configure.yml will re-include the same
+  # file with __sudhanix_phase=config to fire the configure block. The
+  # `when:` on each block makes the gate observable in --check output.
+  - include_tasks:
+      file: lookandfeel.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - lookandfeel
+
+  # Plymouth boot splash — Sudhanix branding. Install block: apt + theme
+  # asset deploy. Configure block (in configure.yml): update-alternatives,
+  # grub cmdline edit, update-initramfs rebuild.
+  - include_tasks:
+      file: plymouth.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - plymouth
+
+  # sw.yml: its own apt batches (Zoom/Skype/additional + the apt-absent
+  # purge list) plus dispatch to sw-office / sw-browser / sw-thunderbird /
+  # sw-vscode. sw-browser and sw-thunderbird are mixed (install + config);
+  # configure.yml re-includes sw.yml with __sudhanix_phase=config so the
+  # config sub-blocks fire.
+  #
+  # gh-16 fresh-PXE: do NOT tag this include `zoom`. include_tasks tags are
+  # inherited by every child, so `--skip-tags zoom` (mandated for clean
+  # runs by PROJECT.md + #16 acceptance, to skip only the broken Zoom .deb
+  # upgrade) was skipping the ENTIRE install-phase software batch —
+  # Chrome/Firefox/Zen/office/vscode/thunderbird never installed. The
+  # actual Zoom tasks in sw.yml are individually `zoom`-tagged
+  # (sw.yml: "upgrade/install Zoom client"), so `--skip-tags zoom` still
+  # skips precisely those without nuking the rest. The long-lived
+  # testmachine masked this (Chrome survived from prior non-skipped runs).
+  - include_tasks:
+      file: sw.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - sw_install
+      - browser
+      - thunderbird
+      - vscode
+
+  - include_tasks:
+      file: sw-goldendict.yml
+    vars:
+      __sudhanix_phase: install
+    when: goldendict is defined
+    tags:
+      - install
+      - sw_install
+
+  # Sound: modprobe quirk + apt deps + bigsur theme tarball. Configure
+  # block (in configure.yml) holds legacy pre-24.04 pulseaudio service.
+  - include_tasks:
+      file: sound.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - sound
+
+  # Wallpaper install block — wallpaper dir mkdir + tarball + macOS
+  # resource-fork purge. Configure block in configure.yml.
+  - include_tasks:
+      file: wallpaper.yml
+    vars:
+      __sudhanix_phase: install
+    tags:
+      - install
+      - wallpaper
+
+  # Role-wide apt upgrade — always last in install phase so it operates on
+  # the just-installed package set, not the bare PXE image.
+  - name: apt autoremove before upgrade
+    apt:
+      autoremove: yes
+      purge: yes
+    tags:
+      - install
+      - apt
+      - apt_autoremove
+
+  - name: update system
+    apt:
+      upgrade: full
+      update_cache: yes
+      cache_valid_time: 3600
+      autoremove: yes
+    tags:
+      - install
+      - os_upgrade
+
+  - name: apt autoremove after upgrade
+    apt:
+      autoremove: yes
+      purge: yes
+    tags:
+      - install
+      - apt
+      - apt_autoremove

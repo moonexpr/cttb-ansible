@@ -1,0 +1,157 @@
+---
+# test-vajra-pr — build and smoke-test the vajra/port-legacy-tools branch
+# on dvgs-testmachine, without touching the system-installed vajra package.
+#
+# Run with: pb test-vajra-pr -l dvgs-testmachine
+#
+# Builds in /home/administrator/vajra-pr/ as the test user. Deps installed
+# via apt (privileged). Rust toolchain installed user-local via rustup.
+# The system vajra package stays in place; the new binary is run from the
+# build tree only.
+
+- name: Build vajra PR branch on testmachine
+  hosts: dvgs-testmachine
+  gather_facts: false
+  vars:
+    work_dir: "/home/administrator/vajra-pr"
+    branch: "vajra/port-legacy-tools"
+    local_src: "/Users/jc/Garden/app/vajra/"
+    cargo_bin: "/home/administrator/.cargo/bin/cargo"
+    rustup_bin: "/home/administrator/.cargo/bin/rustup"
+
+  tasks:
+    - name: Install build dependencies
+      become: true
+      apt:
+        name:
+          - build-essential
+          - pkg-config
+          - libgtk-3-dev
+          - libglib2.0-dev
+          - libssl-dev
+          - libldap2-dev
+          - curl
+          - git
+          - lua5.4
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Check for existing rustup install
+      stat:
+        path: "{{ rustup_bin }}"
+      register: rustup_stat
+
+    - name: Install rustup (user-local, no sudo)
+      shell: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+          | sh -s -- -y --default-toolchain stable --profile minimal
+      args:
+        creates: "{{ rustup_bin }}"
+        executable: /bin/bash
+      environment:
+        http_proxy: "http://10.11.1.1:8080/"
+        https_proxy: "http://10.11.1.1:8080/"
+      when: not rustup_stat.stat.exists
+
+    - name: Ensure work dir exists
+      file:
+        path: "{{ work_dir }}"
+        state: directory
+
+    - name: Push local vajra source to testmachine (rsync)
+      synchronize:
+        src: "{{ local_src }}"
+        dest: "{{ work_dir }}/"
+        delete: yes
+        recursive: yes
+        rsync_opts:
+          - "--exclude=target/"
+          - "--exclude=.DS_Store"
+          - "--exclude=legacy/"
+
+    - name: Lua syntax-check every bundled tool (luac -p)
+      shell: |
+        set -e
+        cd "{{ work_dir }}/src/tools"
+        for f in *.lua; do
+          luac -p "$f" || { echo "FAIL: $f"; exit 1; }
+        done
+        echo "OK: $(ls *.lua | wc -l) tool(s) parsed"
+      register: lua_check
+      changed_when: false
+
+    - name: Show Lua check result
+      debug:
+        var: lua_check.stdout
+
+    - name: Build vajra (cargo build --release)
+      shell: |
+        cd "{{ work_dir }}"
+        "{{ cargo_bin }}" build --release 2>&1 | tail -40
+      environment:
+        PATH: "/home/administrator/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        CARGO_HTTP_MULTIPLEXING: "false"
+        http_proxy: "http://10.11.1.1:8080/"
+        https_proxy: "http://10.11.1.1:8080/"
+      register: build_out
+      changed_when: false
+      # Cargo can take many minutes on a cold cache; give it room.
+      async: 1800
+      poll: 30
+
+    - name: Show build tail
+      debug:
+        var: build_out.stdout_lines
+
+    - name: Verify built binary exists
+      stat:
+        path: "{{ work_dir }}/target/release/vajra"
+      register: bin_stat
+
+    - name: Fail if binary missing
+      fail:
+        msg: "vajra binary not produced — check build output above"
+      when: not bin_stat.stat.exists
+
+    - name: Inspect built binary
+      shell: |
+        BIN="{{ work_dir }}/target/release/vajra"
+        file "$BIN"
+        ls -lh "$BIN"
+        echo --- strings / loaded tools ---
+        strings "$BIN" | grep -E '(apt-updates|cache-flush|chrome-locks|device-register|wake-on-lan|xfce-reset|welcome-reset|sudhanix|services|sessions|storage|time-ntp|hardware|firewall|kerberos|network-diag|password-reset|print-queue|display)' | sort -u | head -25
+      register: bin_inspect
+      changed_when: false
+
+    - name: Show binary inspection
+      debug:
+        var: bin_inspect.stdout_lines
+
+    - name: Verify ldapsearch with StartTLS (issue #2 OS-level check)
+      shell: |
+        # If this succeeds against the campus LDAP, the kernel of the #2 fix
+        # — adding -ZZ to ldap:// invocations — is the right answer.
+        ldapsearch -x -ZZ -LLL \
+          -H ldap://ldap-srv.cttb \
+          -b ou=People,dc=cttb \
+          '(uid=kit.chong)' uid uidNumber cn mail 2>&1 \
+          | head -20
+      register: ldap_check
+      changed_when: false
+      failed_when: false
+
+    - name: Show ldap StartTLS probe
+      debug:
+        var: ldap_check.stdout_lines
+
+    - name: Smoke-test the new binary (--help)
+      shell: |
+        "{{ work_dir }}/target/release/vajra" --help 2>&1 || \
+          "{{ work_dir }}/target/release/vajra" --version 2>&1
+      register: vajra_smoke
+      changed_when: false
+      failed_when: false
+
+    - name: Show smoke output
+      debug:
+        var: vajra_smoke.stdout_lines

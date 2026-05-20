@@ -1,0 +1,138 @@
+---
+
+  - name: assert the host is in an LDAP-enabled group
+    assert:
+      that: "'ldap_clients' in group_names"
+    tags:
+      - assert_ldap
+
+  - name: debconf ldap-auth-config/ldapns/ldap_version
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/ldapns/ldap_version
+      value: "{{ldap_version}}"
+      vtype: select
+
+  - name: debconf ldap-auth-config/ldapns/ldap-server
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/ldapns/ldap-server
+      value: ldap://{{ldap_server}}
+      vtype: string
+
+  - name: debconf ldap-auth-config/ldapns/base-dn
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/ldapns/base-dn
+      value: dc={{ldap_dc}}
+      vtype: string
+
+  - name: debconf ldap-auth-config/pam_password
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/pam_password
+      value: md5
+      vtype: select
+
+  - name: debconf ldap-auth-config/dblogin
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/dblogin
+      value: false
+      vtype: boolean
+
+  - name: debconf ldap-auth-config/dbrootlogin
+    debconf:
+      name: ldap-auth-config
+      question: ldap-auth-config/dbrootlogin
+      value: false
+      vtype: boolean
+
+  - name: debconf libpam-runtime/profiles multiselect
+    debconf:
+      name: libpam-runtime
+      question: libpam-runtime/profiles
+      value: unix, ldap, systemd
+      vtype: multiselect
+
+  - name: install ldap/nss/pam pkgs
+    apt:
+      name: "{{item}}"
+      state: present
+      install_recommends: yes  
+    with_items:
+      - libpam-runtime
+      - libnss-ldap
+      - ldap-auth-config
+
+  - name: configure ldap for nss
+    command: auth-client-config -t nss -p lac_ldap
+
+  - name: setup ldap authentication
+    command: pam-auth-update
+    environment:
+      DEBIAN_FRONTEND: noninteractive
+
+  - name: enable start_tls
+    replace:
+      dest: /etc/ldap.conf
+      regexp: "^#ssl start_tls"
+      replace: "ssl start_tls"
+
+  - name: enable tls_checkpeer
+    replace:
+      dest: /etc/ldap.conf
+      regexp: "^#tls_checkpeer yes"
+      replace: "tls_checkpeer yes"
+
+  - name: configure tls_cacertfile
+    replace:
+      dest: /etc/ldap.conf
+      regexp: "^[#]*tls_cacertfile /etc/.*"
+      replace: "tls_cacertfile /etc/ssl/certs/ca-certificates.crt"
+    tags:
+      - ldap_c_tls
+
+  - name: configure TLS_CACERT
+    replace:
+      dest: /etc/ldap/ldap.conf
+      regexp: "^[#]*TLS_CACERT	/etc/.*"
+      replace: "TLS_CACERT	/etc/ssl/certs/ca-certificates.crt"
+    tags:
+      - ldap_c_tls
+
+  - name: fix to allow local passwd cmd to change LDAP password
+    replace:
+      dest: /etc/pam.d/common-password
+      # Remove the word "use_authtok" after "pam_ldap.so".
+      regexp: '^(password.*pam_ldap.so) use_authtok'
+      replace: '\1'
+    tags:
+      - fixpassword
+
+  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=770135#46
+  - name: restart systemd-logind
+    service:
+      name: systemd-logind
+      state: restarted
+    ignore_errors: yes
+    # systemd-logind is not started in post-installation of a new machine, so ignore errors.
+
+  - name: set up PAM for access control
+    lineinfile:
+      dest: /etc/pam.d/common-account
+      # Add a line to require access control.
+      insertbefore: '^\s*account\s*.*pam_unix.so\s*$'
+      line: "account required                        pam_access.so"
+    tags:
+      - acl
+
+  - name: set up access control
+    template:
+        src:   access.conf.j2
+        dest:  /etc/security/access.conf
+        owner: root
+        group: root
+        mode: 0644
+    tags:
+        - acl

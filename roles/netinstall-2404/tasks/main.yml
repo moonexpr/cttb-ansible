@@ -1,0 +1,67 @@
+---
+
+  - name: create netinstall root directory
+    file:
+      path: "{{ni_root_dir}}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  # add it before installing the pkg since there's an ipv6 bug in it
+  - name: create default tftp config
+    template:
+      src: ../../netinstall/templates/etc-default-tftpd-hpa.j2
+      dest: /etc/default/tftpd-hpa
+      owner: root
+      group: root
+      mode: 0755
+
+  # Ubuntu LXD images ship with only `main restricted` enabled; p7zip-full
+  # lives in universe. Enable it explicitly. Idempotent + harmless on pxe.cttb.
+  - name: ensure universe is enabled (Ubuntu only)
+    apt_repository:
+      repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
+      state: present
+      update_cache: no
+    when: ansible_distribution == 'Ubuntu'
+
+  - name: install required packages
+    apt:
+      name: "{{item}}"
+      state: latest
+      update_cache: yes
+      cache_valid_time: 3600
+    with_items:
+      - tftpd-hpa
+      - "{{ ni_webserver }}"
+      - p7zip-full
+      - pxelinux
+
+  - include_tasks: webserver-nginx.yml
+    when: ni_webserver == 'nginx'
+    tags:
+      - ni_webserver
+
+  - include_tasks: h5ai.yml
+    when: ni_webserver == 'nginx' and ni_h5ai_enabled | bool
+    tags:
+      - ni_h5ai
+
+  - include_tasks: autoinstall.yml
+    tags:
+      - ni_autoinstall
+
+  - include_tasks: pxe.yml
+    tags:
+      - ni_pxe
+
+  - include_tasks: isos.yml
+    tags:
+      - ni_isos
+
+  - name: link www path to root dir to serve kernels over http
+    file:
+      src: "{{ni_root_dir}}"
+      dest: "{{ni_www_path}}"
+      state: link

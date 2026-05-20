@@ -1,0 +1,249 @@
+---
+# Lubuntu / XFCE core package install — the single biggest apt batch in
+# sudhanix-core. Pure install phase: every task is apt or a mkdir for a
+# directory other install tasks fill in.
+#
+# Two-block phase shape (issue #57, Task 3): one install block, no
+# configure block. The configure-phase orchestrator does not include
+# this file. `__sudhanix_phase` default is "all" so direct invocation
+# fires this block anyway.
+
+  - name: lubuntu — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
+    tags:
+      - install
+      - lubuntu
+    block:
+
+      # Must land BEFORE the first recommends:yes apt batch below so
+      # Recommends can never drag snap machinery back in (no-snap policy).
+      - name: deploy no-snap apt pin (guardrail for install_recommends:yes)
+        copy:
+          src: cttb-no-snap.pref
+          dest: /etc/apt/preferences.d/cttb-no-snap.pref
+          owner: root
+          group: root
+          mode: 0644
+        tags:
+          - apt
+          - no_snap
+
+      - name: install lubuntu
+        apt:
+          state: present
+          install_recommends: yes
+          name:
+          # gh-76: without accountsservice, LightDM's greeter falls back to
+          # NSS getpwent() + per-$HOME stat to build the user list. On LDAP
+          # hosts that enumerates ~400 users and stat-trips the /nfs/home
+          # autofs wildcard → ~400 NFS mounts on every boot (fileserver
+          # thundering herd at fleet scale). Installing accountsservice
+          # makes LightDM use the org.freedesktop.Accounts D-Bus path
+          # instead, which does not stat every home.
+          - accountsservice
+          # gh-16 fresh-PXE: sudhanix-ux runs `dconf update` to compile the
+          # system db (theme/plank/light-locker defaults), but nothing
+          # installed the dconf CLI. The lubuntu-core minimal base does not
+          # pull it; the long-lived testmachine masked this (dconf survived
+          # from the old image). dconf-cli ships /usr/bin/dconf — must be
+          # present before the sudhanix-ux dconf tasks.
+          - dconf-cli
+          # Audio stack made explicit: these are Recommends of pipewire/alsa
+          # that install_recommends:no silently dropped — wireplumber is
+          # PipeWire's session manager (no audio at all without it). Listed
+          # explicitly (not relying on the recommends flip) so ALREADY-imaged
+          # hosts get them on the next run, not just fresh PXE installs.
+          # (SOF firmware is the hard-dep `firmware-sof-signed`, already
+          # present — there is no Ubuntu pkg literally named `sof-firmware`.)
+          - wireplumber
+          - alsa-ucm-conf
+          - alsa-topology-conf
+          - alsa-utils
+          - alsamixergui
+          - desktop-file-utils
+          - dmz-cursor-theme
+          - evince
+          # gh-72: Thunar thumbnailer stack. lubuntu-core minimal pulls
+          # none of these transitively, so Thunar shows generic MIME
+          # icons. tumbler is the DBus thumbnail daemon; -plugins-extra
+          # adds poppler/epub/font thumbnailers; ffmpegthumbnailer is
+          # auto-discovered by tumbler for video first-frames.
+          - tumbler
+          - tumbler-plugins-extra
+          - ffmpegthumbnailer
+          # gh-73: lightweight single-purpose viewers. Without an image
+          # viewer, image double-click falls back to ImageMagick `display`
+          # (CLI). gpicview = images, mpv = video; evince (above) = PDF.
+          - gpicview
+          - mpv
+          # gh-78: advertised lab apps + sound binary absent from the
+          # default set. Listed explicitly (not via the recommends flip)
+          # so ALREADY-imaged hosts get them on the next run, not just
+          # fresh PXE installs.
+          #   parts 2-4: kdenlive / blender / pavucontrol.
+          #   part 1: canberra-gtk-play. On noble the binary is NOT in
+          #   any libcanberra pkg (the 0.30-10ubuntu10 module pkg ships
+          #   only the .so) — it lives in `gnome-session-canberra`
+          #   (/usr/bin/canberra-gtk-play, confirmed via dpkg -c off the
+          #   cttb mirror). The sound layer at sound.yml wires up
+          #   libcanberra-gtk3-module; this provides the CLI player.
+          #   terminal-replace + theme-not-applying (Yaru leak) are
+          #   cross-linked to #66 — not in this scope.
+          - kdenlive
+          - blender
+          - pavucontrol
+          - gnome-session-canberra
+          - file-roller
+          - gedit
+          - devilspie2
+          - gnome-calculator
+          - gnome-characters
+          - gnome-system-monitor
+          - gnome-system-tools
+          - indicator-application
+          - libpolkit-agent-1-0
+          - libpolkit-gobject-1-0
+          - libpolkit-qt5-1-1
+          - lightdm-gtk-greeter-settings
+          - light-locker
+          - light-locker-settings
+          - lubuntu-artwork
+          - lubuntu-default-settings
+          - lxappearance
+          - lxappearance-obconf
+          - lximage-qt
+          - lxinput
+          - lxlauncher
+          - lxqt-config
+          - lxqt-globalkeys
+          - lxqt-panel
+          - lxqt-powermanagement
+          - lxrandr
+          - lxsession-default-apps
+          - lxsession-logout
+          - lxterminal
+          - network-manager
+          - network-manager-gnome
+          - obconf
+          - pcmanfm-qt
+          - pm-utils
+          - policykit-1
+          - policykit-1-gnome
+          - xscreensaver
+          - scrot
+          - simple-scan
+          - system-tools-backends
+          - xdg-user-dirs
+          - xdotool
+          # XFCE4 session itself — ships /usr/share/xsessions/xfce.desktop so
+          # LightDM `user-session=xfce` actually picks up an XFCE session
+          # instead of silently falling back to LXQt. Without these, fresh
+          # PXE installs land in LXQt and skip every xfconf/xfce4-panel customization
+          # the rest of this role applies.
+          - xfce4-session
+          - xfdesktop4
+          - xfce4-settings
+          - thunar
+          # xfce4-terminal — operator-intended primary terminal. Without
+          # this, `/usr/bin/x-terminal-emulator` lands on whichever of
+          # lxterminal/zutty/xterm wins alternatives auto-mode (zutty in
+          # current 24.04 state, which has crashed repeatedly on the
+          # testmachine — see #82). The follow-on alternatives task in
+          # this file pins it as the default after install.
+          - xfce4-terminal
+          # Plank — the dock. README advertises XFCE4 + Plank, the welcome
+          # panel's customizer writes to /net/launchpad/plank/ dconf, but no
+          # task was actually installing the package. Without this Plank's
+          # dconf entries are read by nothing and the dock never shows.
+          - plank
+          # Color emoji — lubuntu-core minimal ships with no emoji glyphs at
+          # all, so the welcome panel chips, vajra Testing icons, and any
+          # user-typed emoji render as missing-glyph boxes. Pulls in the
+          # standard Noto color emoji set.
+          - fonts-noto-color-emoji
+          - xfce4-panel
+          - xfce4-power-manager
+          - xfce4-appmenu-plugin
+          - xfce4-genmon-plugin
+          - xfce4-pulseaudio-plugin
+          - xfce4-whiskermenu-plugin
+          - xfce4-notifyd
+          - xfce4-appfinder
+          - appmenu-gtk3-module
+          - appmenu-registrar
+          - xfwm4
+          - xserver-xorg
+          - xz-utils
+          # Session-watchdog deps (moved here from sudhanix-ux.yml in
+          # Task 6 of the phase-gate refactor — they belong in the
+          # base-packages audience, not interleaved into a configure
+          # file). The watchdog config copy itself stays in sudhanix-ux.
+          - zenity
+          - dbus-x11
+        tags:
+          - packages
+          - lubuntu
+
+      # overrides lubuntu default triggering the LXDE session to be loaded which
+      # in turns make lxde pick up the wrong configs.
+      - name: remove lxde-common
+        apt:
+          name: lxde-common
+          state: absent
+        tags:
+          - packages
+          - lubuntu
+
+      # Remove unneeded lubuntu pkgs.
+      - name: remove unneeded lubuntu pkgs
+        apt:
+          state: absent
+          name:
+          - galculator
+          - galternatives
+          - gnome-disk-utility
+          - gnome-font-viewer
+          - qlipper
+        tags:
+          - packages
+          - lubuntu
+
+      # Pin x-terminal-emulator to xfce4-terminal so the menu entry, Thunar
+      # "Open Terminal Here", and any .desktop Exec=x-terminal-emulator
+      # path lands the operator-intended themed terminal (config in
+      # /etc/xdg/xfce4/terminal/terminalrc — Man Page colours, SeriousShanns
+      # 10pt) instead of the alternatives auto-mode pick (lxterminal/zutty,
+      # see #64, #65, #82). Also clears the green-on-black lxterminal
+      # surprise from #65 because the entry point no longer resolves there.
+      # The xfce4-terminal package registers itself as
+      # `/usr/bin/xfce4-terminal.wrapper` (Debian shell wrapper) — that
+      # is the path update-alternatives knows. Pinning is via --set.
+      - name: read current x-terminal-emulator alternative
+        command: update-alternatives --query x-terminal-emulator
+        register: x_term_alt
+        changed_when: false
+        check_mode: false
+        tags:
+          - packages
+          - lubuntu
+          - terminal
+
+      - name: select xfce4-terminal as the system default terminal
+        command: update-alternatives --set x-terminal-emulator /usr/bin/xfce4-terminal.wrapper
+        when: '"Value: /usr/bin/xfce4-terminal.wrapper" not in x_term_alt.stdout'
+        tags:
+          - packages
+          - lubuntu
+          - terminal
+
+      # Did not exist in Lubuntu 20.04. lookandfeel's install-phase avatar
+      # copy writes /usr/share/lubuntu/images/avatar.png; the parent dir
+      # must exist first. lubuntu.yml runs before lookandfeel.yml in
+      # install.yml's include order, so the dir is in place by then.
+      - name: create /usr/share/lubuntu/images/ if it does not exist
+        file:
+          path: /usr/share/lubuntu/images
+          state: directory
+          mode: '0755'
+        tags:
+          - lubuntu

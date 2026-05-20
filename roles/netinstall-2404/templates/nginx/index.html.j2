@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ ni_server_name }} — CTTB PXE / Network Install</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="citylights.min.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">
+    <h1><span>{{ ni_server_name | regex_replace('\\.cttb$', '') }}</span>.cttb</h1>
+    <p class="subtitle">PXE / Network Install Server — City of Ten Thousand Buddhas</p>
+  </div>
+  <div class="meta">
+    <span><span class="dot">&#x25CF;</span> {{ ansible_default_ipv4.address | default('—') }}</span>
+    <span>{{ ansible_distribution | default('Linux') }} {{ ansible_distribution_version | default('') }}</span>
+    <span>{{ ansible_hostname | default('pxe') }}</span>
+  </div>
+</header>
+
+<main>
+
+<p class="notice">
+  <strong>Internal resource.</strong> This server delivers PXE boot
+  files, kernels, initrd images, autoinstall configs, and ISO images
+  to lab machines on the CTTB campus. Intended for use by IT staff
+  and infrastructure clients only.
+</p>
+
+<article class="content-area">
+
+<fieldset class="file-group">
+  <legend>☸ Message</legend>
+  <p>
+    A PXE server is the network's <em>bīja</em> — the seed-bank from which a
+    bare machine ripens into a working host. Every Sudhanix install on this
+    campus has its origin here: kernel, initrd, autoinstall recipe, and
+    finally a freshly-provisioned desktop or server.
+  </p>
+  <p>
+    <strong>{{ ni_server_name }}</strong> serves the modern Ubuntu / Debian
+    network-install pipeline (subiquity / cloud-init autoinstall over HTTP +
+    GRUB EFI / PXELINUX over TFTP). Browse the served tree under
+    <a href="/netinstall/">/netinstall/</a>.
+  </p>
+</fieldset>
+
+<fieldset class="file-group">
+  <legend>Network Install Tree <a href="/netinstall/">[browse]</a></legend>
+  <p>
+    Kernels, initrd, ISOs, autoinstall <code>user-data</code> /
+    <code>meta-data</code>, PXE menu fragments, and the
+    <code>pxelinux.cfg/default</code> rendered by the
+    <code>netinstall-2404</code> Ansible role.
+  </p>
+  <div class="icon-grid">
+    <a href="/netinstall/" class="icon-tile"><span class="icon">📂</span><span class="name">Browse netinstall/</span></a>
+    <a href="/netinstall/autoinstall/" class="icon-tile"><span class="icon">📜</span><span class="name">autoinstall configs</span></a>
+    <a href="/netinstall/menu/" class="icon-tile"><span class="icon">📋</span><span class="name">PXE menu fragments</span></a>
+    <a href="/netinstall/pxelinux.cfg/" class="icon-tile"><span class="icon">🧭</span><span class="name">pxelinux.cfg</span></a>
+  </div>
+</fieldset>
+
+<fieldset class="file-group">
+  <legend>Endpoints</legend>
+  <p>Quick references for cutover scripts and clients:</p>
+  <div class="quick-ref">
+    <p><code>http://{{ ni_server_name }}/healthz</code> — liveness probe (200 ok)</p>
+    <p><code>http://{{ ni_server_name }}/netinstall/</code> — browseable index</p>
+    <p><code>tftp://{{ ni_server_name }}/pxelinux.0</code> — TFTP boot loader</p>
+  </div>
+</fieldset>
+
+</article>
+
+</main>
+
+<footer>
+  <p>
+    CTTB IT — Managed via <a href="http://wiki.cttb/wiki/IT:Ansible">Ansible</a>
+    — Container <code>{{ ansible_hostname | default('pxe24') }}</code> on <code>srv-nas</code> (10.11.1.5)
+    <br>Made with ❤️ by <a href="https://github.com/moonexpr/">jc</a>
+  </p>
+</footer>
+
+</body>
+</html>

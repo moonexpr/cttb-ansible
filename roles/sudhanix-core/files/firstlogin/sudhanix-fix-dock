@@ -1,0 +1,147 @@
+#!/bin/bash
+# sudhanix-fix-dock — per-user remediation for an already-bootstrapped Sudhanix
+# 26 home where Plank's first-run auto-detect ran before the dconf seed step
+# landed (cttb-ansible#35). Quarantines the user's plank state, re-seeds
+# launchers/ from /etc/skel, applies dconf seeds via the firstlogin helper,
+# then restarts plank in the user's running session if any.
+#
+# Idempotent. Safe to run multiple times. Logs to ~/.cache/sudhanix-firstlogin.log
+# under a "[fix-dock]" prefix so the trace lives next to the bootstrap log.
+#
+# Usage:
+#   /usr/local/sbin/sudhanix-fix-dock                 # run as the affected user
+#   sudo -u <user> /usr/local/sbin/sudhanix-fix-dock  # admin invocation
+#   /usr/local/sbin/sudhanix-fix-dock --dry-run       # preview
+#
+# Exit codes:
+#   0 — completed (idempotent; even no-op state returns 0)
+#   1 — usage / pre-flight failure
+
+set -u
+
+DRY_RUN=0
+case "${1:-}" in
+    --dry-run|-n) DRY_RUN=1 ;;
+    --help|-h)
+        sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0
+        ;;
+    "") ;;
+    *) echo "unknown arg: $1" >&2; exit 1 ;;
+esac
+
+if [ "$(id -u)" -eq 0 ]; then
+    echo "refusing to run as root — invoke via sudo -u <user> $0" >&2
+    exit 1
+fi
+
+if [ -z "${HOME:-}" ] || [ ! -d "$HOME" ]; then
+    echo "no usable HOME=${HOME:-<unset>}" >&2
+    exit 1
+fi
+
+LIB=/usr/local/lib/sudhanix-firstlogin-lib.sh
+if [ ! -r "$LIB" ]; then
+    echo "missing $LIB; deploy sudhanix-core first" >&2
+    exit 1
+fi
+
+# shellcheck disable=SC1090
+. "$LIB"
+
+# Override the standard sfl_log prefix so traces are findable.
+log() {
+    _ts=$(date '+%Y-%m-%d %H:%M:%S')
+    if [ "$DRY_RUN" = "1" ]; then
+        printf '[dry-run %s fix-dock] %s\n' "$_ts" "$*"
+        return 0
+    fi
+    mkdir -p "$HOME/.cache" 2>/dev/null || return 0
+    printf '[%s fix-dock] %s\n' "$_ts" "$*" >> "$HOME/.cache/sudhanix-firstlogin.log" 2>/dev/null || true
+    printf '[%s fix-dock] %s\n' "$_ts" "$*"
+}
+
+PLANK_REL=".config/plank"
+PLANK_DIR="$HOME/$PLANK_REL"
+
+# 1. Quarantine current plank state if any.
+TS=$(date '+%Y%m%d-%H%M%S')
+QUARANTINE="$HOME/.config/.pre-sudhanix-fix-dock.$TS"
+if [ -d "$PLANK_DIR" ]; then
+    if [ "$DRY_RUN" = "1" ]; then
+        log "would: mv $PLANK_DIR -> $QUARANTINE/$PLANK_REL"
+    else
+        mkdir -p "$QUARANTINE/.config" 2>/dev/null || true
+        if mv "$PLANK_DIR" "$QUARANTINE/$PLANK_REL" 2>/dev/null; then
+            log "quarantined: $PLANK_REL -> $QUARANTINE/$PLANK_REL"
+        else
+            log "quarantine: mv $PLANK_DIR failed"
+        fi
+    fi
+else
+    log "no existing $PLANK_REL to quarantine"
+fi
+
+# 2. Re-seed launchers/ + dock1 dir from /etc/skel.
+SKEL_PLANK="/etc/skel/.config/plank"
+if [ -d "$SKEL_PLANK" ]; then
+    if [ "$DRY_RUN" = "1" ]; then
+        log "would: rsync -a $SKEL_PLANK/ $PLANK_DIR/"
+    else
+        mkdir -p "$PLANK_DIR" 2>/dev/null
+        if command -v rsync >/dev/null 2>&1; then
+            rsync -a "$SKEL_PLANK/" "$PLANK_DIR/" 2>/dev/null && \
+                log "reseeded $PLANK_REL from $SKEL_PLANK"
+        else
+            cp -a "$SKEL_PLANK/." "$PLANK_DIR/" 2>/dev/null && \
+                log "reseeded $PLANK_REL from $SKEL_PLANK (cp)"
+        fi
+    fi
+else
+    log "no /etc/skel plank skel; skipping launchers reseed"
+fi
+
+# 3. Apply dconf seeds via the firstlogin helper.
+if [ "$DRY_RUN" = "1" ]; then
+    SFL_DRY_RUN=1 sfl_seed_user_dconf
+else
+    sfl_seed_user_dconf
+fi
+
+# 4. Restart plank if it's running in this user's session. xfce4-session's
+#    autostart fires at session-start, NOT on process death, so we have to
+#    capture the running plank's X/dbus env and respawn ourselves.
+PLANK_PID=$(pgrep -u "$(id -u)" -x plank | head -1)
+if [ -n "$PLANK_PID" ]; then
+    if [ "$DRY_RUN" = "1" ]; then
+        log "would: capture env from plank pid=$PLANK_PID, pkill plank, respawn"
+    elif [ -r "/proc/$PLANK_PID/environ" ]; then
+        # Pull DISPLAY/XAUTHORITY/DBUS_SESSION_BUS_ADDRESS/XDG_RUNTIME_DIR from
+        # the running plank — sudo -i and pam_exec contexts don't have them.
+        PLANK_ENV=$(tr '\0' '\n' < "/proc/$PLANK_PID/environ" | \
+            grep -E '^(DISPLAY|XAUTHORITY|DBUS_SESSION_BUS_ADDRESS|XDG_RUNTIME_DIR|XDG_CURRENT_DESKTOP)=' || true)
+        if pkill -u "$(id -u)" -x plank 2>/dev/null; then
+            log "killed plank pid=$PLANK_PID; respawning with captured env"
+            sleep 1
+            (
+                # shellcheck disable=SC2046
+                export $(printf '%s\n' "$PLANK_ENV" | xargs)
+                nohup plank >/dev/null 2>&1 &
+            )
+            sleep 1
+            NEW_PID=$(pgrep -u "$(id -u)" -x plank | head -1)
+            if [ -n "$NEW_PID" ]; then
+                log "plank respawned pid=$NEW_PID"
+            else
+                log "plank respawn failed — start it manually from the panel"
+            fi
+        fi
+    else
+        log "cannot read /proc/$PLANK_PID/environ (perm); skipping restart"
+    fi
+else
+    log "plank not running in this session — nothing to restart"
+fi
+
+log "done"
+exit 0

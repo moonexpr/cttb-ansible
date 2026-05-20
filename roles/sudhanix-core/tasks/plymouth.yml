@@ -1,0 +1,125 @@
+---
+# Sudhanix boot splash via Plymouth.
+# Theme assets live in files/plymouth/sudhanix/; this file wires them up.
+#
+# Two-block phase shape (issue #57, Task 4):
+#   install: apt plymouth packages, themes-dir mkdir, stale-asset purge,
+#            theme-file deploy.
+#   configure: update-alternatives, /etc/default/grub cmdline edit,
+#              update-grub. The initramfs rebuild is driven by handler
+#              notifications from install-block tasks so it fires once at
+#              end-of-play regardless of phase-tag interleaving.
+#
+# Plymouth modes covered by the same theme via the default.plymouth
+# alternatives link: boot, shutdown, reboot, updates (offline package
+# install), system-upgrade (release upgrade), firmware-upgrade (fwupd
+# UEFI capsule), system-reset, suspend. Per-mode messaging lives in
+# files/plymouth/sudhanix/sudhanix.script via Plymouth.GetMode().
+
+- name: plymouth — install phase
+  when: __sudhanix_phase | default("all") in ["install", "all"]
+  tags:
+    - install
+    - plymouth
+  block:
+
+    - name: install plymouth packages
+      apt:
+        name:
+          - plymouth
+          - plymouth-themes
+          - plymouth-label
+        state: present
+      tags:
+        - sudhanix-core
+        - plymouth
+        - install
+
+    - name: ensure plymouth themes dir exists
+      file:
+        path: /usr/share/plymouth/themes/sudhanix
+        state: directory
+        mode: 0755
+        owner: root
+        group: root
+      tags:
+        - sudhanix-core
+        - plymouth
+        - install
+
+    - name: remove stale plymouth assets not in the current theme
+      file:
+        path: "/usr/share/plymouth/themes/sudhanix/{{ item }}"
+        state: absent
+      loop:
+        - lotus.png
+        - amitabha.png
+      notify: update initramfs
+      tags:
+        - sudhanix-core
+        - plymouth
+        - install
+
+    - name: deploy plymouth theme files
+      copy:
+        src: "plymouth/sudhanix/{{ item }}"
+        dest: "/usr/share/plymouth/themes/sudhanix/{{ item }}"
+        mode: 0644
+        owner: root
+        group: root
+      loop:
+        - sudhanix.plymouth
+        - sudhanix.script
+        - global_logo.png
+        - progress-bg.png
+        - progress-fill.png
+      notify: update initramfs
+      tags:
+        - sudhanix-core
+        - plymouth
+        - install
+
+- name: plymouth — configure phase
+  when: __sudhanix_phase | default("all") in ["config", "all"]
+  tags:
+    - config
+    - plymouth
+  block:
+
+    # Point /etc/alternatives/default.plymouth at our theme. This is the
+    # `update-alternatives` half of what plymouth-set-default-theme does —
+    # we run it directly because the helper binary isn't on root's PATH in
+    # all Noble installs. plymouthd reads this single setting for every
+    # mode (boot/shutdown/reboot/updates/system-upgrade/firmware-upgrade/
+    # system-reset), so this one link covers the full state matrix.
+    # Notifies the initramfs-rebuild handler so a re-pointed alternative
+    # propagates into the early-boot copy as well.
+    - name: set sudhanix as default plymouth theme (alternatives)
+      community.general.alternatives:
+        name: default.plymouth
+        path: /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth
+        link: /etc/alternatives/default.plymouth
+      notify: update initramfs
+      tags:
+        - sudhanix-core
+        - plymouth
+        - config
+
+    - name: ensure quiet splash on kernel cmdline
+      lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"'
+      register: grub_cmdline
+      tags:
+        - sudhanix-core
+        - plymouth
+        - config
+
+    - name: update-grub if cmdline changed
+      command: update-grub
+      when: grub_cmdline.changed
+      tags:
+        - sudhanix-core
+        - plymouth
+        - config

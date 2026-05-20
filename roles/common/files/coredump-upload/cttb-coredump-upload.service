@@ -1,0 +1,20 @@
+[Unit]
+Description=Upload local systemd-coredump dumps to storehouse
+After=network-online.target
+Wants=network-online.target
+ConditionPathIsDirectory=/var/lib/systemd/coredump
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cttb-coredump-upload
+# Hard timeout: a bad NFS / unreachable storehouse should not hang the
+# unit indefinitely. ten dumps at 10 min/upload max => 100 min ceiling.
+TimeoutStartSec=6000
+StandardOutput=journal
+StandardError=journal
+# Networking only; no need for root other than reading systemd-coredump
+# files which are mode 0640 root:root.
+User=root
+
+[Install]
+WantedBy=multi-user.target

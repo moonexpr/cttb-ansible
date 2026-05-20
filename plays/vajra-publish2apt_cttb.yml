@@ -1,0 +1,177 @@
+---
+# vajra-publish2apt_cttb — build the vajra .deb on dvgs-testmachine, copy it
+# to the apt.cttb pool (lxc-debmirror container, hosted on srv-nas), reprepro-
+# include it under the noble distribution, then apt-install it back on
+# dvgs-testmachine via the new pool source.
+#
+# Run with:
+#   pb vajra-publish2apt_cttb -l "dvgs-testmachine,srv-nas" -K --become-method=sudo
+#
+# Adds /etc/apt/sources.list.d/cttb-extras.list to dvgs-testmachine. The
+# apt source is cttb-repos noble main, signed by the existing cttb-repo key
+# (subkey C77F25EB89F06C01 = SignWith 89F06C01 in reprepro distributions).
+
+- name: Build new vajra .deb on testmachine
+  hosts: dvgs-testmachine
+  gather_facts: false
+  vars:
+    work_dir: "/home/administrator/vajra-pr"
+    branch: "vajra/port-legacy-tools"
+    local_src: "/Users/jc/Garden/app/vajra/"
+    cargo_bin: "/home/administrator/.cargo/bin/cargo"
+
+  tasks:
+    - name: Refresh local source on testmachine
+      synchronize:
+        src: "{{ local_src }}"
+        dest: "{{ work_dir }}/"
+        delete: yes
+        recursive: yes
+        rsync_opts:
+          - "--exclude=target/"
+          - "--exclude=.DS_Store"
+          - "--exclude=legacy/"
+
+    - name: cargo build --release
+      shell: |
+        cd "{{ work_dir }}"
+        "{{ cargo_bin }}" build --release 2>&1 | tail -5
+      environment:
+        PATH: "/home/administrator/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      changed_when: false
+      async: 1800
+      poll: 30
+
+    - name: cargo deb (no rebuild)
+      shell: |
+        cd "{{ work_dir }}"
+        rm -f target/debian/*.deb
+        "{{ cargo_bin }}" deb --no-build 2>&1 | tail -5
+      environment:
+        PATH: "/home/administrator/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      changed_when: false
+
+    - name: Locate produced .deb
+      shell: ls -1 "{{ work_dir }}/target/debian/"*.deb | head -1
+      register: deb_path
+      changed_when: false
+
+    - name: Show .deb path and size
+      shell: ls -lh "{{ deb_path.stdout }}"
+      register: deb_info
+      changed_when: false
+
+    - debug: var=deb_info.stdout
+
+    - name: Fetch .deb to ansible controller for handoff
+      fetch:
+        src: "{{ deb_path.stdout }}"
+        dest: "/tmp/vajra-pool/"
+        flat: yes
+
+
+- name: Publish vajra .deb to apt.cttb pool via reprepro
+  hosts: srv-nas
+  gather_facts: false
+  vars:
+    deb_local_dir: "/tmp/vajra-pool"
+    repo_path: "/srv/cttb-repos/apt/ubuntu"
+    sign_key: "C77F25EB89F06C01"
+
+  tasks:
+    - name: Discover deb filename
+      shell: ls -1 {{ deb_local_dir }}/*.deb | head -1
+      delegate_to: localhost
+      register: local_deb
+      changed_when: false
+      become: false
+
+    - name: Stage .deb on srv-nas /tmp
+      synchronize:
+        src: "{{ local_deb.stdout }}"
+        dest: "/tmp/{{ local_deb.stdout | basename }}"
+
+    - name: Read distributions config from container
+      raw: lxc exec debmirror -- cat {{ repo_path }}/conf/distributions
+      register: dists_current
+      changed_when: false
+
+    - name: Push .deb from srv-nas into the container's /tmp
+      raw: lxc file push /tmp/{{ local_deb.stdout | basename }} debmirror/tmp/{{ local_deb.stdout | basename }}
+
+    - name: reprepro includedeb noble
+      raw: |
+        lxc exec debmirror -- bash -lc '
+          set -e
+          # Older same-version may already be present (e.g. a previous attempt).
+          reprepro -b {{ repo_path }} remove noble vajra 2>&1 | head -5 || true
+          reprepro -b {{ repo_path }} includedeb noble /tmp/{{ local_deb.stdout | basename }}
+          # Force a fresh export so the dists/noble/ tree is regenerated even
+          # if a prior signed-export run left it in a half-broken state.
+          reprepro -b {{ repo_path }} export noble
+        '
+      register: rep_out
+
+    - debug: var=rep_out.stdout_lines
+
+    - name: Verify package is published
+      raw: lxc exec debmirror -- reprepro -b {{ repo_path }} list noble vajra
+      register: rep_list
+      changed_when: false
+
+    - debug: var=rep_list.stdout_lines
+
+
+- name: Add cttb-repos apt source on testmachine and install
+  hosts: dvgs-testmachine
+  gather_facts: false
+  vars:
+    sources_list: "/etc/apt/sources.list.d/cttb-extras.list"
+    repo_url: "http://apt.cttb/cttb-repos/apt/ubuntu"
+
+  tasks:
+    - name: deploy cttb-repo apt signing key
+      become: true
+      copy:
+        src: "{{ playbook_dir }}/../roles/sudhanix-vajra-tool/files/cttb-repo.asc"
+        dest: /usr/share/keyrings/cttb-repo.asc
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Drop apt source for cttb-repos noble
+      become: true
+      copy:
+        dest: "{{ sources_list }}"
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          deb [arch=amd64 signed-by=/usr/share/keyrings/cttb-repo.asc] {{ repo_url }} noble main
+
+    - name: apt update (only this source)
+      become: true
+      apt:
+        update_cache: yes
+      register: apt_update_out
+
+    - name: apt-cache policy vajra (verify pool sees it)
+      shell: apt-cache policy vajra
+      register: pol
+      changed_when: false
+
+    - debug: var=pol.stdout_lines
+
+    - name: apt install vajra from pool
+      become: true
+      apt:
+        name: vajra
+        state: latest
+        update_cache: no
+
+    - name: dpkg -s vajra (post-install)
+      shell: dpkg -s vajra | head -10
+      register: dpkg_out
+      changed_when: false
+
+    - debug: var=dpkg_out.stdout_lines

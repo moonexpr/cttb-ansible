@@ -1,0 +1,144 @@
+---
+# Software orchestrator for sudhanix-core.
+#
+# Two-block phase shape (issue #57, Task 5): sw.yml's own work is all
+# install-shape (apt installs / removes / .deb fetches for Zoom + Skype).
+# It also dispatches to four sub-files. sub-files carry their own phase
+# gates; they're included at top level so both install and configure
+# phases pull them in, and each sub-file's `when:` decides whether its
+# install block, configure block, or both fire under the propagated
+# __sudhanix_phase.
+
+  - name: sw — install phase
+    when: __sudhanix_phase | default("all") in ["install", "all"]
+    tags:
+      - install
+      - sw_install
+    block:
+
+      - name: install additional software
+        apt:
+          state: present
+          install_recommends: yes
+          name:
+          - audacious
+          - audacity
+          - blender
+          - cups-client
+          - gimp
+          - imagemagick-6.q16hdri
+          - inkscape
+          - kdenlive
+          - pavucontrol-qt
+          - python-is-python3
+          - python3-pip
+          - ubuntu-restricted-addons
+          - ubuntu-restricted-extras
+          - vlc
+        tags:
+          - packages
+
+      - name: install desktop sw requested for this box
+        apt:
+          name: "{{additional_desktop_sw | default([])}}"
+          state: present
+        tags:
+          - packages
+          - additional_desktop_sw
+
+      # removing bunch of sw I don't need
+      - name: remove other apps
+        apt:
+          state: absent
+          purge: yes
+          name:
+          - cups-browsed
+          - deja-dup
+          - eog
+          - galculator
+          - gdb
+          - gnome-keyring
+          - gnome-logs
+          - midori      # a lightweight web browser in Ubuntu 20.04 minimal ISO.
+          - nautilus
+          - sylpheed*
+          - update-manager
+          - update-notifier
+          - update-notifier-common     # Will be installed by "ubuntu-restricted-extras".
+        tags:
+          - packages
+
+      # Purging failed at preseed time since it's removing a file /.../whoopsie-id that'll be created until the 1st run.
+      - name: purge whoopsie
+        apt:
+          state: absent
+          purge: yes
+          name:
+          - whoopsie
+        ignore_errors: true
+        tags:
+          - packages
+
+      # Seems no need to have snap store.
+      - name: remove snap-store
+        snap:
+          name: snap-store
+          state: absent
+        tags:
+          - packages
+
+      # Zoom releases monthly; pull directly from upstream rather than
+      # caching a (rapidly-staling) copy on storehouse. The lab proxy
+      # (e2guardian → squid on srv-gw, http_proxy is set in global_proxy)
+      # carries this through. Override zoom_deb_url to point at an
+      # internal mirror if WAN egress is unavailable.
+      - name: upgrade Zoom client
+        apt:
+          deb: "{{ zoom_deb_url | default('https://zoom.us/client/latest/zoom_amd64.deb') }}"
+          only_upgrade: true
+        register: zoom_upgraded
+        tags:
+          - zoom
+
+      - name: install Zoom client for the 1st time
+        apt:
+          deb: "{{ zoom_deb_url | default('https://zoom.us/client/latest/zoom_amd64.deb') }}"
+        when: zoom_upgraded is not changed
+        tags:
+          - zoom
+
+      - name: upgrade Skype
+        apt:
+          deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
+          only_upgrade: true
+        register: skype_upgraded
+        when: skype == true
+        tags:
+          - skype
+
+      - name: install Skype for the 1st time
+        apt:
+          deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
+        when: (skype == true) and (skype_upgraded is not changed)
+        tags:
+          - skype
+
+  # Sub-includes at top level — __sudhanix_phase propagates from the
+  # parent scope, each sub-file's own block-level `when:` gate decides
+  # whether its install / configure body fires for the current phase.
+  - include_tasks: sw-office.yml
+    tags:
+      - office
+
+  - include_tasks: sw-browser.yml
+    tags:
+      - browser
+
+  - include_tasks: sw-thunderbird.yml
+    when: thunderbird == true
+    tags:
+      - thunderbird
+
+  - include_tasks: sw-vscode.yml
+    tags:
+      - vscode

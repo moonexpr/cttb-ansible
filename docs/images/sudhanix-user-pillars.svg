@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <!-- Background -->
+  
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Inter Display, sans-serif" font-size="24" font-weight="bold" fill="#1e293b" text-anchor="middle">Sudhanix OS: Simplified User View</text>
+
+  <!-- Central User -->
+  <circle cx="400" cy="225" r="50" fill="#f1f5f9" stroke="#00b4d8" stroke-width="2" />
+  <text x="400" y="230" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#00b4d8" text-anchor="middle">YOU</text>
+
+  <!-- Pillars -->
+  <!-- 1. Identity -->
+  <rect x="100" y="100" width="180" height="80" rx="10" fill="#301808" stroke="#fb923c" stroke-width="2" />
+  <text x="190" y="135" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#fb923c" text-anchor="middle">Identity</text>
+  <text x="190" y="155" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">One account, all machines</text>
+
+  <!-- 2. Files -->
+  <rect x="520" y="100" width="180" height="80" rx="10" fill="#083020" stroke="#34d399" stroke-width="2" />
+  <text x="610" y="135" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#34d399" text-anchor="middle">Files</text>
+  <text x="610" y="155" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Roaming home directory</text>
+
+  <!-- 3. Desktop -->
+  <rect x="100" y="300" width="180" height="80" rx="10" fill="#f1f5f9" stroke="#67e8f9" stroke-width="2" />
+  <text x="190" y="335" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#67e8f9" text-anchor="middle">Desktop</text>
+  <text x="190" y="355" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">macOS-style XFCE</text>
+
+  <!-- 4. Apps -->
+  <rect x="520" y="300" width="180" height="80" rx="10" fill="#300820" stroke="#f472b6" stroke-width="2" />
+  <text x="610" y="335" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#f472b6" text-anchor="middle">Apps</text>
+  <text x="610" y="355" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Chrome, Zen, VS Code</text>
+
+  <!-- Connectors -->
+  <path d="M 280 140 L 360 200" stroke="#fb923c" stroke-width="2" marker-end="url(#arrow-orange)" fill="none" />
+  <path d="M 520 140 L 440 200" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-green)" fill="none" />
+  <path d="M 280 340 L 360 250" stroke="#67e8f9" stroke-width="2" marker-end="url(#arrow-cyan)" fill="none" />
+  <path d="M 520 340 L 440 250" stroke="#f472b6" stroke-width="2" marker-end="url(#arrow-pink)" fill="none" />
+
+  <!-- Markers -->
+  <defs>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c" />
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+    </marker>
+    <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#67e8f9" />
+    </marker>
+    <marker id="arrow-pink" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f472b6" />
+    </marker>
+  </defs>
+
+</svg>

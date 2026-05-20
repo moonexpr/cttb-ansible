@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>git.cttb — CTTB Git Server</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="citylights.min.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">
+    <h1><span>git</span>.cttb</h1>
+    <p class="subtitle">Git Repository Server — City of Ten Thousand Buddhas</p>
+  </div>
+  <div class="meta">
+    <span><span class="dot">&#x25CF;</span> 10.11.1.21</span>
+    <span><!-- OS placeholder --></span>
+    <span>srv-vm</span>
+  </div>
+</header>
+
+<main>
+
+<p class="notice">
+  <strong>Internal resource.</strong> This server is part of the CTTB campus
+  infrastructure and is intended for use by authorized IT personnel only.
+  If you've reached this page and aren't sure why, please contact the
+  IT department for guidance.
+</p>
+
+<article class="content-area">
+
+<fieldset class="file-group">
+  <legend>message</legend>
+  <p>
+    Welcome to <strong>git.cttb</strong> — the internal Git hosting server for the
+    City of Ten Thousand Buddhas campus network. This host manages the Ansible
+    configuration repository and other infrastructure code used to maintain
+    campus systems.
+  </p>
+  <p>
+    If you're an IT volunteer contributing to campus automation, you can clone
+    repositories over SSH using your authorized key. If you need access or aren't
+    sure where to start, reach out to the IT department.
+  </p>
+</fieldset>
+
+<fieldset class="file-group quick-ref">
+  <legend>⌨ Quick Reference</legend>
+  <table>
+    <tbody>
+      <tr><td>SSH in</td><td><code>ssh administrator@git.cttb</code></td></tr>
+      <tr><td>Clone a repo</td><td><code>git clone git@git.cttb:&lt;repo&gt;.git</code></td></tr>
+      <tr><td>Browse repos</td><td><code>http://git.cttb/gitweb/</code></td></tr>
+      <tr><td>Git root</td><td><code>/srv/gitolite/</code></td></tr>
+      <tr><td>Admin key</td><td><code>/srv/gitolite/admin.pub</code></td></tr>
+      <tr><td>Ansible role</td><td><code>roles/git/</code></td></tr>
+    </tbody>
+  </table>
+</fieldset>
+
+</article>
+
+</main>
+
+<footer>
+  <p>
+    CTTB IT — Managed via <a href="http://wiki.cttb/wiki/IT:Ansible">Ansible</a>
+    — Container <code>git</code> on <code>srv-vm</code> (10.11.1.3)
+    <br>Made with ❤️ by <a href="https://github.com/moonexpr/">jc</a>
+  </p>
+</footer>
+
+<script>
+document.querySelectorAll('.quick-ref code').forEach(el => {
+  el.title = 'click to copy';
+  el.addEventListener('click', () => {
+    navigator.clipboard.writeText(el.textContent);
+    el.classList.add('copied');
+    setTimeout(() => el.classList.remove('copied'), 1000);
+  });
+});
+</script>
+
+</body>
+</html>

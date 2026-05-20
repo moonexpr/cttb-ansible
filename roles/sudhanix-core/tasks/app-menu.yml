@@ -1,0 +1,113 @@
+---
+# Application-menu customization for lxqt-panel — hide items in the top
+# menu, fix Categories= on Lock Screen, NoDisplay=true on entries we
+# don't want visible.
+#
+# Pure configure (issue #57, Task 6): every task mutates .desktop or
+# .menu files. Included transitively from lookandfeel.yml's configure
+# block, so __sudhanix_phase=config when this fires.
+
+  - name: app-menu — configure phase
+    when: __sudhanix_phase | default("all") in ["config", "all"]
+    tags:
+      - config
+      - app_menu
+    block:
+
+      - name: ensure desktop file ends with newline
+        shell: |
+          FILE=/usr/share/applications/light-locker-settings.desktop
+          [ -f "$FILE" ] && [ -n "$(tail -c1 "$FILE")" ] && echo >> "$FILE" || true
+        args:
+          executable: /bin/bash
+        changed_when: false
+        tags:
+          - app_menu
+
+      # First, update the lxqt-applications.menu file itself;
+      # Then, update the individual .desktop files.
+      # Note: Lubuntu 24.04 uses lxde-applications.menu, not lxqt-applications.menu.
+
+      - name: find lxqt applications menu file
+        stat:
+          path: /etc/xdg/menus/lxqt-applications.menu
+        register: lxqt_menu_file
+
+      - name: hide 'Lock Screen' from top menu
+        lineinfile:
+          path: /etc/xdg/menus/lxqt-applications.menu
+          regexp: '^\s+<Menuname(.*)>Screensaver</Menuname>'
+          line: '                        <!-- <Menuname\1>Screensaver</Menuname> -->'
+          backrefs: yes
+        when: lxqt_menu_file.stat.exists
+        tags:
+          - app_menu
+
+      - name: comment out the Screensaver category in the top menu
+        replace:
+          path: /etc/xdg/menus/lxqt-applications.menu
+          regexp: '^\s+<!-- Screensaver -->[^"]*<!-- End Screensaver -->\s+$'
+          replace: ''
+        when: lxqt_menu_file.stat.exists
+        tags:
+          - app_menu
+
+      - name: move 'Lock Screen' into Leave
+        lineinfile:
+          path: /usr/share/applications/lxqt-lockscreen.desktop
+          regexp: '^Categories='
+          line: Categories=System;X-Leave
+        tags:
+          - app_menu
+
+      # On lubuntu-core minimal installs several of these .desktop files
+      # are absent (software-properties-{drivers,gtk}, gnome-language-selector,
+      # …). lineinfile fails with rc=257 "Destination does not exist" on
+      # those, which we previously swallowed with ignore_errors: yes — noisy.
+      # Pre-filter with `find` so absent files become loop entries that
+      # simply don't exist; lineinfile only runs over the present ones.
+      - name: locate desktop files to hide (only those present)
+        find:
+          paths: /usr/share/applications
+          patterns: "{{ item }}.desktop"
+        register: __hide_app_finds
+        loop:
+          - fcitx
+          # No need to show a generic Leave
+          - lxqt-leave
+          # Hibernate does not work.
+          - lxqt-hibernate
+          #- qlipper
+          # TeXInfo
+          - info
+          - vim
+          # Additional Device Drivers
+          - software-properties-drivers
+          - nm-connection-editor
+          - org.freedesktop.IBus.Setup
+          - im-config
+          - time
+          - software-properties-gtk
+          - users
+          - obconf
+          - fcitx-configtool
+          - lightdm-gtk-greeter-settings
+          - light-locker-settings
+          - gnome-language-selector
+          - xfce4-power-manager-settings
+          - lxinput
+          - lxqt-config-monitor
+        loop_control:
+          label: "{{ item }}"
+        tags:
+          - app_menu
+
+      - name: hide apps in the app menu
+        lineinfile:
+          dest: "{{ item.path }}"
+          line: "NoDisplay=true"
+        loop: "{{ __hide_app_finds.results | map(attribute='files') | flatten }}"
+        loop_control:
+          label: "{{ item.path | basename }}"
+        tags:
+          - app_menu

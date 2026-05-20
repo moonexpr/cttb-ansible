@@ -1,0 +1,76 @@
+#!/bin/sh
+# sudhanix-migrate-home <username> [<username>...]
+#
+# Sysadmin-callable form of the firstlogin bootstrap. Run as root on a host
+# that has access to the user's $HOME (e.g. a lab desktop with the NFS home
+# mounted, or directly on the home-directory NFS server). For each named
+# user, drops privilege to that uid/gid and runs the same migration logic
+# autostart would run on first login.
+#
+# Useful for:
+#   * Pre-migrating known existing LDAP users before they log in for the
+#     first time on Sudhanix 26 (avoids the "first login looks vanilla"
+#     experience).
+#   * Re-running a migration after the bootstrap library is updated.
+#
+# Idempotent: a user with the marker file already present is skipped with
+# a one-line message.
+
+set -e
+
+if [ "$(id -u)" -ne 0 ]; then
+    printf 'sudhanix-migrate-home: must be run as root\n' >&2
+    exit 2
+fi
+
+DRY_RUN=0
+if [ "${1:-}" = "--dry-run" ] || [ "${1:-}" = "-n" ]; then
+    DRY_RUN=1
+    shift
+fi
+
+if [ "$#" -lt 1 ]; then
+    printf 'usage: %s [--dry-run] <username> [<username>...]\n' "$0" >&2
+    exit 2
+fi
+
+LIB=/usr/local/lib/sudhanix-firstlogin-lib.sh
+if [ ! -r "${LIB}" ]; then
+    printf 'sudhanix-migrate-home: cannot read %s\n' "${LIB}" >&2
+    exit 2
+fi
+
+# Dry-run still needs to drop privilege to the target user: NFSv4 with
+# root-squash (sec=sys) maps server-side root reads to nobody, so listing
+# the user's home as root returns empty even though everything is there.
+# We always su -l, just with SFL_DRY_RUN=1 propagated when --dry-run.
+export SFL_DRY_RUN="${DRY_RUN}"
+
+for _user in "$@"; do
+    if ! getent passwd "${_user}" >/dev/null 2>&1; then
+        printf 'skip: %s — no such user\n' "${_user}" >&2
+        continue
+    fi
+
+    _home=$(getent passwd "${_user}" | awk -F: '{print $6}')
+    if [ -z "${_home}" ] || [ ! -d "${_home}" ]; then
+        printf 'skip: %s — home %s not present\n' "${_user}" "${_home}" >&2
+        continue
+    fi
+
+    if [ "${DRY_RUN}" = "1" ]; then
+        printf 'dry-run: %s (%s)\n' "${_user}" "${_home}"
+    else
+        printf 'migrating: %s (%s)\n' "${_user}" "${_home}"
+    fi
+
+    # Drop privilege either way: NFS root-squash makes reads-as-root return
+    # nothing, so even dry-run must run as the user. SFL_DRY_RUN=1 is
+    # propagated through `su -l --whitelist-environment` (Ubuntu's util-linux
+    # 2.39+ supports this; older systems get the env via the inline export).
+    su -l -s /bin/sh -c "export SFL_DRY_RUN=${DRY_RUN}; . ${LIB}; sfl_run_bootstrap" "${_user}" \
+        || printf 'warn: %s for %s reported a non-zero exit (continuing)\n' \
+            "$( [ "${DRY_RUN}" = "1" ] && echo dry-run || echo bootstrap )" "${_user}" >&2
+done
+
+exit 0

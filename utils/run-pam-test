@@ -1,0 +1,107 @@
+#!/bin/bash
+# run-pam-test — drive a PAM stack on a remote testbed host via pamtester.
+#
+# Tier-1 of the login harness described in cttb-ansible#3. Exercises the
+# *auth* phase of the named PAM service as the named user, with the password
+# read interactively from /dev/tty (never on argv, never logged). Useful for
+# validating pam_exec hooks (cache-pam-token et al.) without driving a full
+# graphical login.
+#
+# Prerequisite: target host is in the cttb_login_testbeds inventory group
+# and has had `plays/login-testbed.yml` applied (installs pamtester).
+#
+# Usage:
+#   utils/run-pam-test <host> <user> [pam-service]
+#   utils/run-pam-test dvgs-testmachine.cttb john.chandara          # service=lightdm
+#   utils/run-pam-test dvgs-testmachine.cttb john.chandara sudo
+#
+# Exit codes:
+#   0 — pamtester reported success
+#   1 — pamtester reported failure (auth denied / module error)
+#   2 — usage / pre-flight failure (host unreachable, pamtester missing, etc.)
+
+set -u
+
+HOST="${1:-}"
+USER="${2:-}"
+SERVICE="${3:-lightdm}"
+
+if [[ -z "$HOST" || -z "$USER" ]]; then
+    cat >&2 <<EOF
+usage: $0 <host> <user> [pam-service]
+  host         e.g. dvgs-testmachine.cttb
+  user         LDAP or local user; password prompted on /dev/tty
+  pam-service  /etc/pam.d/<service>; defaults to 'lightdm'
+EOF
+    exit 2
+fi
+
+# SSH user — administrator on lab hosts. Override via PAMTEST_SSH_USER.
+SSH_USER="${PAMTEST_SSH_USER:-administrator}"
+
+# Pre-flight: pamtester must be installed.
+if ! ssh -o ConnectTimeout=8 -o BatchMode=yes "${SSH_USER}@${HOST}" \
+        'command -v pamtester >/dev/null 2>&1'; then
+    cat >&2 <<EOF
+pre-flight: pamtester not found on ${HOST}.
+Add the host to [cttb_login_testbeds] in inventory and apply:
+    ansible-playbook plays/login-testbed.yml --limit ${HOST} --diff
+EOF
+    exit 2
+fi
+
+# Read password silently from /dev/tty. Never echoed; never reaches argv.
+printf 'PAM password for %s on %s (service=%s): ' "$USER" "$HOST" "$SERVICE" >/dev/tty
+stty -echo </dev/tty
+IFS= read -r PAM_PW </dev/tty
+stty echo </dev/tty
+printf '\n' >/dev/tty
+
+if [[ -z "$PAM_PW" ]]; then
+    echo "abort: empty password" >&2
+    exit 2
+fi
+
+# Mark for visual scoping in /var/log/sudhanix-pam-cache.log.
+RUN_TAG="run-pam-test-$(date +%Y%m%d-%H%M%S)-$$"
+
+# Run pamtester on the target. Pipe password on stdin. sudo -S reads sudo
+# password from stdin too if needed; on lab hosts administrator typically
+# has NOPASSWD so -n is the right flag.
+#
+# pamtester reads the auth tok from stdin when the module asks for it
+# (because expose_authtok is set in the cache-token line). One newline-
+# terminated line is exactly what 'read -r' in cache-pam-token.sh expects.
+SSH_OUT=$(
+    printf '%s\n' "$PAM_PW" | \
+    ssh -o ConnectTimeout=8 "${SSH_USER}@${HOST}" \
+        "set -u; sudo -n -- logger -t pamtest 'BEGIN ${RUN_TAG}'; \
+         sudo -n -- pamtester '${SERVICE}' '${USER}' authenticate; \
+         RC=\$?; sudo -n -- logger -t pamtest 'END ${RUN_TAG} rc='\$RC; \
+         exit \$RC" 2>&1
+)
+RC=$?
+
+# Wipe local cleartext.
+PAM_PW="$(head -c 256 /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 32)"
+unset PAM_PW
+
+echo "--- pamtester ---"
+printf '%s\n' "$SSH_OUT"
+echo "--- exit=$RC ---"
+
+# Side-effect inspection: tail the cache log scoped to this run.
+echo
+echo "--- /var/log/sudhanix-pam-cache.log (this run + last 10 lines) ---"
+ssh -o ConnectTimeout=8 "${SSH_USER}@${HOST}" \
+    "sudo -n tail -n 80 /var/log/sudhanix-pam-cache.log 2>&1 | tail -n 30"
+
+echo
+echo "--- /run/sudhanix-tokens/ ---"
+ssh -o ConnectTimeout=8 "${SSH_USER}@${HOST}" \
+    "sudo -n ls -la /run/sudhanix-tokens/ 2>&1"
+
+if [[ $RC -ne 0 ]]; then
+    exit 1
+fi
+exit 0

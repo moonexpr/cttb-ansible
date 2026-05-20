@@ -1,6 +1,64 @@
 ---
 
+# Set timezone first — display widgets / log timestamps need it from boot 1.
+# Skip in LXC: containers inherit /etc/localtime from the host.
+  - name: set system timezone
+    community.general.timezone:
+      name: "{{ system_timezone }}"
+    when: ansible_virtualization_type != "lxc"
+    tags:
+      - install
+      - time
+      - timezone
+
+# Ubuntu 24.04+ uses systemd-timesyncd (ntp package removed from repos)
   - block:
+        - name: remove legacy ntp if present
+          apt:
+            name: ntp
+            state: absent
+            purge: yes
+          ignore_errors: yes
+
+        - name: install systemd-timesyncd
+          apt:
+            name: systemd-timesyncd
+            state: present
+
+        - name: configure systemd-timesyncd
+          template:
+            src: timesyncd.conf.j2
+            dest: /etc/systemd/timesyncd.conf
+            mode: 0644
+            owner: root
+            group: root
+          notify:
+          - restart timesyncd
+
+        - name: enable and start systemd-timesyncd
+          systemd:
+            name: systemd-timesyncd
+            state: started
+            enabled: yes
+    when:
+      - ansible_distribution_major_version | int >= 24
+      - ansible_virtualization_type != "lxc"
+
+# Legacy Ubuntu (< 24.04) uses ntp package
+  - block:
+        - name: disable systemd-timesyncd
+          systemd:
+            name: systemd-timesyncd
+            state: stopped
+            enabled: no
+          ignore_errors: yes
+
+        - name: remove systemd-timesyncd
+          apt:
+            state: absent
+            name: systemd-timesyncd
+          ignore_errors: yes
+
         - name: install ntp
           apt:
             state: present
@@ -19,15 +77,9 @@
           - restart ntp
           tags:
             - ntp_cfg
-
-        - name: disable systemd-timesyncd
-          systemd:
-            name: systemd-timesyncd
-            state: stopped
-            enabled: no
-          ignore_errors: yes
-          # When running ansible for post-installation of a new PC, there is no systemd-timesyncd, so ignore the errors.
-    when: ansible_virtualization_type != "lxc"
+    when:
+      - ansible_distribution_major_version | int < 24
+      - ansible_virtualization_type != "lxc"
 
   - block:
     - name: remove ntp

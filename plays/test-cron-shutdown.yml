@@ -1,0 +1,18 @@
+---
+
+- hosts: cttb-it-dellaio
+  gather_facts: no
+  tasks:
+    - name: add a cron job to turn off BS-CC PCs at 10:mm PM
+      cron:
+        name: "Shuts down BS-CC PCs nightly at 10:mm PM."
+        hour: "21"
+        minute: "30,35,40"
+        job: "/sbin/shutdown -P now"
+
+    - name: add a cron job to turn off BS-CC PCs at 11pm
+      cron:
+        name: "Shuts down BS-CC PCs nightly at 11PM."
+        hour: "23"
+        minute: "0"
+        job: "/sbin/shutdown -P now"

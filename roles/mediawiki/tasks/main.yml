@@ -1,0 +1,253 @@
+---
+
+# ── Package Installation ──────────────────────────────────────────────
+
+- name: install php, nginx, and database packages
+  apt:
+    name:
+      - nginx
+      - php{{ mediawiki_php_version }}-fpm
+      - php{{ mediawiki_php_version }}-mysql
+      - php{{ mediawiki_php_version }}-xml
+      - php{{ mediawiki_php_version }}-mbstring
+      - php{{ mediawiki_php_version }}-intl
+      - php{{ mediawiki_php_version }}-gd
+      - php{{ mediawiki_php_version }}-curl
+      - php{{ mediawiki_php_version }}-apcu
+      - imagemagick
+      - mariadb-server
+      - python3-pymysql
+      # Standalone Lua interpreter for the Scribunto extension.
+      - lua5.1
+    state: present
+    update_cache: yes
+  tags:
+    - packages
+
+# ── MariaDB Setup ─────────────────────────────────────────────────────
+
+- name: start and enable mariadb
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+  tags:
+    - database
+
+- name: create mediawiki database
+  mysql_db:
+    name: "{{ mediawiki_db_name }}"
+    encoding: utf8mb4
+    collation: utf8mb4_unicode_ci
+    state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  tags:
+    - database
+
+- name: create mediawiki database user
+  mysql_user:
+    name: "{{ mediawiki_db_user }}"
+    password: "{{ mediawiki_db_password }}"
+    priv: "{{ mediawiki_db_name }}.*:ALL"
+    host: localhost
+    state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  tags:
+    - database
+
+# ── MediaWiki Install ─────────────────────────────────────────────────
+
+- name: create mediawiki data directory
+  file:
+    path: "{{ mediawiki_data_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+  tags:
+    - mediawiki
+
+- name: check whether mediawiki is already installed
+  stat:
+    path: "{{ mediawiki_install_dir }}/LocalSettings.php"
+  register: mediawiki_installed
+  tags:
+    - mediawiki
+
+- name: download mediawiki target version
+  get_url:
+    url: "{{ mediawiki_download_url }}/{{ mediawiki_target_version | regex_replace('^(\\d+\\.\\d+).*', '\\1') }}/mediawiki-{{ mediawiki_target_version }}.tar.gz"
+    dest: "{{ mediawiki_data_dir }}/mediawiki-{{ mediawiki_target_version }}.tar.gz"
+  when: not mediawiki_migration_mode and not mediawiki_installed.stat.exists
+  tags:
+    - mediawiki
+
+- name: extract mediawiki target version
+  unarchive:
+    src: "{{ mediawiki_data_dir }}/mediawiki-{{ mediawiki_target_version }}.tar.gz"
+    dest: "/var/www/html/"
+    remote_src: yes
+    creates: "{{ mediawiki_install_dir }}"
+    extra_opts:
+      - --transform
+      - "s/^mediawiki-{{ mediawiki_target_version }}/w/"
+  when: not mediawiki_migration_mode and not mediawiki_installed.stat.exists
+  tags:
+    - mediawiki
+
+# ── Branding Assets ───────────────────────────────────────────────────
+
+- name: deploy site logo
+  copy:
+    src: resources/assets/cttb.png
+    dest: "{{ mediawiki_install_dir }}/resources/assets/cttb.png"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  tags:
+    - mediawiki
+    - assets
+
+- name: deploy dark theme stylesheet
+  copy:
+    src: resources/assets/cttb-dark.css
+    dest: "{{ mediawiki_install_dir }}/resources/assets/cttb-dark.css"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  tags:
+    - mediawiki
+    - assets
+
+# ── Third-party Extensions ────────────────────────────────────────────
+
+- name: install extdist extensions
+  unarchive:
+    src: "extensions/{{ item.name }}-{{ item.mw_branch }}-{{ item.commit }}.tar.gz"
+    dest: "{{ mediawiki_install_dir }}/extensions/"
+    creates: "{{ mediawiki_install_dir }}/extensions/{{ item.name }}/extension.json"
+    owner: www-data
+    group: www-data
+  loop: "{{ mediawiki_extdist_extensions }}"
+  loop_control:
+    label: "{{ item.name }}"
+  tags:
+    - mediawiki
+    - extensions
+
+# Remove AccessControl 6.0 if it was installed by an earlier role version. Its
+# main hook (ParserBeforeStrip) is inactive on MW 1.43, leaving only onUserCan
+# whose userVerify() never sets $result=false — protection only "works" via
+# AccessControl's HTTP redirect side-effect. We replaced it with Lockdown.
+- name: remove stale AccessControl extension
+  file:
+    path: "{{ mediawiki_install_dir }}/extensions/AccessControl"
+    state: absent
+  tags:
+    - mediawiki
+    - extensions
+
+# MW 1.43 SqlSearchResultSet builds Title objects via Title::makeTitle( ns, title ),
+# which produces a link-target-only Title. RevisionStore::ensureRevisionRowMatchesPage
+# then calls Title::getId(), which assertProperPage() rejects with
+#   "PreconditionException: This Title instance does not represent a proper page,
+#    but merely a link target."
+# Result: every Special:Search query returns HTTP 500. Title::newFromRow($row)
+# yields a proper page-bearing Title and the assertion passes.
+- name: 'patch SqlSearchResultSet: use Title::newFromRow so getId() asserts cleanly'
+  replace:
+    path: "{{ mediawiki_install_dir }}/includes/search/SqlSearchResultSet.php"
+    regexp: 'Title::makeTitle\(\s*\$row->page_namespace,\s*\$row->page_title\s*\)'
+    replace: 'Title::newFromRow( $row )'
+  tags:
+    - mediawiki
+    - search-patch
+
+# ── LocalSettings.php ─────────────────────────────────────────────────
+
+- name: deploy LocalSettings.php
+  template:
+    src: LocalSettings.php.j2
+    dest: "{{ mediawiki_install_dir }}/LocalSettings.php"
+    owner: www-data
+    group: www-data
+    mode: "0640"
+    backup: yes
+  tags:
+    - mediawiki
+    - localsettings
+
+- name: run mediawiki schema update
+  command: sudo -u www-data php "{{ mediawiki_install_dir }}/maintenance/update.php" --quick
+  changed_when: true
+  tags:
+    - mediawiki
+    - update
+    - never  # opt-in via --tags update — runs only when invoked explicitly
+
+# ── Nginx Configuration ──────────────────────────────────────────────
+
+- name: deploy nginx site config
+  template:
+    src: mediawiki-nginx.conf.j2
+    dest: /etc/nginx/sites-available/mediawiki.conf
+    mode: "0644"
+  notify: restart nginx
+  tags:
+    - nginx
+
+- name: remove default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+  tags:
+    - nginx
+
+- name: enable mediawiki nginx site
+  file:
+    src: /etc/nginx/sites-available/mediawiki.conf
+    dest: /etc/nginx/sites-enabled/mediawiki.conf
+    state: link
+  notify: restart nginx
+  tags:
+    - nginx
+
+# ── Services ──────────────────────────────────────────────────────────
+
+- name: start and enable nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  tags:
+    - nginx
+
+- name: start and enable php-fpm
+  service:
+    name: "php{{ mediawiki_php_version }}-fpm"
+    state: started
+    enabled: yes
+  tags:
+    - php
+
+# ── File Permissions ──────────────────────────────────────────────────
+
+- name: set images directory ownership
+  file:
+    path: "{{ mediawiki_install_dir }}/images"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+    recurse: yes
+  tags:
+    - mediawiki
+    - permissions
+
+# ── Migration Tasks (conditional) ────────────────────────────────────
+
+- include_tasks: migrate.yml
+  when: mediawiki_migration_mode
+  tags:
+    - migrate

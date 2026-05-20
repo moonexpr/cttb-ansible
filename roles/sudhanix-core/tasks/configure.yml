@@ -1,0 +1,123 @@
+---
+# Configure phase — settings side of sudhanix-core.
+#
+# Templates, copies of config files, lineinfile mutations, polkit/pkla
+# privilege rules, dconf system defaults, autostart entries. Reads from
+# artifacts the install phase left on disk.
+#
+# Pre-condition: install.yml has run to completion AND main.yml's
+# `meta: flush_handlers` has fired (so font cache rebuilt, lightdm
+# restarted if greeter changed, pulseaudio restarted on pre-24.04).
+#
+# Tag strategy: each include directive carries the same tag set the
+# prior setup/default.yml orchestrator used. `apply:` propagates the
+# config tag to dynamically-included files.
+
+  # Polkit / pkla / network-manager privilege rules — extracted from the
+  # prior setup/default.yml top-level inline block. These are pure
+  # configure-phase tasks: they write rules files that polkit (already
+  # installed by lubuntu.yml's package batch) reads at runtime.
+  - import_tasks: policy.yml
+    tags:
+      - config
+
+  # lookandfeel.yml configure block — re-include the file with
+  # __sudhanix_phase=config so the configure block's `when:` fires and
+  # the install block's `when:` skips. See install.yml for the install
+  # half of the same gate. (Task 2 of issue #57.)
+  - include_tasks:
+      file: lookandfeel.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - lookandfeel
+
+  # lang.yml configure block — im-config -n fcitx. Configure-phase
+  # because it deploys the active-IM selection on top of installed
+  # fcitx packages. (Task 3 of issue #57.)
+  - include_tasks:
+      file: lang.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - lang
+
+  # UX session glue — appfinder/notifyd/power-manager/session xml,
+  # dconf-db site defaults (Plank dock, GNOME interface, light-locker),
+  # devilspie2 rules, chrome NFS-lock cleanup, session watchdog, GRUB
+  # cmdline tweaks. Pure configure (Task 6 of issue #57); no install
+  # block. zenity + dbus-x11 apt deps moved to lubuntu.yml in Task 3.
+  - include_tasks:
+      file: sudhanix-ux.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - sudhanix-ux
+
+  # Wallpaper configure block — xfdesktop rotation xml, randomizer
+  # autostart, plank autostart, legacy feh cleanup. Install block (in
+  # install.yml) holds the cttb-wallpapers tarball.
+  - include_tasks:
+      file: wallpaper.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - wallpaper
+
+  # Sound configure block — legacy pre-24.04 system-pulseaudio systemd
+  # unit + enable (no-op on Sudhanix 26). Install block (in install.yml)
+  # holds apt deps + bigsur theme.
+  - include_tasks:
+      file: sound.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - sound
+
+  # Plymouth configure block — update-alternatives, update-initramfs,
+  # grub cmdline lineinfile, update-grub. These run after install-phase
+  # asset deploy so the alternatives link points at a populated theme
+  # dir and initramfs rebuild captures the deployed theme files.
+  - include_tasks:
+      file: plymouth.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - plymouth
+
+  # sw.yml re-include for configure phase. sw.yml's own install block
+  # skips; sub-includes propagate __sudhanix_phase=config and fire only
+  # the config sub-blocks (Chrome --use-system-title-bar / xdg-settings
+  # default browser; Thunderbird cttb-proxy.js). Pure-install sub-files
+  # (sw-office, sw-vscode, sw-goldendict) have no config block and skip.
+  - include_tasks:
+      file: sw.yml
+    vars:
+      __sudhanix_phase: config
+    tags:
+      - config
+      - sw_install
+      - browser
+      - thunderbird
+
+  # First-login + welcome — pure configure (copy, lineinfile, stat,
+  # file:state=absent). Moved here from main.yml in Task 7 of the
+  # issue #57 refactor; they were misleadingly tagged `install` under
+  # the old main.yml dispatch.
+  - name: Sudhanix first-login bootstrap + migration
+    ansible.builtin.import_tasks: sudhanix-firstlogin.yml
+    tags:
+      - config
+      - sudhanix_firstlogin
+
+  - name: Sudhanix welcome window
+    ansible.builtin.import_tasks: sudhanix-welcome.yml
+    tags:
+      - config
+      - sudhanix_welcome

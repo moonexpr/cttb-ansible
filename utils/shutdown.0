@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Generates a playbook from one hostname or hostgroup and shuts it/them down.
+# Rui Liu, 2017-09-09. Based on Spike's "ar" utility.
+
+
+USAGE="Usage: $0 hostname|hostsgroup [ansible-playbook OPTIONS]"
+
+if [ "$#" == "0" ]; then
+  echo "$USAGE"
+  exit 1
+fi
+
+source utils/setup-env
+
+HOST=$1
+shift
+
+cat << EOF > ${ANSIBLE_PLAYBOOKS}/shutdown.yml
+---
+
+- hosts: $HOST
+  gather_facts: no
+  tasks:
+    - name: shutdown
+      command: /sbin/shutdown -P now
+      sudo: yes
+
+    - name: wait go down
+      local_action: wait_for host={{ ansible_ssh_host }} port=22 state=stopped
+EOF
+ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/shutdown.yml --diff $@

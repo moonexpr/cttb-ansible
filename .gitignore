@@ -1,11 +1,22 @@
 logs/
 tmp/
+.worktrees/
 *.pyc
 plays/autogen.yml
 
+# Ignore MacOS artifacts
+plays/.*
+group_vars/.*
+.DS_Store
 
-# claude framework (personal methods)
+
+# AI assistant artifacts (confidential)
 CLAUDE.md
+GEMINI.md
 PROJECT.md
 WORKPLAN.md
 .claude/
+SPRINT_PLAN.md
+NOTE.md
+WIKI_UPDATE.toon
+UPDATE_JOURNAL.md

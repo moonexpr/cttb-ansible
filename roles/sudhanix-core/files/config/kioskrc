@@ -1,0 +1,5 @@
+# XFCE Kiosk Mode — restrict panel customization for students
+# Only members of the 'it' group can modify the panel.
+# All other users get a locked panel (no add/remove/move plugins).
+[xfce4-panel]
+CustomizePanel=it

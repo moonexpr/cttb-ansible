@@ -1,0 +1,41 @@
+---
+
+# Browser.
+firefox: true
+
+# nfs homes settings
+nfs_homes_host: fileserver
+nfs_homes_export: /nethomes
+
+# LDAP groups, used for access control
+ldap_groups:
+  - dvbs-students
+  - dvbs-staff
+ldap_group_acl_string: "{% for item in ldap_groups %}({{item}}) {% endfor %}"
+
+# printing settings
+cups_srv: cups-dvbs
+
+# desktop configuration
+lightdm_hide_users: true
+
+# look and feel
+pic_avatar: avatar-dvbs.png
+pic_bg: bg-dvbs.jpg
+
+# office
+openoffice: true
+
+# printing settings
+cups_default_queue: Boy_School_CSLab
+
+# proxy for ssl filtering
+global_proxy:
+  - "http_proxy=http://10.11.1.1:8080/"
+  - "https_proxy=http://10.11.1.1:8080/"
+  - "ftp_proxy=http://10.11.1.1:8080/"
+
+# Additional software
+additional_sw:
+  # The eclipse-platform pkg requires openjdk-8-jdk, so JDK 8 is also installed.
+  - eclipse-platform

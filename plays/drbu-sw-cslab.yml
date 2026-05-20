@@ -1,0 +1,8 @@
+---
+
+- hosts: drbu-sw-cslab
+  roles:
+    - sudhanix-core
+    - ldap-client
+    - nfs-home
+    - cups-client

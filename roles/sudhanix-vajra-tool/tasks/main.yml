@@ -1,0 +1,36 @@
+---
+# sudhanix-vajra-tool — sysadmin multi-tool installer + config templater.
+#
+# vajra ships as a .deb from apt.cttb's extras pool. This role:
+#   1. Adds the cttb-extras apt source + signing key, installs the .deb.
+#   2. Cleans up the legacy pre-deb zipapp install paths.
+#   3. Drops Sudhanix-specific Lua tools into /usr/local/lib/vajra/tools/
+#      (CTTB-coupled tools that the upstream .deb does not bundle, kept
+#      out of upstream so the package stays portable).
+#   4. Templates host-overridable JSON configs into /etc/vajra/.
+#
+# Two-phase template (issue #57, Task 8): same Template Method skeleton
+# as sudhanix-core/tasks/main.yml — install runs first, handlers flush
+# at the phase boundary, then configure. Each phase's body is one
+# include_tasks file (install.yml / configure.yml).
+#
+# Layout on disk after this role runs:
+#   /usr/bin/vajra                          — binary (from .deb)
+#   /usr/share/applications/vajra.desktop   — menu entry (from .deb)
+#   /usr/local/lib/vajra/tools/             — drop-in Lua plugin dir
+#   /etc/vajra/{quick-links,ldap,sudhanix}.json — host-overridable configs
+#
+# Tag layout:
+#   vajra            — everything in this role
+#   vajra-install    — apt key + source + .deb install + legacy cleanup
+#   vajra-config     — tool drop-ins + /etc/vajra/*.json
+#   install / config — universal cross-role tags
+
+- name: Install phase
+  ansible.builtin.import_tasks: install.yml
+
+- name: Flush install-phase handlers before configure begins
+  ansible.builtin.meta: flush_handlers
+
+- name: Configure phase
+  ansible.builtin.import_tasks: configure.yml

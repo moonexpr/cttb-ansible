@@ -1,0 +1,49 @@
+---
+# Wiki Migration Playbook
+#
+# Migrates wiki.cttb (MW 1.29.1 / Ubuntu 16.04) to wiki-2404 (MW 1.43 / Ubuntu 24.04).
+#
+# Prerequisites — run manually before this playbook:
+#
+#   1. Create the container:
+#      ssh srv-vm "lxc launch ubuntu:24.04 wiki-2404"
+#
+#   2. Set up DNS for wikitest.cttb pointing to wiki-2404's IP
+#
+#   3. Dump the old wiki database (password in wiki_vault):
+#      ssh srv-vm "lxc exec wiki -- mysqldump -umediawiki -p'<DB_PASSWORD>' \
+#        --default-character-set=utf8 mediawiki > /tmp/wiki-dump.sql"
+#
+#   4. Copy dump into the new container:
+#      ssh srv-vm "lxc file push /tmp/wiki-dump.sql wiki-2404/tmp/wiki-dump.sql"
+#
+#   5. Copy images from old container:
+#      ssh srv-vm "lxc exec wiki -- tar czf /tmp/wiki-images.tar.gz -C /var/www/html/w images"
+#      ssh srv-vm "lxc file pull wiki/tmp/wiki-images.tar.gz /tmp/"
+#      ssh srv-vm "lxc exec wiki-2404 -- mkdir -p /tmp/wiki-images"
+#      ssh srv-vm "lxc file push /tmp/wiki-images.tar.gz wiki-2404/tmp/"
+#      ssh srv-vm "lxc exec wiki-2404 -- tar xzf /tmp/wiki-images.tar.gz -C /tmp/wiki-images --strip-components=1"
+#
+#   6. Copy static files (PDF, files/, etc.):
+#      ssh srv-vm "lxc exec wiki -- tar czf /tmp/wiki-static.tar.gz -C /var/www/html \
+#        CTTB-tech-use-guide.pdf files images --ignore-failed-read"
+#      ssh srv-vm "lxc file push /tmp/wiki-static.tar.gz wiki-2404/tmp/"
+#      ssh srv-vm "lxc exec wiki-2404 -- mkdir -p /tmp/wiki-static"
+#      ssh srv-vm "lxc exec wiki-2404 -- tar xzf /tmp/wiki-static.tar.gz -C /tmp/wiki-static"
+#
+# Usage:
+#   ansible-playbook plays/wiki-migrate.yml -l wiki-2404 --ask-vault-pass
+#
+# After verification on wikitest.cttb:
+#   1. Update mediawiki_server to http://wiki.cttb in host_vars
+#   2. Update mediawiki_server_name to wiki.cttb
+#   3. Swap DNS: wiki.cttb -> wiki-2404's IP
+#   4. Stop old container: ssh srv-vm "lxc stop wiki"
+
+- hosts: wiki-2404
+  vars:
+    mediawiki_migration_mode: true
+    mediawiki_server: "http://wikitest.cttb"
+    mediawiki_server_name: "wikitest.cttb"
+  roles:
+    - { role: mediawiki, tags: mediawiki }

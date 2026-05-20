@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Sudhanix Randomize Wallpaper
+Comment=Pick a random Sudhanix wallpaper at session start
+Exec=/usr/local/bin/sudhanix-randomize-wallpaper
+OnlyShowIn=XFCE;
+X-GNOME-Autostart-enabled=true
+NoDisplay=true

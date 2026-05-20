@@ -52,7 +52,7 @@
       - acpid
     when: ansible_virtualization_type == "kvm" and ansible_virtualization_role == "guest"
 
-  - include: interfaces.yml
+  - include_tasks: interfaces.yml
     when: server_interfaces is defined
     tags:
       - network

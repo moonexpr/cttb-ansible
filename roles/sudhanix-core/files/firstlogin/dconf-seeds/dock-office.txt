@@ -1,0 +1,13 @@
+# Plank dock category: office.
+#
+# Word processing, spreadsheets, calculator. Default-enabled because the
+# overwhelming majority of lab use is document-driven student work.
+#
+# prefix: /org/sudhanix/dock/
+
+[categories/office]
+items=['libreoffice-writer.dockitem', 'libreoffice-calc.dockitem', 'org.gnome.Calculator.dockitem']
+label='Office'
+always-on=false
+weight=300
+default-enabled=true

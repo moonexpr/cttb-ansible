@@ -1,0 +1,15 @@
+# Plank dock category: art.
+#
+# Image editing and illustration. Default-disabled. The campus ships
+# GIMP today; Inkscape and Krita are listed for forward-compat with the
+# fleet's planned visual-design lab additions, and are filtered out at
+# apply time when the corresponding .dockitem files aren't present.
+#
+# prefix: /org/sudhanix/dock/
+
+[categories/art]
+items=['gimp.dockitem', 'inkscape.dockitem', 'krita.dockitem']
+label='Art'
+always-on=false
+weight=700
+default-enabled=false

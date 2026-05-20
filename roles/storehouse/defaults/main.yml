@@ -1,0 +1,36 @@
+---
+
+# h5ai version — manti-X fork (https://github.com/manti-X/h5ai)
+storehouse_h5ai_version: "0.33.0"
+
+# Filesystem paths
+storehouse_root: "/srv/storehouse"
+storehouse_subdirs:
+  - ansible/isos
+  - public/coredumps
+
+# Public coredump drop-zone retention. Older files (and now-empty per-host
+# subdirectories) get pruned by /etc/cron.daily/storehouse-coredumps-prune.
+storehouse_coredumps_retention_days: 90
+
+# Hard cap on a single PUT — keeps a runaway browser dump from filling the
+# storehouse volume. A Chrome dump is typically 1-3 GB; 8G covers most.
+storehouse_coredumps_max_upload: "8G"
+
+# Read-side basic auth on /public/coredumps/. PUT/MKCOL remain anonymous so
+# lab hosts can ship dumps without baked-in creds; GET/HEAD require these.
+# The campus-wide administrator password is the canonical "lab admin
+# rummage account" — same shape as the rest of the lab fleet.
+storehouse_coredumps_user: administrator
+storehouse_coredumps_password: "4m1t0f0"
+
+# System user
+storehouse_user: "storehouse"
+storehouse_group: "storehouse"
+
+# PHP version (Ubuntu 22.04 ships 8.1)
+storehouse_php_version: "8.1"
+
+# Network
+storehouse_port: 80
+storehouse_server_name: "storehouse.cttb"

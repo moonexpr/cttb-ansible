@@ -1,0 +1,79 @@
+---
+
+# MediaWiki on Ubuntu 24.04 — replacement for lxc-wiki (Ubuntu 16.04)
+# Production hostname: wiki.cttb (DNS swap completed 2026-05-02)
+
+mediawiki_server_name: "wiki.cttb"
+mediawiki_server: "http://wiki.cttb"
+# Legacy alias kept on the vhost so old links keep working
+mediawiki_server_aliases:
+  - "wikitest.cttb"
+
+# Container is reachable from the Mac controller through srv-vm (LXC host).
+# An ed25519 pubkey was deployed to /home/ubuntu/.ssh/authorized_keys via
+# `lxc exec wiki-2404 -- bash -c "..."`. The ubuntu user has NOPASSWD sudo.
+ansible_host: 10.11.1.34
+ansible_user: ubuntu
+ansible_ssh_common_args: "-o ProxyJump=srv-vm -o StrictHostKeyChecking=accept-new -o ControlMaster=auto -o ControlPersist=60s"
+# ProxyJump path is slow on first hop — give privilege-escalation extra room.
+ansible_timeout: 30
+
+# Third-party extensions to install from extdist.wmflabs.org
+mediawiki_extdist_extensions:
+  - name: TemplateStyles
+    mw_branch: REL1_43
+    commit: "5e7e462"
+  - name: Lockdown
+    mw_branch: REL1_43
+    commit: "120d6fd"
+
+# Custom namespaces — one per administrative audience. Pages titled "IT:Foo",
+# "DRBU:Foo", etc. (currently in NS_MAIN with literal colons) move into the
+# matching namespace so Lockdown can read-protect them as a group.
+# Convention: even ID = content NS, odd ID = corresponding talk NS.
+mediawiki_extra_namespaces:
+  - { id: 3000, name: "IT" }
+  - { id: 3001, name: "IT_talk" }
+  - { id: 3010, name: "DRBU" }
+  - { id: 3011, name: "DRBU_talk" }
+  - { id: 3020, name: "DVGS" }
+  - { id: 3021, name: "DVGS_talk" }
+  - { id: 3030, name: "DVBS" }
+  - { id: 3031, name: "DVBS_talk" }
+  - { id: 3040, name: "CTTB" }
+  - { id: 3041, name: "CTTB_talk" }
+
+# Custom MediaWiki user groups granted access to the locked-down namespaces.
+# Members are added via the addUserToGroup maintenance script — see
+# plays/wiki-add-group-users.yml.
+mediawiki_user_groups:
+  - it
+  - drbu
+  - dvgs
+  - dvbs
+  - cttb
+
+# Show every title in Special:Search and the main search bar regardless of
+# group membership. Read is still gated by Lockdown — clicking a restricted
+# hit lands on badaccess-groups. Set false to fall back to Lockdown defaults
+# (titles hidden from non-members).
+mediawiki_lockdown_search_visible: true
+
+# Lockdown rules: per-namespace, per-action lists of allowed user groups.
+# Format mirrors $wgNamespacePermissionLockdown[NS_<NAME>][action] = [...].
+mediawiki_lockdown:
+  IT:        { read: [it, sysop],   edit: [it, sysop],   create: [it, sysop],   move: [it, sysop] }
+  IT_talk:   { read: [it, sysop],   edit: [it, sysop] }
+  DRBU:      { read: [drbu, sysop], edit: [drbu, sysop], create: [drbu, sysop], move: [drbu, sysop] }
+  DRBU_talk: { read: [drbu, sysop], edit: [drbu, sysop] }
+  DVGS:      { read: [dvgs, sysop], edit: [dvgs, sysop], create: [dvgs, sysop], move: [dvgs, sysop] }
+  DVGS_talk: { read: [dvgs, sysop], edit: [dvgs, sysop] }
+  DVBS:      { read: [dvbs, sysop], edit: [dvbs, sysop], create: [dvbs, sysop], move: [dvbs, sysop] }
+  DVBS_talk: { read: [dvbs, sysop], edit: [dvbs, sysop] }
+  CTTB:      { read: [cttb, sysop], edit: [cttb, sysop], create: [cttb, sysop], move: [cttb, sysop] }
+  CTTB_talk: { read: [cttb, sysop], edit: [cttb, sysop] }
+
+# Secrets from vault
+mediawiki_secret_key: "{{ vault_mediawiki_secret_key }}"
+mediawiki_upgrade_key: "{{ vault_mediawiki_upgrade_key }}"
+mediawiki_db_password: "{{ vault_mediawiki_db_password }}"

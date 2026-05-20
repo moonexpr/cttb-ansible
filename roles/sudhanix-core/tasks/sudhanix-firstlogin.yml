@@ -1,0 +1,98 @@
+---
+# First-login home-directory bootstrap + migration.
+#
+# User journey on first login (Sudhanix 26):
+#   1. /etc/X11/Xsession.d/55sudhanix-firstlogin runs migration + first-setup
+#      synchronously (before xfce4-session forks) so the session reads the
+#      already-bootstrapped home and looks right immediately.
+#   2. xfce4-session starts; xfsettingsd reads /etc/xdg defaults (theme,
+#      panel, wallpaper, dock dconf).
+#   3. /etc/xdg/autostart/sudhanix-welcome.desktop pops the welcome window
+#      (deployed by sudhanix-welcome.yml).
+#
+# An XDG autostart fallback (sudhanix-firstlogin.desktop) is also installed
+# in case the Xsession.d hook is bypassed on a future Wayland-based session
+# manager — both paths invoke the same idempotent script, gated by a marker
+# file in $HOME/.config/sudhanix/.
+
+- name: deploy firstlogin shared library
+  copy:
+    src: firstlogin/sudhanix-firstlogin-lib.sh
+    dest: /usr/local/lib/sudhanix-firstlogin-lib.sh
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - sudhanix_firstlogin
+
+- name: ensure dconf user-db seed dir exists
+  file:
+    path: /etc/sudhanix/dconf-seeds
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_firstlogin
+
+- name: deploy dconf user-db seeds
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/sudhanix/dconf-seeds/{{ item | basename }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_fileglob:
+    - "firstlogin/dconf-seeds/*.txt"
+  tags:
+    - sudhanix_firstlogin
+
+- name: deploy sudhanix-firstlogin entry point
+  copy:
+    src: firstlogin/sudhanix-firstlogin
+    dest: /usr/local/sbin/sudhanix-firstlogin
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_firstlogin
+
+- name: deploy sudhanix-migrate-home (sysadmin tool)
+  copy:
+    src: firstlogin/sudhanix-migrate-home
+    dest: /usr/local/sbin/sudhanix-migrate-home
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_firstlogin
+
+- name: deploy sudhanix-fix-dock (per-user remediation tool)
+  copy:
+    src: firstlogin/sudhanix-fix-dock
+    dest: /usr/local/sbin/sudhanix-fix-dock
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_firstlogin
+
+- name: deploy Xsession.d hook (primary trigger)
+  copy:
+    src: firstlogin/55sudhanix-firstlogin
+    dest: /etc/X11/Xsession.d/55sudhanix-firstlogin
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - sudhanix_firstlogin
+
+- name: deploy XDG autostart fallback
+  copy:
+    src: firstlogin/sudhanix-firstlogin.desktop
+    dest: /etc/xdg/autostart/sudhanix-firstlogin.desktop
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - sudhanix_firstlogin

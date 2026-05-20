@@ -1,0 +1,66 @@
+---
+# Apply Sudhanix-specific schema and ACL additions to slapd's cn=config.
+# Idempotent: skips if cn=sudhanix,cn=schema,cn=config already exists, and
+# if olcAccess already mentions sudhanixWelcomeDismissed.
+
+- name: probe whether sudhanix schema already loaded
+  command: ldapsearch -Y EXTERNAL -H ldapi:/// -LLL -b "cn=sudhanix,cn=schema,cn=config" -s base dn
+  register: sudhanix_schema_probe
+  changed_when: false
+  failed_when: false
+  tags:
+    - ldap_schema
+
+- name: copy sudhanix schema ldif
+  copy:
+    src: sudhanix-schema.ldif
+    dest: /tmp/sudhanix-schema.ldif
+    owner: root
+    group: root
+    mode: '0600'
+  when: sudhanix_schema_probe.rc != 0
+  tags:
+    - ldap_schema
+
+- name: install sudhanix schema (cn=sudhanix,cn=schema,cn=config)
+  command: ldapadd -Y EXTERNAL -H ldapi:/// -f /tmp/sudhanix-schema.ldif
+  when: sudhanix_schema_probe.rc != 0
+  tags:
+    - ldap_schema
+
+- name: probe whether ACL for sudhanixWelcomeDismissed already in place
+  shell: |
+    ldapsearch -Y EXTERNAL -H ldapi:/// -LLL -b "olcDatabase={1}mdb,cn=config" -s base olcAccess \
+      | grep -q "sudhanixWelcomeDismissed"
+  register: sudhanix_acl_probe
+  changed_when: false
+  failed_when: false
+  tags:
+    - ldap_schema
+
+- name: copy sudhanix acl ldif
+  copy:
+    src: sudhanix-acl.ldif
+    dest: /tmp/sudhanix-acl.ldif
+    owner: root
+    group: root
+    mode: '0600'
+  when: sudhanix_acl_probe.rc != 0
+  tags:
+    - ldap_schema
+
+- name: install sudhanixWelcomeDismissed self-write ACL
+  command: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/sudhanix-acl.ldif
+  when: sudhanix_acl_probe.rc != 0
+  tags:
+    - ldap_schema
+
+- name: cleanup tmp ldifs
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/sudhanix-schema.ldif
+    - /tmp/sudhanix-acl.ldif
+  tags:
+    - ldap_schema

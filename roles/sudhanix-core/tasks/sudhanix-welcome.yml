@@ -1,0 +1,183 @@
+---
+# First-login welcome window.
+#
+# Components:
+#   * /usr/local/bin/sudhanix-welcome       — GTK3 welcome app
+#   * /usr/share/sudhanix/welcome/          — wordmark, customize.yml
+#   * /usr/share/sudhanix/welcome-icons/    — theme-neutral stack-page SVGs
+#   * /etc/xdg/autostart/sudhanix-welcome.desktop — XDG autostart on graphical session
+#
+# 2026-05-20: Dismissal state moved off LDAP onto a stamp file at
+#   ~/.config/sudhanix/welcome-dismissed
+# carried across machines by the NFS automount of home directories.
+# The PAM token cache helpers, tmpfiles.d entry, and PAM include lines
+# below are commented out; the LDAP schema/ACL role
+# (roles/ldap-schema-sudhanix, plays/ldap-install-sudhanix26-scheme.yml)
+# is likewise dormant. Uncomment to revert.
+
+# The welcome app is pure-Python + GTK3. python3-gi and gir1.2-gtk-3.0
+# are transitive dependencies of the lubuntu desktop, so no explicit
+# `apt: name=...` is needed here.
+
+# - name: deploy PAM token cache helpers
+#   copy:
+#     src: "welcome/{{ item.src }}"
+#     dest: "/usr/local/sbin/{{ item.dest }}"
+#     owner: root
+#     group: root
+#     mode: '0755'
+#   loop:
+#     - { src: cache-pam-token.sh, dest: sudhanix-cache-token }
+#     - { src: shred-pam-token.sh, dest: sudhanix-shred-token }
+#   loop_control:
+#     label: "{{ item.dest }}"
+#   tags:
+#     - sudhanix_welcome
+
+# - name: drop legacy unprefixed copies (older role version dropped them at /usr/local/sbin/{cache,shred}-pam-token)
+#   file:
+#     path: "/usr/local/sbin/{{ item }}"
+#     state: absent
+#   loop:
+#     - cache-pam-token
+#     - shred-pam-token
+#   tags:
+#     - sudhanix_welcome
+
+# - name: deploy tmpfiles.d entry for /run/sudhanix-tokens
+#   copy:
+#     src: welcome/sudhanix-tokens.conf
+#     dest: /etc/tmpfiles.d/sudhanix-tokens.conf
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   register: tmpfiles_entry
+#   tags:
+#     - sudhanix_welcome
+
+# - name: apply tmpfiles entry now (don't wait for next boot)
+#   command: systemd-tmpfiles --create /etc/tmpfiles.d/sudhanix-tokens.conf
+#   when: tmpfiles_entry.changed
+#   changed_when: false
+#   tags:
+#     - sudhanix_welcome
+
+- name: deploy welcome app
+  copy:
+    src: welcome/sudhanix-welcome
+    dest: /usr/local/bin/sudhanix-welcome
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_welcome
+
+- name: ensure welcome data dir exists
+  file:
+    path: /usr/share/sudhanix/welcome
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_welcome
+
+- name: deploy wordmark branding image
+  copy:
+    src: branding/sx26/wordmark.png
+    dest: /usr/share/sudhanix/welcome/wordmark.png
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - sudhanix_welcome
+
+- name: deploy customize.yml (theme / browser / dock-category presets)
+  copy:
+    src: welcome/customize.yml
+    dest: /usr/share/sudhanix/welcome/customize.yml
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - sudhanix_welcome
+
+- name: ensure welcome icons dir exists
+  file:
+    path: /usr/share/sudhanix/welcome-icons
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - sudhanix_welcome
+
+- name: deploy theme-neutral welcome icons (SVG line-art for stack-page cards)
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/share/sudhanix/welcome-icons/{{ item | basename }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_fileglob:
+    - "welcome/icons/*.svg"
+  tags:
+    - sudhanix_welcome
+
+- name: deploy XDG autostart entry
+  copy:
+    src: welcome/sudhanix-welcome.desktop
+    dest: /etc/xdg/autostart/sudhanix-welcome.desktop
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - sudhanix_welcome
+
+# PAM integration disabled 2026-05-20 — stamp-file dismissal no longer needs
+# a cached PAM token. The PAM include lines that this role previously
+# appended to /etc/pam.d/{lightdm,sddm,gdm-password} are NOT removed by the
+# role; they need a separate cleanup pass (or hand-edit) on already-deployed
+# hosts. New deployments skip them.
+#
+# - name: discover which graphical PAM files exist
+#   stat:
+#     path: "/etc/pam.d/{{ item }}"
+#   loop:
+#     - lightdm
+#     - sddm
+#     - gdm-password
+#   register: pam_dms
+#   tags:
+#     - sudhanix_welcome
+#
+# # pam_exec `log=` captures the child's stderr to a file. Combined with the
+# # script's own logging, this gives belt-and-suspenders diagnostic coverage —
+# # critical because pam_exec otherwise silently discards script stderr.
+# - name: enable token cache during graphical auth
+#   lineinfile:
+#     path: "/etc/pam.d/{{ item.item }}"
+#     insertafter: '^@include common-auth'
+#     regexp: '^auth\s+optional\s+pam_exec\.so\s+expose_authtok\s+(?:log=\S+\s+)?/usr/local/sbin/sudhanix-cache-token\b'
+#     line: 'auth     optional  pam_exec.so  expose_authtok  log=/var/log/sudhanix-pam-cache.log  /usr/local/sbin/sudhanix-cache-token'
+#     state: present
+#   loop: "{{ pam_dms.results }}"
+#   loop_control:
+#     label: "{{ item.item }}"
+#   when: item.stat.exists
+#   tags:
+#     - sudhanix_welcome
+#
+# - name: shred token on graphical session close
+#   lineinfile:
+#     path: "/etc/pam.d/{{ item.item }}"
+#     insertafter: '^@include common-session'
+#     regexp: '^session\s+optional\s+pam_exec\.so\s+(?:log=\S+\s+)?/usr/local/sbin/sudhanix-shred-token\b'
+#     line: 'session  optional  pam_exec.so  log=/var/log/sudhanix-pam-cache.log  /usr/local/sbin/sudhanix-shred-token'
+#     state: present
+#   loop: "{{ pam_dms.results }}"
+#   loop_control:
+#     label: "{{ item.item }}"
+#   when: item.stat.exists
+#   tags:
+#     - sudhanix_welcome

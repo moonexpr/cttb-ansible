@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <!-- Background -->
+  
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Inter Display, sans-serif" font-size="24" font-weight="bold" fill="#1e293b" text-anchor="middle">Sudhanix Asset Pipeline (The Flow of Tarballs)</text>
+
+  <!-- Stage 1: Build -->
+  <rect x="50" y="100" width="180" height="100" rx="10" fill="#f1f5f9" stroke="#00b4d8" stroke-width="2" />
+  <text x="140" y="140" font-family="Inter Display, sans-serif" font-size="16" font-weight="bold" fill="#00b4d8" text-anchor="middle">1. Rebuild</text>
+  <text x="140" y="165" font-family="Inter Display, sans-serif" font-size="12" fill="#475569" text-anchor="middle">Ansible Controller</text>
+  <text x="140" y="180" font-family="Inter Display, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">rsync + tar + upload</text>
+
+  <!-- Stage 2: Store -->
+  <rect x="310" y="100" width="180" height="100" rx="10" fill="#f1f5f9" stroke="#34d399" stroke-width="2" />
+  <text x="400" y="140" font-family="Inter Display, sans-serif" font-size="16" font-weight="bold" fill="#34d399" text-anchor="middle">2. Host</text>
+  <text x="400" y="165" font-family="Inter Display, sans-serif" font-size="12" fill="#475569" text-anchor="middle">storehouse.cttb</text>
+  <text x="400" y="180" font-family="Inter Display, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">HTTP static serving</text>
+
+  <!-- Stage 3: Consume -->
+  <rect x="570" y="100" width="180" height="100" rx="10" fill="#f1f5f9" stroke="#fb923c" stroke-width="2" />
+  <text x="660" y="140" font-family="Inter Display, sans-serif" font-size="16" font-weight="bold" fill="#fb923c" text-anchor="middle">3. Fetch</text>
+  <text x="660" y="165" font-family="Inter Display, sans-serif" font-size="12" fill="#475569" text-anchor="middle">Sudhanix Client</text>
+  <text x="660" y="180" font-family="Inter Display, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">get_url + unarchive</text>
+
+  <!-- Inventory Table Preview -->
+  <rect x="150" y="250" width="500" height="150" rx="10" fill="#f8fafc" stroke="#64748b" stroke-width="1" />
+  <text x="400" y="280" font-family="Inter Display, sans-serif" font-size="16" font-weight="bold" fill="#475569" text-anchor="middle">Asset Inventory (Manifest)</text>
+  
+  <text x="170" y="310" font-family="Inter Display, sans-serif" font-size="12" fill="#67e8f9">WhiteSur-gtk-theme.tar.xz</text>
+  <text x="170" y="335" font-family="Inter Display, sans-serif" font-size="12" fill="#67e8f9">WhiteSur-icon-theme.tar.gz</text>
+  <text x="170" y="360" font-family="Inter Display, sans-serif" font-size="12" fill="#67e8f9">InterDisplay.tar.gz</text>
+  <text x="170" y="385" font-family="Inter Display, sans-serif" font-size="12" fill="#67e8f9">sudhanix-plymouth.tar.gz</text>
+
+  <!-- Flow Arrows -->
+  <path d="M 230 150 L 310 150" stroke="#00b4d8" stroke-width="3" marker-end="url(#arrow)" fill="none" />
+  <path d="M 490 150 L 570 150" stroke="#34d399" stroke-width="3" marker-end="url(#arrow)" fill="none" />
+
+  <!-- Markers -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
+    </marker>
+  </defs>
+
+</svg>

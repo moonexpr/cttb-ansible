@@ -1,0 +1,91 @@
+---
+
+# MediaWiki version stepping path (in order)
+mediawiki_target_version: "1.43.1"
+mediawiki_stepping_versions:
+  - "1.35.14"
+  - "1.39.11"
+  - "1.43.1"
+
+# Download base URL
+mediawiki_download_url: "https://releases.wikimedia.org/mediawiki"
+
+# Install paths
+mediawiki_install_dir: "/var/www/html/w"
+mediawiki_data_dir: "/var/lib/mediawiki"
+
+# Database
+mediawiki_db_name: "mediawiki"
+mediawiki_db_user: "mediawiki"
+mediawiki_db_password: "{{ vault_mediawiki_db_password }}"
+mediawiki_db_prefix: "mediawiki"
+
+# Site config
+mediawiki_site_name: "CTTB Wiki"
+mediawiki_server: "http://wiki.cttb"
+mediawiki_script_path: "/w"
+
+# PHP
+mediawiki_php_version: "8.3"
+# PHP-FPM socket the wiki nginx vhost talks to. Default pool ships at this path.
+mediawiki_php_fpm_socket: "/run/php/php{{ mediawiki_php_version }}-fpm.sock"
+
+# Nginx
+mediawiki_server_name: "wiki.cttb"
+# Optional aliases that resolve to the same vhost (e.g. legacy wikitest.cttb)
+mediawiki_server_aliases: []
+
+# Cache type — CACHE_NONE | CACHE_ACCEL | CACHE_ANYTHING
+mediawiki_main_cache_type: "CACHE_NONE"
+
+# Sitenotice dismiss key — bump to re-show banner after edits
+mediawiki_site_notice_id: 1
+
+# Extensions to load via wfLoadExtension. Order preserved.
+# Bundled with MW 1.43 unless noted otherwise.
+mediawiki_extensions:
+  - ImageMap
+  - Interwiki
+  - WikiEditor
+  - SyntaxHighlight_GeSHi
+  - InputBox
+  - ParserFunctions
+  - CategoryTree
+  - VisualEditor
+  - MultimediaViewer
+  - CodeEditor
+  - Cite
+  - CiteThisPage
+  - Scribunto
+
+# Path to the standalone Lua interpreter. Installed by the role from the lua5.1 apt package.
+mediawiki_scribunto_lua_path: "/usr/bin/lua5.1"
+
+# Third-party extensions installed from the ExtensionDistributor.
+# Each entry: { name, mw_branch, commit } — fetched from extdist.wmflabs.org tarballs.
+mediawiki_extdist_extensions: []
+
+# Custom namespaces — list of {id, name} entries deployed before extensions load
+# so Lockdown sees them at config time. Even IDs only (talk = id+1 by convention).
+mediawiki_extra_namespaces: []
+
+# Custom MediaWiki user groups. Created with read+edit+move+createpage so they
+# can be layered with Lockdown (which restricts further by namespace).
+mediawiki_user_groups: []
+
+# Lockdown rules: { namespace_name: { action: [group, ...], ... }, ... }
+# namespace_name must match a NS_<NAME> constant defined in mediawiki_extra_namespaces.
+mediawiki_lockdown: {}
+
+# When true, override Lockdown's search filtering so titles in restricted
+# namespaces still appear in Special:Search results and the main search bar
+# for everyone. Reading the page is still blocked by Lockdown's
+# getUserPermissionsErrors hook (badaccess-groups on click). Useful when
+# you want a campus-wide title index without exposing page bodies.
+mediawiki_lockdown_search_visible: false
+
+# Migration (set to true when importing from old wiki)
+mediawiki_migration_mode: false
+mediawiki_migration_dump_file: "/tmp/wiki-dump.sql"
+mediawiki_migration_images_dir: "/tmp/wiki-images"
+mediawiki_migration_static_dir: "/tmp/wiki-static"

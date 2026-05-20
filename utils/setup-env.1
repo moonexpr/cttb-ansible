@@ -1,0 +1,15 @@
+#!/bin/bash
+
+export ANSIBLE_BASE=`pwd`
+export ANSIBLE_HOSTS="${ANSIBLE_BASE}/hosts"
+#export ANSIBLE_INVENTORY="${ANSIBLE_BASE}/hosts"
+export ANSIBLE_LIBRARY="/usr/share/ansible:${ANSIBLE_BASE}/library"
+#export ANSIBLE_LIBRARY="/usr/share/ansible"
+export ANSIBLE_ROLES="${ANSIBLE_BASE}/roles"
+export ANSIBLE_PLAYBOOKS="${ANSIBLE_BASE}/plays"
+export ANSIBLE_LOG_DIR="${ANSIBLE_BASE}/logs"
+export ANSIBLE_LOG="${ANSIBLE_LOG_DIR}/run-`date +"%y%m%d%H%M%S"`.log"
+export ANSIBLE_TMP="${ANSIBLE_BASE}/tmp"
+
+mkdir -p $ANSIBLE_LOG_DIR
+mkdir -p $ANSIBLE_TMP

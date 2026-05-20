@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <!-- Background -->
+  
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Inter Display, sans-serif" font-size="24" font-weight="bold" fill="#1e293b" text-anchor="middle">Sudhanix OS: Technical Architecture</text>
+
+  <!-- Core Infrastructure -->
+  <rect x="50" y="80" width="220" height="380" rx="10" fill="#f1f5f9" stroke="#00b4d8" stroke-width="2" />
+  <text x="160" y="115" font-family="Inter Display, sans-serif" font-size="18" font-weight="bold" fill="#00b4d8" text-anchor="middle">Back-end Services</text>
+  
+  <rect x="70" y="140" width="180" height="60" rx="5" fill="#301808" stroke="#fb923c" stroke-width="1" />
+  <text x="160" y="165" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#fb923c" text-anchor="middle">LDAP (slapd)</text>
+  <text x="160" y="185" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Auth &amp; Schema</text>
+
+  <rect x="70" y="220" width="180" height="60" rx="5" fill="#083020" stroke="#34d399" stroke-width="1" />
+  <text x="160" y="245" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#34d399" text-anchor="middle">NFS (fs)</text>
+  <text x="160" y="265" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">User Homes</text>
+
+  <rect x="70" y="300" width="180" height="60" rx="5" fill="#082830" stroke="#67e8f9" stroke-width="1" />
+  <text x="160" y="325" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#67e8f9" text-anchor="middle">PXE / Apt</text>
+  <text x="160" y="345" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Deployment &amp; Pkgs</text>
+
+  <rect x="70" y="380" width="180" height="60" rx="5" fill="#300820" stroke="#f472b6" stroke-width="1" />
+  <text x="160" y="405" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#f472b6" text-anchor="middle">Storehouse</text>
+  <text x="160" y="425" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Ansible Assets</text>
+
+  <!-- Client Side -->
+  <text x="550" y="115" font-family="Inter Display, sans-serif" font-size="18" font-weight="bold" fill="#475569" text-anchor="middle">Sudhanix Client</text>
+  
+  <rect x="440" y="140" width="220" height="250" rx="10" fill="#f8fafc" stroke="#fbbf24" stroke-width="2" />
+  
+  <text x="460" y="175" font-family="Inter Display, sans-serif" font-size="14" font-weight="bold" fill="#fbbf24">Ansible Role Stack</text>
+  <text x="460" y="205" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">1. common</text>
+  <text x="460" y="225" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">2. time-server</text>
+  <text x="460" y="245" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">3. sudhanix-core</text>
+  <text x="460" y="265" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">4. cups-client</text>
+  <text x="460" y="285" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">5. ldap-client</text>
+  <text x="460" y="305" font-family="Inter Display, sans-serif" font-size="12" fill="#475569">6. autofs / nfs-home</text>
+
+  <rect x="460" y="330" width="180" height="40" rx="5" fill="#301808" stroke="#fb923c" stroke-width="1" />
+  <text x="550" y="355" font-family="Inter Display, sans-serif" font-size="12" font-weight="bold" fill="#fb923c" text-anchor="middle">Ubuntu 24.04 Base</text>
+
+  <!-- Control Arrow -->
+  <path d="M 280 250 L 430 250" stroke="#475569" stroke-width="3" stroke-dasharray="8,4" marker-end="url(#arrow)" fill="none" />
+  <text x="355" y="240" font-family="Inter Display, sans-serif" font-size="10" fill="#475569" text-anchor="middle">Integration</text>
+
+  <!-- Markers -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
+    </marker>
+  </defs>
+
+</svg>

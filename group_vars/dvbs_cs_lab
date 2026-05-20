@@ -13,3 +13,4 @@ cups_default_queue: Boy_School_CSLab
 additional_sw:
   # netbeans Java IDE is requested by Dr. Koay for teaching AP Comp Sci course.
   - netbeans
+  - fbreader

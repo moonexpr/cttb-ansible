@@ -1,0 +1,17 @@
+# /etc/dconf/db/site.d/05-light-locker
+#
+# Lock policy for shared lab machines. Captured from
+# administrator@dvgs-testmachine on 2026-05-06.
+#   - lock-after-screensaver=5  : 5-minute idle → screen lock
+#   - lock-on-suspend=true      : lid-close / suspend always locks
+#   - lock-on-lid=false         : lid-close on a laptop does not auto-lock
+#                                 (suspend handler still locks via lock-on-suspend)
+#   - idle-hint=false           : do not advertise idle to other agents
+#   - late-locking=false        : lock at the screensaver timeout, not after
+
+[apps/light-locker]
+idle-hint=false
+late-locking=false
+lock-after-screensaver=uint32 5
+lock-on-lid=false
+lock-on-suspend=true

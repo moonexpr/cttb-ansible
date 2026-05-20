@@ -1,0 +1,8 @@
+---
+
+- hosts: dvgs-cs-lab
+  gather_facts: no
+  tasks:
+    - name: restore /etc/environment
+      shell: mv /etc/environment.0.haiku /etc/environment
+

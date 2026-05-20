@@ -1,0 +1,55 @@
+---
+# sudhanix-core role entry point.
+#
+# Architectural contract (issue #57): the role is a Template Method —
+# every role runs install() then configure() in strict order. Filesystem
+# state is the pipe between the two phases. `meta: flush_handlers` after
+# install guarantees rebuild-font-cache / restart-lightdm /
+# restart-pulseaudio / update-grub-config / update-initramfs have fired
+# before any configure task reads from the artifacts install left behind.
+#
+# Tag strategy across this role + sudhanix-vajra-tool dep:
+#   install — apt, tarballs, binary deploys, PAM hooks (one-off / rare)
+#   config  — xfconf, dconf, polkit rules, JSONs, theme settings (frequent)
+#   Run a config-only refresh with: --tags config
+#   Run a fresh install with:        --tags install
+#   Default (no tag): both, same as before.
+
+- name: Set platform/version specific variables
+  ansible.builtin.include_vars: "{{ __desktop_vars_file }}"
+  loop:
+    - "{{ ansible_facts['distribution'] }}_{{ ansible_facts['distribution_major_version'] }}.yml"
+  loop_control:
+    loop_var: __desktop_vars_file_item
+  vars:
+    __desktop_vars_file: "{{ role_path }}/vars/{{ __desktop_vars_file_item }}"
+  when: __desktop_vars_file is file
+  tags:
+    - always
+
+- name: Install phase
+  ansible.builtin.import_tasks: install.yml
+
+- name: Flush install-phase handlers before configure begins
+  ansible.builtin.meta: flush_handlers
+
+- name: Configure phase
+  ansible.builtin.import_tasks: configure.yml
+
+- name: Run platform-specific setup tasks
+  ansible.builtin.include_tasks: "{{ item }}"
+  loop: "{{ q('ansible.builtin.first_found', params, errors='ignore') }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] }}_{{ ansible_facts['distribution_major_version'] }}.yml"
+      paths:
+        - "{{ role_path }}/tasks/setup"
+  tags:
+    - install
+    - config
+
+# sudhanix-firstlogin and sudhanix-welcome imports moved to configure.yml
+# in Task 7 of the issue #57 refactor — both files are pure configure work
+# (copy, lineinfile, stat, file:state=absent) and were misleadingly tagged
+# `install` under the old main.yml dispatch.

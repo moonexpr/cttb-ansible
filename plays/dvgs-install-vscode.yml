@@ -1,0 +1,15 @@
+---
+
+#- hosts: dvgs-lab2
+- hosts: dvgs_cs_lab dvgs_koha
+  tasks:
+#    - name: remove the vscode snap
+#      shell: ( snap remove vscode )
+#      ignore_errors: yes
+
+    - name: download and install vscode tar ball
+      shell: ( cd /tmp && rm -f code-stable-x64-1723659430.tar && wget http://apt.cttb/it/code-stable-x64-1723659430.tar && cd /opt && rm -rf vscode VSCode-linux-x64 && tar xf /tmp/code-stable-x64-1723659430.tar && mv VSCode-linux-x64 vscode && cd /usr/local/src && ln -s -f /opt/vscode vscode && cd /usr/share/applications && rm -f vscode.desktop && wget http://apt.cttb/it/vscode.desktop )
+
+#    - name: install python extension
+##     This does not work, as plug-in installation is per user
+#      shell: ( cd /opt/vscode/bin/ && ./code --install-extension ms-python.python )

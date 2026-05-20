@@ -1,0 +1,8 @@
+---
+
+# h5ai file browser on Ubuntu 22.04 (LXC on srv-vm, 10.11.1.43)
+# Serves internal Ansible deployment assets (ISOs, packages, tarballs)
+# URL: http://storehouse.cttb/ansible
+
+ansible_host: 10.11.1.43
+ansible_python_interpreter: /usr/bin/python3

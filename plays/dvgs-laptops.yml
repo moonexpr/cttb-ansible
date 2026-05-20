@@ -1,0 +1,8 @@
+---
+
+- hosts: dvgs-laptops
+  roles:
+    - sudhanix-core
+    #- ldap-client
+    #- nfs-home
+    - cups-client

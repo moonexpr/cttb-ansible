@@ -1,0 +1,16 @@
+---
+# Sudhanix 26 = Ubuntu 24.04 base. Reuse the Ubuntu_24 variable values
+# verbatim so the role behaves identically on both branded and unbranded
+# hosts. This file exists because ansible_facts.distribution flips from
+# Ubuntu to Sudhanix once the branding role rewrites /etc/os-release,
+# and the auto-loaded vars file follows that flip.
+common_extra_install_sw:
+  - plocate
+  - net-tools
+  - binutils
+
+# apt_codename pins the *upstream* Ubuntu codename used to build the
+# apt sources. Without this, the deb822 template would substitute
+# ansible_distribution_release ("storehouse") and apt.cttb's mirror
+# would 404 because it only carries the noble suite.
+apt_codename: noble

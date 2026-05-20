@@ -1,0 +1,25 @@
+---
+
+# Web browser
+firefox: true
+chrome: true
+
+# printing settings
+cups_srv: cups-cttb.cttb
+cups_default_queue: Health_Clinic_DFarmer
+
+# desktop configuration
+lightdm_hide_users: false
+
+# look and feel
+pic_avatar: avatar-drbu.png
+pic_bg: bg-drba.jpg
+
+# office
+openoffice: false
+libreoffice: true
+wpsoffice: false
+
+# Chewing support
+#chewing: true
+chewing: false

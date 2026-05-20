@@ -1,0 +1,17 @@
+{# xfce4-power-manager.xml.j2
+
+   Captured from administrator@dvgs-testmachine 2026-05-06. brightness-switch
+   policy left as the lab default — `restore-on-exit=-1` means do nothing,
+   useful so a student adjusting brightness on a shared lab machine doesn't
+   pin the next user's display state. Leaving power-button-action empty
+   defers to the systemd login.conf default (HandlePowerKey=poweroff).
+#}
+<?xml version="1.0" encoding="UTF-8"?>
+
+<channel name="xfce4-power-manager" version="1.0">
+  <property name="xfce4-power-manager" type="empty">
+    <property name="power-button-action" type="empty"/>
+    <property name="brightness-switch-restore-on-exit" type="int" value="-1"/>
+    <property name="brightness-switch" type="int" value="0"/>
+  </property>
+</channel>

@@ -1,0 +1,11 @@
+---
+
+- hosts: dvgs_cs_lab dvgs_koha
+  gather_facts: no
+  tasks:
+    - name: install fcitx-unikey
+      apt:
+        state: latest
+        install_recommends: no
+        name:
+        - fcitx-unikey

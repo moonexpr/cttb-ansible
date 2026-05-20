@@ -44,17 +44,15 @@
         mode: 0644
         owner: root
         group: root
-    when: cups_srv is defined
-    tags:
-      - cups
+    - name: set default printer
+      copy:
+        content: "Default {{cups_default_queue}}"
+        dest: /etc/cups/lpoptions
+        mode: 0644
+        owner: root
+        group: root
+      when: cups_default_queue is defined
 
-  - name: set default printer
-    copy:
-      content: "Default {{cups_default_queue}}"
-      dest: /etc/cups/lpoptions
-      mode: 0644
-      owner: root
-      group: root
-    when: cups_default_queue is defined
+    when: cups_srv is defined
     tags:
       - cups

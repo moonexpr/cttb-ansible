@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Shut Down
+Comment=Power off the computer
+Type=Application
+Exec=xfce4-session-logout --halt
+Icon=system-shutdown
+Categories=X-Xfce-Toplevel;
+StartupNotify=false
+Terminal=false

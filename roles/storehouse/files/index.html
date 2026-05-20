@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>storehouse.cttb — CTTB Asset Server</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="citylights.min.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">
+    <h1><span>storehouse</span>.cttb</h1>
+    <p class="subtitle">Internal File Server — City of Ten Thousand Buddhas</p>
+  </div>
+  <div class="meta">
+    <span><span class="dot">&#x25CF;</span> 10.11.1.43</span>
+    <span>Ubuntu 22.04 LXC</span>
+    <span>srv-vm</span>
+  </div>
+</header>
+
+<main>
+
+<p class="notice">
+  <strong>Internal resource.</strong> This server is part of the CTTB campus
+  infrastructure and is intended for use by authorized IT personnel only.
+  If you've reached this page and aren't sure why, please contact the
+  IT department for guidance.
+</p>
+
+<article class="content-area">
+
+<fieldset class="file-group">
+  <legend>☸ Message</legend>
+  <p>
+    In Yogācāra Buddhism, the eighth consciousness — <em>ālayavijñāna</em> — is the
+    storehouse mind: it quietly holds the seeds of all phenomena, ripening them into
+    form when conditions are right. This server takes that job rather literally.
+  </p>
+  <p>
+    <strong>storehouse.cttb</strong> is a shared file server for the CTTB campus —
+    packages, documents, and resources made available to staff, volunteers, and
+    systems across the network. Browse what's available under <a href="/ansible/">ansible/</a>,
+    or reach out to the IT department if you're not sure why you're here — we're happy to help.
+  </p>
+</fieldset>
+
+<fieldset class="file-group">
+  <legend>Ansible Assets <a href="/ansible/">[browse]</a></legend>
+  <p>Served to lab machines via <code>ansible_assets_url</code> in <code>group_vars/all</code>.</p>
+  <div class="icon-grid">
+    <a href="/ansible/WhiteSur-Light.tar.xz" class="icon-tile"><span class="icon">🎨</span><span class="name">WhiteSur GTK Light</span></a>
+    <a href="/ansible/WhiteSur-Dark.tar.xz" class="icon-tile"><span class="icon">🎨</span><span class="name">WhiteSur GTK Dark</span></a>
+    <a href="/ansible/WhiteSur-icon-theme.tar.gz" class="icon-tile"><span class="icon">🎨</span><span class="name">WhiteSur Icons</span></a>
+    <a href="/ansible/cttb-wallpapers.tar.gz" class="icon-tile"><span class="icon">🖼</span><span class="name">CTTB Wallpapers</span></a>
+    <a href="/ansible/InterDisplay.tar.gz" class="icon-tile"><span class="icon">🔤</span><span class="name">Inter Display</span></a>
+    <a href="/ansible/SeriousShannsNerdFontMono.tar.gz" class="icon-tile"><span class="icon">🔤</span><span class="name">SeriousShanns</span></a>
+    <a href="/ansible/thunderbird-latest.tar.xz" class="icon-tile"><span class="icon">📦</span><span class="name">Thunderbird</span></a>
+    <a href="/ansible/isos/" class="icon-tile"><span class="icon">💿</span><span class="name">ISOs</span></a>
+  </div>
+</fieldset>
+
+<fieldset class="file-group">
+  <legend>Coredumps <a href="/public/coredumps/">[browse]</a></legend>
+  <p>
+    Crash dump drop-zone for lab hosts. Each Sudhanix machine ships its
+    <code>systemd-coredump</code> output here every 10&nbsp;minutes via the
+    <code>cttb-coredump-upload.timer</code> unit. Files are organized
+    per-host under <code>/public/coredumps/&lt;hostname&gt;/</code> and pruned
+    after 90&nbsp;days.
+  </p>
+  <p>
+    <strong>Read access</strong> (browse, download at
+    <code>/public/coredumps/</code>) is locked behind HTTP basic auth —
+    sign in as <code>[DATA REFDACTED]</code> with the campus admin password.
+    Coredumps can contain passwords, session tokens, and browser secrets
+    in raw memory, so we don't want every device on the lab network
+    enumerating other hosts' dumps.
+  </p>
+  <p>
+    <strong>Write access</strong> goes to a separate URL,
+    <code>/public/coredumps-in/&lt;hostname&gt;/&lt;file&gt;</code>, which
+    maps to a staging directory. A server-side validator
+    (<code>coredumps-validate-mover.timer</code>) sniffs the first bytes of
+    every uploaded file every 30 seconds and only promotes real coredumps
+    (zstd, xz, lz4, or raw ELF) into the readable dropzone — anything
+    else is quarantined and logged. Anonymous upload is safe because
+    random content can't end up at <code>/public/coredumps/</code>.
+  </p>
+  <p>
+    Manual upload from any host (no auth needed):
+    <code>curl -T core.zst http://storehouse.cttb/public/coredumps-in/$(hostname -s)/core.zst</code>
+  </p>
+  <div class="icon-grid">
+    <a href="/public/coredumps/" class="icon-tile"><span class="icon">💥</span><span class="name">Browse all dumps</span></a>
+    <a href="http://wiki.cttb/wiki/IT:Storehouse" class="icon-tile"><span class="icon">📖</span><span class="name">IT:Storehouse</span></a>
+  </div>
+</fieldset>
+
+</article>
+
+</main>
+
+<footer>
+  <p>
+    CTTB IT — Managed via <a href="http://wiki.cttb/wiki/IT:Ansible">Ansible</a>
+    — Container <code>storehouse</code> on <code>srv-vm</code> (10.11.1.3)
+    <br>Made with ❤️ by <a href="https://github.com/moonexpr/">jc</a>
+  </p>
+</footer>
+
+<script>
+document.querySelectorAll('.quick-ref code').forEach(el => {
+  el.title = 'click to copy';
+  el.addEventListener('click', () => {
+    navigator.clipboard.writeText(el.textContent);
+    el.classList.add('copied');
+    setTimeout(() => el.classList.remove('copied'), 1000);
+  });
+});
+</script>
+
+</body>
+</html>

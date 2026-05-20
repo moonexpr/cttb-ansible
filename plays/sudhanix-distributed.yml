@@ -1,0 +1,49 @@
+---
+# Sudhanix Distributed Playbook
+#
+# Deploys the sudhanix-distributed role to lab machines.
+# Assets (themes, icons) are downloaded from storehouse.cttb/ansible — not copied
+# from the Ansible controller.
+#
+# Prerequisites:
+#   - storehouse.cttb running and serving assets (plays/storehouse.yml)
+#   - DNS resolving storehouse.cttb (10.11.1.43) on target machines
+#
+# Usage:
+#   # All DVGS lab machines
+#   ansible-playbook plays/sudhanix-distributed.yml -l dvgs_cs_lab --ask-vault-pass
+#
+#   # Single machine
+#   ansible-playbook plays/sudhanix-distributed.yml -l dvgs-testmachine --ask-vault-pass
+#
+#   # Themes only (fast re-deploy)
+#   ansible-playbook plays/sudhanix-distributed.yml -l dvgs_cs_lab --tags themes --ask-vault-pass
+#
+# Inventory groups: dvgs_cs_lab, dvbs_cs_lab, drbu_cs_lab, dvgs_dorm, dvbs_cc
+
+- hosts: dvgs_cs_lab
+  vars:
+    desktop_theme: WhiteSur-Dark
+    icon_theme: WhiteSur
+    pic_avatar: avatar-dvgs.png
+    pic_bg: bg-dvgs.jpg
+  roles:
+    - { role: sudhanix-distributed, tags: sudhanix-core }
+
+- hosts: dvbs_cs_lab:dvbs_cc
+  vars:
+    desktop_theme: WhiteSur-Dark
+    icon_theme: WhiteSur
+    pic_avatar: avatar-dvbs.png
+    pic_bg: bg-dvbs.jpg
+  roles:
+    - { role: sudhanix-distributed, tags: sudhanix-core }
+
+- hosts: drbu_cs_lab:drbu_cdorm
+  vars:
+    desktop_theme: WhiteSur-Dark
+    icon_theme: WhiteSur
+    pic_avatar: avatar-drbu.png
+    pic_bg: bg-drbu.jpg
+  roles:
+    - { role: sudhanix-distributed, tags: sudhanix-core }

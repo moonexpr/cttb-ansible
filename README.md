@@ -1,58 +1,268 @@
-# Overview
-Information about our structure for ansible. Inspired by:
-- https://github.com/enginyoyen/ansible-best-practises
-- http://docs.ansible.com/ansible/playbooks_best_practices.html
+# CTTB Ansible
 
-Running playbooks or other ansible operations should be carried out with the
-respective scripts in utils/. Do not run this scripts from another path or
-directly call ansible or ansible-playbook.
+Configuration management for the CTTB campus network: computer labs, servers, and network services across three institutions, DVGS (Girls School), DVBS (Boys School), and DRBU (Dharma Realm Buddhist University).
 
-*ALWAYS RUN THE SCRIPTS FROM THE ROOT OF THE REPOSITORY* using a relative path
-such as _utils/pb_.
+Built on [Ansible](https://docs.ansible.com/ansible/latest/index.html). Inspired by [ansible-best-practises](https://github.com/enginyoyen/ansible-best-practises) and the [Ansible best practices guide](https://docs.ansible.com/ansible/latest/tips_tricks/ansible_tips_tricks.html).
 
-# Migrations
-If you are migrating a machine to use a new role/setup and need to do some
-cleanup use the playbook to do the job. For example when migrating
-unbound servers to the new unbound role I wanted to use
-/etc/unbound/blocked-sites as a directory but I used to use a file with that
-name as a blacklist. As a result I had to rm that file before the new role
-succeeded. A task like this should be contained in a special playbook that
-installs the new role.
+## Quick Start
 
-# Git
-- Ignore the log/ directory and the tmp/ dir that should be setup in the ansible directory
+**Prerequisites:** Ansible installed on the control machine, SSH key-based access to target hosts as the `administrator` user, and network connectivity to the `.cttb` domain.
 
-# Config
-- The config file resides in the samedir as this stuff
-- it uses a bunch of $ANSIBLE_VARIABLES to set things such as host file and roles dir
+**Always run commands from the repository root.**
 
-# Playbooks
-- all playbooks are stored in plays/
-- Q: what do I do with individual hosts such as the jumpbox or the nfs server?
-  should they get their own playbook? or should I just have a python script
-  that deals with them? but then where do I draw the line? If I have things
-  specific to only one host try to use variables instead
-- T: no need for playbooks, just use roles (see below)
+```bash
+# Run a playbook (preferred method)
+utils/pb dvgs-cs-lab
 
-# Roles
-- Initially I used the convention of external/ for roles downloaded by galaxy
-  and internal/ for our own stuff but prefixes are just a better way to go
-  since we may have say a nfs role that extends a galaxy role.
-- Use a common cttb. prefix for all our roles
-- Any role without a cttb. prefix is coming from galaxy/other source (look for
-  a readme inside then)
-- You may have a question if something should go into a role or not. As a rule
-  of thumb, it code is not shared/reused put it into a play
-- T: what if I only used roles, so there's shared reused roles, but also have
-  roles that are specific to one host or group. Maybe can have roles such as
-  cttb.hosts.hostname to differentiate and the inventory may or may not include
-  that so I just run whatever roles are there
+# Apply one or more roles to a host or group
+utils/ar drbu-sw-cslab desktop,cups-client,ldap-client,nfs-home
 
-# Assets
-- large files such as .deb or .tar.gz are stored on the webserver and fetched with a uri_get
-- they are not versioned as it's not great to store them in git
-- this directory should be backed up as part of the web server backup
+# Or use ansible-playbook directly
+ansible-playbook plays/dvgs-cs-lab.yml --diff
+```
 
-# Misc
-I really like what they've done at debops.org, but it seems too complex and too
-much of a commitment for us atm so I'm sticking with our own stuff + homegrown
+The `utils/pb` wrapper sources the environment (`utils/setup-env`), sets up paths, and runs the playbook with `--diff` enabled by default. You can pass any additional `ansible-playbook` flags after the playbook name.
+
+## Repository Structure
+
+```
+cttb-ansible/
+├── plays/           Playbooks, the entry points for all operations
+├── roles/           Reusable roles implementing infrastructure components
+├── inventory/       Host inventory files (INI format)
+├── group_vars/      Variables applied per host group
+├── host_vars/       Variables for individual hosts
+├── vars/            Shared variables and encrypted vault files
+├── utils/           Helper scripts (pb, ar, setup-env, etc.)
+├── scripts/         Standalone shell scripts (ping sweeps, WoL, etc.)
+├── library/         Custom Ansible modules (NTC plugins)
+├── logs/            Playbook execution logs (not tracked in git)
+└── ansible.cfg      Ansible configuration
+```
+
+## Inventory
+
+The default inventory is set in `ansible.cfg` (`inventory/sudhanix26_hosts.ini`). Hosts are organized by institution and location:
+
+| Group               | Description                        |
+|---------------------|------------------------------------|
+| `drbu_cslab`        | DRBU computer science lab          |
+| `drbu_cdorm`        | DRBU girls' dormitory lab          |
+| `dvgs_cslab`        | DVGS computer science lab          |
+| `dvgs_dormitory`    | DVGS dormitory computers           |
+| `dvbs_cslab`        | DVBS computer science lab          |
+| `dvbs_community_center` | DVBS community center PCs      |
+| `dvbs_library`      | DVBS library                       |
+
+Parent groups aggregate these: `drbu_hosts`, `dvgs_hosts`, `dvbs_hosts`, and `cttb_hosts` (all).
+
+Each host entry in the inventory defines `mac_addr` (for Wake-on-LAN) and `ansible_address`. Host-specific variables live in `host_vars/` and group-level overrides in `group_vars/`.
+
+### Global Variables (group_vars/all)
+
+| Variable           | Purpose                                    |
+|--------------------|--------------------------------------------|
+| `dns_domain`       | Internal domain (`cttb`)                   |
+| `dns_srv`          | DNS server address                         |
+| `apt_url`          | Local APT mirror URL                       |
+| `ni_server`        | PXE/network install server URL             |
+| `ansible_assets_url` | Large file hosting (ISOs, fonts, packages)|
+| `ntp_servers`      | NTP server list                            |
+
+## Playbooks
+
+All playbooks live in `plays/`. Key categories:
+
+### Deployment
+
+Sudhanix 26 lab machines are deployed by `sudhanix26-rollout`, one command that reimages a host and returns it configured. The deployment is a destructive fresh install, not an in-place upgrade. The disk is wiped, a clean Ubuntu 24.04 base is PXE-installed, and the CTTB personality is layered on by Ansible. The configuration is frozen at the `sudhanix26.0.0` tag, and `DEPLOYMENT.md` carries the full procedure.
+
+| Playbook               | Purpose                                               |
+|------------------------|-------------------------------------------------------|
+| `sudhanix26-rollout`   | Canonical Sudhanix 26 deploy: PXE reimage, wait for autoinstall, then configure. One command per host |
+| `sudhanix26-rollout-stage1` | Stage 1 alone: trigger the one-time PXE reimage  |
+| `sudhanix26-rollout-stage2` | Stage 2 alone: apply the Sudhanix 26 roles to an already-imaged host |
+| `dvgs-cs-lab`          | Full DVGS lab: desktop, printing, LDAP, NFS, CA       |
+| `dvbs-3rd-9th`         | DVBS upper grades lab                                 |
+| `drbu-sw-cslab`        | DRBU CS lab switch configuration                      |
+| `netinstall-2404`      | Deploy Ubuntu 24.04 PXE/autoinstall infrastructure    |
+
+### Infrastructure
+
+| Playbook      | Purpose                                              |
+|---------------|------------------------------------------------------|
+| `gw`          | Gateway: firewall, squid proxy, content filtering    |
+| `nas`         | NAS: ZFS storage, UPS, virtualization                |
+| `vm`          | VM host: KVM/Qemu, ZFS, UPS                         |
+| `unbound`     | DNS nameserver for .cttb zone                        |
+| `asterix`     | Asterisk VoIP PBX                                    |
+| `debmirror`   | APT package mirror                                   |
+
+### Maintenance
+
+| Playbook              | Purpose                              |
+|-----------------------|--------------------------------------|
+| `apt-update-autoremove` | System update + cleanup            |
+| `dist-upgrade`        | Full distribution upgrade            |
+| `reboot` / `shutdown` | Power management                     |
+| `cron-shutdown`       | Scheduled shutdown via cron          |
+
+### Utilities
+
+| Playbook               | Purpose                                      |
+|------------------------|----------------------------------------------|
+| `util-wakeonlan`       | Send Wake-on-LAN packets to all hosts        |
+| `util-ssh-copy-id`     | Distribute SSH public keys                   |
+| `util-hardware-survey` | Collect hardware + OS info to CSV            |
+| `util-screenshot`      | Remote screenshot via scrot for debugging    |
+
+## Roles
+
+Roles without a prefix are homegrown. The original convention of a `cttb.` prefix for internal roles is noted but not consistently applied.
+
+### Core
+
+| Role             | Description                                          |
+|------------------|------------------------------------------------------|
+| `common`         | Base Ubuntu setup, APT sources                       |
+| `common-20.04`   | Ubuntu 20.04 variant                                 |
+| `server`         | Server networking, GRUB, static interfaces           |
+| `desktop`        | Desktop workstation (themes, browsers, office, etc.) |
+| `desktop-20.04`  | Ubuntu 20.04 desktop variant                         |
+
+### Network Boot
+
+| Role              | Description                                          |
+|-------------------|------------------------------------------------------|
+| `netinstall`      | PXE + preseed for Ubuntu 16.04 (legacy)              |
+| `netinstall-2404` | PXE + autoinstall (subiquity) for Ubuntu 24.04 LTS   |
+
+### Network Services
+
+| Role         | Description                                    |
+|--------------|------------------------------------------------|
+| `unbound`    | Recursive + authoritative DNS with DNSSEC      |
+| `dhcpd`      | ISC DHCP server                                |
+| `time-server`| NTP daemon                                     |
+
+### Authentication & Security
+
+| Role            | Description                                 |
+|-----------------|---------------------------------------------|
+| `ldap-client`   | LDAP client for system authentication       |
+| `ldap-server`   | OpenLDAP server deployment                  |
+| `cttb-ca-client` | Install CTTB Root CA certificate           |
+
+### File & Print Services
+
+| Role          | Description                                    |
+|---------------|------------------------------------------------|
+| `nfs-home`    | NFS home directory mounts with automount       |
+| `cups-client` | CUPS client for network printing               |
+| `cups-server` | CUPS print server                              |
+| `debmirror`   | APT mirror sync and serving                    |
+
+### Internet & Filtering
+
+| Role        | Description                                       |
+|-------------|---------------------------------------------------|
+| `firehol`   | Firewall (iptables), time-based internet limits    |
+| `squid`     | HTTP/HTTPS proxy                                   |
+| `e2guardian` | Content filtering proxy with HTTPS MITM           |
+
+### Storage & Virtualization
+
+| Role   | Description                                      |
+|--------|--------------------------------------------------|
+| `virt`  | KVM/Qemu/VirtualBox/LXC host setup              |
+| `zfs`   | ZFS filesystem and pools                         |
+| `ups`   | Network UPS Tools (NUT)                          |
+
+### Other Services
+
+| Role          | Description                             |
+|---------------|-----------------------------------------|
+| `asterisk`    | VoIP PBX with phone provisioning        |
+| `koha`        | Integrated Library System               |
+| `git`         | Gitolite3 + Gitweb hosting              |
+| `logcentral`  | Centralized syslog with rotation        |
+| `hp-procurve` | HP ProCurve switch management           |
+
+## Variable Precedence
+
+From lowest to highest priority:
+
+1. Role defaults (`roles/<role>/defaults/main.yml`)
+2. Global variables (`group_vars/all`)
+3. Group variables (`group_vars/<group>`)
+4. Host variables (`host_vars/<hostname>`)
+5. Playbook vars / extra vars (`-e`)
+6. Vault secrets (`vars/jc_passwds.enc.yml`)
+
+See the [Ansible variable precedence docs](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence) for the full list.
+
+## Common Workflows
+
+### Deploying a New Lab Machine
+
+1. Define the host in the inventory with `mac_addr` and `ansible_address`, and add it to the appropriate group.
+2. Reimage and configure it in one command:
+   ```bash
+   ansible-playbook -i inventory/sudhanix26_hosts.ini plays/sudhanix26-rollout.yml \
+       -l <hostname>.cttb --skip-tags zoom --diff \
+       --vault-password-file <vault-pw-file> --ask-become-pass
+   ```
+
+`sudhanix26-rollout` triggers the PXE reimage, waits for the host to autoinstall and return, then applies the roles. The host must be SSH-reachable and UEFI for the stage-1 trigger. The become password is required, since the autoinstalled `administrator` account is an ordinary sudoer rather than a passwordless one. `DEPLOYMENT.md` covers the staged path, batch rollout, and recovery.
+
+### Running a Hardware Survey
+
+```bash
+utils/pb util-hardware-survey
+```
+
+Outputs `~/hardware_survey.csv` with CPU, RAM, storage, OS, motherboard, USB, and GPU info for every reachable host.
+
+### System Updates
+
+```bash
+# Update and clean all hosts
+utils/pb apt-update-autoremove
+
+# Full dist-upgrade on a specific group
+utils/pb dist-upgrade --limit dvgs_cslab
+```
+
+### PXE Network Installation (Ubuntu 24.04)
+
+The `netinstall-2404` role sets up the PXE server for automated Ubuntu 24.04 installs using subiquity/autoinstall (cloud-init YAML), replacing the legacy preseed approach from `netinstall`.
+
+```bash
+utils/pb netinstall-2404
+```
+
+## Assets
+
+Large files (ISOs, `.deb` packages, fonts) are hosted on the PXE web server at `ansible_assets_url` and fetched during playbook runs. They are not stored in git. This directory should be backed up as part of the web server backup.
+
+## Encrypted Secrets
+
+Passwords and sensitive data are stored in `vars/jc_passwds.enc.yml`, encrypted with [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html).
+
+```bash
+# Edit the vault file
+ansible-vault edit vars/jc_passwds.enc.yml
+
+# Run a playbook that needs vault secrets
+utils/pb gw --ask-vault-pass
+```
+
+## Notes
+
+- **Sudhanix 26** (Ubuntu 24.04 LTS, noble) is the current release. Core configuration is frozen at the `sudhanix26.0.0` tag. The fleet is being reimaged to it from the legacy 20.04 installs, and `dvgs-testmachine` is the validation host.
+- Desktop environment: **XFCE4** with WhiteSur-Dark theme, Plank dock, macOS-style greeter.
+- The `administrator` user is the default `remote_user` for all SSH connections.
+- Host key checking is disabled in `ansible.cfg` for ease of reprovisioning.
+- SSH agent forwarding and pipelining are enabled for performance.
+- Execution logs are written to `logs/runtime.log`.
+- Campus firewall blocks snap store, ppa.launchpad.net, and most external HTTPS repos. Software must be mirrored locally (`apt.cttb`, `storehouse.cttb`).

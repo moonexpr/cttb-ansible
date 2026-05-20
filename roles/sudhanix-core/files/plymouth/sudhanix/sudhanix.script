@@ -1,0 +1,116 @@
+#
+# Sudhanix Plymouth boot splash
+# macOS-style: black background, centered Amitabha logo, thin progress bar below.
+#
+# Theme is bound to the system default via update-alternatives, so the same
+# script is invoked by plymouthd in every mode: boot, shutdown, reboot,
+# updates (offline package install), system-upgrade (release upgrade),
+# firmware-upgrade (fwupd UEFI capsule), and system-reset. The logo + bar
+# render identically across modes; a small status line below the bar shows
+# what's happening so non-boot reboots aren't silently "stuck on the logo".
+#
+
+# Pure black background
+Window.SetBackgroundTopColor(0.0, 0.0, 0.0);
+Window.SetBackgroundBottomColor(0.0, 0.0, 0.0);
+
+# Plymouth.GetMode() returns the active mode string. Used below to drive
+# the status label and to suppress the progress bar in non-boot modes
+# (which never fire boot_progress_cb).
+mode = Plymouth.GetMode();
+
+screen_w = Window.GetWidth();
+screen_h = Window.GetHeight();
+
+# ── Amitabha logo ─────────────────────────────────────────────────────────
+# Render at ~22% of screen height (matches Apple's relative sizing).
+logo.image_raw = Image("global_logo.png");
+logo_target_h = screen_h * 0.22;
+logo_scale = logo_target_h / logo.image_raw.GetHeight();
+logo.image = logo.image_raw.Scale(logo.image_raw.GetWidth() * logo_scale, logo_target_h);
+logo.sprite = Sprite(logo.image);
+logo.x = (screen_w - logo.image.GetWidth()) / 2;
+logo.y = (screen_h - logo.image.GetHeight()) / 2 - screen_h * 0.04;
+logo.sprite.SetPosition(logo.x, logo.y, 0);
+
+# ── Progress bar ──────────────────────────────────────────────────────────
+# Thin white bar centered below the logo, ~50px gap. Shown only in modes
+# where plymouthd drives boot_progress_cb (i.e. mode == "boot"). In other
+# modes the bar would stay 0%-filled forever, which reads as "stuck"; we
+# hide it and let the status label below carry the message instead.
+bar_bg.image = Image("progress-bg.png");
+bar_bg.sprite = Sprite(bar_bg.image);
+bar_bg.x = (screen_w - bar_bg.image.GetWidth()) / 2;
+bar_bg.y = logo.y + logo.image.GetHeight() + screen_h * 0.06;
+bar_bg.sprite.SetPosition(bar_bg.x, bar_bg.y, 1);
+if (mode != "boot") bar_bg.sprite.SetOpacity(0);
+
+bar_fill.image = Image("progress-fill.png");
+bar_fill.sprite = Sprite();
+bar_fill.sprite.SetPosition(bar_bg.x, bar_bg.y, 2);
+
+fun boot_progress_cb(duration, progress) {
+    fill_w = bar_fill.image.GetWidth() * progress;
+    if (fill_w < 1) fill_w = 1;
+    bar_fill.sprite.SetImage(bar_fill.image.Crop(0, 0, fill_w, bar_fill.image.GetHeight()));
+}
+Plymouth.SetBootProgressFunction(boot_progress_cb);
+
+# ── Per-mode status label ─────────────────────────────────────────────────
+# Sits where the progress bar would be in boot mode. In boot mode we keep
+# it empty so the bar carries the visual; in every other mode we caption
+# what plymouthd is bridging across.
+mode_status_sprite = Sprite();
+mode_status_sprite.SetPosition(0, bar_bg.y, 2);
+
+if      (mode == "shutdown")         mode_status = "Shutting down…";
+else if (mode == "reboot")           mode_status = "Restarting…";
+else if (mode == "updates")          mode_status = "Installing updates…";
+else if (mode == "system-upgrade")   mode_status = "Upgrading system…";
+else if (mode == "firmware-upgrade") mode_status = "Updating firmware — do not power off…";
+else if (mode == "system-reset")     mode_status = "Resetting system…";
+else if (mode == "suspend")          mode_status = "";
+else                                 mode_status = "";   # boot — progress bar carries the visual
+
+if (mode_status != "") {
+    mode_status_img = Image.Text(mode_status, 1, 1, 1, 1, "Sans 12");
+    mode_status_sprite.SetImage(mode_status_img);
+    mode_status_sprite.SetX((screen_w - mode_status_img.GetWidth()) / 2);
+}
+
+# ── Message handling (recovery/text prompts) ──────────────────────────────
+# Render any plymouth message centered below the progress bar.
+message_sprite = Sprite();
+message_sprite.SetPosition(0, bar_bg.y + screen_h * 0.04, 3);
+
+fun display_message_cb(text) {
+    img = Image.Text(text, 1, 1, 1, 1, "Sans 12");
+    message_sprite.SetImage(img);
+    message_sprite.SetX((screen_w - img.GetWidth()) / 2);
+}
+Plymouth.SetMessageFunction(display_message_cb);
+
+fun hide_message_cb(text) {
+    message_sprite.SetImage(Image.Null());
+}
+Plymouth.SetHideMessageFunction(hide_message_cb);
+
+# ── Password prompt (full-disk encryption) ────────────────────────────────
+prompt_sprite = Sprite();
+prompt_sprite.SetPosition(0, bar_bg.y + screen_h * 0.04, 4);
+
+fun display_password_cb(prompt, bullets) {
+    label = prompt;
+    if (label == "") label = "Password:";
+    bullets_str = "";
+    for (i = 0; i < bullets; i++) bullets_str += "•";
+    img = Image.Text(label + " " + bullets_str, 1, 1, 1, 1, "Sans 12");
+    prompt_sprite.SetImage(img);
+    prompt_sprite.SetX((screen_w - img.GetWidth()) / 2);
+}
+Plymouth.SetDisplayPasswordFunction(display_password_cb);
+
+fun display_normal_cb() {
+    prompt_sprite.SetImage(Image.Null());
+}
+Plymouth.SetDisplayNormalFunction(display_normal_cb);

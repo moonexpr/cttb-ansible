@@ -1,0 +1,541 @@
+---
+
+- name: disable needrestart interactive prompts
+  copy:
+    src: conf/needrestart-auto.conf
+    dest: /etc/needrestart/conf.d/50-autorestart.conf
+    mode: 0644
+    owner: root
+    group: root
+  ignore_errors: yes
+  tags:
+    - apt
+    - needrestart
+
+- name: custom apt sources (deb822 format, Ubuntu 24.04+)
+  template:
+    src: ubuntu.sources.j2
+    dest: /etc/apt/sources.list.d/ubuntu.sources
+    mode: 0644
+    owner: root
+    group: root
+  when: ansible_distribution_major_version | int >= 24
+  tags:
+    - apt
+
+- name: remove legacy sources.list on Ubuntu 24.04+
+  copy:
+    content: "# Managed by Ansible — see /etc/apt/sources.list.d/ubuntu.sources\n"
+    dest: /etc/apt/sources.list
+    mode: 0644
+    owner: root
+    group: root
+  when: ansible_distribution_major_version | int >= 24
+  tags:
+    - apt
+
+- name: custom apt sources.list (legacy format, pre-24.04)
+  template:
+    src: sources.list.j2
+    dest: /etc/apt/sources.list
+    mode: 0644
+    owner: root
+    group: root
+  when: ansible_distribution_major_version | int < 24
+  tags:
+    - apt
+
+- name: add additional apt repo
+  apt_repository:
+    repo: "{{ item }}"
+    state: present
+  loop: "{{ additional_apt_repo }}"
+  when: additional_apt_repo is defined
+  tags:
+    - apt
+    - additional_apt_repo
+
+- name: refresh the mirrors
+  apt:
+    update_cache: yes
+  ignore_errors: True
+  tags:
+    - apt
+    - apt_autoremove
+
+# in case for whatever reason this is missing, it's useful to add ppas to test stuff
+- name: install apt-add-repository
+  apt:
+    name: software-properties-common
+    state: present
+  tags:
+    - apt
+
+# setup during preseed stage, but just in case, make sure it's there
+- name: Set up ansible/cttb-os authorized_key
+  authorized_key:
+    user: administrator
+    key: "{{ lookup('file', 'ssh_keys/ansible.pub') }}"
+
+- name: Set up jc authorized_key
+  authorized_key:
+    user: administrator
+    key: "{{ lookup('file', 'ssh_keys/jc.pub') }}"
+
+- name: set an explicit proxy if needed
+  lineinfile:
+    dest: /etc/environment
+    line: "{{ item }}"
+  loop: "{{ global_proxy }}"
+  when: global_proxy is defined
+  tags:
+    - common_proxy
+
+- name: sync time
+  include_role:
+    name: time-server
+
+- name: install CTTB CA cert
+  include_role:
+    name: cttb-ca-client
+
+- name: set hostname from inventory
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: divert /etc/lsb-release before override (survives base-files apt upgrades)
+  command: dpkg-divert --local --rename --add /etc/lsb-release
+  args:
+    creates: /etc/lsb-release.distrib
+  tags:
+    - sudhanix_branding
+
+- name: divert /etc/os-release before override (survives base-files apt upgrades)
+  command: dpkg-divert --local --rename --add /etc/os-release
+  args:
+    creates: /etc/os-release.distrib
+  tags:
+    - sudhanix_branding
+
+- name: brand /etc/lsb-release as Sudhanix
+  template:
+    src: lsb-release.j2
+    dest: /etc/lsb-release
+    mode: 0644
+    owner: root
+    group: root
+  notify:
+    - update grub
+  tags:
+    - sudhanix_branding
+
+- name: set GRUB_DISTRIBUTOR to Sudhanix 26
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_DISTRIBUTOR='
+    line: 'GRUB_DISTRIBUTOR="{{ sudhanix_description }}"'
+  when: ansible_virtualization_type != "lxc"
+  notify:
+    - update grub
+  tags:
+    - sudhanix_branding
+
+- name: brand /etc/os-release as Sudhanix
+  template:
+    src: os-release.j2
+    dest: /etc/os-release
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+
+- name: brand /etc/issue (TTY login banner)
+  template:
+    src: issue.j2
+    dest: /etc/issue
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+
+- name: brand /etc/issue.net (network/SSH login banner)
+  template:
+    src: issue.net.j2
+    dest: /etc/issue.net
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+
+- name: replace MOTD header (CTTB wiki, Ubuntu/XFCE secondary)
+  template:
+    src: motd-header.j2
+    dest: /etc/update-motd.d/00-header
+    mode: 0755
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+    - motd
+
+- name: disable Ubuntu MOTD ads/news scripts
+  file:
+    path: "/etc/update-motd.d/{{ item }}"
+    mode: '0644'
+  loop:
+    - 10-help-text
+    - 50-motd-news
+    - 90-updates-available
+    - 91-release-upgrade
+    - 95-hwe-eol
+  ignore_errors: yes
+  tags:
+    - sudhanix_branding
+    - motd
+
+# /etc/legal — Ubuntu's "the programs included with the Ubuntu system" notice,
+# shown by pam_motd on first login. Replace with a one-line Sudhanix notice.
+- name: replace /etc/legal with Sudhanix notice
+  copy:
+    content: |
+      The programs included with {{ sudhanix_description }} are derived from
+      free and open source software; the exact distribution terms for each
+      program are described in the individual files in /usr/share/doc/*/copyright.
+    dest: /etc/legal
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - sudhanix_branding
+
+# GRUB theme — gated by sudhanix_grub_theme_enabled.
+# GRUB_DISTRIBUTOR is set explicitly above; the theme here is cosmetic on top.
+- name: ensure GRUB themes directory exists
+  file:
+    path: /boot/grub/themes
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  when: sudhanix_grub_theme_enabled and ansible_virtualization_type != "lxc"
+  tags:
+    - sudhanix_branding
+    - grub_theme
+
+- name: install Sudhanix GRUB theme
+  unarchive:
+    remote_src: yes
+    src: "{{ sudhanix_grub_theme_url }}"
+    dest: /boot/grub/themes/
+    creates: /boot/grub/themes/sudhanix
+    owner: root
+    group: root
+  when: sudhanix_grub_theme_enabled and ansible_virtualization_type != "lxc"
+  notify:
+    - update grub
+  tags:
+    - sudhanix_branding
+    - grub_theme
+
+- name: set GRUB_THEME in /etc/default/grub
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^#?GRUB_THEME='
+    line: 'GRUB_THEME=/boot/grub/themes/sudhanix/theme.txt'
+  when: sudhanix_grub_theme_enabled and ansible_virtualization_type != "lxc"
+  notify:
+    - update grub
+  tags:
+    - sudhanix_branding
+    - grub_theme
+
+# Plymouth boot splash — gated by sudhanix_plymouth_theme_enabled.
+- name: install plymouth (Plymouth splash dependency)
+  apt:
+    name: plymouth-themes
+    state: present
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  tags:
+    - sudhanix_branding
+    - plymouth
+
+- name: install Sudhanix Plymouth theme
+  unarchive:
+    remote_src: yes
+    src: "{{ sudhanix_plymouth_theme_url }}"
+    dest: /usr/share/plymouth/themes/
+    creates: /usr/share/plymouth/themes/sudhanix
+    owner: root
+    group: root
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  notify:
+    - update initramfs
+  tags:
+    - sudhanix_branding
+    - plymouth
+
+# macOS-built tarballs may carry ._* AppleDouble forks; strip them post-extract.
+- name: clean macOS resource forks from Plymouth theme directory
+  shell: find /usr/share/plymouth/themes/sudhanix -name '._*' -delete
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  changed_when: false
+  notify:
+    - update initramfs
+  tags:
+    - sudhanix_branding
+    - plymouth
+
+- name: register Sudhanix Plymouth theme as alternative
+  command: >
+    update-alternatives --install
+    /usr/share/plymouth/themes/default.plymouth default.plymouth
+    /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth 100
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  changed_when: false
+  tags:
+    - sudhanix_branding
+    - plymouth
+
+- name: select Sudhanix Plymouth theme via update-alternatives
+  command: update-alternatives --set default.plymouth /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth
+  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
+  changed_when: false
+  notify:
+    - update initramfs
+  tags:
+    - sudhanix_branding
+    - plymouth
+
+- name: fix /etc/hosts
+  replace:
+    dest: /etc/hosts
+    regexp: "computer"
+    replace: "{{ inventory_hostname }}"
+    backup: no
+
+- name: make ssh use ipv4 only # we disable ipv6 and X11forwarding fails
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: '^AddressFamily inet'
+    # Insert the line before "ListenAddress" or "#ListenAddress" lines.
+    insertbefore: '^.?ListenAddress'
+    line: 'AddressFamily inet'
+  tags:
+    disable_ipv6
+  notify:
+    - reload ssh
+  ignore_errors: yes
+
+- name: enable centralized logging
+  copy:
+    src: conf/10-centralized-logging.conf
+    dest: /etc/rsyslog.d/10-centralized-logging.conf
+    mode: 0644
+    owner: root
+    group: root
+  when: centralized_logging == true
+  notify:
+    - restart rsyslog
+  tags:
+    - logging
+
+- name: ensure NetworkManager conf.d directory exists
+  file:
+    path: /etc/NetworkManager/conf.d
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  tags:
+    - wake_on_lan
+
+- name: enable Wake On LAN on Ethernet interfaces
+  copy:
+    src: conf/ethernet-wake-on-lan.conf
+    dest: /etc/NetworkManager/conf.d/ethernet-wake-on-lan.conf
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - wake_on_lan
+
+- name: upgrade ansible to latest
+  apt:
+    name: ansible
+    state: latest
+  tags:
+    - apt
+
+- name: remove some software
+  apt:
+    state: absent
+    name:
+      - popularity-contest
+      - nano
+      - avahi-daemon
+  tags:
+    - remove_sw
+
+- name: remove sw requested for this box
+  apt:
+    name: "{{ remove_sw }}"
+    state: absent
+  when: remove_sw is defined
+  tags:
+    - remove_sw
+
+# exfat-fuse and exfat-utils are for support of exfat file system, FAT with total fs size > 4 GB.
+- name: install basic software
+  apt:
+    state: present
+    install_recommends: no
+    name:
+      - curl
+      - ethtool
+      - exfat-fuse
+      - exfatprogs
+      - fio
+      - fish
+      - git
+      - iftop
+      - iotop
+      - iperf
+      - iptraf-ng
+      - mtr
+      - neovim
+      - nload
+      - p11-kit-modules
+      - quota
+      - smartmontools
+      - socat
+      - systemd-coredump
+      - tcpdump
+      - traceroute
+      - udisks2
+      - unattended-upgrades
+      - util-linux
+      - vim
+      - wakeonlan
+      - whois
+  tags:
+    - basic_software
+
+- name: install version-specific extra software
+  apt:
+    name: "{{ common_extra_install_sw | default([]) }}"
+    state: present
+    install_recommends: no
+  tags:
+    - basic_software
+
+# ── Coredump upload to storehouse ────────────────────────────────────
+# systemd-coredump (installed in basic_software above) captures crashes
+# locally; the timer below ships them to /public/coredumps/<host>/ on
+# storehouse so any sysadmin can fetch and analyze without SSH'ing in.
+
+- name: deploy cttb-coredump-upload script
+  copy:
+    src: coredump-upload/cttb-coredump-upload
+    dest: /usr/local/sbin/cttb-coredump-upload
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - coredump_upload
+
+- name: deploy cttb-coredump-upload systemd unit + timer
+  copy:
+    src: "coredump-upload/{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - cttb-coredump-upload.service
+    - cttb-coredump-upload.timer
+  notify: reload systemd
+  tags:
+    - coredump_upload
+
+- name: enable + start cttb-coredump-upload.timer
+  systemd:
+    name: cttb-coredump-upload.timer
+    state: started
+    enabled: true
+    daemon_reload: true
+  tags:
+    - coredump_upload
+
+- name: install sw requested for this box
+  apt:
+    name: "{{ additional_sw | default([]) }}"
+    state: present
+  tags:
+    - additional_sw
+
+- name: disable ipv6 #defaults to yes
+  copy:
+    src: conf/disable-ipv6.conf
+    dest: /etc/sysctl.d/60-disable-ipv6.conf
+    mode: 0644
+    owner: root
+    group: root
+  when: disable_ipv6
+  tags:
+    - disable_ipv6
+
+# Add history search using the first few characters.
+- name: account default .bashrc
+  copy:
+    src: conf/bashrc
+    dest: /etc/skel/.bashrc
+    mode: 0644
+    owner: root
+    group: root
+
+- name: vim saner defaults
+  copy:
+    src: conf/vimrc
+    dest: /etc/skel/.vimrc
+    mode: 0644
+    owner: root
+    group: root
+
+# administrator account has already been created so the above won't take effect
+- name: customize settings for administrator -- .bashrc, .vimrc
+  copy:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    remote_src: yes
+    mode: 0644
+    owner: administrator
+    group: administrator
+  loop:
+    - { src: '/etc/skel/.bashrc', dest: '/home/administrator/' }
+    - { src: '/etc/skel/.vimrc', dest: '/home/administrator/' }
+  tags:
+    - administrator
+
+- name: dist-upgrade + autoremove purge
+  apt:
+    autoremove: yes
+    purge: yes
+    upgrade: dist
+  tags:
+    - apt
+
+- name: apt autoremove
+  command: /usr/bin/apt-get autoremove -y
+  tags:
+    - apt
+    - apt_autoremove
+
+  # Defined in group_vars, default is en_US.UTF-8.
+- name: set the system locale
+  command: /usr/sbin/update-locale LANG={{ locale }} LANGUAGE
+  changed_when: false
+  tags:
+    - locale

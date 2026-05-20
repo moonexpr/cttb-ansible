@@ -1,0 +1,13 @@
+[Do not allow any user to modify any network state or setting]
+Identity=unix-user:*
+Action=org.freedesktop.NetworkManager.enable-disable-network;org.freedesktop.NetworkManager.enable-disable-wifi;org.freedesktop.NetworkManager.settings.modify.system
+ResultAny=no
+ResultInactive=no
+ResultActive=no
+
+[Allow privileged groups to modify network state or setting]
+Identity=unix-group:sudo;unix-group:it;unix-group:dvgs-staff;unix-group:dvbs-staff;unix-group:drbu-staff
+Action=org.freedesktop.NetworkManager.*
+ResultAny=no
+ResultInactive=no
+ResultActive=yes

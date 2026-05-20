@@ -1,0 +1,15 @@
+---  
+- name: Manage authorized keys using authorized_key module  
+  hosts: all
+  gather_facts: true  
+  vars:  
+    remote_user: "administrator"  
+    public_key_path: "/home/johnchandara/.ssh/id_ed25519.pub"
+ 
+  tasks:  
+    - name: Copy public key to remote host's authorized_keys  
+      ansible.builtin.authorized_key:  
+        user: "{{ remote_user }}"  # Remote user 
+        state: present  # Ensure the key is present  
+        key: "{{ lookup('file', public_key_path) }}"  # Read public key from ServerA  
+        manage_dir: true  # Auto-create ~/.ssh and set permissions (700)  

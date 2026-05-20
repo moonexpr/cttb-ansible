@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Sudhanix Welcome
+Comment=First-login welcome window for new users
+Exec=/usr/local/bin/sudhanix-welcome
+Icon=help-about
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=XFCE;LXQt;LXDE;
+StartupNotify=false

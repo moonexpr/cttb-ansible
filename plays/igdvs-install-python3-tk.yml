@@ -1,0 +1,12 @@
+---
+
+#- hosts: dvgs_cs_lab dvgs_koha dvbs_cs_lab dvbs_library dvbs_cc
+- hosts: dvgs_cs_lab dvgs_koha
+  gather_facts: no
+  tasks:
+    - name: install python3-tk, for Tkinter and turtle
+      apt:
+        state: latest
+        install_recommends: no
+        name:
+        - python3-tk

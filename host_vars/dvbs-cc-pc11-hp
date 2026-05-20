@@ -1,0 +1,26 @@
+---
+
+# Web browser
+firefox: true
+chrome: true
+
+# printing settings
+cups_srv: cups-dvbs
+cups_default_queue: Brother_HL-L5210DW_series
+
+# desktop configuration
+lightdm_hide_users: false
+
+# look and feel
+pic_avatar: avatar-cttb.png
+pic_bg: bg-drba.jpg
+
+# office
+openoffice: false
+libreoffice: true
+wpsoffice: false
+
+# Chewing support
+#chewing: true
+chewing: false
+

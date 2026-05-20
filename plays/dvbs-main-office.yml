@@ -1,0 +1,6 @@
+---
+
+- hosts: dvbs-main-office
+  roles:
+    - ldap-client
+    - nfs-home

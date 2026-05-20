@@ -1,0 +1,6 @@
+---
+
+# printing settings
+cups_srv: cups-cttb.cttb
+cups_default_queue: Building_1234_Hallway
+

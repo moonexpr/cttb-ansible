@@ -1,0 +1,14 @@
+// Disallow regular users from modifying networking; allow members of
+// privileged local/LDAP groups.
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") !== 0) {
+        return;
+    }
+    var allowed = ["sudo", "it", "dvgs-staff", "dvbs-staff", "drbu-staff"];
+    for (var i = 0; i < allowed.length; i++) {
+        if (subject.isInGroup(allowed[i])) {
+            return polkit.Result.YES;
+        }
+    }
+    return polkit.Result.NO;
+});

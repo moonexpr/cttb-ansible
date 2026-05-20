@@ -1,0 +1,9 @@
+---
+
+#- hosts: dvbs-lib04 dvbs-lib03 dvbs-lib02 dvbs-9th-pc01 dvbs-9th-pc03 dvbs-9th-pc02 dvbs-lib01 dvbs-lab09
+- hosts: dvbs-3rd-pc01
+  roles:
+    - sudhanix-core
+    - ldap-client
+    - nfs-home
+    - cups-client

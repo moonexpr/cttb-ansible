@@ -1,0 +1,40 @@
+#!/bin/bash
+# Toggle the xfce4-panel applications menu.
+#
+# `xfce4-popup-applicationsmenu` only opens the menu — pressing the bound
+# Super key a second time has no effect, and `--help` exposes no dismiss
+# option (verified on xfce4-panel 4.18, Ubuntu 24.04). The popup is also
+# an override-redirect transient, so xdotool cannot see it via any
+# `--onlyvisible` search.
+#
+# Pragmatic toggle: track open/closed state in a per-user file with a
+# short freshness window. Two Super taps within TTL toggle cleanly.
+# After the TTL expires we assume the menu was dismissed by other means
+# (click outside, Escape, item selection) and treat the next press as
+# a fresh open.
+
+set -u
+
+UID_NUM=$(id -u)
+STATE="/tmp/sudhanix-toggle-appmenu.state.${UID_NUM}"
+LOG="/tmp/sudhanix-toggle-appmenu.${UID_NUM}.log"
+TTL=5
+
+log() { printf '[%s] %s\n' "$(date '+%F %T.%3N')" "$*" >> "$LOG" 2>/dev/null; }
+
+now=$(date +%s)
+
+if [[ -f "${STATE}" ]]; then
+    age=$(( now - $(stat -c %Y "${STATE}" 2>/dev/null || echo "${now}") ))
+    if (( age < TTL )); then
+        log "state fresh (age=${age}s) — dismissing"
+        rm -f "${STATE}"
+        exec xdotool key Escape
+    fi
+    log "state stale (age=${age}s) — re-opening"
+    rm -f "${STATE}"
+fi
+
+log "no state — opening menu"
+touch "${STATE}"
+exec xfce4-popup-applicationsmenu

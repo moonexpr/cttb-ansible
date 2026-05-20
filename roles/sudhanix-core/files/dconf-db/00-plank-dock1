@@ -1,0 +1,24 @@
+# /etc/dconf/db/site.d/00-plank-dock1
+#
+# System default for the Plank dock on Sudhanix 26 hosts. Per-user writes
+# beat system-db:site (see /etc/dconf/profile/user), so a user can
+# customise the dock through the welcome panel and the change persists.
+#
+# Day-1 layout matches the welcome panel's "all categories enabled"
+# default, so a fresh user gets a populated, immediately-usable dock
+# without needing to interact with welcome first. Welcome rewrites
+# dock-items in user-db on Apply or on dismiss-without-apply.
+#
+# auto-pinning=false and pinned-only=true are the load-bearing settings:
+# without them Plank silently promotes recently-launched apps to
+# permanent launchers, writing .dockitem files into the user's
+# launchers/ dir and re-asserting that list on every restart. Those two
+# flips disable the silent auto path; users can still right-click
+# "Keep in dock" to manually pin an app.
+
+[net/launchpad/plank/docks/dock1]
+dock-items=['xfce4-appfinder.dockitem', 'thunar.dockitem', 'thunderbird.dockitem', 'com.google.Chrome.dockitem', 'Zoom.dockitem', 'libreoffice-writer.dockitem', 'libreoffice-calc.dockitem', 'org.gnome.Calculator.dockitem', 'org.gnome.gedit.dockitem', 'gimp.dockitem', 'Trash.dockitem']
+hide-mode='none'
+auto-pinning=false
+pinned-only=true
+theme='mcOS-BS-iMacM1-Black'

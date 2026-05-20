@@ -1,0 +1,264 @@
+---
+- name: Collect extended hardware information
+  hosts: all
+  gather_facts: true
+
+  # vars_files:
+  #   - ./../vars/jc_passwds.enc.yml
+
+  vars:
+  # ansible_become_password: "{{ drbu_cslab_admin_passwd }}"
+    output_csv: "~/hardware_survey.csv"
+
+  tasks:
+    # -------------------------
+    # General System Info
+    # -------------------------
+
+    - name: Collect general facts
+      set_fact:
+        system_arch: "{{ ansible_facts['machine'] | default('Unknown') }}"
+        os_name: "{{ ansible_facts['distribution'] | default('Unknown') }}"
+        os_version: "{{ ansible_facts['distribution_version'] | default('Unknown') }}"
+        os_codename: "{{ ansible_facts['distribution_release'] | default('Unknown') }}"
+
+    # -------------------------
+    # CPU + RAM
+    # -------------------------
+
+    - name: Collect CPU model and core count.
+      set_fact:
+        cpu_model: "{{ ansible_facts['processor'][2] | default('Unknown') }}"
+        cpu_cores: "{{ ansible_facts['processor_cores'] }}"
+
+    - name: Query RAM information
+      command: dmidecode --type 17
+      register: ram_info
+      changed_when: false
+      failed_when: false
+      become: true
+      become_user: root
+
+
+    - name: Extract RAM details from dmidecode
+      set_fact:
+        ram_size_mb: "{{ ansible_facts['memtotal_mb'] }}"
+        ram_dimm_sizes: >-
+          {{
+            (ram_info.stdout | default(''))
+            | regex_findall('Size:\\s*([0-9]+)\\s*(?:MB|GB)')
+            | list
+          }}
+        ram_speeds: >-
+          {{
+            (ram_info.stdout | default(''))
+            | regex_findall('Speed:\\s*([0-9]+)\\s*(?:MT/s|MHz)')
+            | map('int')
+            | list
+          }}
+        ram_type: >-
+          {{
+            ((ram_info.stdout | default(''))
+            | regex_findall('Type:\\s*(DDR[0-9]+)')
+            + ['Unknown'])
+            | first
+          }}
+
+    - name: Determine RAM speed and DIMM count
+      set_fact:
+        ram_speed_mts: >-
+          {{
+            (ram_speeds | map('int') | max)
+            if ram_speeds | length > 0
+            else '--'
+          }}
+        ram_dimm_count: "{{ ram_dimm_sizes | length }}"
+
+    - name: Check if cpuinfo_max_freq exists
+      stat:
+        path: /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
+      register: cpu_freq_file
+
+    - name: Read cpuinfo_max_freq
+      command: cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
+      register: cpu_freq_raw
+      changed_when: false
+      when: cpu_freq_file.stat.exists
+
+    - name: Convert CPU frequency to GHz
+      set_fact:
+        cpu_clock_ghz: >-
+          {{
+            ((cpu_freq_raw.stdout | int) / 1000000) | round(2)
+          }}
+      when: cpu_freq_file.stat.exists
+
+    - name: Set placeholder if frequency unavailable
+      set_fact:
+        cpu_clock_ghz: "--"
+      when: not cpu_freq_file.stat.exists
+
+    # -------------------------
+    # Storage
+    # -------------------------
+
+    - name: Collect storage info (JSON)
+      command: lsblk -b -J -o NAME,SIZE,TYPE
+      register: lsblk_output
+      changed_when: false
+
+    - name: Parse physical disks
+      set_fact:
+        storage_devices: >-
+          {{
+            (lsblk_output.stdout | from_json).blockdevices
+            | selectattr('type', 'equalto', 'disk')
+            | map(attribute='size')
+            | map('int')
+            | list
+          }}
+
+    - name: Calculate total storage (GiB)
+      set_fact:
+        total_storage_gb: "{{ (storage_devices | sum) // 1073741824 }}"
+
+
+    # -------------------------
+    # Motherboard Info
+    # -------------------------
+
+    # - name: Collect motherboard model
+    #   command: dmidecode -t baseboard
+    #   register: dmi_output
+    #   changed_when: false
+    #   ignore_errors: yes
+
+    # - name: Extract motherboard model and manufacturer
+    #   set_fact:
+    #     motherboard_manufacturer: >-
+    #       {{
+    #         (dmi_output.stdout | regex_search('Manufacturer:\\s*(.*)', '\\1'))
+    #         | default('Unknown')
+    #       }}
+    #     motherboard_model: >-
+    #       {{
+    #         (dmi_output.stdout | regex_search('Product Name:\\s*(.*)', '\\1'))
+    #         | default('Unknown')
+    #       }}
+
+    # -------------------------
+    # Motherboard Info (Non-privileged Method)
+    # -------------------------
+
+    - name: Read motherboard manufacturer
+      command: cat /sys/devices/virtual/dmi/id/board_vendor
+      register: board_vendor
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Read motherboard model
+      command: cat /sys/devices/virtual/dmi/id/board_name
+      register: board_name
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Set motherboard facts
+      set_fact:
+        motherboard_manufacturer: "{{ board_vendor.stdout | default('Unknown') }}"
+        motherboard_model: "{{ board_name.stdout | default('Unknown') }}"
+
+    # -------------------------
+    # USB Info
+    # -------------------------
+
+    - name: Count connected USB devices
+      command: lsusb
+      register: usb_output
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Count USB root hubs (proxy for controllers)
+      command: lsusb -t
+      register: usb_tree_output
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Derive USB counts
+      set_fact:
+        usb_device_count: "{{ usb_output.stdout_lines | length | default(0) }}"
+        usb_root_hub_count: >-
+          {{
+            usb_tree_output.stdout_lines
+            | select('search', 'Root Hub')
+            | list
+            | length
+            | default(0)
+          }}
+
+    # -------------------------
+    # GPU / VRAM
+    # -------------------------
+
+    - name: NVIDIA VRAM detection
+      block:
+        - name: Check for nvidia-smi
+          command: which nvidia-smi
+          register: nvidia_check
+          changed_when: false
+          failed_when: false
+
+        - name: Query VRAM
+          command: nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits
+          register: nvidia_vram
+          changed_when: false
+          when: nvidia_check.rc == 0
+
+        - name: Set VRAM fact
+          set_fact:
+            gpu_vram_mb: >-
+              {{
+                (nvidia_vram.stdout_lines | map('int') | sum)
+                if nvidia_check.rc == 0
+                else "Not detected"
+              }}
+
+    # -------------------------
+    # Ensure CSV Header
+    # -------------------------
+
+    - name: Ensure CSV header exists
+      delegate_to: localhost
+      lineinfile:
+        path: "{{ output_csv }}"
+        line: "hostname,os_name,os_version,os_codename,cpu_model,cpu_cores,cpu_clock_ghz,ram_size_mb,ram_dimm_count,ram_type,ram_speed_mts,total_storage_gb,motherboard_manufacturer,motherboard_model,usb_devices,usb_root_hubs,gpu_vram_mb,system_arch"
+        insertbefore: BOF
+        create: yes
+
+    # -------------------------
+    # Append Row
+    # -------------------------
+
+    - name: Append host row
+      delegate_to: localhost
+      lineinfile:
+        path: "{{ output_csv }}"
+        line: >-
+          {{ inventory_hostname }},
+          {{ os_name }},
+          {{ os_version }},
+          {{ os_codename }},
+          {{ cpu_model | replace(',', ';') }},
+          {{ cpu_cores }},
+          {{ cpu_clock_ghz }},
+          {{ ram_size_mb }},
+          {{ ram_dimm_count }},
+          {{ ram_type }},
+          {{ ram_speed_mts }},
+          {{ total_storage_gb }},
+          {{ motherboard_manufacturer | replace(',', ';') }},
+          {{ motherboard_model | replace(',', ';') }},
+          {{ usb_device_count }},
+          {{ usb_root_hub_count }},
+          {{ gpu_vram_mb }},
+          {{ system_arch }}
+        insertafter: EOF

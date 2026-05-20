@@ -1,0 +1,361 @@
+---
+
+# ── System User ──────────────────────────────────────────────────────
+
+- name: create storehouse group
+  group:
+    name: "{{ storehouse_group }}"
+    system: yes
+  tags:
+    - storehouse
+
+- name: create storehouse system user
+  user:
+    name: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    system: yes
+    shell: /usr/sbin/nologin
+    create_home: no
+  tags:
+    - storehouse
+
+# ── SSH Keys ─────────────────────────────────────────────────────────
+
+- name: deploy ansible authorized key
+  authorized_key:
+    user: administrator
+    key: "{{ lookup('file', 'ssh_keys/ansible.pub') }}"
+    state: present
+  tags:
+    - ssh
+
+- name: deploy jc authorized key
+  authorized_key:
+    user: administrator
+    key: "{{ lookup('file', 'ssh_keys/jc.pub') }}"
+    state: present
+  tags:
+    - ssh
+
+# ── Directory Tree ───────────────────────────────────────────────────
+
+- name: create storehouse root
+  file:
+    path: "{{ storehouse_root }}"
+    state: directory
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0755"
+  tags:
+    - storehouse
+
+- name: create storehouse subdirectories
+  file:
+    path: "{{ storehouse_root }}/{{ item }}"
+    state: directory
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0755"
+  loop: "{{ storehouse_subdirs }}"
+  tags:
+    - storehouse
+
+# ── Packages ─────────────────────────────────────────────────────────
+
+- name: install nginx and php-fpm
+  apt:
+    name:
+      # nginx-extras carries the WebDAV PUT/MKCOL extensions used by the
+      # /public/coredumps drop-zone. The plain nginx package on 22.04 does
+      # have ngx_http_dav_module but not the dav-ext goodies.
+      - nginx-extras
+      - "php{{ storehouse_php_version }}-fpm"
+      - "php{{ storehouse_php_version }}-mbstring"
+      - "php{{ storehouse_php_version }}-gd"
+      - unzip
+    state: present
+    update_cache: yes
+  tags:
+    - packages
+
+# ── Remove Copyparty (if present) ────────────────────────────────────
+
+- name: stop and disable copyparty if running
+  systemd:
+    name: copyparty
+    state: stopped
+    enabled: no
+  failed_when: false
+  tags:
+    - copyparty_remove
+
+- name: remove copyparty binary
+  file:
+    path: /usr/local/bin/copyparty
+    state: absent
+  tags:
+    - copyparty_remove
+
+- name: remove copyparty systemd unit
+  file:
+    path: /etc/systemd/system/copyparty.service
+    state: absent
+  notify: reload systemd
+  tags:
+    - copyparty_remove
+
+# ── Root static files ────────────────────────────────────────────────
+
+- name: deploy root index.html
+  copy:
+    src: index.html
+    dest: "{{ storehouse_root }}/index.html"
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0644"
+  tags:
+    - nginx
+
+- name: deploy citylights CSS
+  copy:
+    src: "{{ item }}"
+    dest: "{{ storehouse_root }}/{{ item }}"
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0644"
+  loop:
+    - citylights.min.css
+    - fonts.css
+    - p31m-pattern.svg
+  tags:
+    - nginx
+
+- name: deploy citylights fonts
+  copy:
+    src: fonts/
+    dest: "{{ storehouse_root }}/fonts/"
+    owner: "{{ storehouse_user }}"
+    group: "{{ storehouse_group }}"
+    mode: "0644"
+  tags:
+    - nginx
+
+# ── h5ai ─────────────────────────────────────────────────────────────
+
+- name: download h5ai (manti-X fork)
+  get_url:
+    url: "https://github.com/manti-X/h5ai/releases/download/v{{ storehouse_h5ai_version }}/h5ai-{{ storehouse_h5ai_version }}.zip"
+    dest: "/tmp/h5ai-{{ storehouse_h5ai_version }}.zip"
+    mode: "0644"
+  tags:
+    - h5ai
+
+- name: extract h5ai to storehouse root
+  unarchive:
+    src: "/tmp/h5ai-{{ storehouse_h5ai_version }}.zip"
+    dest: "{{ storehouse_root }}"
+    remote_src: yes
+    creates: "{{ storehouse_root }}/_h5ai"
+  tags:
+    - h5ai
+
+- name: set h5ai ownership
+  file:
+    path: "{{ storehouse_root }}/private"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags:
+    - h5ai
+
+- name: set h5ai public ownership
+  file:
+    path: "{{ storehouse_root }}/public"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags:
+    - h5ai
+
+- name: patch h5ai root path (manti-X fork missing _h5ai/ wrapper — fix ROOT_PATH only)
+  replace:
+    path: "{{ storehouse_root }}/private/php/core/class-setup.php"
+    regexp: "Util::normalize_path\\(dirname\\(\\$this->get\\('H5AI_PATH'\\)\\), false\\)"
+    replace: "Util::normalize_path($this->get('H5AI_PATH'), false)"
+  tags:
+    - h5ai
+
+- name: configure h5ai hidden patterns
+  lineinfile:
+    path: "{{ storehouse_root }}/private/conf/options.json"
+    regexp: '"hidden":'
+    line: '        "hidden": ["^\\.", "^\\_", "^_h5ai", "robots.txt", "ads.txt", "^storehouse"],'
+    owner: www-data
+    group: www-data
+  tags:
+    - h5ai
+
+# ── Coredump drop-zone ───────────────────────────────────────────────
+
+- name: ensure coredumps drop-zone is writable by nginx (www-data)
+  file:
+    path: "{{ storehouse_root }}/public/coredumps"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0775"
+  tags:
+    - coredumps
+
+- name: ensure nginx PUT body-spool dir exists (used by coredumps location)
+  file:
+    path: /var/lib/nginx/coredumps-tmp
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0750"
+  tags:
+    - coredumps
+
+- name: ensure coredumps STAGING dir exists (anonymous PUT lands here first)
+  file:
+    path: /var/lib/nginx/coredumps-staging
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0750"
+  tags:
+    - coredumps
+
+- name: ensure quarantine dir exists for rejected uploads
+  file:
+    path: /srv/storehouse/private/coredumps-rejected
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  tags:
+    - coredumps
+
+- name: deploy coredumps validate+mover script
+  copy:
+    src: coredumps-validate-mover
+    dest: /usr/local/sbin/coredumps-validate-mover
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - coredumps
+
+- name: deploy coredumps validate+mover systemd unit + timer
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - coredumps-validate-mover.service
+    - coredumps-validate-mover.timer
+  notify: reload systemd
+  tags:
+    - coredumps
+
+- name: enable + start coredumps-validate-mover.timer
+  systemd:
+    name: coredumps-validate-mover.timer
+    state: started
+    enabled: true
+    daemon_reload: true
+  tags:
+    - coredumps
+
+- name: deploy coredumps prune cron (daily)
+  template:
+    src: storehouse-coredumps-prune.j2
+    dest: /etc/cron.daily/storehouse-coredumps-prune
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - coredumps
+
+- name: ensure passlib for community.general.htpasswd
+  apt:
+    name: python3-passlib
+    state: present
+  tags:
+    - coredumps
+
+- name: deploy coredumps htpasswd (basic auth on GET/HEAD)
+  community.general.htpasswd:
+    path: /etc/nginx/coredumps.htpasswd
+    name: "{{ storehouse_coredumps_user }}"
+    password: "{{ storehouse_coredumps_password }}"
+    crypt_scheme: bcrypt
+    owner: root
+    group: www-data
+    mode: "0640"
+    state: present
+  notify: restart nginx
+  no_log: true
+  tags:
+    - coredumps
+
+# ── Nginx ────────────────────────────────────────────────────────────
+
+- name: deploy nginx site config
+  template:
+    src: storehouse-nginx.conf.j2
+    dest: /etc/nginx/sites-available/storehouse.conf
+    mode: "0644"
+  notify: restart nginx
+  tags:
+    - nginx
+
+- name: remove default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+  tags:
+    - nginx
+
+- name: enable storehouse nginx site
+  file:
+    src: /etc/nginx/sites-available/storehouse.conf
+    dest: /etc/nginx/sites-enabled/storehouse.conf
+    state: link
+  notify: restart nginx
+  tags:
+    - nginx
+
+# ── Services ─────────────────────────────────────────────────────────
+
+- name: enable and start php-fpm
+  service:
+    name: "php{{ storehouse_php_version }}-fpm"
+    state: started
+    enabled: yes
+  tags:
+    - services
+
+- name: enable and start nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  tags:
+    - services
+
+# ── Firewall ─────────────────────────────────────────────────────────
+
+- name: allow HTTP through ufw
+  ufw:
+    rule: allow
+    port: "{{ storehouse_port | string }}"
+    proto: tcp
+  tags:
+    - firewall

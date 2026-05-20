@@ -1,0 +1,26 @@
+---
+
+  - name: restart pulseaudio
+    systemd:
+      name: pulseaudio.service
+      state: restarted
+      scope: system
+
+  - name: restart lightdm
+    service:
+      name: lightdm
+      state: restarted
+
+  - name: rebuild font cache
+    command: fc-cache -f
+
+  # Plymouth assets and the default.plymouth alternatives link both bake
+  # into the initramfs; a re-deploy that changes either without rebuilding
+  # initramfs leaves the old splash visible on the first boot frames before
+  # the real rootfs takes over. Plymouth install + configure tasks notify
+  # this so the rebuild fires once at end-of-play regardless of phase-tag
+  # interleaving.
+  - name: update initramfs
+    command: update-initramfs -u
+    environment:
+      PATH: /usr/sbin:/usr/bin:/sbin:/bin
