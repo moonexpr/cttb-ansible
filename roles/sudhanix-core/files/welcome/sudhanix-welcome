@@ -39,11 +39,19 @@ try:
 except Exception:  # pragma: no cover — yaml is in python3-yaml on Sudhanix
     _HAVE_YAML = False
 
-# ── LDAP constants (unchanged from v1) ───────────────────────────────────────
-LDAP_URI = "ldap://ldap-srv.cttb"
-LDAP_DN_TEMPLATE = "uid={uid},ou=People,dc=cttb"
-WELCOME_FLAG_ATTR = "sudhanixWelcomeDismissed"
-SUDHANIX_USER_OC = "sudhanixUser"
+# ── Dismissal storage (2026-05-20: moved off LDAP onto NFS-resident stamp) ──
+# Stamp file lives in the user's XDG config dir. NFS automount carries it
+# across machines, replacing the old LDAP-attr scheme. The PAM token cache,
+# schema, and ACL machinery are commented out across this file,
+# sudhanix-welcome.yml, roles/ldap-schema-sudhanix/, and
+# plays/ldap-install-sudhanix26-scheme.yml — uncomment to revert.
+DISMISSED_STAMP_RELATIVE = Path("sudhanix") / "welcome-dismissed"
+
+# LDAP constants — preserved commented for revert reference.
+# LDAP_URI = "ldap://ldap-srv.cttb"
+# LDAP_DN_TEMPLATE = "uid={uid},ou=People,dc=cttb"
+# WELCOME_FLAG_ATTR = "sudhanixWelcomeDismissed"
+# SUDHANIX_USER_OC = "sudhanixUser"
 
 # ── Asset paths ───────────────────────────────────────────────────────────────
 LOTUS_PATH = "/usr/share/icons/cttb/lotus.png"
@@ -1399,25 +1407,18 @@ def log(msg: str) -> None:
 
 
 # ─── WelcomeGate ───────────────────────────────────────────────────────────
-# Encapsulates the DISPLAY-agnostic part of the first-login gate: PAM token,
-# LDAP-stored dismissal flag, and the dismissal write-back. Fail-soft: any
-# unreachable LDAP / missing token returns "don't show" so the panel never
-# pesters a user whose dismissal we can't remember anyway.
+# DISPLAY-agnostic first-login gate. State lives in ~/.config/sudhanix/
+# welcome-dismissed (NFS-resident via automount), so a user's dismissal
+# follows them across lab desktops the same way the old LDAP-attr scheme
+# did. Fail-soft: a mkdir/write error logs and exits so the user is never
+# blocked.
 
 
 class WelcomeGate:
     def __init__(self, runner: CommandRunner, *, force: bool = False) -> None:
-        self._runner = runner
+        self._runner = runner  # retained for symmetry; current impl uses no subprocesses
         self._force = force
-        self._uid_value = os.getuid()
-        self._username: str | None = None
-        try:
-            self._username = pwd.getpwuid(self._uid_value).pw_name
-        except KeyError:
-            log(f"no passwd entry for uid {self._uid_value}")
-        self._user_dn = (LDAP_DN_TEMPLATE.format(uid=self._username)
-                         if self._username else "")
-        self._token: Path | None = None
+        self._stamp = self._stamp_path()
 
     @property
     def force(self) -> bool:
@@ -1426,90 +1427,133 @@ class WelcomeGate:
     def should_show(self) -> bool:
         if self._force:
             return True
-        if self._username is None:
-            return False
-        self._token = self._token_path(self._uid_value)
-        if self._token is None:
-            log("no cached PAM token; can't reach LDAP this session")
-            return False
-        state = self._query_ldap(self._user_dn, self._token)
-        if state is True:
-            return False
-        if state is None:
-            # Couldn't query LDAP — don't pester the user since we can't
-            # remember their dismissal anyway.
-            return False
-        return True
+        return not self._stamp.exists()
 
     def mark_dismissed(self) -> None:
-        if self._username is None or self._token is None:
-            return
         try:
-            self._write_ldap(self._user_dn, self._token)
+            import datetime as _dt
+            self._stamp.parent.mkdir(parents=True, exist_ok=True)
+            self._stamp.write_text(
+                _dt.datetime.now().isoformat(timespec="seconds") + "\n"
+            )
         except Exception as exc:
             log(f"write_dismissal failed: {exc}")
 
     @staticmethod
-    def _token_path(uid: int) -> Path | None:
-        p = Path(f"/run/sudhanix-tokens/{uid}.tok")
-        try:
-            st = p.stat()
-        except FileNotFoundError:
-            return None
-        if st.st_uid != uid:
-            log(f"refusing token: owner uid {st.st_uid} != session uid {uid}")
-            return None
-        if st.st_mode & 0o077:
-            log(f"refusing token: mode {st.st_mode:o} too permissive")
-            return None
-        return p
+    def _stamp_path() -> Path:
+        cfg = os.environ.get("XDG_CONFIG_HOME")
+        base = Path(cfg) if cfg else (Path.home() / ".config")
+        return base / DISMISSED_STAMP_RELATIVE
 
-    def _query_ldap(self, user_dn: str, tok: Path) -> bool | None:
-        r = self._runner.run_text(
-            ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
-             "-D", user_dn, "-y", str(tok),
-             "-b", user_dn, "-s", "base",
-             "(objectClass=*)", WELCOME_FLAG_ATTR],
-            timeout=10,
-        )
-        if not r.ok:
-            return None
-        for line in r.stdout.splitlines():
-            if line.lower().startswith(f"{WELCOME_FLAG_ATTR.lower()}:"):
-                _, _, value = line.partition(":")
-                return value.strip().upper() == "TRUE"
-        return False
-
-    def _write_ldap(self, user_dn: str, tok: Path) -> None:
-        probe = self._runner.run_text(
-            ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
-             "-D", user_dn, "-y", str(tok),
-             "-b", user_dn, "-s", "base", "(objectClass=*)", "objectClass"],
-            timeout=10,
-        )
-        needs_oc = SUDHANIX_USER_OC.lower() not in probe.stdout.lower()
-
-        parts = [f"dn: {user_dn}", "changetype: modify"]
-        if needs_oc:
-            parts += ["add: objectClass", f"objectClass: {SUDHANIX_USER_OC}", "-"]
-        parts += [f"replace: {WELCOME_FLAG_ATTR}", f"{WELCOME_FLAG_ATTR}: TRUE"]
-        ldif = "\n".join(parts) + "\n"
-
-        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".ldif") as fh:
-            fh.write(ldif)
-            ldif_path = fh.name
-        try:
-            os.chmod(ldif_path, 0o600)
-            self._runner.run_text(
-                ["ldapmodify", "-x", "-ZZ", "-H", LDAP_URI,
-                 "-D", user_dn, "-y", str(tok), "-f", ldif_path],
-                timeout=10,
-            )
-        finally:
-            try:
-                os.unlink(ldif_path)
-            except FileNotFoundError:
-                pass
+    # ── LDAP-backed dismissal (deprecated 2026-05-20) ────────────────────────
+    # Replaced by the stamp-file mechanism above now that NFS home dirs via
+    # automount carry per-user state across machines. Kept commented for
+    # revert reference; the PAM token cache helpers, schema, and ACL are
+    # also commented in their respective files. To revert: restore the LDAP
+    # constants block at the top of this file, swap the methods above for
+    # the bodies below, and uncomment the PAM/schema/ACL machinery in
+    # sudhanix-welcome.yml + ldap-install-sudhanix26-scheme.yml.
+    #
+    # def __init__(self, runner: CommandRunner, *, force: bool = False) -> None:
+    #     self._runner = runner
+    #     self._force = force
+    #     self._uid_value = os.getuid()
+    #     self._username: str | None = None
+    #     try:
+    #         self._username = pwd.getpwuid(self._uid_value).pw_name
+    #     except KeyError:
+    #         log(f"no passwd entry for uid {self._uid_value}")
+    #     self._user_dn = (LDAP_DN_TEMPLATE.format(uid=self._username)
+    #                      if self._username else "")
+    #     self._token: Path | None = None
+    #
+    # def should_show(self) -> bool:
+    #     if self._force:
+    #         return True
+    #     if self._username is None:
+    #         return False
+    #     self._token = self._token_path(self._uid_value)
+    #     if self._token is None:
+    #         log("no cached PAM token; can't reach LDAP this session")
+    #         return False
+    #     state = self._query_ldap(self._user_dn, self._token)
+    #     if state is True:
+    #         return False
+    #     if state is None:
+    #         # Couldn't query LDAP — don't pester the user since we can't
+    #         # remember their dismissal anyway.
+    #         return False
+    #     return True
+    #
+    # def mark_dismissed(self) -> None:
+    #     if self._username is None or self._token is None:
+    #         return
+    #     try:
+    #         self._write_ldap(self._user_dn, self._token)
+    #     except Exception as exc:
+    #         log(f"write_dismissal failed: {exc}")
+    #
+    # @staticmethod
+    # def _token_path(uid: int) -> Path | None:
+    #     p = Path(f"/run/sudhanix-tokens/{uid}.tok")
+    #     try:
+    #         st = p.stat()
+    #     except FileNotFoundError:
+    #         return None
+    #     if st.st_uid != uid:
+    #         log(f"refusing token: owner uid {st.st_uid} != session uid {uid}")
+    #         return None
+    #     if st.st_mode & 0o077:
+    #         log(f"refusing token: mode {st.st_mode:o} too permissive")
+    #         return None
+    #     return p
+    #
+    # def _query_ldap(self, user_dn: str, tok: Path) -> bool | None:
+    #     r = self._runner.run_text(
+    #         ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
+    #          "-D", user_dn, "-y", str(tok),
+    #          "-b", user_dn, "-s", "base",
+    #          "(objectClass=*)", WELCOME_FLAG_ATTR],
+    #         timeout=10,
+    #     )
+    #     if not r.ok:
+    #         return None
+    #     for line in r.stdout.splitlines():
+    #         if line.lower().startswith(f"{WELCOME_FLAG_ATTR.lower()}:"):
+    #             _, _, value = line.partition(":")
+    #             return value.strip().upper() == "TRUE"
+    #     return False
+    #
+    # def _write_ldap(self, user_dn: str, tok: Path) -> None:
+    #     probe = self._runner.run_text(
+    #         ["ldapsearch", "-x", "-ZZ", "-H", LDAP_URI, "-LLL",
+    #          "-D", user_dn, "-y", str(tok),
+    #          "-b", user_dn, "-s", "base", "(objectClass=*)", "objectClass"],
+    #         timeout=10,
+    #     )
+    #     needs_oc = SUDHANIX_USER_OC.lower() not in probe.stdout.lower()
+    #
+    #     parts = [f"dn: {user_dn}", "changetype: modify"]
+    #     if needs_oc:
+    #         parts += ["add: objectClass", f"objectClass: {SUDHANIX_USER_OC}", "-"]
+    #     parts += [f"replace: {WELCOME_FLAG_ATTR}", f"{WELCOME_FLAG_ATTR}: TRUE"]
+    #     ldif = "\n".join(parts) + "\n"
+    #
+    #     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".ldif") as fh:
+    #         fh.write(ldif)
+    #         ldif_path = fh.name
+    #     try:
+    #         os.chmod(ldif_path, 0o600)
+    #         self._runner.run_text(
+    #             ["ldapmodify", "-x", "-ZZ", "-H", LDAP_URI,
+    #              "-D", user_dn, "-y", str(tok), "-f", ldif_path],
+    #             timeout=10,
+    #         )
+    #     finally:
+    #         try:
+    #             os.unlink(ldif_path)
+    #         except FileNotFoundError:
+    #             pass
 
 
 # ── Pixbuf helpers ────────────────────────────────────────────────────────────

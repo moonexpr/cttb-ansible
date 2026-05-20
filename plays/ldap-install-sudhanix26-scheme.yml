@@ -2,6 +2,15 @@
 # Apply Sudhanix-specific schema additions and ACL to slapd's cn=config
 # on the LDAP server. Idempotent — re-running is a no-op once installed.
 #
+# 2026-05-20: Welcome-panel dismissal moved to a per-user stamp file in
+# the NFS home directory (~/.config/sudhanix/welcome-dismissed). The
+# sudhanixWelcomeDismissed schema + ACL this play installs are no longer
+# read or written by sudhanix-welcome; the role include is commented out
+# below. Already-loaded schemas on lxc-ldap are left in place (removing
+# an installed schema from cn=config is non-trivial and risks tripping
+# slapd if any entry still carries the auxiliary objectClass). Uncomment
+# to re-arm.
+#
 # Usage:
 #   ansible-playbook plays/ldap-install-sudhanix26-scheme.yml -l lxc-ldap
 #
@@ -10,5 +19,13 @@
 
 - hosts: lxc-ldap
   become: true
-  roles:
-    - ldap-schema-sudhanix
+  # roles:
+  #   - ldap-schema-sudhanix
+  tasks:
+    - name: schema install dormant — dismissal moved to NFS stamp file
+      ansible.builtin.debug:
+        msg: >
+          sudhanixWelcomeDismissed schema/ACL is no longer needed.
+          Per-user dismissal state lives in
+          ~/.config/sudhanix/welcome-dismissed via NFS automount.
+          Uncomment the role above to re-arm.
