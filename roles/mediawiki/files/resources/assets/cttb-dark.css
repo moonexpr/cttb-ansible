@@ -233,7 +233,7 @@ main#content > #bodyContent {
     align-items: center;
 }
 
-#right-navigation div {
+#right-navigation div:not(.vector-pinnable-header) {
     display: inline;
 }
 
@@ -325,7 +325,7 @@ main#content > #bodyContent {
     background: var(--cttb-panel-toolbar);
     display: flex;
     line-height: 1.6;
-    margin: calc(-1rem - 2px) calc(-1rem - 2px) 0 calc(-1rem - 2px);
+    margin: -1rem -1rem 0 -1rem;
     padding: 0.5rem 1rem;
     border-radius: 6px 6px 0 0;
 }
