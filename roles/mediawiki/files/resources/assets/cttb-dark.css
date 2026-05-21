@@ -330,6 +330,11 @@ main#content > #bodyContent {
     border-radius: 6px 6px 0 0;
 }
 
+/* Page-tools sidebar header when unpinned — wider negative margin. */
+.vector-pinnable-header.vector-page-tools-pinnable-header.vector-pinnable-header-unpinned {
+    margin: -1.1rem -1.1rem 0 -1.1rem;
+}
+
 /* Left-sidebar + TOC pinnable layout — reset Vector's indents so
  * the menu/TOC content aligns flush inside the rounded panel
  * borders that the City Lights theme adds. */
