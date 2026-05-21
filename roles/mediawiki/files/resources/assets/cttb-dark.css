@@ -43,7 +43,7 @@
 @media (prefers-color-scheme: dark) {
     :root:not(.skin-theme-clientpref-day) {
         --cttb-bg:            #1a1418;
-        --cttb-bg-highvis:    #050505;
+        --cttb-bg-highvis:    #100c0e;
         --cttb-fg:            #d4cfc4;
         --cttb-primary:       #b8a88a;
         --cttb-primary-hover: #cdb99a;
@@ -66,7 +66,7 @@
 
 html.skin-theme-clientpref-night {
     --cttb-bg:            #1a1418;
-    --cttb-bg-highvis:    #050505;
+    --cttb-bg-highvis:    #100c0e;
     --cttb-fg:            #d4cfc4;
     --cttb-primary:       #b8a88a;
     --cttb-primary-hover: #cdb99a;
