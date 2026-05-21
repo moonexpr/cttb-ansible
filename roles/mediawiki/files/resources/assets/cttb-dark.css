@@ -13,6 +13,7 @@
 /* ── Sacred (light) palette — :root defaults ─────────────────────── */
 :root {
     --cttb-bg:              #e8dcc0;
+    --cttb-bg-highvis:      #f4f1e8;
     --cttb-fg:              #2a1f18;
     --cttb-primary:         #5c2d1a;
     --cttb-primary-hover:   #7a2e15;
@@ -42,6 +43,7 @@
 @media (prefers-color-scheme: dark) {
     :root:not(.skin-theme-clientpref-day) {
         --cttb-bg:            #1a1418;
+        --cttb-bg-highvis:    #050505;
         --cttb-fg:            #d4cfc4;
         --cttb-primary:       #b8a88a;
         --cttb-primary-hover: #cdb99a;
@@ -64,6 +66,7 @@
 
 html.skin-theme-clientpref-night {
     --cttb-bg:            #1a1418;
+    --cttb-bg-highvis:    #050505;
     --cttb-fg:            #d4cfc4;
     --cttb-primary:       #b8a88a;
     --cttb-primary-hover: #cdb99a;
@@ -90,6 +93,7 @@ html.skin-theme-clientpref-night {
  */
 html.skin-theme-clientpref-day {
     --cttb-bg:            #e8dcc0;
+    --cttb-bg-highvis:    #f4f1e8;
     --cttb-fg:            #2a1f18;
     --cttb-primary:       #5c2d1a;
     --cttb-primary-hover: #7a2e15;
@@ -193,7 +197,7 @@ main#content > .vector-page-toolbar {
 
 main#content > .vector-body,
 main#content > #bodyContent {
-    background-color: #fffbe2; /* --cttb-bg-highvis */
+    background-color: var(--cttb-bg-highvis);
     border: 1px solid var(--cttb-border);
     border-radius: 0 0 6px 6px;
     padding: 1.25rem;
