@@ -154,12 +154,13 @@ body {
     background-size: 125px 216px;
 }
 body::before {
-    /* dimming layer so the pattern reads at the per-mode alpha */
+    /* edge-fade layer — solid --cttb-bg at the left and right
+     * margins, transparent across the center third, so the p31m
+     * pattern reads in the middle band and dissolves at the edges */
     content: "";
     position: fixed;
     inset: 0;
-    background-color: var(--cttb-bg);
-    opacity: calc(1 - var(--cttb-pattern-alpha));
+    background: linear-gradient(90deg, var(--cttb-bg) 0%, transparent 33%, transparent 66%, var(--cttb-bg) 100%);
     pointer-events: none;
     z-index: -1;
 }
