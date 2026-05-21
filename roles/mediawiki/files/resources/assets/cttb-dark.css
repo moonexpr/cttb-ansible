@@ -193,9 +193,9 @@ main#content > .vector-page-toolbar {
 
 main#content > .vector-body,
 main#content > #bodyContent {
-    background-color: var(--cttb-panel-body);
+    background-color: #fffbe2; /* --cttb-bg-highvis */
     border: 1px solid var(--cttb-border);
-    border-radius: 0 0 5px 5px;
+    border-radius: 0 0 6px 6px;
     padding: 1.25rem;
 }
 
@@ -269,6 +269,13 @@ main#content > #bodyContent {
     margin-top: 0.3rem;
 }
 
+/* Dropdown menu panel — rounded, bordered card matching the page
+ * panel styling. */
+.vector-dropdown .vector-dropdown-content {
+    border-radius: 6px;
+    border: 1px solid var(--border-color-base);
+}
+
 /* ── Body grid (≥1120px) — reclaim Tools-panel gutter (gh-59) ─────
  * `.mw-body` becomes a two-column grid at wide widths: the article
  * column on the left (header, toolbar, body-content stacked) and the
@@ -318,9 +325,9 @@ main#content > #bodyContent {
     background: var(--cttb-panel-toolbar);
     display: flex;
     line-height: 1.6;
-    margin: -1rem -1rem 0 -1rem;
+    margin: calc(-1rem - 2px) calc(-1rem - 2px) 0 calc(-1rem - 2px);
     padding: 0.5rem 1rem;
-    border-radius: 10px 10px 0 0;
+    border-radius: 6px 6px 0 0;
 }
 
 /* Left-sidebar + TOC pinnable layout — reset Vector's indents so
