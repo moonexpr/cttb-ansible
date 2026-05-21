@@ -119,6 +119,20 @@
     - mediawiki
     - assets
 
+- name: deploy p31m background patterns
+  copy:
+    src: "resources/assets/{{ item }}"
+    dest: "{{ mediawiki_install_dir }}/resources/assets/{{ item }}"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  loop:
+    - p31m-pattern.svg
+    - p31m-pattern-dark.svg
+  tags:
+    - mediawiki
+    - assets
+
 # ── Third-party Extensions ────────────────────────────────────────────
 
 - name: install extdist extensions

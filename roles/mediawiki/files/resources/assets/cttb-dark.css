@@ -14,6 +14,7 @@
 :root {
     --cttb-bg:              #e8dcc0;
     --cttb-bg-highvis:      #f4f1e8;
+    --cttb-body-bg:         #ffeec6;
     --cttb-fg:              #2a1f18;
     --cttb-primary:         #5c2d1a;
     --cttb-primary-hover:   #7a2e15;
@@ -28,7 +29,7 @@
     --cttb-link:            #5c2d1a;
     --cttb-link-visited:    #7a2e15;
     --cttb-link-new:        #9e6b14;
-    --cttb-pattern-alpha:   0.18;
+    --cttb-pattern-url:     url("p31m-pattern.svg");
     --cttb-panel-body:      #dfddbf;
     --cttb-panel-toolbar:   #dcc8a5;
 }
@@ -44,6 +45,7 @@
     :root:not(.skin-theme-clientpref-day) {
         --cttb-bg:            #1a1418;
         --cttb-bg-highvis:    #100c0e;
+        --cttb-body-bg:       #0a0a0a;
         --cttb-fg:            #d4cfc4;
         --cttb-primary:       #b8a88a;
         --cttb-primary-hover: #cdb99a;
@@ -58,7 +60,7 @@
         --cttb-link:          #b8a88a;
         --cttb-link-visited:  #8b5e1e;
         --cttb-link-new:      #a36c3d;
-        --cttb-pattern-alpha: 0.10;
+        --cttb-pattern-url:   url("p31m-pattern-dark.svg");
         --cttb-panel-body:    #1a1714;
         --cttb-panel-toolbar: #12110e;
     }
@@ -67,6 +69,7 @@
 html.skin-theme-clientpref-night {
     --cttb-bg:            #1a1418;
     --cttb-bg-highvis:    #100c0e;
+    --cttb-body-bg:       #0a0a0a;
     --cttb-fg:            #d4cfc4;
     --cttb-primary:       #b8a88a;
     --cttb-primary-hover: #cdb99a;
@@ -81,7 +84,7 @@ html.skin-theme-clientpref-night {
     --cttb-link:          #b8a88a;
     --cttb-link-visited:  #8b5e1e;
     --cttb-link-new:      #a36c3d;
-    --cttb-pattern-alpha: 0.10;
+    --cttb-pattern-url:   url("p31m-pattern-dark.svg");
     --cttb-panel-body:    #1a1714;
     --cttb-panel-toolbar: #12110e;
 }
@@ -94,6 +97,7 @@ html.skin-theme-clientpref-night {
 html.skin-theme-clientpref-day {
     --cttb-bg:            #e8dcc0;
     --cttb-bg-highvis:    #f4f1e8;
+    --cttb-body-bg:       #ffeec6;
     --cttb-fg:            #2a1f18;
     --cttb-primary:       #5c2d1a;
     --cttb-primary-hover: #7a2e15;
@@ -108,7 +112,7 @@ html.skin-theme-clientpref-day {
     --cttb-link:          #5c2d1a;
     --cttb-link-visited:  #7a2e15;
     --cttb-link-new:      #9e6b14;
-    --cttb-pattern-alpha: 0.18;
+    --cttb-pattern-url:   url("p31m-pattern.svg");
     --cttb-panel-body:    #dfddbf;
     --cttb-panel-toolbar: #dcc8a5;
 }
@@ -147,8 +151,8 @@ html.skin-theme-clientpref-day {
 
 /* ── p31m pagoda tiling — both modes ─────────────────────────────── */
 body {
-    background-color: var(--cttb-bg);
-    background-image: url("p31m-pattern.svg");
+    background-color: var(--cttb-body-bg);
+    background-image: var(--cttb-pattern-url);
     background-repeat: repeat;
     background-attachment: fixed;
     background-size: 125px 216px;
