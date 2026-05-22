@@ -174,13 +174,17 @@ body::before {
     background-color: transparent;
     color: var(--cttb-fg);
 }
-/* ── Content panel — toolbar is the box, body flows below ────────
- * The page title floats freely on the page bg (no border, no
- * card). The toolbar (Read / Edit / History tabs) is the rounded
- * top of the panel — full border with `border-radius: 6px 6px 0 0`.
- * The body extends below sharing the toolbar's bottom edge: same
+/* ── Content panel — toolbar on top, title + body inside ─────────
+ * The toolbar (Read / Edit / History tabs) is the rounded top of
+ * the panel — full border with `border-radius: 6px 6px 0 0`. The
+ * body extends below sharing the toolbar's bottom edge: same
  * border-color isn't required since the body has its own bg that
  * reads as a continuation of the panel.
+ *
+ * The page title is relocated into `#bodyContent` by Common.js — it
+ * otherwise floats above the toolbar on the page bg. The emptied
+ * `.vector-page-titlebar` is collapsed (see the firstHeading rule
+ * below); its old `::after` tint strip is dropped from the layout.
  *
  * `.vector-column-end` (the right-side Tools sidebar, also a child
  * of `main#content`) stays unstyled here so it can sit beside the
@@ -190,7 +194,7 @@ body::before {
  * `--cttb-panel-toolbar`, which adapt to the active palette.
  */
 .vector-page-titlebar::after {
-    background-color: var(--cttb-panel-body);
+    display: none;
 }
 
 main#content > .vector-page-toolbar {
@@ -316,10 +320,21 @@ main#content > #bodyContent {
     }
 }
 
-/* Article title — slight bottom margin so the firstHeading breathes
- * before the toolbar/body card begins. */
+/* Article title — relocated into the content panel by Common.js so
+ * it reads as the panel's heading band instead of floating above
+ * the toolbar. Gold rule + padding set it off from the body text. */
 .mw-body .firstHeading {
     margin-bottom: 1rem;
+    padding-bottom: 0.4em;
+    border-bottom: 1px solid var(--cttb-secondary);
+}
+
+/* The titlebar the heading came out of keeps only the narrow-screen
+ * TOC toggle (hidden on wide screens) — collapse its box so it
+ * leaves no gap above the toolbar. */
+main#content > .mw-body-header {
+    margin: 0;
+    padding: 0;
 }
 
 /* Footer — give the wiki-footer container vertical room. */
