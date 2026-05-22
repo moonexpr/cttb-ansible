@@ -62,7 +62,7 @@
         --cttb-link-new:      #a36c3d;
         --cttb-pattern-url:   url("p31m-pattern-dark.svg");
         --cttb-panel-body:    #1a1714;
-        --cttb-panel-toolbar: #12110e;
+        --cttb-panel-toolbar: #2a1f18;
     }
 }
 
@@ -86,7 +86,7 @@ html.skin-theme-clientpref-night {
     --cttb-link-new:      #a36c3d;
     --cttb-pattern-url:   url("p31m-pattern-dark.svg");
     --cttb-panel-body:    #1a1714;
-    --cttb-panel-toolbar: #12110e;
+    --cttb-panel-toolbar: #2a1f18;
 }
 
 /* Defensive: an explicit "Day" toggle MUST land on Sacred even when
@@ -251,6 +251,12 @@ main#content > #bodyContent {
     justify-content: space-between;
 }
 
+@media screen {
+    .vector-page-toolbar-container {
+        box-shadow: none;
+    }
+}
+
 /* Icon-only action buttons (star, watch, etc.) — drop the Vector
  * default block margin and align inline with the tab text. */
 .vector-menu-tabs .mw-list-item .cdx-button--icon-only {
@@ -330,6 +336,14 @@ main#content > #bodyContent {
     border-radius: 10px;
     padding: 1rem;
 }
+@media screen {
+    .vector-pinned-container {
+        background-color: var(--cttb-surface-0);
+    }
+    .vector-sticky-pinned-container::after {
+        background: none;
+    }
+}
 .vector-pinnable-header {
     background: var(--cttb-panel-toolbar);
     display: flex;
@@ -342,6 +356,15 @@ main#content > #bodyContent {
 /* Page-tools sidebar header when unpinned — wider negative margin. */
 .vector-pinnable-header.vector-page-tools-pinnable-header.vector-pinnable-header-unpinned {
     margin: -1.1rem -1.1rem 0 -1.1rem;
+}
+
+/* Pinnable-panel menu headings — strip Vector's default heading
+ * padding/margin so they sit flush. The stacked-menu rule below
+ * re-adds top spacing to every heading after the first; its higher
+ * specificity (four classes vs. two) wins over the margin: 0 here. */
+.vector-pinnable-element .vector-menu-heading {
+    padding: 0;
+    margin: 0;
 }
 
 /* Stacked menus in a pinnable panel (page-tools Actions/General,
