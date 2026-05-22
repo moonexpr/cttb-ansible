@@ -371,6 +371,12 @@ main#content > #bodyContent {
     background-color: var(--cttb-surface-0);
     border-bottom-color: var(--cttb-muted);
 }
+@media screen {
+    .vector-header-container {
+        background: var(--cttb-panel-body);
+        border-bottom: 1px solid var(--cttb-muted);
+    }
+}
 .vector-column-start {
     background-color: transparent;
 }
