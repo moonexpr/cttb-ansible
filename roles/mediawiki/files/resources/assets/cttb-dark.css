@@ -181,10 +181,10 @@ body::before {
  * border-color isn't required since the body has its own bg that
  * reads as a continuation of the panel.
  *
- * The page title is relocated into `#bodyContent` by Common.js — it
- * otherwise floats above the toolbar on the page bg. The emptied
- * `.vector-page-titlebar` is collapsed (see the firstHeading rule
- * below); its old `::after` tint strip is dropped from the layout.
+ * The whole page-title header (`.mw-body-header` / titlebar) is
+ * relocated into `#bodyContent` by Common.js — it otherwise floats
+ * above the toolbar on the page bg. Its old `::after` tint strip is
+ * dropped from the layout (see the heading-band rule below).
  *
  * `.vector-column-end` (the right-side Tools sidebar, also a child
  * of `main#content`) stays unstyled here so it can sit beside the
@@ -320,21 +320,18 @@ main#content > #bodyContent {
     }
 }
 
-/* Article title — relocated into the content panel by Common.js so
- * it reads as the panel's heading band instead of floating above
- * the toolbar. Gold rule + padding set it off from the body text. */
-.mw-body .firstHeading {
-    margin-bottom: 1rem;
+/* Page heading band — Common.js moves the whole <header
+ * class="mw-body-header"> into #bodyContent so the title sits inside
+ * the panel. The header is a flex row (title + page indicators); the
+ * gold rule on it spans the full panel width, and the margin sets the
+ * band off from the body text. */
+#bodyContent > .mw-body-header {
+    margin: 0 0 1rem;
     padding-bottom: 0.4em;
     border-bottom: 1px solid var(--cttb-secondary);
 }
-
-/* The titlebar the heading came out of keeps only the narrow-screen
- * TOC toggle (hidden on wide screens) — collapse its box so it
- * leaves no gap above the toolbar. */
-main#content > .mw-body-header {
+.mw-body .firstHeading {
     margin: 0;
-    padding: 0;
 }
 
 /* Footer — give the wiki-footer container vertical room. */
