@@ -344,6 +344,15 @@ main#content > #bodyContent {
     margin: -1.1rem -1.1rem 0 -1.1rem;
 }
 
+/* Stacked menus in a pinnable panel (page-tools Actions/General,
+ * the main-menu portlets) — space each menu heading off the one
+ * above. General sibling combinator, not :first-of-type: the
+ * pinnable-header is also a <div>, so it — not the first
+ * .vector-menu — would be the :first-of-type div. */
+.vector-pinnable-element .vector-menu ~ .vector-menu .vector-menu-heading {
+    margin-top: 12px;
+}
+
 /* Left-sidebar + TOC pinnable layout — reset Vector's indents so
  * the menu/TOC content aligns flush inside the rounded panel
  * borders that the City Lights theme adds. */
