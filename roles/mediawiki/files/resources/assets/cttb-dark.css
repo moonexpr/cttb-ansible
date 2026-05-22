@@ -385,7 +385,11 @@ main#content > #bodyContent {
 .vector-toc .vector-pinnable-header {
     margin-left: -1rem;
 }
-.vector-toc .vector-toc-list-item {
+/* …but only for flat TOCs: :has() keeps the reset off hierarchical
+ * TOCs, where padding-left builds the per-level indent and reserves
+ * the gutter the .vector-toc-toggle button sits in. A TOC with no
+ * toggle anywhere has no gutter to justify — strip its dead padding. */
+.vector-toc:not(:has(.vector-toc-toggle)) .vector-toc-list-item {
     padding-left: unset;
 }
 .vector-pinnable-header-toggle-button,
