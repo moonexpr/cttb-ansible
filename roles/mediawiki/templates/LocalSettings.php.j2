@@ -39,10 +39,8 @@ $wgMainCacheType = {{ mediawiki_main_cache_type }};
 
 ## Skins — Vector 2022 with wider content for figures
 wfLoadSkin( "Vector" );
-wfLoadSkin( "MonoBook" );
-wfLoadSkin( "Timeless" );
-wfLoadSkin( "MinervaNeue" );
-$wgDefaultSkin = "vector-2022";
+wfLoadSkin( "CityLights" );
+$wgDefaultSkin = "citylights";
 $wgVectorDefaultSkinVersion = "2";
 $wgVectorDefaultSkinVersionForExistingAccounts = "2";
 $wgDefaultUserOptions["skin"] = "vector-2022";
@@ -126,11 +124,6 @@ $wgHooks["SkinTemplateNavigation::Universal"][] = function ( $skin, &$links ) {
     if ( isset( $links["views"]["history"] ) ) {
         $links["views"]["history"]["text"] = "History";
     }
-};
-
-## Load City Lights dark theme CSS
-$wgHooks["BeforePageDisplay"][] = function ( $out ) {
-    $out->addStyle( $out->getConfig()->get( 'ScriptPath' ) . '/resources/assets/cttb-dark.css' );
 };
 
 {% if mediawiki_lockdown and mediawiki_lockdown_search_visible %}

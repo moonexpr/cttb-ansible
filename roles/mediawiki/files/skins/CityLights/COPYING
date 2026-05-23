@@ -1,0 +1,35 @@
+City Lights — Software License
+City of Ten Thousand Buddhas (CTTB)
+
+Copyright (c) 2026 John Chandara. All rights reserved.
+
+1. DEFINITIONS. "Theme" means the compiled CSS files distributed as the
+   City Lights theme. The Theme does not include the SCSS/SASS source code
+   used to generate it, which remains the exclusive property of the
+   copyright holder. "Licensee" means the City of Ten Thousand Buddhas, the
+   sole entity licensed under these terms.
+
+2. GRANT. The copyright holder grants Licensee a non-exclusive,
+   non-transferable license to use and locally modify the Theme, free of
+   charge, subject to the following conditions. Any permitted distribution
+   must: (a) be free of charge and non-commercial in purpose; (b) include
+   this LICENSE file and the copyright notice above; (c) credit the original
+   author; and (d) not include any SCSS/SASS source code, which is outside
+   the scope of this grant.
+
+3. RESTRICTIONS. Publication or redistribution of the Theme beyond
+   non-commercial distribution — including sale, sublicensing, or
+   incorporation into a commercial product — requires the copyright holder's
+   prior written permission. Nothing herein grants any right to the
+   SCSS/SASS source code, to reverse-engineer compiled CSS into equivalent
+   source, or to transfer this license to any third party.
+
+4. DISCLAIMER OF WARRANTIES. THE THEME IS PROVIDED "AS IS" WITHOUT WARRANTY
+   OF ANY KIND. THE COPYRIGHT HOLDER DISCLAIMS ALL EXPRESS AND IMPLIED
+   WARRANTIES, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+   PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+5. LIMITATION OF LIABILITY. THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
+   USE OR INABILITY TO USE THE THEME, EVEN IF ADVISED OF THE POSSIBILITY OF
+   SUCH DAMAGES.

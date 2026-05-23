@@ -108,13 +108,28 @@
     - mediawiki
     - assets
 
-- name: deploy dark theme stylesheet
+- name: deploy City Lights skin
   copy:
-    src: resources/assets/cttb-dark.css
-    dest: "{{ mediawiki_install_dir }}/resources/assets/cttb-dark.css"
+    src: skins/CityLights/
+    dest: "{{ mediawiki_install_dir }}/skins/CityLights/"
     owner: www-data
     group: www-data
     mode: "0644"
+    directory_mode: "0755"
+  tags:
+    - mediawiki
+    - skins
+
+- name: deploy p31m background patterns
+  copy:
+    src: "resources/assets/{{ item }}"
+    dest: "{{ mediawiki_install_dir }}/resources/assets/{{ item }}"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  loop:
+    - p31m-pattern.svg
+    - p31m-pattern-dark.svg
   tags:
     - mediawiki
     - assets

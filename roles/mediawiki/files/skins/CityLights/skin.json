@@ -1,0 +1,126 @@
+{
+	"name": "CityLights",
+	"namemsg": "skinname-citylights",
+	"descriptionmsg": "citylights-desc",
+	"author": [
+		"John Chandara"
+	],
+	"url": "http://wiki.cttb/wiki/IT:Sudhanix",
+	"version": "1.0.0",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.43",
+		"skins": {
+			"Vector": "*"
+		}
+	},
+	"manifest_version": 2,
+	"comment": "City Lights is a derivative skin: it runs Vector 2022's engine (class SkinVector22, Vector's templates) unchanged and only layers the City Lights theme. The theme CSS is loaded as a raw <link> by the BeforePageDisplay hook, NOT as a ResourceLoader style module — a raw stylesheet is emitted after the RL module bundle, so its rules win the cascade over Vector's defaults. A sibling RL style module would not: RL orders the style bundle by module name, landing skins.citylights.* before skins.vector.styles. The hook is scoped by skin name, which is why the args 'name' is 'citylights'.",
+	"AutoloadNamespaces": {
+		"MediaWiki\\Skins\\CityLights\\": "includes/"
+	},
+	"ValidSkinNames": {
+		"citylights": {
+			"class": "MediaWiki\\Skins\\Vector\\SkinVector22",
+			"services": [
+				"LanguageConverterFactory",
+				"Vector.FeatureManagerFactory"
+			],
+			"args": [
+				{
+					"name": "citylights",
+					"supportsMwHeading": true,
+					"wrapSiteNotice": true,
+					"templateDirectory": "../Vector/includes/templates",
+					"template": "skin",
+					"tempUserBanner": true,
+					"responsive": true,
+					"toc": false,
+					"link": {
+						"text-wrapper": {
+							"tag": "span"
+						}
+					},
+					"bodyClasses": [
+						"skin--responsive",
+						"skin-vector",
+						"skin-vector-search-vue"
+					],
+					"clientPrefEnabled": true,
+					"menus": [
+						"user-interface-preferences",
+						"user-page",
+						"user-menu",
+						"notifications",
+						"views",
+						"actions",
+						"variants",
+						"associated-pages"
+					],
+					"scripts": [
+						"skins.vector.js",
+						"skins.citylights.scripts"
+					],
+					"styles": [
+						"skins.vector.search.codex.styles",
+						"skins.vector.styles",
+						"skins.vector.icons"
+					],
+					"messages": [
+						"tooltip-p-logo",
+						"vector-opt-out-tooltip",
+						"vector-opt-out",
+						"vector-action-toggle-sidebar",
+						"vector-main-menu-tooltip",
+						"vector-jumptosearch",
+						"vector-jumptocontent",
+						"vector-toc-beginning",
+						"vector-toc-label",
+						"vector-toc-menu-tooltip",
+						"vector-toc-collapsible-button-label",
+						"vector-pin-element-label",
+						"vector-unpin-element-label",
+						"vector-site-nav-label",
+						"search",
+						"searchbutton",
+						"searcharticle",
+						"searchsuggest-search",
+						"sitesubtitle",
+						"sitetitle",
+						"tagline",
+						"personaltools",
+						"namespaces",
+						"views",
+						"vector-page-tools-nav-label",
+						"empty-language-selector-body",
+						"vector-appearance-label"
+					]
+				}
+			]
+		}
+	},
+	"MessagesDirs": {
+		"CityLights": [
+			"i18n"
+		]
+	},
+	"Hooks": {
+		"BeforePageDisplay": "CityLightsHooks"
+	},
+	"HookHandlers": {
+		"CityLightsHooks": {
+			"class": "MediaWiki\\Skins\\CityLights\\Hooks"
+		}
+	},
+	"ResourceModules": {
+		"skins.citylights.scripts": {
+			"scripts": [
+				"resources/citylights.js"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "CityLights"
+	}
+}

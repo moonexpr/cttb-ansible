@@ -1,0 +1,1169 @@
+/* City Lights theme for CTTB Wiki
+ *
+ *   Dark mode:  Ceremonial palette: warm-grey on near-black, muted brass.
+ *   Light mode: Sacred palette: paper-tan base, warm-brown ink.
+ *   Pattern:    p31m-pattern.svg, repeating, fixed-attachment, both modes.
+ *
+ * Palette tokens are defined as `--swatch-*` CSS variables. The :root block
+ * sets Sacred (light) defaults; the dark-mode block and the explicit
+ * `clientpref-night` selector swap them to Internal. Surface rules below
+ * reference the tokens — no hardcoded mode-specific hex literals.
+ *
+*/
+
+/*
+ * Software License for City of Ten Thousand Buddhas (CTTB)
+ * Copyright (c) 2026 John Chandara. All rights reserved.
+ *
+ * 1. DEFINITIONS. "Theme" means the compiled CSS files distributed as the City 
+ * Lights theme. The Theme does not include the SCSS/SASS source code used to generate
+ * it, which remains the exclusive property of the copyright holder. "Licensee" me
+ * ans the City of Ten Thousand Buddhas, the sole entity licensed under these terms.
+ *
+ * 2. GRANT. The copyright holder grants Licensee a non-exclusive, non-transferable
+ * license to use and locally modify the Theme, free of charge, subject to the
+ * following conditions. Any permitted distribution must: (a) be free of charge and 
+ * non-commercial in purpose; (b) include this LICENSE file and the copyright notice
+ * above; (c) credit the original author; and (d) not include any SCSS/SASS source
+ * code, which is outside the scope of this grant.
+ * 
+ * 3. RESTRICTIONS. Publication or redistribution of the Theme beyond non-commerc
+ * ial distribution—including sale, sublicensing, or incorporation into a commercial
+ * product—requires the copyright holder's prior written permission. Nothing here
+ * in grants any right to the SCSS/SASS source code, to reverse-engineer compiled
+ * CSS into equivalent source, or to transfer this license to any third party.
+ *
+ * 4. DISCLAIMER OF WARRANTIES. THE THEME IS PROVIDED "AS IS" WITHOUT WARRANTY OF
+ * ANY KIND. THE COPYRIGHT HOLDER DISCLAIMS ALL EXPRESS AND IMPLIED WARRANTIES, INC
+ * LUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-
+ * INFRINGEMENT.
+ *
+ * 5. LIMITATION OF LIABILITY. THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR 
+ * INABILITY TO USE THE THEME, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+*/
+
+
+
+/* ── Sacred (light) palette — :root defaults ─────────────────────── */
+:root {
+    --swatch-bg:              #e8dcc0;
+    --swatch-bg-highvis:      #f4f1e8;
+    --swatch-body-bg:         #ffeec6;
+    --swatch-fg:              #2a1f18;
+    --swatch-primary:         #5c2d1a;
+    --swatch-primary-hover:   #7a2e15;
+    --swatch-secondary:       #9e6b14;
+    --swatch-accent:          #5c2d1a;
+    --swatch-muted:           #c8a878;
+    --swatch-muted-text:      #a36c3d;
+    --swatch-surface-0:       rgba(232, 220, 192, 0.82);
+    --swatch-surface-1:       rgba(200, 168, 120, 0.22);
+    --swatch-surface-2:       rgba(200, 168, 120, 0.38);
+    --swatch-border:          rgba(122,  46,  21, 0.30);
+    --swatch-link:            #5c2d1a;
+    --swatch-link-visited:    #7a2e15;
+    --swatch-link-new:        #9e6b14;
+    --swatch-pattern-url:     url("p31m-pattern.svg");
+    --swatch-panel-body:      #dfddbf;
+    --swatch-panel-toolbar:   #dcc8a5;
+}
+
+/* ── Internal (dark) palette ─────────────────────────────────────────
+ * Applied when:
+ *   (a) the user's OS prefers dark AND no explicit clientpref-day
+ *       override is set — `:not()` keeps the @media block from
+ *       stomping an explicit "Day" toggle on a dark-OS machine; or
+ *   (b) the user has explicitly chosen Night via the skin toggle.
+ */
+@media (prefers-color-scheme: dark) {
+    :root:not(.skin-theme-clientpref-day) {
+        --swatch-bg:            #1a1418;
+        --swatch-bg-highvis:    #100c0e;
+        --swatch-body-bg:       #0a0a0a;
+        --swatch-fg:            #d4cfc4;
+        --swatch-primary:       #b8a88a;
+        --swatch-primary-hover: #cdb99a;
+        --swatch-secondary:     #8b5e1e;
+        --swatch-accent:        #8b5e1e;
+        --swatch-muted:         #3a3731;
+        --swatch-muted-text:    #8a8477;
+        --swatch-surface-0:     #131210;
+        --swatch-surface-1:     #12110e;
+        --swatch-surface-2:     #1a1714;
+        --swatch-border:        rgba(184, 168, 138, 0.15);
+        --swatch-link:          #b8a88a;
+        --swatch-link-visited:  #8b5e1e;
+        --swatch-link-new:      #a36c3d;
+        --swatch-pattern-url:   url("p31m-pattern-dark.svg");
+        --swatch-panel-body:    #1a1714;
+        --swatch-panel-toolbar: #2a1f18;
+    }
+}
+
+html.skin-theme-clientpref-night {
+    --swatch-bg:            #1a1418;
+    --swatch-bg-highvis:    #100c0e;
+    --swatch-body-bg:       #0a0a0a;
+    --swatch-fg:            #d4cfc4;
+    --swatch-primary:       #b8a88a;
+    --swatch-primary-hover: #cdb99a;
+    --swatch-secondary:     #8b5e1e;
+    --swatch-accent:        #8b5e1e;
+    --swatch-muted:         #3a3731;
+    --swatch-muted-text:    #8a8477;
+    --swatch-surface-0:     #131210;
+    --swatch-surface-1:     #12110e;
+    --swatch-surface-2:     #1a1714;
+    --swatch-border:        rgba(184, 168, 138, 0.15);
+    --swatch-link:          #b8a88a;
+    --swatch-link-visited:  #8b5e1e;
+    --swatch-link-new:      #a36c3d;
+    --swatch-pattern-url:   url("p31m-pattern-dark.svg");
+    --swatch-panel-body:    #1a1714;
+    --swatch-panel-toolbar: #2a1f18;
+}
+
+/* Defensive: an explicit "Day" toggle MUST land on Sacred even when
+ * the user's OS is in dark mode and the @media rule above is matched.
+ * Restating the Sacred tokens here keeps the cascade resolution stable
+ * regardless of which rule was last to set them.
+ */
+html.skin-theme-clientpref-day {
+    --swatch-bg:            #e8dcc0;
+    --swatch-bg-highvis:    #f4f1e8;
+    --swatch-body-bg:       #ffeec6;
+    --swatch-fg:            #2a1f18;
+    --swatch-primary:       #5c2d1a;
+    --swatch-primary-hover: #7a2e15;
+    --swatch-secondary:     #9e6b14;
+    --swatch-accent:        #5c2d1a;
+    --swatch-muted:         #c8a878;
+    --swatch-muted-text:    #a36c3d;
+    --swatch-surface-0:     rgba(232, 220, 192, 0.82);
+    --swatch-surface-1:     rgba(200, 168, 120, 0.22);
+    --swatch-surface-2:     rgba(200, 168, 120, 0.38);
+    --swatch-border:        rgba(122,  46,  21, 0.30);
+    --swatch-link:          #5c2d1a;
+    --swatch-link-visited:  #7a2e15;
+    --swatch-link-new:      #9e6b14;
+    --swatch-pattern-url:   url("p31m-pattern.svg");
+    --swatch-panel-body:    #dfddbf;
+    --swatch-panel-toolbar: #dcc8a5;
+}
+
+/* ── MediaWiki + Citizen/Vector skin variable overrides ──────────── */
+:root,
+html.skin-theme-clientpref-os,
+html.skin-theme-clientpref-night,
+html.skin-theme-clientpref-day {
+    --background-color-base:               var(--swatch-bg);
+    --color-base:                          var(--swatch-fg);
+    --color-base--subtle:                  var(--swatch-primary);
+    --border-color-base:                   var(--swatch-muted);
+    --color-surface-0:                     var(--swatch-surface-0);
+    --color-surface-1:                     var(--swatch-surface-1);
+    --color-surface-2:                     var(--swatch-surface-2);
+    --color-surface-3:                     var(--swatch-muted);
+    --background-color-interactive:        var(--swatch-surface-2);
+    --background-color-interactive-subtle: var(--swatch-surface-1);
+    --background-color-neutral-subtle:     var(--swatch-surface-0);
+    --color-link:                          var(--swatch-link);
+    --color-link--visited:                 var(--swatch-link-visited);
+    --color-link-new:                      var(--swatch-link-new);
+    --color-link-new--visited:             var(--swatch-link-new);
+    --color-progressive:                   var(--swatch-primary);
+    --color-progressive--hover:            var(--swatch-primary-hover);
+    --color-progressive--active:           var(--swatch-secondary);
+    --color-destructive:                   var(--swatch-secondary);
+
+    /* Codex tokens whose hardcoded fallbacks (`var(--token, #hex)`) bleed
+     * through into Vector 2022 / cdx components when the token is left
+     * undefined. Mapping the token here neutralises every literal fallback
+     * (#36c, #4b77d6, #233566, #fc493b, #9f3526, #d73333, #54595d, #72777d,
+     * #101418, #404244, #f1f4fd, #ffe9e5, #eaecf0, #a2a9b1, #177860) in
+     * one pass — cheaper than per-selector overrides. The palette has no
+     * native green/red, so success/error/destructive collapse to in-token
+     * accent / link-new / secondary. */
+    --color-base--hover:                       var(--swatch-primary-hover);
+    --color-emphasized:                        var(--swatch-fg);
+    --color-subtle:                            var(--swatch-muted-text);
+    --color-placeholder:                       var(--swatch-muted-text);
+    --color-disabled:                          var(--swatch-muted);
+    --color-success:                           var(--swatch-accent);
+    --color-error:                             var(--swatch-link-new);
+    --color-error--hover:                      var(--swatch-secondary);
+    --color-error--active:                     var(--swatch-secondary);
+    --color-warning:                           var(--swatch-secondary);
+    --color-notice:                            var(--swatch-muted-text);
+    --color-destructive--hover:                var(--swatch-link-new);
+    --color-destructive--active:               var(--swatch-secondary);
+    --background-color-progressive:            var(--swatch-primary);
+    --background-color-progressive--hover:     var(--swatch-primary-hover);
+    --background-color-progressive--active:    var(--swatch-secondary);
+    --background-color-progressive-subtle:     var(--swatch-surface-1);
+    --background-color-destructive:            var(--swatch-link-new);
+    --background-color-destructive--hover:     var(--swatch-secondary);
+    --background-color-destructive--active:    var(--swatch-secondary);
+    --background-color-destructive-subtle:     var(--swatch-surface-1);
+    --background-color-error-subtle:           var(--swatch-surface-1);
+    --background-color-warning-subtle:         var(--swatch-surface-1);
+    --background-color-success-subtle:         var(--swatch-surface-1);
+    --background-color-notice-subtle:          var(--swatch-surface-1);
+    --background-color-disabled-subtle:        var(--swatch-surface-1);
+    --background-color-disabled:               var(--swatch-muted);
+    --background-color-progressive-subtle--hover:  var(--swatch-surface-2);
+    --background-color-progressive-subtle--active: var(--swatch-surface-2);
+    --background-color-destructive-subtle--hover:  var(--swatch-surface-2);
+    --background-color-destructive-subtle--active: var(--swatch-surface-2);
+    --border-color-progressive:                var(--swatch-primary);
+    --border-color-progressive--hover:         var(--swatch-primary-hover);
+    --border-color-progressive--focus:         var(--swatch-accent);
+    --border-color-destructive:                var(--swatch-link-new);
+    --border-color-destructive--hover:         var(--swatch-secondary);
+    --border-color-destructive--focus:         var(--swatch-accent);
+    --border-color-error:                      var(--swatch-link-new);
+    --border-color-error--hover:               var(--swatch-secondary);
+    --border-color-warning:                    var(--swatch-secondary);
+    --border-color-success:                    var(--swatch-accent);
+    --border-color-notice:                     var(--swatch-muted);
+    --border-color-subtle:                     var(--swatch-border);
+    --border-color-muted:                      var(--swatch-border);
+    --border-color-interactive:                var(--swatch-muted);
+    --border-color-interactive--hover:         var(--swatch-fg);
+    --border-color-disabled:                   var(--swatch-muted);
+    --outline-color-progressive--focus:        var(--swatch-accent);
+}
+
+/* ── Structural (no color) ───────────────────────────────────────── */
+.skin-citylights .vector-column-start,
+.skin-citylights .vector-column-end { margin-top: 0 !important; }
+.skin-citylights .mw-page-container-inner { min-height: 100vh; }
+.skin-citylights .mw-content-container { flex: 1; }
+
+/* ── p31m pagoda tiling — both modes ─────────────────────────────── */
+body.skin-citylights {
+    background-color: var(--swatch-body-bg);
+    background-image: var(--swatch-pattern-url);
+    background-repeat: repeat;
+    background-attachment: fixed;
+    background-size: 125px 216px;
+}
+body.skin-citylights::before {
+    /* edge-fade layer — solid --swatch-bg at the left and right
+     * margins, transparent across the center third, so the p31m
+     * pattern reads in the middle band and dissolves at the edges */
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(90deg, var(--swatch-bg) 0%, transparent 5%, transparent 95%, var(--swatch-bg) 100%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* ── Page chrome ─────────────────────────────────────────────────── */
+.skin-citylights .mw-page-container {
+    background-color: transparent;
+    color: var(--swatch-fg);
+}
+/* ── Content panel — toolbar on top, title + body inside ─────────
+ * The toolbar (Read / Edit / History tabs) is the rounded top of
+ * the panel — full border with `border-radius: 6px 6px 0 0`. The
+ * body extends below sharing the toolbar's bottom edge: same
+ * border-color isn't required since the body has its own bg that
+ * reads as a continuation of the panel.
+ *
+ * The whole page-title header (`.mw-body-header` / titlebar) is
+ * relocated into `#bodyContent` by Common.js — it otherwise floats
+ * above the toolbar on the page bg. Its old `::after` tint strip is
+ * dropped from the layout (see the heading-band rule below).
+ *
+ * `.vector-column-end` (the right-side Tools sidebar, also a child
+ * of `main#content`) stays unstyled here so it can sit beside the
+ * panel without being clipped — no `overflow: hidden` anywhere.
+ *
+ * Hex values come through `--swatch-panel-body` and
+ * `--swatch-panel-toolbar`, which adapt to the active palette.
+ */
+.skin-citylights .vector-page-titlebar::after {
+    display: none;
+}
+
+.skin-citylights main#content > .vector-page-toolbar {
+    background-color: var(--swatch-panel-toolbar);
+    border: 1px solid var(--swatch-border);
+    border-radius: 6px 6px 0 0;
+    /* Generous padding for breathing room, with a 32px floor so the
+     * row never shrinks below the Codex `.cdx-button { min-height:32px }`
+     * children. Natural height ends up ~48px (32 + 2×0.5rem). */
+    min-height: 32px;
+    padding: 0.5rem 1.25rem;
+}
+
+.skin-citylights main#content > .vector-body,
+.skin-citylights main#content > #bodyContent {
+    background-color: var(--swatch-bg-highvis);
+    border: 1px solid var(--swatch-border);
+    border-radius: 0 0 6px 6px;
+    padding: 1.25rem;
+}
+
+/* Toolbar tab + dropdown links — drop Vector's `padding:12px 0 0 0`
+ * and `margin-bottom:8px` so the labels don't inflate the toolbar
+ * vertically. `display` is left alone — the .vector-dropdown-label
+ * carries cdx-button (inline-flex) and forcing it to `inline` collapses
+ * the flex alignment. Label text colour lives on the tighter
+ * `.vector-dropdown-label-text` rule further down. */
+@media screen {
+    .skin-citylights .vector-menu-tabs .mw-list-item.vector-tab-noicon > a,
+    .skin-citylights .vector-page-toolbar-container .vector-dropdown.vector-tab-noicon > a,
+    .skin-citylights .vector-menu-tabs .mw-list-item .vector-dropdown-label,
+    .skin-citylights .vector-page-toolbar-container .vector-dropdown .vector-dropdown-label {
+        padding: 0;
+        margin-bottom: 0;
+    }
+}
+
+/* Toolbar tab `<li>` items — Vector ships them as bare inline list
+ * items, so each tab's box height is the text line-box only. The
+ * page-tools "Tools" trigger next to them is a `<label class="cdx-button">`
+ * sized to Codex's 32px min-height, so when the toolbar centres its
+ * flex children the `<li>`'s small box and the cdx-button's 32px box
+ * have coincident centre lines on paper — but their internal text
+ * baselines land at different y-positions (Read/Edit/History at the
+ * li's line-box baseline, Tools at the cdx-button's `align-items:
+ * center` middle). Forcing the li into the same 32px inline-flex
+ * shape collapses both boxes onto one shared baseline. */
+.skin-citylights .vector-page-toolbar .vector-menu-tabs .mw-list-item {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+}
+
+/* ── Toolbar layout — flex the left/right navigation groups ────
+ * Vector's default toolbar layout doesn't align the tab links and
+ * the action buttons cleanly when the panel is bordered. Use flex
+ * containers on both sides + justify-content: space-between on
+ * the toolbar so tabs cluster left, actions cluster right.
+ */
+.skin-citylights #left-navigation {
+    margin-left: -8px;
+    display: flex;
+    align-items: center;
+}
+
+.skin-citylights #right-navigation {
+    margin-right: unset;
+    display: flex;
+    align-items: baseline;
+}
+
+.skin-citylights #right-navigation div:not(.vector-pinnable-header) {
+    display: initial;
+}
+
+.skin-citylights .vector-page-toolbar-container {
+    align-content: center;
+    justify-content: space-between;
+    margin: 0;
+}
+
+@media screen {
+    .skin-citylights .vector-page-toolbar-container {
+        box-shadow: none;
+    }
+}
+
+/* Page-tools dropdown label inner span — Vector wraps the visible
+ * label text in a `<span>` set to `display:none` for icon-only mode;
+ * the page-tools dropdown is *not* icon-only on CityLights, so the
+ * label text needs to be inlined back. The `<label>` wrapper carries
+ * the `cdx-button` class, so its colour resolves to `--color-base`
+ * (which we map to `--swatch-fg`); restate `--swatch-primary` on the
+ * inner span so "Tools" reads in the same warm-earth tone as the
+ * Read / Edit / History tabs. Id-bound so it can't leak. */
+.skin-citylights #vector-page-tools-dropdown-label > span:nth-child(1) {
+    display: inline;
+    color: var(--swatch-primary);
+}
+
+/* Dropdown label text — tint primary so dropdown trigger labels
+ * (Tools, Languages, the toolbar tabs) read in the swatch warm-earth
+ * register rather than Vector's default body fg. Narrower than
+ * styling the whole `.vector-dropdown-label` since that selector also
+ * covers icon-only triggers where the label has no visible text. */
+.skin-citylights .vector-dropdown-label-text {
+    color: var(--swatch-primary);
+}
+
+/* Pinnable-header label — Vector emits the label as
+ * `<h3 class="vector-menu-heading vector-pinnable-header-label">`, so
+ * the stacked-menu spacing further up (`padding-bottom:.25rem;
+ * margin-bottom:.25rem` on `.vector-menu-heading`) lands on it too
+ * and shifts the visible text up by ~4px inside the `align-items:
+ * center` strip. Zero the block-direction box and force `align-self:
+ * center` so the label centres regardless of parent stretch quirks.
+ * Vector's horizontal right-margin (`0 0.5em 0 0`) is preserved so
+ * the label still sits off the toggle button. */
+.skin-citylights .vector-pinnable-header-label {
+    align-self: center;
+    padding-block: 0;
+    margin-block: 0;
+}
+
+/* Icon-only action buttons (star, watch, etc.) — drop the Vector
+ * default block margin and align inline with the tab text. */
+.skin-citylights .vector-menu-tabs .mw-list-item .cdx-button--icon-only {
+    margin: unset;
+    margin-top: 8px;
+}
+.skin-citylights .vector-menu-content .cdx-button--icon-only {
+    display: inline;
+}
+.skin-citylights .vector-menu-content .cdx-button--icon-only span {
+    height: 1rem !important;
+    width: 1rem !important;
+}
+.skin-citylights .vector-menu-content #right-navigation label.cdx-button {
+    padding: 0;
+    display: flex;
+}
+
+/* Dropdown caret (▾) — tint muted-text (Vector ships it
+ * `background-color:#202122` via the cdx icon layer) so it reads as an
+ * affordance hint rather than competing with the label text. Tinting
+ * to swatch-primary made it shout louder than the label. `translateY`
+ * pulls it up so it sits inline with the label text rather than below
+ * baseline; the transform doesn't trap the popout because the parent
+ * `.vector-dropdown` keeps `position:relative` and the popout anchors
+ * to that, not to the ::after pseudo. */
+.skin-citylights .vector-dropdown .vector-dropdown-label:not(.cdx-button--icon-only)::after {
+    margin: 0;
+    background-color: var(--swatch-muted-text);
+    transform: translateY(-2px);
+}
+
+/* Dropdown menu panel — rounded, bordered card matching the page
+ * panel styling. */
+.skin-citylights .vector-dropdown .vector-dropdown-content {
+    border-radius: 10px;
+    border: 1px solid var(--border-color-base);
+    background: var(--swatch-bg-highvis);
+    padding: 1rem;
+    box-shadow: 0px 6px 12px var(--swatch-bg);
+}
+
+/* TOC dropdown — keep the (wide) Contents panel inside the content
+ * column. Vector ships `.vector-page-titlebar-toc .vector-dropdown-content
+ * { max-width: none }`, so on narrow viewports the panel spills past the
+ * page edge into the sidebar gutters. The TOC trigger now sits at the
+ * right edge of the heading band, so:
+ *   • right-align the panel (`inset-inline: auto -1px`) — it grows
+ *     leftward into the content column, not off the right edge;
+ *   • clamp the width with `min()` — never wider than the viewport
+ *     minus a 2rem gutter.
+ * ID specificity (1,1,0) beats Vector's class-only rules. The inner
+ * `.vector-toc` is freed to shrink so entries wrap instead of clip. */
+.skin-citylights #vector-page-titlebar-toc .vector-dropdown-content {
+    inset-inline: auto -1px;
+    max-width: min(24rem, calc(100vw - 2rem));
+}
+.skin-citylights #vector-page-titlebar-toc .vector-toc {
+    min-width: 0;
+    max-width: 100%;
+    background-color: transparent;
+}
+
+/* ── Body grid (≥1120px) — reclaim Tools-panel gutter (gh-59) ─────
+ * `.mw-body` becomes a two-column grid at wide widths: the article
+ * column on the left (header, toolbar, body-content stacked) and the
+ * Tools sidebar (`.vector-column-end`) on the right spanning all
+ * rows. When Vector hides the Tools panel via the pinnable-header
+ * toggle the auto-track has no contents to size against and the
+ * `1fr` track absorbs the freed width — no blank right gutter.
+ *
+ * `.vector-column-end` is explicitly placed at column 2 / all rows;
+ * the other direct children (`<header>.mw-body-header`,
+ * `.vector-page-toolbar`, `.mw-body-content`) flow into column 1
+ * sequentially via `grid-auto-flow: row` (the default).
+ */
+@media screen and (min-width: 1120px) {
+    .skin-citylights .mw-body {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        column-gap: 1rem;
+    }
+    .skin-citylights .mw-body > .vector-column-end {
+        grid-column: 2;
+        grid-row: 1 / -1;
+    }
+}
+
+/* Page heading band — Common.js moves the whole <header
+ * class="mw-body-header"> into #bodyContent so the title sits inside
+ * the panel. Laid out as an explicit flex row: Vector's own
+ * `.vector-page-titlebar` flex is scoped to the pre-relocation
+ * position, so it has to be re-stated here. DOM order is
+ * toc · h1 · indicators; `order` reshuffles to title + indicators on
+ * the left, and `margin-left:auto` pushes the TOC button to the right
+ * edge. The gold rule spans the full panel width; the margin sets the
+ * band off from the body text. */
+.skin-citylights #bodyContent > .mw-body-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding-bottom: 0.4em;
+    border-bottom: 1px solid var(--swatch-border);
+}
+.skin-citylights #bodyContent > .mw-body-header > .firstHeading { order: 1; }
+.skin-citylights #bodyContent > .mw-body-header > .mw-indicators { order: 2; }
+.skin-citylights #bodyContent > .mw-body-header > .vector-toc-landmark {
+    order: 3;
+    margin-left: auto;
+}
+.skin-citylights .mw-body .firstHeading {
+    margin: 0;
+}
+
+/* Sitenotice — reserve a consistent strip for the notice area. */
+.skin-citylights .vector-sitenotice-container {
+    min-height: 2rem;
+}
+
+/* Footer — give the wiki-footer container vertical room. */
+.skin-citylights .mw-footer-container {
+    padding-top: 82px;
+    padding-bottom: 50px;
+}
+
+/* Sidebar pinnable panels (Tools, TOC, Main menu) — the visible card
+ * chrome (border, rounded corners, bg) lives on the OUTER wrapper
+ * (`.vector-column-start > div` and `.vector-sticky-pinned-container
+ * nav`, see the cards rule further down). `.vector-pinned-container`
+ * is now an invisible 1rem padding layer so the pinnable-header can
+ * use `-1rem` negative margins to sit flush against the card edge. */
+.skin-citylights .vector-pinned-container {
+    padding: 1rem;
+}
+@media screen {
+    .skin-citylights .vector-pinned-container {
+        background-color: transparent;
+    }
+    .skin-citylights .vector-sticky-pinned-container::after {
+        background: none;
+    }
+}
+
+/* Sidebar cards — every direct `<div>` child of the left column and
+ * every `<nav>` inside the sticky pinned container becomes a rounded
+ * bordered card with the `--swatch-bg` page tint. The TOC nav
+ * (`#mw-panel-toc`) is excluded so the table-of-contents stays plain
+ * — it lives in its own column and shouldn't compete with the cards
+ * around it. `margin-bottom: 2rem` separates stacked cards vertically. */
+.skin-citylights .vector-column-start > div,
+.skin-citylights .vector-sticky-pinned-container nav:not(#mw-panel-toc) {
+    border: 1px solid var(--swatch-border);
+    border-radius: 10px;
+    background: var(--swatch-bg);
+    margin-bottom: 2rem;
+}
+.skin-citylights .vector-pinnable-header {
+    background: var(--swatch-panel-toolbar);
+    display: flex;
+    align-items: center;
+    line-height: 1.6;
+    /* `-1rem` on every side pushes the strip past the pinned-container's
+     * 1rem padding so the header sits flush against the outer card
+     * border. `1rem` bottom margin then separates the strip from the
+     * menu content below — without it, the menu items press right up
+     * against the strip's bottom border. */
+    margin: -1rem -1rem 1rem -1rem;
+    /* Same padding + 32px floor as the page toolbar so every chrome
+     * strip in the skin (page toolbar, Tools panel header, TOC header,
+     * main-menu header) shares the same row geometry. 10px top corners
+     * to match the outer sidebar card's 10px border-radius. */
+    min-height: 32px;
+    padding: 0.5rem 1.25rem;
+    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid var(--swatch-border);
+}
+
+/* Page-tools sidebar header when unpinned — wider negative margin. */
+.skin-citylights .vector-pinnable-header.vector-page-tools-pinnable-header.vector-pinnable-header-unpinned {
+    margin: -1.1rem -1.1rem 0 -1.1rem;
+}
+
+/* Pinnable-panel menu headings — zero Vector's default `padding:6px 0`
+ * (which inflated the heading box vertically and forced asymmetric
+ * top-only spacing inside the centred pinnable-header strip). Keep
+ * a small `margin-bottom` so menu items don't press against the
+ * heading text. The stacked-menu rule below re-adds top spacing to
+ * every heading after the first via higher specificity. */
+.skin-citylights .vector-pinnable-element .vector-menu-heading {
+    padding: 0;
+    margin-bottom: .25rem;
+}
+
+/* Stacked menus in a pinnable panel (page-tools Actions/General,
+ * the main-menu portlets) — space each menu heading off the one
+ * above. General sibling combinator, not :first-of-type: the
+ * pinnable-header is also a <div>, so it — not the first
+ * .vector-menu — would be the :first-of-type div. */
+.skin-citylights .vector-pinnable-element .vector-menu ~ .vector-menu .vector-menu-heading {
+    margin-top: 12px;
+    border-bottom: 1px solid var(--swatch-border);
+    color: var(--swatch-fg);
+}
+
+/* Left-sidebar + TOC pinnable layout — reset Vector's indents so
+ * the menu/TOC content aligns flush inside the rounded panel
+ * borders that the City Lights theme adds. */
+.skin-citylights .vector-column-start .vector-main-menu-container {
+    margin-left: unset;
+}
+.skin-citylights .vector-toc .vector-pinnable-header {
+    margin-left: -1rem;
+}
+/* …but only for flat TOCs: :has() keeps the reset off hierarchical
+ * TOCs, where padding-left builds the per-level indent and reserves
+ * the gutter the .vector-toc-toggle button sits in. A TOC with no
+ * toggle anywhere has no gutter to justify — strip its dead padding. */
+.skin-citylights .vector-toc:not(:has(.vector-toc-toggle)) .vector-toc-list-item {
+    padding-left: unset;
+}
+.skin-citylights .vector-pinnable-header-toggle-button,
+.skin-citylights .cdx-button {
+    margin-left: auto;
+}
+
+/* Sidebar nav panels (used by IT Infrastructure / Sudhanix 26 etc.):
+ * give the body of the nav a soft page-tinted bg so the panel reads
+ * as a card on the textured background. */
+.skin-citylights .swatch-sidebar-nav-body {
+    background: var(--swatch-bg);
+}
+/* Header bar — Vector backgrounds `.vector-header-container .mw-header`
+ * (and the sticky header) with `var(--background-color-base,#fff)` at
+ * two-class specificity, so a bare `.vector-header` rule loses on
+ * specificity and the bar falls back to Codex's #fff. Match Vector's
+ * descendant selector to win the cascade, and cover the sticky header
+ * so the whole nav bar stays theme-aware in both palettes. */
+.skin-citylights .vector-header-container .mw-header,
+.skin-citylights .vector-header-container .vector-sticky-header {
+    background-color: transparent;
+}
+.skin-citylights .vector-header {
+    border-bottom-color: var(--swatch-muted);
+}
+@media screen {
+    .skin-citylights .vector-header-container {
+        background: var(--swatch-bg-highvis);
+        border-bottom: 1px solid var(--swatch-border);
+    }
+}
+.skin-citylights .vector-column-start {
+    background-color: transparent;
+}
+.skin-citylights .vector-search-box-input {
+    background-color: var(--swatch-surface-2);
+    color: var(--swatch-fg);
+    border-color: var(--swatch-muted);
+}
+
+/* ── Links ───────────────────────────────────────────────────────── */
+.skin-citylights a { color: var(--swatch-link); }
+.skin-citylights a:visited { color: var(--swatch-link-visited); }
+.skin-citylights .new { color: var(--swatch-link-new); }
+.skin-citylights .vector-menu-tabs .selected a,
+.skin-citylights .mw-list-item.selected a { color: var(--swatch-fg) !important; }
+
+/* Body-content link emphasis — both palettes share fg and link colors
+ * in the same warm-earth register, so prose-embedded links don't stand
+ * out by color alone. Underline at thin weight + small offset gives
+ * the necessary distinction without dominating the line. Scoped to
+ * `.mw-parser-output` so sidebar nav, TOC, footer, and skin chrome
+ * (where links *are* the content) stay un-underlined.
+ */
+.skin-citylights .mw-parser-output a {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+}
+.skin-citylights .mw-parser-output a:hover {
+    text-decoration-thickness: 2px;
+}
+/* External links keep MediaWiki's arrow icon; underline reads naturally
+ * with it. Internal section-edit `[edit]` brackets and file thumbnails
+ * are not text links — opt them out. */
+.skin-citylights .mw-parser-output .mw-editsection a,
+.skin-citylights .mw-parser-output a.image,
+.skin-citylights .mw-parser-output a.mw-file-description {
+    text-decoration: none;
+}
+
+/* ── Headings ────────────────────────────────────────────────────── */
+.skin-citylights .mw-body h1,
+.skin-citylights .mw-body h2,
+.skin-citylights .mw-body h3,
+.skin-citylights .mw-body h4 {
+    color: var(--swatch-fg);
+    border-bottom-color: var(--swatch-border);
+}
+
+/* ── Code blocks ─────────────────────────────────────────────────── */
+.skin-citylights code,
+.skin-citylights pre {
+    background-color: var(--swatch-surface-1);
+    color: var(--swatch-fg);
+    border-color: var(--swatch-border);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.skin-citylights .vector-pinnable-header-toggle-button,
+.skin-citylights .cdx-button {
+    color: var(--swatch-fg);
+    background: var(--swatch-bg);
+    border-radius: 6px;
+}
+.skin-citylights .cdx-button:hover {
+    background-color: var(--swatch-surface-1);
+    border-color: var(--swatch-accent);
+}
+
+/* ── Section-edit links ──────────────────────────────────────────── */
+.skin-citylights .mw-body-content .mw-editsection a {
+    color: var(--swatch-secondary);
+}
+
+/* ── Table of contents ───────────────────────────────────────────── */
+/* TOC stays transparent — it's excluded from the sidebar-card chrome
+ * above (`:not(#mw-panel-toc)`) so it reads as a flat outline rather
+ * than competing with the rounded cards stacked around it. */
+.skin-citylights .vector-toc .vector-toc-link { color: var(--swatch-fg); }
+.skin-citylights .vector-toc .vector-toc-link:hover { color: var(--swatch-primary-hover); }
+
+/* ── Tables ──────────────────────────────────────────────────────── */
+.skin-citylights table.wikitable {
+    background-color: var(--swatch-surface-1);
+    border-color: var(--swatch-muted);
+    color: var(--swatch-fg);
+}
+.skin-citylights table.wikitable th {
+    background-color: var(--swatch-surface-2);
+    border-color: var(--swatch-muted);
+}
+.skin-citylights table.wikitable td {
+    border-color: var(--swatch-muted);
+}
+
+/* ── Thumb / figure ──────────────────────────────────────────────── */
+.skin-citylights .thumb { border-color: var(--swatch-muted); }
+.skin-citylights .thumbinner {
+    background-color: var(--swatch-surface-1);
+    border-color: var(--swatch-muted);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.skin-citylights .vector-footer {
+    border-top-color: var(--swatch-muted);
+    color: var(--swatch-secondary);
+}
+
+/* ── Notices / message boxes ─────────────────────────────────────── */
+.skin-citylights .mw-message-box {
+    background-color: var(--swatch-surface-2);
+    border-color: var(--swatch-accent);
+    color: var(--swatch-fg);
+}
+
+/* ── Diff / history ──────────────────────────────────────────────── */
+.skin-citylights .diff-context {
+    background-color: var(--swatch-surface-0);
+    color: var(--swatch-primary);
+}
+
+/* ── DevTools-derived overrides (post-specificity-pass) ──────────────
+ * Rules below match Vector/Codex selectors at their declared
+ * specificity so the cascade ties and load order (this file, last)
+ * wins. Selectors are intentionally NOT prefixed with .skin-citylights
+ * — they target the same chain Vector ships, and adding a class would
+ * either bump them past required specificity or split them from
+ * Vector's exact rule. The file is hook-loaded only on City Lights,
+ * so they cannot leak to Vector 2022 / Legacy. */
+
+.cdx-button .vector-icon {
+    background-color: var(--swatch-fg);
+}
+
+.vector-page-toolbar .vector-menu-content-list .mw-list-item {
+    padding: 0 .5rem;
+}
+
+@media screen {
+    #pt-userpage-2 a:not(.mw-selflink) {
+        color: var(--swatch-accent);
+    }
+    .vector-pinnable-element .mw-list-item a:not(.mw-selflink):visited:hover,
+    .vector-dropdown-content .mw-list-item a:not(.mw-selflink):visited:hover {
+        color: var(--swatch-link-visited);
+    }
+    .vector-pinnable-element .mw-list-item a:not(.mw-selflink):visited,
+    .vector-dropdown-content .mw-list-item a:not(.mw-selflink):visited {
+        color: var(--swatch-link-visited);
+    }
+    .vector-pinnable-element .vector-menu-heading {
+        color: var(--swatch-fg);
+        border-bottom: 1px solid var(--swatch-border);
+    }
+    .mw-footer li {
+        color: var(--swatch-muted-text);
+    }
+    /* Core ships `.mw-heading, h1, h2, h3, h4, h5, h6 { color:#000 }`
+     * at zero specificity and outside any `.mw-body` scope, so our
+     * `.skin-citylights .mw-body h{1-4}` rule doesn't reach h-tags
+     * in Special-page chrome, edit toolbars, login forms, etc.
+     * Match the unprefixed shape here so the override lands on every
+     * h-tag regardless of where it lives. */
+    .mw-heading,
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--swatch-fg);
+    }
+    /* Vector's active-TOC-link rule outranks ours via its own
+     * `!important` (or matching specificity + later source order), so
+     * we have to play the same card to keep the swatch tint. */
+    .vector-toc .vector-toc-list-item-active > .vector-toc-link,
+    .vector-toc .vector-toc-level-1-active:not(.vector-toc-list-item-expanded) > .vector-toc-link,
+    .vector-toc .vector-toc-list-item-active.vector-toc-level-1-active > .vector-toc-link {
+        color: var(--swatch-primary) !important;
+    }
+}
+
+/* ── MediaWiki core hardcoded-color overrides ────────────────────────
+ * A handful of mediawiki core modules ship literal hex / named colours
+ * that ignore the design-token layer. Remap to swatch tokens here —
+ * on-theme even where it loses semantic hue (e.g. the +/- size
+ * indicators have no native green/red in the City Lights palette, but
+ * staying in-token reads better than a #096450 / #b32424 stripe on a
+ * tan/charcoal page). */
+
+/* Changeslist legend card — mediawiki.special.changeslist ships
+ * `.mw-changeslist-legend { border: 1px solid #ccc; background-color: #fff }`. */
+.skin-citylights .mw-changeslist-legend {
+    border-color: var(--swatch-border);
+    background-color: var(--swatch-surface-0);
+    color: var(--swatch-fg);
+}
+
+/* Edit-size indicators — `#096450` / `#b32424` / `#767676` in core.
+ * Differentiated within-palette via accent / link-new / muted-text. */
+.skin-citylights .mw-plusminus-pos  { color: var(--swatch-accent); }
+.skin-citylights .mw-plusminus-neg  { color: var(--swatch-link-new); }
+.skin-citylights .mw-plusminus-null { color: var(--swatch-muted-text); }
+
+/* ── Diff styles — mediawiki.diff.styles ────────────────────────────
+ * Inline `ins`/`del` backgrounds, line borders, and context bg are
+ * hardcoded (`#afb6e9` / `#fc3` / `#f8f9fa` / `#222` / `#eee`). The
+ * palette has no native green/red; added-vs-deleted is differentiated
+ * inside-token via surface-2 + accent vs surface-1 + link-new. */
+.skin-citylights .mw-diff-inline-added ins,
+.skin-citylights .mw-diff-inline-changed ins,
+.skin-citylights .mw-diff-inline-moved ins,
+.skin-citylights .mw-diff-table-prefix .mw-diff-inline-legend .mw-diff-inline-legend-ins,
+.skin-citylights .diff-addedline .diffchange,
+.skin-citylights .mw-diff-inline-added.mw-diff-empty-line::after,
+.skin-citylights .mw-inline-diff-newline::after {
+    background: var(--swatch-surface-2);
+    color: var(--swatch-fg);
+}
+.skin-citylights .mw-diff-inline-deleted del,
+.skin-citylights .mw-diff-inline-changed del,
+.skin-citylights .mw-diff-inline-moved del,
+.skin-citylights .mw-diff-table-prefix .mw-diff-inline-legend .mw-diff-inline-legend-del,
+.skin-citylights .diff-deletedline .diffchange,
+.skin-citylights .mw-diff-inline-deleted.mw-diff-empty-line::after {
+    background: var(--swatch-surface-1);
+    color: var(--swatch-fg);
+}
+.skin-citylights .diff-addedline   { border-color: var(--swatch-accent); }
+.skin-citylights .diff-deletedline { border-color: var(--swatch-link-new); }
+.skin-citylights .diff-context {
+    background: var(--swatch-surface-0);
+    color: var(--swatch-fg);
+    border-color: var(--swatch-border);
+}
+.skin-citylights .mw-diff-slot-error { color: var(--swatch-link-new); }
+.skin-citylights .mw-diff-movedpara-left::after,
+.skin-citylights .mw-diff-movedpara-right::after { color: var(--swatch-fg); }
+.skin-citylights .mw-diff-inline-added.mw-diff-empty-line::after,
+.skin-citylights .mw-diff-inline-deleted.mw-diff-empty-line::after,
+.skin-citylights .mw-inline-diff-newline::after { color: var(--swatch-muted-text); }
+
+/* ── Misc chrome — interface helpers / history / patrol ──────────────
+ * Hardcoded `#d03` / `#555` / `#222` / `#eee` / `#a55858` across
+ * unpatrolled markers, autocomments, deleted/suppressed history, the
+ * temp-user link badge, and contribs counts. */
+.skin-citylights .unpatrolled                                    { color: var(--swatch-link-new); }
+.skin-citylights .mw-tempuserlink                                { background-color: var(--swatch-surface-1); color: var(--swatch-fg); }
+.skin-citylights .autocomment,
+.skin-citylights .autocomment a,
+.skin-citylights .autocomment a:visited                          { color: var(--swatch-muted-text); }
+.skin-citylights li span.deleted,
+.skin-citylights span.history-deleted                            { color: var(--swatch-muted-text); }
+.skin-citylights span.mw-history-suppressed                      { color: var(--swatch-fg); }
+.skin-citylights .mw-usertoollinks-contribs-no-edits             { color: var(--swatch-link-new); }
+.skin-citylights .mw-usertoollinks-contribs-no-edits:visited     { color: var(--swatch-link-visited); }
+
+/* ── SVG-mask icon tints — helplink, enhanced-changes arrow ──────────
+ * Inside @supports(mask-image) core tints icons with
+ * `background-color:#222`. Map to fg so icons read on dark + light. */
+@supports ((-webkit-mask-image: none) or (mask-image: none)) {
+    .skin-citylights #mw-indicator-mw-helplink a .mw-helplink-icon,
+    .skin-citylights .mw-enhancedchanges-checkbox + * .mw-enhancedchanges-arrow {
+        background-color: var(--swatch-fg);
+    }
+}
+
+/* ── mw-ui (legacy MediaWiki UI, pre-Codex) ──────────────────────────
+ * Used by older Special pages, form widgets, and some preferences
+ * panels. The whole module is hardcoded to a #f9f9f9 / #aaa / #222 /
+ * #0645ad (progressive) / #d03 (destructive) palette — reskin via
+ * swatch tokens with per-state coverage so hover / focus / active /
+ * disabled all stay in-theme. */
+.skin-citylights .mw-ui-vform > label,
+.skin-citylights .mw-ui-label { color: var(--swatch-fg); }
+
+.skin-citylights .mw-ui-button {
+    background-color: var(--swatch-surface-1);
+    border-color: var(--swatch-muted);
+    color: var(--swatch-fg);
+}
+.skin-citylights .mw-ui-button:not(:disabled):visited { color: var(--swatch-fg); }
+.skin-citylights .mw-ui-button:not(:disabled):hover,
+.skin-citylights input[type='checkbox']:hover + .mw-ui-button {
+    background-color: var(--swatch-surface-2);
+    color: var(--swatch-fg);
+}
+.skin-citylights .mw-ui-button:not(:disabled):focus,
+.skin-citylights input[type='checkbox']:focus + .mw-ui-button {
+    color: var(--swatch-fg);
+    border-color: var(--swatch-accent);
+    box-shadow: inset 0 0 0 1px var(--swatch-accent);
+}
+.skin-citylights .mw-ui-button:not(:disabled):active,
+.skin-citylights .mw-ui-button:not(:disabled).is-on,
+.skin-citylights input[type='checkbox']:active + .mw-ui-button {
+    background-color: var(--swatch-surface-2);
+    color: var(--swatch-fg);
+    border-color: var(--swatch-muted);
+    box-shadow: none;
+}
+.skin-citylights .mw-ui-button:disabled {
+    background-color: var(--swatch-muted);
+    color: var(--swatch-muted-text);
+    border-color: var(--swatch-muted);
+}
+
+/* mw-ui-quiet — transparent ground, inherit fg. */
+.skin-citylights .mw-ui-button.mw-ui-quiet,
+.skin-citylights .mw-ui-button.mw-ui-quiet.mw-ui-progressive,
+.skin-citylights .mw-ui-button.mw-ui-quiet.mw-ui-destructive { color: var(--swatch-fg); }
+.skin-citylights .mw-ui-button.mw-ui-quiet:hover,
+.skin-citylights .mw-ui-button.mw-ui-quiet.mw-ui-progressive:hover,
+.skin-citylights .mw-ui-button.mw-ui-quiet.mw-ui-destructive:hover {
+    background-color: var(--swatch-surface-1);
+    color: var(--swatch-fg);
+}
+
+/* mw-ui-progressive — the “submit” colour; remap to accent. */
+.skin-citylights .mw-ui-button.mw-ui-progressive:not(:disabled) {
+    background-color: var(--swatch-accent);
+    color: var(--swatch-bg);
+    border-color: var(--swatch-accent);
+}
+.skin-citylights .mw-ui-button.mw-ui-progressive:not(:disabled):hover {
+    background-color: var(--swatch-primary-hover);
+    border-color: var(--swatch-primary-hover);
+}
+.skin-citylights .mw-ui-button.mw-ui-progressive:not(:disabled):active,
+.skin-citylights .mw-ui-button.mw-ui-progressive:not(:disabled).is-on {
+    background-color: var(--swatch-primary);
+    border-color: var(--swatch-primary);
+}
+.skin-citylights .mw-ui-button.mw-ui-progressive.mw-ui-quiet { color: var(--swatch-accent); }
+
+/* mw-ui-destructive — red in core; remap to link-new (warm brown). */
+.skin-citylights .mw-ui-button.mw-ui-destructive:not(:disabled) {
+    background-color: var(--swatch-link-new);
+    color: var(--swatch-bg);
+    border-color: var(--swatch-link-new);
+}
+.skin-citylights .mw-ui-button.mw-ui-destructive:not(:disabled):hover {
+    background-color: var(--swatch-secondary);
+    border-color: var(--swatch-secondary);
+}
+.skin-citylights .mw-ui-button.mw-ui-destructive:not(:disabled):active,
+.skin-citylights .mw-ui-button.mw-ui-destructive:not(:disabled).is-on {
+    background-color: var(--swatch-link-new);
+    border-color: var(--swatch-link-new);
+}
+.skin-citylights .mw-ui-button.mw-ui-destructive.mw-ui-quiet { color: var(--swatch-link-new); }
+
+/* mw-ui-input — text input fields. */
+.skin-citylights .mw-ui-input::-webkit-input-placeholder,
+.skin-citylights .mw-ui-input::placeholder { color: var(--swatch-muted-text); }
+.skin-citylights .mw-ui-input:not(:disabled) {
+    background-color: var(--swatch-surface-0);
+    color: var(--swatch-fg);
+    border-color: var(--swatch-muted);
+}
+.skin-citylights .mw-ui-input:not(:disabled):hover  { border-color: var(--swatch-fg); }
+.skin-citylights .mw-ui-input:not(:disabled):focus {
+    border-color: var(--swatch-accent);
+    box-shadow: inset 0 0 0 1px var(--swatch-accent);
+}
+.skin-citylights .mw-ui-input:disabled {
+    background-color: var(--swatch-surface-1);
+    color: var(--swatch-muted-text);
+    border-color: var(--swatch-muted);
+}
+
+/* ── skins.vector.styles — true literals (no var() wrapper) ──────────
+ * The Codex variable layer above absorbs every `var(--token, #hex)`
+ * fallback; the rules below cover the remaining hardcoded literals
+ * that ship inline in skins.vector.styles and friends. Each block is
+ * narrowly scoped so it can't outrun the selector it patches. */
+
+/* Body text and bg — skins.vector.styles ships `body { color:#222;
+ * background-color:#f8f9fa }` at zero specificity. `body.skin-citylights`
+ * already sets the patterned background, but the text colour leaks down
+ * the cascade as soon as a descendant inherits it. */
+body.skin-citylights {
+    color: var(--swatch-fg);
+}
+
+/* Focus ring — Vector hardcodes `outline-color:#0645ad` on `:focus` and
+ * `a.new:focus`. Pull both into the accent so the ring reads on either
+ * palette without flashing Codex progressive-blue. */
+.skin-citylights :focus,
+.skin-citylights a.new:focus {
+    outline-color: var(--swatch-accent);
+}
+
+/* Visited-link hover (`#447ff5`) — Vector's tab and dropdown rules
+ * paint visited links on hover with Codex progressive-blue-light. */
+.skin-citylights a:hover,
+.skin-citylights .vector-menu-tabs .mw-list-item a:visited:hover {
+    color: var(--swatch-primary-hover);
+}
+
+/* Wikitable — core ships table-level `background:#fff` and per-cell
+ * `background:#fff !important` plus `border:1px solid #aaa`. The
+ * cell `!important` shadows our earlier `table.wikitable` rule, so
+ * the cell-level override needs `!important` too. Header cells get
+ * `#eaecf0` separately. */
+.skin-citylights .wikitable,
+.skin-citylights .wikitable > tr > th,
+.skin-citylights .wikitable > tr > td,
+.skin-citylights .wikitable > * > tr > th,
+.skin-citylights .wikitable > * > tr > td {
+    background: var(--swatch-surface-1) !important;
+    color: var(--swatch-fg);
+    border-color: var(--swatch-muted);
+}
+.skin-citylights .wikitable > tr > th,
+.skin-citylights .wikitable > * > tr > th {
+    background: var(--swatch-surface-2) !important;
+}
+
+/* HTML5 figure thumbnails — `figure[typeof~='mw:File/Thumb']` and
+ * `…Frame` are the modern Parsoid-emitted markup that replaced the
+ * legacy `.thumbinner` divs. Core paints them `background-color:#fff;
+ * border:1px solid #ccc` (with the same on figcaption). The legacy
+ * `.thumbinner` rule above covers the old DOM only. */
+.skin-citylights figure[typeof~='mw:File/Thumb'],
+.skin-citylights figure[typeof~='mw:File/Frame'] {
+    background-color: var(--swatch-surface-1);
+    border-color: var(--swatch-muted);
+}
+.skin-citylights figure[typeof~='mw:File/Thumb'] > figcaption,
+.skin-citylights figure[typeof~='mw:File/Frame'] > figcaption {
+    background-color: var(--swatch-surface-1);
+    border-color: var(--swatch-muted);
+    color: var(--swatch-fg);
+}
+.skin-citylights figure[typeof~='mw:File/Thumb'] > :not(figcaption) .mw-file-element,
+.skin-citylights figure[typeof~='mw:File/Frame'] > :not(figcaption) .mw-file-element {
+    border-color: var(--swatch-muted);
+}
+.skin-citylights .mw-image-border .mw-file-element {
+    border-color: var(--swatch-border);
+}
+
+/* Code blocks — extend the earlier `code, pre` rule to also cover
+ * `.mw-code` (the `<source>`/`<syntaxhighlight>` wrapper). Core
+ * paints `pre, code, .mw-code { background-color:#f8f9fa }` plus
+ * `pre, .mw-code { background:#fff }`. */
+.skin-citylights .mw-code {
+    background: var(--swatch-surface-1);
+    background-color: var(--swatch-surface-1);
+    color: var(--swatch-fg);
+    border-color: var(--swatch-border);
+}
+
+/* Category links footer — `.catlinks { background-color:#f8f9fa;
+ * border:1px solid #aaa }` plus each `li` separated by
+ * `border-left:1px solid #aaa`. */
+.skin-citylights .catlinks {
+    background-color: var(--swatch-surface-0);
+    border-color: var(--swatch-border);
+    color: var(--swatch-fg);
+}
+.skin-citylights .catlinks li {
+    border-left-color: var(--swatch-border);
+}
+
+/* Horizontal rule — core paints `hr { background-color:#aaa }`. */
+.skin-citylights hr {
+    background-color: var(--swatch-muted);
+    border-color: var(--swatch-muted);
+    color: var(--swatch-muted);
+}
+
+/* New MediaWiki heading wrappers (`.mw-heading{1,2,3,4}`) — Parsoid-
+ * emitted alongside the raw `h1`/`h2` tags. The earlier `.mw-body h{1-4}`
+ * rule scopes to descendants of `.mw-body` and doesn't catch
+ * Special-page headings that use the wrapper outside it. */
+.skin-citylights .mw-heading1,
+.skin-citylights .mw-heading2,
+.skin-citylights .mw-heading3,
+.skin-citylights .mw-heading4 {
+    color: var(--swatch-fg);
+    border-bottom-color: var(--swatch-border);
+}
+
+/* In-content error text — `.mw-body-content .error { color:#d03 }`. */
+.skin-citylights .mw-body-content .error {
+    color: var(--swatch-link-new);
+}
+
+/* Special:RecentChanges top-links card — when not collapsed it ships
+ * with a bare `border:1px solid #ccc`. */
+.skin-citylights .client-js .mw-recentchanges-toplinks:not(.mw-recentchanges-toplinks-collapsed) {
+    border-color: var(--swatch-border);
+}
+
+/* Footer icons (PoweredBy, etc.) — `#footer-icons a { background-color:#f8f9fa }`. */
+.skin-citylights #footer-icons a {
+    background-color: var(--swatch-surface-0);
+}
+
+/* Checkbox-paired cdx button focus border — Vector wires
+ * `input:focus:not(:active) + .cdx-button { border-color:#0645ad;
+ * box-shadow: inset 0 0 0 1px #0645ad }`. Use swatch-muted (subtler
+ * than accent) plus the inset shadow so the focus ring has weight
+ * without flashing the progressive-blue hue from Codex. */
+.skin-citylights input:focus:not(:active) + .cdx-button:not(.cdx-button--action-progressive) {
+    border-color: var(--swatch-muted);
+    box-shadow: inset 0 0 0 1px var(--swatch-muted);
+}
