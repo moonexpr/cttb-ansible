@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"John Chandara"
+		]
+	},
+	"skinname-citylights": "{{name}}\nThe name of the City Lights skin, shown in the skin selector at [[Special:Preferences#mw-prefsection-rendering]] and on [[Special:Version]].",
+	"citylights-desc": "{{desc|name=City Lights|url=http://wiki.cttb/wiki/IT:Sudhanix}}\nShort description of the City Lights skin, shown on [[Special:Version]]."
+}
