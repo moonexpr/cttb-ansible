@@ -233,6 +233,42 @@ html.skin-theme-clientpref-day {
     --border-color-interactive--hover:         var(--swatch-fg);
     --border-color-disabled:                   var(--swatch-muted);
     --outline-color-progressive--focus:        var(--swatch-accent);
+
+    /* Round 2 — Codex tokens missing from the first pass. Surfaced
+     * by the corpus audit across every styles bundle wiki.cttb
+     * serves (cdx-*, oo-ui-*, mw-htmlform-*, date widget, etc.). Each
+     * maps to the swatch token that produces a readable result in
+     * both modes. `--color-inverted*` and `--background-color-base-fixed`
+     * use `--swatch-bg` because progressive buttons paint themselves
+     * with `--swatch-primary` (dark in light, beige in dark) and
+     * `--swatch-bg` flips the opposite way so the inverted text always
+     * has contrast. The `--filter-*` / `--opacity-*` tokens further
+     * down in Codex are non-color and intentionally left at defaults. */
+    --color-inverted:                          var(--swatch-bg);
+    --color-inverted-fixed:                    var(--swatch-bg);
+    --background-color-base-fixed:             var(--swatch-bg);
+    --background-color-progressive--focus:     var(--swatch-primary);
+    --background-color-button-quiet--hover:    var(--swatch-surface-1);
+    --background-color-button-quiet--active:   var(--swatch-surface-2);
+    --background-color-error:                  var(--swatch-link-new);
+    --background-color-error--active:          var(--swatch-secondary);
+    --background-color-transparent:            transparent;
+    --color-progressive--focus:                var(--swatch-primary);
+    --color-destructive--focus:                var(--swatch-link-new);
+    --border-color-progressive--active:        var(--swatch-secondary);
+    --border-color-destructive--active:        var(--swatch-secondary);
+    --border-color-input:                      var(--swatch-muted);
+    --border-color-input--hover:               var(--swatch-fg);
+    --border-color-input-binary:               var(--swatch-muted);
+    --border-color-input-binary--checked:      var(--swatch-primary);
+    --border-color-input-binary--active:       var(--swatch-primary);
+    --border-color-inverted:                   var(--swatch-bg);
+    --border-color-transparent:                transparent;
+    --box-shadow-color-progressive--focus:     var(--swatch-accent);
+    --box-shadow-color-progressive--active:    var(--swatch-secondary);
+    --box-shadow-color-destructive--focus:     var(--swatch-accent);
+    --box-shadow-color-inverted:               var(--swatch-bg);
+    --box-shadow-color-transparent:            transparent;
 }
 
 /* ── Structural (no color) ───────────────────────────────────────── */
@@ -837,6 +873,402 @@ body.skin-citylights::before {
     .vector-toc .vector-toc-list-item-active.vector-toc-level-1-active > .vector-toc-link {
         color: var(--swatch-primary) !important;
     }
+    /* TOC parent-of-active entry — level-1 ancestor when the active
+     * leaf is a deeper sub-item. Vector ships `color:#222 !important`
+     * here to keep the parent visually distinct from the leaf (which
+     * uses --color-progressive). Same distinction in-swatch: leaf →
+     * primary (above), parent → fg. */
+    .vector-toc .vector-toc-level-1-active:not(.vector-toc-list-item-active) > .vector-toc-link {
+        color: var(--swatch-fg) !important;
+    }
+
+    /* Main-menu opt-out / lang-alert visited links — Vector ships
+     * `color:#0645ad` (the legacy MediaWiki blue) on these specific
+     * selectors, which leaks past the earlier `.vector-pinnable-element
+     * .mw-list-item a:visited` override since `.vector-main-menu-action-*`
+     * isn't a `.mw-list-item`. "Switch to old look" was rendering as
+     * bright blue in both the Main page sidebar and Preferences. */
+    .vector-main-menu .vector-main-menu-action-opt-out a:not(.mw-selflink):visited,
+    .vector-main-menu .vector-main-menu-action-lang-alert .vector-main-menu-action-content:not(.mw-selflink):visited {
+        color: var(--swatch-link-visited);
+    }
+}
+
+/* ── Special:Preferences (OOUI chrome) ───────────────────────────────
+ * Preferences ships its own hardcoded surface (#fff sticky save bar,
+ * #ccc tab panel borders) that ignore the swatch layer. Selectors are
+ * un-prefixed to match the exact specificity core uses. */
+
+/* Sticky Save bar at the bottom of the Preferences form — core ships
+ * `background-color:#fff; border-top:1px solid #ccc; box-shadow: 0
+ * -4px 4px -4px rgba(0,0,0,0.25)`. Re-paint in swatch tones; deepen
+ * the shadow alpha so the lift still reads on the dark palette. */
+#preferences .mw-htmlform-submit-buttons {
+    background-color: var(--swatch-bg-highvis);
+    border-top-color: var(--swatch-border);
+    box-shadow: 0 -4px 8px -4px rgba(0, 0, 0, 0.5);
+}
+
+/* OOUI tab panel border — the wrapper around the User profile /
+ * Appearance / Editing / Recent changes / Watchlist / Search tab
+ * stack ships `border-color:#ccc`. */
+.skin-citylights .mw-prefs-tabs-wrapper.oo-ui-panelLayout-framed,
+.skin-citylights .mw-prefs-tabs > .oo-ui-menuLayout-content > .oo-ui-indexLayout-stackLayout > .oo-ui-tabPanelLayout {
+    border-color: var(--swatch-border);
+}
+
+/* ── Sidebar list spacing ────────────────────────────────────────────
+ * Three hardcoded rules stack to make the sidebar's vertical rhythm
+ * much looser than the Appearance panel's OOUI radio rows:
+ *   1. core `li { margin-bottom:0.1em }` (small but cumulative);
+ *   2. core line-height inherited from body (~1.6);
+ *   3. `.vector-pinnable-element .mw-list-item a { display:flex;
+ *      align-items:center; padding:6px 0 }` — the dominant offender,
+ *      adding 12px per row.
+ * Zero them all inside `.vector-column-start` only — dropdown popouts
+ * (also `.vector-pinnable-element`, but outside the start column) keep
+ * Vector's 6px padding so their click targets stay finger-friendly. */
+.skin-citylights .vector-column-start .vector-menu-content-list .mw-list-item {
+    line-height: 1.4;
+    padding-block: 0;
+    margin-bottom: 0;
+}
+.skin-citylights .vector-column-start .vector-pinnable-element .mw-list-item a,
+.skin-citylights .vector-column-start .vector-pinnable-element .mw-list-item button {
+    padding: 0;
+}
+
+/* ── Round 2 — bare-literal selector overrides ───────────────────────
+ * Catalogued by a sweep across every CSS bundle wiki.cttb serves.
+ * Each block here targets selectors that ship hardcoded hex literals
+ * (no var() wrapper), so the Codex token mapping at the top of the
+ * file can't catch them. Grouped by visual element rather than by
+ * source colour for legibility. */
+
+/* Page history active row — `#pagehistory li.selected { color:#222;
+ * background-color:#f8f9fa; outline: 1px dashed #a2a9b1 }`. */
+.skin-citylights #pagehistory li.selected {
+    color: var(--swatch-fg);
+    background-color: var(--swatch-surface-1);
+    outline-color: var(--swatch-border);
+}
+
+/* Selected list-item nested anchors — Vector emits the .selected
+ * affordance on portlet/dropdown rows with `color:#222 !important`. */
+.skin-citylights .vector-pinnable-element .mw-list-item a.selected a,
+.skin-citylights .vector-dropdown-content .mw-list-item a.selected a,
+.skin-citylights .vector-main-menu .vector-main-menu-action-opt-out a.selected a,
+.skin-citylights .vector-main-menu .vector-main-menu-action-lang-alert a.selected a {
+    color: var(--swatch-fg) !important;
+}
+
+/* Special:Search — search-types selected tab, search options card,
+ * interwiki tabs, profile tabs, suggestion strip. */
+.skin-citylights .search-types .current a {
+    color: var(--swatch-fg);
+}
+.skin-citylights .mw-search-profile-tabs,
+.skin-citylights #mw-searchoptions {
+    background-color: var(--swatch-surface-0);
+    border-color: var(--swatch-border);
+}
+.skin-citylights #mw-searchoptions .divider {
+    border-bottom-color: var(--swatch-border);
+}
+.skin-citylights .mw-search-interwiki-project {
+    background-color: var(--swatch-surface-1);
+    border-top-color: var(--swatch-border);
+}
+.skin-citylights #mw-search-interwiki,
+.skin-citylights .mw-search-interwiki-header {
+    border-color: var(--swatch-border);
+}
+.skin-citylights .mw-search-result-data,
+.skin-citylights .results-info {
+    color: var(--swatch-muted-text);
+}
+.skin-citylights .searchResultImage .searchResultImage-thumbnail .searchResultImage-thumbnail-placeholder,
+.skin-citylights .searchResultImage .searchResultImage-thumbnail img {
+    background-color: var(--swatch-surface-1);
+    border-color: var(--swatch-border);
+}
+
+/* Edit form — toolbar / options strip ships #ccc border, #eaecf0 bg,
+ * and #222 text from `mediawiki.action.edit.styles`. */
+.skin-citylights .editOptions {
+    background-color: var(--swatch-surface-1);
+    color: var(--swatch-fg);
+    border-color: var(--swatch-border);
+}
+
+/* Special:Preferences — section titles, header icon, description text,
+ * search highlight, fieldset borders, hover stripes, alternating rows. */
+.skin-citylights .mw-prefs-title,
+.skin-citylights .oo-ui-iconWidget.mw-prefs-header-icon {
+    color: var(--swatch-fg);
+}
+.skin-citylights .mw-prefs-description {
+    color: var(--swatch-muted-text);
+}
+.skin-citylights .client-nojs .mw-prefs-tabs .mw-prefs-section-fieldset > .oo-ui-fieldsetLayout-group {
+    border-top-color: var(--swatch-border);
+}
+.skin-citylights .mw-prefs-search-highlight {
+    background: var(--swatch-surface-2) !important;
+    outline: 3px solid var(--swatch-accent) !important;
+}
+.skin-citylights .mw-prefs-tabs:not(.mw-prefs-tabs-searching) .oo-ui-fieldsetLayout:target > .oo-ui-fieldsetLayout-header > .oo-ui-labelElement-label {
+    background-color: var(--swatch-surface-2);
+    outline: 4px solid var(--swatch-surface-2);
+}
+.skin-citylights .mw-prefs-tabs.mw-prefs-tabs-searching .oo-ui-tabPanelLayout.mw-prefs-search-matched > fieldset > legend {
+    background: var(--swatch-surface-1);
+}
+.skin-citylights .mw-htmlform-ooui .mw-htmlform-matrix tbody tr:nth-child(even) td {
+    background-color: var(--swatch-surface-0);
+}
+.skin-citylights .mw-htmlform-ooui .mw-htmlform-matrix tbody tr:hover td {
+    background-color: var(--swatch-surface-2);
+}
+.skin-citylights .mw-htmlform-tooltip.mw-icon-question {
+    background-color: var(--swatch-muted-text);
+}
+.skin-citylights .mw-htmlform .mw-secure--icon {
+    background-color: var(--swatch-muted-text);
+}
+.skin-citylights .mw-htmlform-field-HTMLInfoField,
+.skin-citylights .oo-ui-window-body.mw-mobile-pref-dialog-body .mw-htmlform-field-HTMLInfoField {
+    color: var(--swatch-muted-text);
+}
+.skin-citylights .oo-ui-window-body.mw-mobile-pref-dialog-body [class^='mw-htmlform-field'] {
+    border-bottom-color: var(--swatch-border);
+}
+.skin-citylights .oo-ui-window-body.mw-mobile-pref-dialog-body .mw-prefs-fieldset-wrapper .oo-ui-fieldsetLayout-header {
+    border-bottom-color: var(--swatch-border);
+}
+.skin-citylights .mw-mobile-prefsection.oo-ui-buttonElement {
+    border-bottom-color: var(--swatch-border);
+}
+.skin-citylights .oo-ui-window-body .oo-ui-fieldLayout-messages {
+    background-color: var(--swatch-surface-1);
+}
+
+/* Watchlist / Recentchanges / Pager helpers — muted-text and surface
+ * tints from `mediawiki.interface.helpers.styles` / `mediawiki.pager.styles`. */
+.skin-citylights .mw-watchlistexpiry-msg,
+.skin-citylights .mw-protectedpages-unknown,
+.skin-citylights .mw-special-Listfiles .TablePager_col_img_user_text,
+.skin-citylights .mw-special-Listfiles .TablePager_col_img_description,
+.skin-citylights .mw-editsection-bracket,
+.skin-citylights .mw-editsection-divider,
+.skin-citylights #contentSub:not(:empty),
+.skin-citylights #contentSub2 {
+    color: var(--swatch-muted-text);
+}
+
+/* Data table — `mediawiki.special` ships #aaa borders, #fff cells,
+ * #eaf3ff row hover. Pull all into swatch tones. */
+.skin-citylights .mw-datatable,
+.skin-citylights .mw-datatable td,
+.skin-citylights .mw-datatable th {
+    border-color: var(--swatch-muted);
+}
+.skin-citylights .mw-datatable td {
+    background-color: var(--swatch-surface-1);
+}
+.skin-citylights .mw-datatable tr:hover td {
+    background-color: var(--swatch-surface-2);
+}
+
+/* `:target` anchored table rows — group rights, password policies. */
+.skin-citylights .mw-listgrouprights-table tr:target,
+.skin-citylights .mw-passwordpolicies-table tr:target,
+.skin-citylights .mw-listgrouprights-table tr:target code,
+.skin-citylights .mw-passwordpolicies-table tr:target code {
+    background-color: var(--swatch-surface-2);
+}
+
+/* Date input widget — handle bg/text/border + focus ring. */
+.skin-citylights .mw-widget-dateInputWidget-handle {
+    background-color: var(--swatch-surface-0);
+    color: var(--swatch-fg);
+    border-color: var(--swatch-muted);
+}
+.skin-citylights .mw-widget-dateInputWidget.oo-ui-widget-enabled .mw-widget-dateInputWidget-handle:focus {
+    border-color: var(--swatch-accent);
+    box-shadow: inset 0 0 0 1px var(--swatch-accent);
+}
+
+/* Email-confirmation labels — `.mw-email-not-authenticated/.mw-email-none
+ * .oo-ui-labelWidget { color:#000 }` and `.mw-email-none .oo-ui-labelWidget
+ * { border-color:#aaa }`. */
+.skin-citylights .mw-email-not-authenticated .oo-ui-labelWidget,
+.skin-citylights .mw-email-none .oo-ui-labelWidget {
+    color: var(--swatch-fg);
+}
+.skin-citylights .mw-email-none .oo-ui-labelWidget {
+    border-color: var(--swatch-border);
+}
+
+/* User message banner — `.usermessage { color:#000 }`. */
+.skin-citylights .usermessage {
+    color: var(--swatch-fg);
+}
+
+/* Footer — `.mw-footer { border-top:1px solid #aaa }` and
+ * `#footer-info-lastmod { color:#000 }`. Existing `.vector-footer`
+ * rule covered a different class, not `.mw-footer`. */
+.skin-citylights .mw-footer {
+    border-top-color: var(--swatch-muted);
+}
+.skin-citylights #footer-info-lastmod {
+    color: var(--swatch-muted-text);
+}
+
+/* Body link underline — core ships `.mw-body a:not(.image) {
+ * border-bottom: 1px solid #aaa }`. Our `text-decoration: underline`
+ * rule on `.mw-parser-output a` already provides the underline; the
+ * border-bottom doubles it up with a flat-grey rule that breaks the
+ * thin/2px underline interaction. Strip it. */
+.skin-citylights .mw-body a:not(.image) {
+    border-bottom: 0;
+}
+
+/* Blockquote — `blockquote { border-left: 2px solid #000 }`. */
+.skin-citylights blockquote {
+    border-left-color: var(--swatch-muted);
+}
+
+/* Print footer — `border-top: 3px solid #000` (print-only but harmless). */
+.skin-citylights .printfooter {
+    border-top-color: var(--swatch-muted);
+}
+
+/* Plain HTML widgets — `textarea`, `table.listing`, message-box ambox
+ * defaults that ship outside the MW skin layer. */
+.skin-citylights textarea {
+    border-color: var(--swatch-muted);
+    background-color: var(--swatch-surface-0);
+    color: var(--swatch-fg);
+}
+.skin-citylights table.listing,
+.skin-citylights table.listing td {
+    border-color: var(--swatch-border);
+}
+
+/* Protection-ambox border — `.ambox-protection, .ombox-protection
+ * { border-color:#a2a9b1 }`. */
+.skin-citylights .ambox-protection,
+.skin-citylights .ombox-protection {
+    border-color: var(--swatch-border);
+}
+
+/* Page-history toolbar — `.vector-pinnable-header-toggle-button:hover
+ * { background-color:#f8f9fa }`. */
+.skin-citylights .vector-pinnable-header-toggle-button:hover {
+    background-color: var(--swatch-surface-2);
+}
+
+/* Focus rings — `a:focus / a:focus-visible { outline: solid 2px #0645ad }`. */
+.skin-citylights a:focus,
+.skin-citylights a:focus-visible {
+    outline-color: var(--swatch-accent);
+}
+
+/* Checkbox-paired progressive cdx-button — hover / active / focus
+ * states ship hardcoded `#eaf3ff / #36c / #0645ad / #fff` literals
+ * outside the cdx-button base rule. */
+.skin-citylights input:hover + .cdx-button.cdx-button--action-progressive {
+    background-color: var(--swatch-surface-2);
+}
+.skin-citylights input:focus:not(:active) + .cdx-button.cdx-button--action-progressive {
+    border-color: var(--swatch-accent);
+    box-shadow: inset 0 0 0 1px var(--swatch-accent), inset 0 0 0 2px var(--swatch-bg);
+}
+.skin-citylights input:active + .cdx-button.cdx-button--action-progressive {
+    color: var(--swatch-bg);
+}
+.skin-citylights input:active + .cdx-button:not(.cdx-button--action-progressive) + .cdx-button:not(.vector-page-titlebar-toc) {
+    color: var(--swatch-fg);
+}
+
+/* Header / interlanguage caret — `.vector-page-titlebar .mw-portlet-lang
+ * .mw-portlet-lang-heading-empty::after { background-color:#222 }` and
+ * `.mw-interlanguage-selector::after`. Mask-image icons tint via
+ * background-color. */
+.skin-citylights .vector-page-titlebar .mw-portlet-lang .mw-portlet-lang-heading-empty::after,
+.skin-citylights .mw-interlanguage-selector::after {
+    background-color: var(--swatch-fg);
+}
+
+/* Empty language-selector dropdown card. */
+.skin-citylights .vector-page-titlebar .mw-portlet-lang .mw-portlet-lang-heading-empty + .vector-dropdown-content .mw-portlet-empty-language-selector {
+    color: var(--swatch-muted-text);
+    border-bottom-color: var(--swatch-border);
+}
+
+/* rcfilters spinner — `.mw-rcfilters-spinner-bounce { background-color:#0645ad }`. */
+.skin-citylights .client-js .mw-rcfilters-spinner .mw-rcfilters-spinner-bounce,
+.skin-citylights .client-js .mw-rcfilters-spinner::before,
+.skin-citylights .client-js .mw-rcfilters-spinner::after {
+    background-color: var(--swatch-primary);
+}
+
+/* Vector progressive-icon SVG tint — `.vector-icon[class*='-progressive']
+ * { background-color:#0645ad }`. */
+.skin-citylights .vector-icon[class*='-progressive'] {
+    background-color: var(--swatch-primary);
+}
+
+/* Vector tab visited link — `.vector-menu-tabs .mw-list-item a:visited
+ * { color:#0645ad }`. */
+.skin-citylights .vector-menu-tabs .mw-list-item a:visited {
+    color: var(--swatch-link-visited);
+}
+
+/* Header language-portlet trigger caret — Vector ships
+ * `background-color:#0645ad` on the cdx-button progressive-quiet
+ * `::after`. */
+.skin-citylights .vector-page-titlebar .mw-portlet-lang .vector-dropdown-label.cdx-button--action-progressive.cdx-button--weight-quiet::after {
+    background-color: var(--swatch-primary);
+}
+
+/* FancyCaptcha — `.fancycaptcha-captcha-container/-and-reload
+ * { background-color:#f8f9fa/#fff; border:1px solid #ccc }`. */
+.skin-citylights .fancycaptcha-captcha-container,
+.skin-citylights .fancycaptcha-captcha-and-reload {
+    background-color: var(--swatch-surface-0);
+    border-color: var(--swatch-border);
+}
+.skin-citylights .fancycaptcha-captcha-container .mw-ui-input {
+    border-color: var(--swatch-border);
+}
+
+/* OOUI mobile tab-select chrome shadow strip — `.oo-ui-tabSelectWidget-mobile
+ * .oo-ui-tabSelectWidget-framed::after { background-color:#eaecf0 }`. */
+.skin-citylights .oo-ui-tabSelectWidget-mobile.oo-ui-tabSelectWidget-framed::after {
+    background-color: var(--swatch-surface-1);
+}
+
+/* New-link / invalid-input / risk markers — Vector ships these in core's
+ * `#d03 / #b32424` warning red. Remap to swatch-link-new (warm brown) to
+ * stay in the palette's earth-tone vocabulary. */
+.skin-citylights .vector-menu-tabs .mw-list-item.new a:visited,
+.skin-citylights a.new:active {
+    color: var(--swatch-link-new);
+}
+.skin-citylights .mw-htmlform-invalid-input td.mw-input input {
+    border-color: var(--swatch-link-new);
+}
+.skin-citylights .mw-grantriskgroup-security {
+    background-color: var(--swatch-link-new);
+}
+
+/* Disabled / hidden user states — Vector's `mediawiki.special` ships
+ * `#72777d` outside the `--color-disabled` token. */
+.skin-citylights .mw-userrights-disabled,
+.skin-citylights .mw-special-BlockList .mw-blocklist-hidden {
+    color: var(--swatch-muted-text);
 }
 
 /* ── MediaWiki core hardcoded-color overrides ────────────────────────
