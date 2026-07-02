@@ -1,0 +1,37 @@
+{
+  "//": "Shared project settings for cttb-ansible — committed, ships with the repo. Personal/runtime overrides belong in settings.local.json (gitignored).",
+
+  "enabledPlugins": {
+    "context-mode@context-mode": true
+  },
+
+  "extraKnownMarketplaces": {
+    "context-mode": {
+      "source": {
+        "source": "github",
+        "repo": "mksglu/context-mode"
+      }
+    }
+  },
+
+  "permissions": {
+    "allow": [
+      "mcp__plugin_context-mode_context-mode__*"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-tool-think-in-code.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

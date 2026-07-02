@@ -10,13 +10,33 @@ group_vars/.*
 .DS_Store
 
 
-# AI assistant artifacts (confidential)
-CLAUDE.md
-GEMINI.md
-PROJECT.md
+# ── cttb-ansible sysadmin toolkit ───────────────────────────────────────────
+# The toolkit ships with the repo: .claude/skills/, .claude/sysadmin/,
+# .claude/hooks/, .claude/rules/, .claude/settings.json, .claude/.env.example,
+# plus CLAUDE.md and PROJECT.md (secrets redacted). Only personal/runtime state
+# under .claude/ stays out of git:
+
+# Real credential values (copy from .env.example — never commit):
+.claude/.env
+
+# Per-sysadmin local overrides:
+.claude/settings.local.json
+
+# Personal/runtime working state:
+.claude/wiki-pages/
+.claude/baselines/
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+.claude/.DS_Store
+
+# Untouched original .claude/ snapshot (personal fallback, never shipped):
+.claude.bak/
+
+# Private operator notes:
 WORKPLAN.md
-.claude/
-SPRINT_PLAN.md
 NOTE.md
+SPRINT_PLAN.md
+GEMINI.md
 WIKI_UPDATE.toon
 UPDATE_JOURNAL.md
+CLAUDE.local.md
