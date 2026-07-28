@@ -32,6 +32,10 @@ new Ubuntu base.
 Confirm the intended number with the operator when it is ambiguous; do not
 infer a bump level from the diff size alone.
 
+Every release also carries a **title**, E.g. `Accessible Credential Handling`.
+Pick it after writing the Rationale, when the theme is visible, rather than
+before.
+
 ## Procedure
 
 1. **Establish the baseline.** Find the previous tag and confirm the new one
@@ -64,22 +68,68 @@ infer a bump level from the diff size alone.
    (`gh pr list --state merged --limit 20`). The commit subjects tell you what
    moved; the PR bodies tell you what it was for.
 
-4. **Write `.claude/release-notes/<tag>.md`.** Prose, not a changelog dump —
-   see **Voice** below. Cover, in this order, omitting any section with
-   nothing to say:
+4. **Write `.claude/release-notes/<tag>.md`** in the canonical structure below.
 
-   - One-paragraph summary, and explicitly whether the **deployed image
-     changes**. Sysadmins read that first to decide whether a fleet run is needed.
-   - One `##` section per substantive area, each explaining the problem before
-     the fix.
-   - `## Upgrading` — numbered, runnable steps. State plainly if there is
-     nothing to deploy.
-   - `## Known issues` — with issue links. Distinguish pre-existing defects
-     from anything this release introduces.
-   - `## Merged` — PR links.
+## Canonical structure
 
-   Call out **action required** in a blockquote wherever a sysadmin must do
-   something manually, such as storing a new credential.
+Every release note uses these sections, in this order. The shape is fixed so a
+reader can skim any release the same way; omit a section only when it is
+genuinely empty.
+
+```markdown
+# Sudhanix <version> — <Release Title>
+
+Released <date>. Previous release: [`<prev-tag>`](<url>) (<date>).
+
+<One paragraph. What this release is about, and explicitly whether the
+deployed image changes. Sysadmins read that sentence to decide whether a
+fleet run is needed.>
+
+---
+
+## Highlights
+<5–8 bullets. Bold lead-in naming the change, then one clause of what it
+means. This is the skim layer; a reader who stops here should still know
+what shipped.>
+
+> **Action required:** <only when a sysadmin must do something by hand.>
+
+---
+
+## Changelog
+<Flat bullets, one per change, technical and specific. File and role names,
+counts, what was deleted. No rationale here — this is the record.>
+
+---
+
+## Rationale
+<### subsections, one per substantive area. Each opens on the problem, then
+the fix, then what it costs the reader. This is where the prose lives.>
+
+---
+
+## What this asks of you
+<Numbered, runnable steps. State plainly when there is nothing to deploy.>
+
+## Known issues
+<Issue links. Distinguish pre-existing defects from anything introduced here.>
+
+## Merged
+<PR links.>
+```
+
+**Give every release a title.** `Sudhanix 26.1.1 — Accessible Credential
+Handling`. Name the theme the work turned out to be about, not the largest
+diff. The title goes in the `# ` heading, the GitHub Release name, and the
+first line of the tag annotation, and all three must agree.
+
+**Highlights and Changelog are different jobs.** Highlights is what a reader
+tells a colleague; Changelog is what a reader greps six months later. A bullet
+that appears in both is written differently in each.
+
+**Rationale is where the release earns attention.** Explain the failure someone
+would have hit. "The error names the failing task, never the missing
+collection" is useful; "added requirements.yml" belongs in the Changelog.
 
 5. **Commit the notes** to `main` on their own, separate from feature work.
 
@@ -93,12 +143,18 @@ infer a bump level from the diff size alone.
    ```
 
 7. **Publish the GitHub Release** from the same notes so the web view and the
-   repo never disagree:
+   repo never disagree. The release name carries the title:
 
    ```bash
-   gh release create <tag> --title "Sudhanix <version>" \
+   gh release create <tag> --title "Sudhanix <version> — <Release Title>" \
        --notes-file .claude/release-notes/<tag>.md --latest
    ```
+
+   To retitle an already-published release, `gh release edit <tag> --title
+   "..."`. The tag annotation cannot be corrected the same way; rewriting a
+   pushed tag breaks every clone that already fetched it, so a title fixed
+   after tagging lives in the Release and the notes, and the annotation is
+   left alone.
 
 8. **Announce, if asked.** Draft to `.claude/artifacts/`, never send
    unprompted — see **Announcement drafts**.
