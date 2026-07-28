@@ -3,13 +3,13 @@ name: cttb-vault
 user-invocable: true
 argument-hint: "<edit|view|encrypt|decrypt|rekey> <vault file>"
 description: >
-  Run any `ansible-vault` subcommand against CTTB vault files through
-  `.claude/sysadmin/cttb-vault.sh`, which sources the vault password
-  from macOS Keychain (`CTTB_VAULT_PASS`) so there is never a password
-  prompt or a plaintext password on disk. Triggers on "edit
-  group_vars/all/vault.yml", "decrypt the vault file", "view a vaulted
-  var", "rekey the vault", `/cttb-vault <subcmd> <file>`, or any agent
-  step that must read or change an encrypted Ansible value. One job:
+  Run any `ansible-vault` subcommand against CTTB vault files. `ansible.cfg`
+  sets `vault_password_file = .claude/sysadmin/vault-pass`, which reads the
+  password from the platform credential store, so there is never a password
+  prompt, a `--vault-password-file` flag, or a plaintext password on disk.
+  Triggers on "edit group_vars/all/vault.yml", "decrypt the vault file", "view
+  a vaulted var", "rekey the vault", `/cttb-vault <subcmd> <file>`, or any
+  agent step that must read or change an encrypted Ansible value. One job:
   authenticated ansible-vault access. It does not deploy or run plays.
 ---
 
@@ -20,29 +20,32 @@ inspecting a vaulted variable, editing `group_vars/all/vault.yml`,
 encrypting a new secret file, decrypting for a one-off check, or
 rekeying. Do not apply for non-vault YAML edits (use `Edit`
 directly), for running playbooks, or for the sudo/SSH credentials a
-deploy needs at runtime (those resolve from Keychain at play time).
+deploy needs at runtime (those resolve from the credential store at play time).
 
 ## Procedure
 
 1. **Confirm the target.** Identify the exact vault file path
    (canonical: `group_vars/all/vault.yml`). Vault files are
    ansible-vault-encrypted; editing them with a plain editor corrupts
-   them — always go through the wrapper.
+   them — always go through `ansible-vault`.
 
-2. **Run the subcommand.** Pass any `ansible-vault` subcommand; the
-   wrapper supplies the Keychain password automatically:
+2. **Run the subcommand** from the repository root. No password flag is
+   needed; `ansible.cfg` supplies the helper:
 
    ```bash
-   .claude/sysadmin/cttb-vault.sh edit    group_vars/all/vault.yml
-   .claude/sysadmin/cttb-vault.sh view    group_vars/all/vault.yml
-   .claude/sysadmin/cttb-vault.sh encrypt path/to/new-secret.yml
-   .claude/sysadmin/cttb-vault.sh decrypt group_vars/all/vault.yml
-   .claude/sysadmin/cttb-vault.sh rekey   group_vars/all/vault.yml
+   ansible-vault edit    group_vars/all/vault.yml
+   ansible-vault view    group_vars/all/vault.yml
+   ansible-vault encrypt path/to/new-secret.yml
+   ansible-vault decrypt group_vars/all/vault.yml
+   ansible-vault rekey   group_vars/all/vault.yml
    ```
 
-   For the raw password (only when a tool needs `--vault-password-file`
-   wiring) use `.claude/sysadmin/vault-pass.sh`, which prints
-   `CTTB_VAULT_PASS`.
+   Running from another directory breaks the relative
+   `vault_password_file` path — `cd` to the repo root first.
+
+   For the raw password (only when an external tool needs its own
+   `--vault-password-file` wiring) run `.claude/sysadmin/vault-pass`,
+   which prints it and exits 2 if the credential is missing.
 
 3. **Read-only by default.** Prefer `view` over `decrypt` when you only
    need to see a value — `decrypt` rewrites the file in plaintext on
@@ -61,9 +64,15 @@ deploy needs at runtime (those resolve from Keychain at play time).
    vault into the transcript unless explicitly requested). Vault access
    is the whole job; route deploys and host work to their own skills.
 
+## Known issue
+
+`vars/jc_passwds.enc.yml` does **not** decrypt with the current
+`CTTB_VAULT_PASS`; it was encrypted with a different, now-unknown password.
+Only `plays/util-hardware-survey-dbg.yml` still loads it. Do not treat a
+failure on that file as a credential problem on the operator's side.
+
 ## Resources
 
-Self-contained. Drives two existing helpers:
-`.claude/sysadmin/cttb-vault.sh` (the `ansible-vault` wrapper) and its
-backing `.claude/sysadmin/vault-pass.sh` (Keychain → `CTTB_VAULT_PASS`).
-No new scripts, no sibling files.
+Self-contained. Drives `ansible-vault` directly, with the password supplied by
+`.claude/sysadmin/vault-pass` via `ansible.cfg`. No wrapper script, no sibling
+files.

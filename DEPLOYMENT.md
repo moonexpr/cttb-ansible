@@ -10,6 +10,8 @@ End-to-end procedure for upgrading a CTTB lab machine from any state to Ubuntu 2
 - PXE server deployed (UEFI GRUB + autoinstall profiles)
 - WhiteSur theme tarballs on asset server (`storehouse.cttb/ansible/`)
 - Ansible environment: `source utils/setup-env`
+- Vault password resolvable: `.claude/sysadmin/vault-pass` prints a value (see [docs/sysadmin-onboarding.md](docs/sysadmin-onboarding.md) for first-time setup)
+- All commands run from the repository root — `ansible.cfg` uses relative paths
 
 ---
 
@@ -20,8 +22,7 @@ End-to-end procedure for upgrading a CTTB lab machine from any state to Ubuntu 2
 ```bash
 source utils/setup-env
 ansible-playbook -i inventory/sudhanix26_hosts.ini plays/sudhanix26-rollout.yml \
-    -l <hostname>.cttb --skip-tags zoom --diff \
-    --vault-password-file <vault-pw-file> --ask-become-pass
+    -l <hostname>.cttb --skip-tags zoom --diff --ask-become-pass
 ```
 
 The playbook triggers the PXE reimage, waits for the host to drop off the network, autoinstall, and return on the fresh image, then applies the Ansible roles. The deployment is a destructive fresh install, not an in-place upgrade. The disk is wiped and the host is rebuilt from a clean Ubuntu 24.04 base, so a host's Sudhanix state is described entirely by that base plus the roles plus its site variables, with no per-host drift to carry forward. Run from a checkout at the `sudhanix26.0.0` tag or later, since that tag is the validated baseline.
@@ -95,7 +96,7 @@ If the machine is powered off or SSH is unreachable:
 ```bash
 source utils/setup-env
 ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit dvgs-labN.cttb \
-    --skip-tags zoom --diff --vault-password-file <vault-pw-file> --ask-become-pass
+    --skip-tags zoom --diff --ask-become-pass
 ```
 
 `--skip-tags zoom` is standard, since the pre-installed Zoom `.deb` has an invalid archive signature and its upgrade task fails otherwise. The become password is required for the same reason it is on the orchestrator, the autoinstalled `administrator` is an ordinary sudoer.
@@ -150,11 +151,11 @@ ansible-playbook plays/sudhanix26-rollout-stage1.yml --limit 'dvgs-lab1.cttb,dvg
 
 # Configure that batch once it has provisioned
 ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit 'dvgs-lab1.cttb,dvgs-lab2.cttb,dvgs-lab3.cttb' \
-    --skip-tags zoom --diff --vault-password-file <vault-pw-file> --ask-become-pass
+    --skip-tags zoom --diff --ask-become-pass
 
 # Whole lab at once, only once every host has been PXE'd and is SSH-reachable
 ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit dvgs_cs_lab \
-    --skip-tags zoom --diff --vault-password-file <vault-pw-file> --ask-become-pass
+    --skip-tags zoom --diff --ask-become-pass
 ```
 
 Stage 1 is per-machine, since it triggers a one-time PXE boot on each host, whether by the playbook or a manual F12. Stage 2 runs against every provisioned host in parallel, so the wait is paid once per batch rather than once per host.

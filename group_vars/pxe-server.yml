@@ -4,7 +4,10 @@
 # so no sudo password is needed and this file has nothing to set.
 #
 # The vaulted ansible_become_password that used to live here (for `jc` on the
-# legacy Ubuntu 16.04 pxe.cttb at 10.11.1.23) was decrypted with a different
-# vault password than the current Keychain CTTB_VAULT_PASS, which historically
-# required `-e ansible_become_password=skip` on every run. That box was
-# decommissioned in the 2026-05-12 cutover; the var is intentionally absent.
+# legacy Ubuntu 16.04 pxe.cttb at 10.11.1.23) was encrypted with a different
+# vault password than the current CTTB_VAULT_PASS, which historically required
+# `-e ansible_become_password=skip` on every run. That box was decommissioned
+# in the 2026-05-12 cutover; the var is intentionally absent.
+#
+# That legacy password is the same one vars/jc_passwds.enc.yml still needs —
+# see the tracking issue on the undecryptable vault file.

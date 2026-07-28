@@ -28,8 +28,8 @@ bash .claude/skills/cttb-deploy/scripts/deploy.sh <alias> <tags> [--check]
 The script:
 
 1. Validates that `<alias>` is a non-empty host name and `<tags>` is non-empty. Refuses fleet-wide deploys (no `--limit all`, no `--limit @group`).
-2. Verifies `CTTB_VAULT_PASS` is reachable via the macOS Keychain through `.claude/sysadmin/vault-pass.sh`.
-3. Invokes `ansible-playbook -i inventory/hosts plays/sudhanix26-rollout-stage2.yml --limit <alias> --tags <tags> --skip-tags zoom --diff --vault-password-file .claude/sysadmin/vault-pass.sh -e ansible_become_pass=$(.claude/sysadmin/vault-pass.sh)`. Adds `--check` when the third arg is present.
+2. Verifies `.claude/sysadmin/vault-pass` is present and executable.
+3. Invokes `ansible-playbook -i inventory/hosts plays/sudhanix26-rollout-stage2.yml --limit <alias> --tags <tags> --skip-tags zoom --diff -e ansible_become_pass=$(.claude/sysadmin/vault-pass)`. Adds `--check` when the third arg is present. The vault password itself comes from `ansible.cfg`'s `vault_password_file`, so no flag is passed.
 4. Exits with the playbook's exit code.
 
 The Ansible recap is the success signal: `ok=N changed=M unreachable=0 failed=0`.
@@ -37,15 +37,15 @@ The Ansible recap is the success signal: `ok=N changed=M unreachable=0 failed=0`
 ## Why the paranoid flags
 
 - **`--limit <alias>`** — never fleet-wide. The script refuses to run without a single named host. Lab fleet rollout is operator-gated and goes through `sudhanix26-rollout.yml`, not this skill.
-- **`--vault-password-file .claude/sysadmin/vault-pass.sh`** — reads `CTTB_VAULT_PASS` from macOS Keychain on every invocation. No password on disk, no shell history exposure.
-- **`-e ansible_become_pass="$(...)"`** — the PXE-installed `administrator` cloud-init identity is an ordinary sudoer; privileged tasks need become-pass. Vault password doubles as sudo for the testmachine slot per project memory.
+- **No `--vault-password-file`** — `ansible.cfg` sets `vault_password_file = .claude/sysadmin/vault-pass`, which reads `CTTB_VAULT_PASS` from the platform credential store on every invocation. No password on disk, no shell history exposure. Requires running from the repository root, since that path is relative to `ansible.cfg`.
+- **`-e ansible_become_pass="$(...)"`** — the PXE-installed `administrator` cloud-init identity is an ordinary sudoer, so privileged tasks need a become password supplied non-interactively.
 - **`--skip-tags zoom`** — broken Zoom .deb archive signature. Omitting the skip fails the run.
 - **`--diff`** — review-friendly output. Always on; the cost is negligible.
 
 ## Prerequisites
 
 - Operator on campus network (Ansible hangs on a dropped SSH session — see project memory `feedback_deploy_roaming_network`).
-- `CTTB_VAULT_PASS` populated in macOS Keychain.
+- `CTTB_VAULT_PASS` populated in the platform credential store (macOS Keychain, Windows Credential Manager, Linux Secret Service, or `~/.config/cttb/secrets/CTTB_VAULT_PASS` at mode 0600). Verify with `.claude/sysadmin/vault-pass`.
 - The target host reachable via the inventory's ssh chain.
 
 If any precondition fails, the underlying ansible-playbook surfaces the error — the script does not try to be smarter than ansible.

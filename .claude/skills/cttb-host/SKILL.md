@@ -54,10 +54,10 @@ already handles the remote leg.
    For multi-step remote work, prefer several `exec` calls over a long
    shell heredoc so each step's result is observable.
 
-4. **Privilege.** Where a remote step needs `sudo`, the CTTB sudo
-   password is the `CTTB_VAULT_PASS` Keychain value (it doubles as the
-   `dvgs-lab3` sudo password; the inventory `all.with-password`
-   value is stale — do not use it).
+4. **Privilege.** Where a remote step needs `sudo`, obtain the CTTB sudo
+   password from your platform credential store rather than the
+   inventory — the `all.with-password` value there is stale, do not
+   use it.
 
 5. **Hand back.** Report the host reached and the command's result.
    Reaching the shell is the whole job — do not drift into editing
