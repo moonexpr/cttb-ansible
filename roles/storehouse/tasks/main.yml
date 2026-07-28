@@ -21,19 +21,14 @@
 
 # ── SSH Keys ─────────────────────────────────────────────────────────
 
-- name: deploy ansible authorized key
+# Reads the canonical key directory in roles/common rather than keeping a
+# byte-identical copy here, so a new sysadmin is enrolled in exactly one place.
+- name: deploy sysadmin authorized keys
   authorized_key:
     user: administrator
-    key: "{{ lookup('file', 'ssh_keys/ansible.pub') }}"
+    key: "{{ lookup('file', item) }}"
     state: present
-  tags:
-    - ssh
-
-- name: deploy jc authorized key
-  authorized_key:
-    user: administrator
-    key: "{{ lookup('file', 'ssh_keys/jc.pub') }}"
-    state: present
+  with_fileglob: "{{ role_path }}/../common/files/ssh_keys/*.pub"
   tags:
     - ssh
 
