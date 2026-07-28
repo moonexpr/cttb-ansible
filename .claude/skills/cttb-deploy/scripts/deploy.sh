@@ -18,9 +18,12 @@ case "$ALIAS" in
   all|"@*"|*,*) fail "fleet-wide deploys are not in scope for this skill ($ALIAS); use plays/sudhanix26-rollout.yml directly" ;;
 esac
 
-VAULT_HELPER=".claude/sysadmin/vault-pass.sh"
-[ -x "$VAULT_HELPER" ] || fail "$VAULT_HELPER not found or not executable; CTTB_VAULT_PASS keychain wrapper missing"
+VAULT_HELPER=".claude/sysadmin/vault-pass"
+[ -x "$VAULT_HELPER" ] || fail "$VAULT_HELPER not found or not executable"
 
+# No --vault-password-file here: ansible.cfg sets vault_password_file globally.
+# ansible_become_pass is supplied non-interactively so the deploy does not
+# block on a prompt.
 ARGS=(
   ansible-playbook
   -i inventory/hosts
@@ -29,7 +32,6 @@ ARGS=(
   --tags "$TAGS"
   --skip-tags zoom
   --diff
-  --vault-password-file "$VAULT_HELPER"
   -e "ansible_become_pass=$($VAULT_HELPER)"
 )
 

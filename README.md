@@ -209,8 +209,7 @@ See the [Ansible variable precedence docs](https://docs.ansible.com/ansible/late
 2. Reimage and configure it in one command:
    ```bash
    ansible-playbook -i inventory/sudhanix26_hosts.ini plays/sudhanix26-rollout.yml \
-       -l <hostname>.cttb --skip-tags zoom --diff \
-       --vault-password-file <vault-pw-file> --ask-become-pass
+       -l <hostname>.cttb --skip-tags zoom --diff --ask-become-pass
    ```
 
 `sudhanix26-rollout` triggers the PXE reimage, waits for the host to autoinstall and return, then applies the roles. The host must be SSH-reachable and UEFI for the stage-1 trigger. The become password is required, since the autoinstalled `administrator` account is an ordinary sudoer rather than a passwordless one. `DEPLOYMENT.md` covers the staged path, batch rollout, and recovery.
@@ -247,15 +246,19 @@ Large files (ISOs, `.deb` packages, fonts) are hosted on the PXE web server at `
 
 ## Encrypted Secrets
 
-Passwords and sensitive data are stored in `vars/jc_passwds.enc.yml`, encrypted with [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html).
+Sensitive values are encrypted with [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html). `ansible.cfg` sets `vault_password_file = .claude/sysadmin/vault-pass`, which reads the password from your platform credential store — so no `--vault-password-file` flag and no `--ask-vault-pass` prompt. Run from the repository root; the path is relative to `ansible.cfg`.
 
 ```bash
-# Edit the vault file
-ansible-vault edit vars/jc_passwds.enc.yml
+# Edit a vault file — no password flag needed
+ansible-vault edit host_vars/wiki-2404/wiki_vault.yml
 
 # Run a playbook that needs vault secrets
-utils/pb gw --ask-vault-pass
+utils/pb gw
 ```
+
+Credential setup for a new workstation is in [docs/sysadmin-onboarding.md](docs/sysadmin-onboarding.md).
+
+> **Known issue:** `vars/jc_passwds.enc.yml` was encrypted with an older, now-unknown password and does **not** decrypt with the current credential. Only `plays/util-hardware-survey-dbg.yml` still loads it.
 
 ## Notes
 

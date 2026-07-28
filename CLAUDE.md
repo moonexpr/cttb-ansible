@@ -32,7 +32,7 @@ Before any file lookup, grep, or glob, navigate from the structured entry points
 | `CLAUDE.md` | Project-specific rules (this file). | yes |
 | `PROJECT.md` | Infra reference: network architecture, role subsystems, deployment model. | yes (secrets redacted) |
 | `.claude/skills/` | The sysadmin skill catalog (`/sysadmin`, `/ldap`, `/wiki-author`, …). | yes |
-| `.claude/sysadmin/` | Sysadmin toolkit: `wiki`, `ldap`, `cttb-ct.sh`, `cttb-vault.sh`, `vault-pass.sh`, and the Python libs. | yes |
+| `.claude/sysadmin/` | Sysadmin toolkit: `wiki`, `ldap`, `cttb-ct.sh`, `vault-pass`, and the Python libs (incl. the `idstore_*` credential backends). | yes |
 | `.claude/settings.json` | Shared Claude Code settings: context-mode plugin + the think-in-code deny hook. | yes |
 | `.claude/hooks/`, `.claude/rules/` | Vendored enforcement hook + its rule doc. | yes |
 | `.claude/.env.example` | Credential env-var template (commit the template, not the values). | yes |
@@ -53,7 +53,7 @@ Invoke with `/<name>`. Each has a `SKILL.md` with the full workflow; the one-lin
 | `/ldap` | Query and modify the CTTB OpenLDAP directory (`ldap.cttb`): users, groups, posixAccount attrs, password resets, new accounts, arbitrary LDIF. Writes are dry-run until `--risks-confirmed`. | Any LDAP question — read or write. |
 | `/wiki-author` | Author/edit/delete/style pages on `wiki.cttb` (MediaWiki 1.43): Mbox/Ambox templates, `MediaWiki:` system messages, Lockdown protection, post-edit cache purges. Sets the authorial voice (connected textbook prose). | Drafting, editing, or styling wiki pages. |
 | `/cttb-host` | Reach a CTTB host or container over the right SSH chain; shell/exec/push/pull. | "shell into the LDAP container", "what's the IP of wiki-2404", file transfer to a box. |
-| `/cttb-vault` | Ansible-vault operations using the Keychain-backed password. | edit/view/encrypt/decrypt/rekey vault files. |
+| `/cttb-vault` | Ansible-vault operations; the password is supplied by `ansible.cfg`. | edit/view/encrypt/decrypt/rekey vault files. |
 | `/github-issues` | File actionable items against `moonexpr/cttb-ansible` with the canonical status labels. | "file a bug for this", "track this task", `/document <thing>` for defects. |
 | `/document` | Router for recording work: durable reference knowledge → `/wiki-author`; actionable defect/task → `/github-issues`. | "document this", "write this up", "where should this go". |
 | `/cttb-deploy` | Single-host, tag-scoped Ansible deploy via `sudhanix26-rollout-stage2.yml` with paranoid flags pre-set. **Agent-only.** | A skill/routine needs to deploy a subset of role tasks to one named host. |
@@ -66,7 +66,7 @@ Invoke with `/<name>`. Each has a `SKILL.md` with the full workflow; the one-lin
 
 ## Sysadmin Tools (`.claude/sysadmin/`)
 
-The toolkit the skills above wrap. All credential-bearing tools read from the macOS Keychain / Windows Credential Manager first, then env vars (see **Credentials**); no secret is hardcoded.
+The toolkit the skills above wrap. All credential-bearing tools resolve secrets through the platform credential store — Keychain, Windows Credential Manager, Linux Secret Service, or the 0600 file store (see **Credentials**); no secret is hardcoded.
 
 ### Hosts and containers (`cttb-ct.sh`)
 
@@ -80,19 +80,23 @@ The toolkit the skills above wrap. All credential-bearing tools read from the ma
 
 Edit the `ssh_chain()` host tables at the top of the script to add hosts. SSH ProxyJump for `*.cttb` is configured in `~/.ssh/config`.
 
-### Ansible vault (`cttb-vault.sh`)
+### Ansible vault
 
 ```bash
-.claude/sysadmin/cttb-vault.sh edit group_vars/all/vault.yml   # ansible-vault with Keychain password
-.claude/sysadmin/vault-pass.sh                                  # raw helper (prints CTTB_VAULT_PASS)
+ansible-vault edit group_vars/all/vault.yml    # no password flag needed
+.claude/sysadmin/vault-pass                    # raw helper (prints the password)
 ```
 
-`vault-pass.sh` reads `CTTB_VAULT_PASS` from the macOS Keychain, falling back to the `$CTTB_VAULT_PASS` env var (for Linux sysadmins without a Keychain). Pass any `ansible-vault` subcommand (`edit`, `view`, `encrypt`, `decrypt`, `rekey`).
+`ansible.cfg` sets `vault_password_file = .claude/sysadmin/vault-pass`, so every `ansible-vault` and `ansible-playbook` invocation picks the password up automatically — `--vault-password-file` is never needed. The path is relative to `ansible.cfg`, so **run from the repository root**.
+
+`vault-pass` resolves `CTTB_VAULT_PASS` through the shared Python credential layer (`cttb_api`), which auto-detects the platform: macOS Keychain, Windows Credential Manager, Linux Secret Service (`secret-tool`), and a `~/.config/cttb/secrets/<SERVICE>` file store at mode 0600 as the headless fallback. It fails closed — exit 2, nothing on stdout — rather than handing `ansible-vault` an empty password. There is no `$CTTB_VAULT_PASS` environment-variable path.
+
+Known issue: `vars/jc_passwds.enc.yml` does not decrypt with the current password (encrypted with a different, now-unknown one). Only `plays/util-hardware-survey-dbg.yml` loads it.
 
 ### Wiki API (`wiki`)
 
 Unified Python CLI for `wiki.cttb` (MediaWiki 1.43.x). Auth is handled automatically per command — no separate login step.
-**Credentials** in macOS Keychain (`WIKI_CTTB_BOT_USER`, `WIKI_CTTB_BOT_PASSWD`); env vars override.
+**Credentials** in the platform credential store (`WIKI_CTTB_BOT_USER`, `WIKI_CTTB_BOT_PASSWD`); env vars override.
 **Library**: `wiki_lib.py` (WikiContext → WikiSession → API functions). Shared base: `cttb_api.py`.
 
 ```bash
@@ -118,7 +122,7 @@ Unified Python CLI for `wiki.cttb` (MediaWiki 1.43.x). Auth is handled automatic
 ### LDAP (`ldap`)
 
 Unified Python CLI for the CTTB directory. Defaults: `ldap://ldap.cttb`, `dc=cttb`, authenticated simple bind, StartTLS (cert validation off). Run locally — no jump host needed.
-**Credentials** in macOS Keychain (`CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`); env vars override. Username may be a bare uid or a full DN.
+**Credentials** in the platform credential store (`CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`); env vars override. Username may be a bare uid or a full DN.
 **Library**: `ldap_lib.py` (LdapContext + API functions). Shared base: `cttb_api.py`.
 **All writes are dry-run by default** — pass `--risks-confirmed` to mutate.
 
@@ -160,11 +164,20 @@ Escape hatches (use sparingly, with a stated reason): per-command `THINK_IN_CODE
 
 ## Credentials
 
-No secret is committed. The toolkit reads credentials from a credential store first (macOS Keychain / Windows Credential Manager), then from env vars.
+No secret is committed. The toolkit reads credentials from the platform credential store, auto-detected by `cttb_api._detect_idstore()`:
 
-- **Template**: `.claude/.env.example` lists every credential env var with the Keychain/Credential-Manager service it mirrors.
-- **Real values**: copy `.env.example` → `.claude/.env` and fill in (gitignored — never committed). macOS users can instead store in Keychain: `security add-generic-password -s <SERVICE> -a "$USER" -w`. Windows users: `cmdkey /generic:CTTB/<SERVICE> /user:. /pass:<value>`.
-- **Variables**: `CTTB_VAULT_PASS`, `WIKI_CTTB_BOT_USER`, `WIKI_CTTB_BOT_PASSWD`, `CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`, `VAJRA_SRC`.
+| Platform | Store | Add a credential |
+|---|---|---|
+| macOS | Keychain | `security add-generic-password -s <SERVICE> -a "$USER" -w` |
+| Windows | Credential Manager | `cmdkey /generic:CTTB/<SERVICE> /user:. /pass:<value>` |
+| Linux / WSL | Secret Service (libsecret) | `secret-tool store --label=<SERVICE> service <SERVICE>` |
+| any, headless | file store, mode 0600 | `printf '%s' '<value>' > ~/.config/cttb/secrets/<SERVICE>` |
+
+The file store is chained last on every platform, so headless servers, cron, and bare WSL shells (no D-Bus keyring) still resolve credentials.
+
+- **Template**: `.claude/.env.example` — env vars are an accepted fallback for the wiki/LDAP credentials only, and are read *before* the store by `credential_or_env()`.
+- **`CTTB_VAULT_PASS` has no env-var path.** It resolves only through the store (or the 0600 file), via `.claude/sysadmin/vault-pass`.
+- **Services**: `CTTB_VAULT_PASS`, `WIKI_CTTB_BOT_USER`, `WIKI_CTTB_BOT_PASSWD`, `CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`. (`VAJRA_SRC` is a path, not a secret — env only.)
 
 Rule: never hardcode a token, password, or personal account name in a committed file. Use the `<redacted>` placeholder in docs/examples and read live values from the store/env at runtime.
 

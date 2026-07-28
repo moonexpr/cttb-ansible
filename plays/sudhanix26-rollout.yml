@@ -17,8 +17,10 @@
 #   ansible-playbook -i inventory/sudhanix26_hosts.ini \
 #     plays/sudhanix26-rollout.yml -l dvgs-testmachine.cttb \
 #     --skip-tags zoom --diff \
-#     --vault-password-file .claude/sysadmin/vault-pass.sh \
-#     -e ansible_become_pass="$(.claude/sysadmin/vault-pass.sh)"
+#     -e ansible_become_pass="$(.claude/sysadmin/vault-pass)"
+#
+#   (No --vault-password-file: ansible.cfg sets vault_password_file. Run from
+#   the repository root so that relative path resolves.)
 #
 #   # dry-run the trigger only (no wipe — stage1 supports --check):
 #   ansible-playbook ... plays/sudhanix26-rollout.yml -l <host> --check
