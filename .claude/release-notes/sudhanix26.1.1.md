@@ -50,6 +50,8 @@ This supersedes the corpus-sweep audit that had been closing hardcoded-color hol
 
 The `.claude/` sysadmin toolkit now ships with the repository rather than being gitignored, so the skill catalog (`/sysadmin`, `/ldap`, `/wiki-author`, `/cttb-host`, `/cttb-vault`, and the rest) is available on any clone. `SECURITY.md` was added. `CLAUDE.md`, `PROJECT.md`, `README.md`, and `DEPLOYMENT.md` were updated to match the credential and onboarding changes.
 
+A new **`/release-notes`** skill captures the procedure that produced this file, so the next release is a repeat rather than a rediscovery. It carries `release-scope.sh`, which groups the diff since the previous tag by area — the scope above was computed with it rather than recalled from the commit log. This directory, `.claude/release-notes/`, is now the source of truth from which both the tag annotation and the GitHub Release are derived; the `sudhanix26.1.0` tag already pointed here, but the file was never committed because `.claude/` was gitignored at the time.
+
 ---
 
 ## Upgrading

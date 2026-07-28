@@ -56,6 +56,7 @@ Invoke with `/<name>`. Each has a `SKILL.md` with the full workflow; the one-lin
 | `/cttb-vault` | Ansible-vault operations; the password is supplied by `ansible.cfg`. | edit/view/encrypt/decrypt/rekey vault files. |
 | `/github-issues` | File actionable items against `moonexpr/cttb-ansible` with the canonical status labels. | "file a bug for this", "track this task", `/document <thing>` for defects. |
 | `/document` | Router for recording work: durable reference knowledge → `/wiki-author`; actionable defect/task → `/github-issues`. | "document this", "write this up", "where should this go". |
+| `/release-notes` | Cut a release: scope the diff since the previous tag, write `.claude/release-notes/<tag>.md`, annotated-tag, push, publish the GitHub Release, optionally draft the announcement. | "cut a release", "tag a release", `/release-notes <tag>`, a merge completing a milestone. |
 | `/cttb-deploy` | Single-host, tag-scoped Ansible deploy via `sudhanix26-rollout-stage2.yml` with paranoid flags pre-set. **Agent-only.** | A skill/routine needs to deploy a subset of role tasks to one named host. |
 | `/cttb-pxe-wait` | Wait out a PXE reinstall and verify the host came back. | After kicking a PXE reinstall, polling for completion. |
 | `/register-device` | Move one device off the `block13` quarantine pool into a working DHCP pool on `lxc-dnsmasq`. | "register a device", "get this device online", `/register-device <MAC> [category]`. |
