@@ -6,9 +6,23 @@ Built on [Ansible](https://docs.ansible.com/ansible/latest/index.html). Inspired
 
 ## Quick Start
 
-**Prerequisites:** Ansible installed on the control machine, SSH key-based access to target hosts as the `administrator` user, and network connectivity to the `.cttb` domain.
+**Prerequisites** — on a Debian/Ubuntu control machine, on the campus network:
 
-**Always run commands from the repository root.**
+```bash
+sudo apt update && sudo apt install -y ansible
+ansible-galaxy collection install -r requirements.yml
+ansible --version
+```
+
+You also need SSH key-based access to target hosts as the `administrator` user, and the `CTTB_VAULT_PASS` credential in your platform credential store.
+
+> **Setting up a new workstation?** macOS and Windows/WSL installs, credential setup, SSH config, and getting your SSH key enrolled on the fleet are all covered in **[docs/sysadmin-onboarding.md](docs/sysadmin-onboarding.md)**. Start there — you cannot enroll your own key, and the guide explains why.
+
+**Always run commands from the repository root** — `ansible.cfg` uses relative paths, including the vault password helper.
+
+```bash
+source utils/setup-env      # required: ansible.cfg reads $ANSIBLE_ROLES etc.
+```
 
 ```bash
 # Run a playbook (preferred method)

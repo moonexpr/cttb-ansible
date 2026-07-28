@@ -71,16 +71,19 @@
   tags:
     - apt
 
-# setup during preseed stage, but just in case, make sure it's there
-- name: Set up ansible/cttb-os authorized_key
+# Set up during the preseed stage, but just in case, make sure they are there.
+#
+# Every *.pub in roles/common/files/ssh_keys/ is installed, so enrolling a new
+# sysadmin is a one-file pull request. See docs/sysadmin-onboarding.md.
+#
+# state is present, never exclusive: this task adds keys and never removes one.
+# Deleting a .pub here does NOT revoke it from any host — revocation is a
+# separate, deliberate operation.
+- name: Install sysadmin authorized_keys for administrator
   authorized_key:
     user: administrator
-    key: "{{ lookup('file', 'ssh_keys/ansible.pub') }}"
-
-- name: Set up jc authorized_key
-  authorized_key:
-    user: administrator
-    key: "{{ lookup('file', 'ssh_keys/jc.pub') }}"
+    key: "{{ lookup('file', item) }}"
+  with_fileglob: "ssh_keys/*.pub"
 
 - name: set an explicit proxy if needed
   lineinfile:
