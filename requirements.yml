@@ -1,0 +1,25 @@
+---
+# Ansible collections this repository actually uses.
+#
+#   ansible-galaxy collection install -r requirements.yml
+#
+# The full `ansible` package bundles these, so a Homebrew or apt install of
+# `ansible` already satisfies them. An `ansible-core`-only install (pip, pipx
+# install ansible-core, some distro packages) ships ZERO collections, and the
+# failure mode is misleading: the play aborts with "couldn't resolve module/
+# action" naming the task, not the missing collection.
+#
+# Determined by census of bare (non-FQCN) module usage across roles/ and plays/:
+#   ansible.posix      synchronize (14 uses), authorized_key (4)
+#   community.general  snap, ufw       (also alternatives, flatpak, htpasswd,
+#                                       timezone, wakeonlan — already FQCN)
+#   community.mysql    mysql_db, mysql_user
+#
+# Unpinned deliberately: the repo has never carried version constraints, and
+# pinning without testing each role against a specific release would be
+# asserting a compatibility claim nobody has verified. Add `version:` when a
+# real incompatibility appears.
+collections:
+  - name: ansible.posix
+  - name: community.general
+  - name: community.mysql

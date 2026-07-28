@@ -1,0 +1,76 @@
+# CTTB SSH client config — example
+#
+# The .claude/sysadmin/cttb-ct.sh toolkit resolves the aliases below out of
+# your ~/.ssh/config. Without them, every `cttb-ct.sh` command fails with
+# "Could not resolve hostname".
+#
+# Install by reference, not by copy, so repo updates reach you:
+#
+#     # as the FIRST line of ~/.ssh/config (Include must precede Host blocks)
+#     Include ~/GitRepos/cttb-ansible/docs/ssh_config.example
+#
+# Adjust the path if you cloned elsewhere. Verify with:
+#
+#     ssh -G srv-vm | head -3        # shows the resolved hostname/user/port
+#
+# ── Scope ─────────────────────────────────────────────────────────────────────
+# These entries assume you are ON the campus network (wired or CTTB wifi).
+# The 10.11.x.y addresses are not routable from outside. For off-campus access
+# see the Tailscale section at the bottom.
+#
+# Only the three physical hosts need entries. LXC containers are NOT reached
+# over SSH — there is no sshd inside them — they are entered with `lxc exec`
+# through their parent host. See docs/sysadmin-onboarding.md.
+
+Host *.cttb srv-gw srv-vm srv-nas
+    User administrator
+    IdentityFile ~/.ssh/id_ed25519
+    # Agent forwarding lets you hop onward without copying your private key
+    # to the jump host. Ansible's ssh_args in ansible.cfg enables it too.
+    ForwardAgent yes
+    # accept-new pins on first contact but still fails if a known key changes,
+    # unlike `no`, which accepts silently forever.
+    StrictHostKeyChecking accept-new
+    ServerAliveInterval 15
+    ServerAliveCountMax 4
+    ControlMaster auto
+    ControlPath ~/.ssh/cm-%r@%h:%p
+    ControlPersist 60s
+
+# ── Physical hosts ────────────────────────────────────────────────────────────
+
+Host srv-gw
+    HostName 10.11.1.1
+
+# Hosts the LXC containers reached as `ssh -t srv-vm -- lxc exec <ct> --`
+# (no sudo needed on this box).
+Host srv-vm
+    HostName 10.11.1.3
+
+# Hosts the LXC containers reached as `ssh -t srv-nas -- sudo lxc exec <ct> --`
+# — sudo IS required here, because the login user cannot read /etc/lxc.
+Host srv-nas
+    HostName 10.11.1.5
+
+# ── Exceptions ────────────────────────────────────────────────────────────────
+
+# wiki-2404 runs its own sshd and is reached directly as root, unlike the other
+# containers. Ansible connects to it as `ubuntu` via host_vars/wiki-2404.
+Host wiki
+    HostName 10.11.1.31
+    User root
+
+# storehouse breaks if a ProxyJump is inherited from a wildcard block.
+Host storehouse
+    HostName 10.11.1.43
+    ProxyJump none
+
+# ── Off-campus (optional) ─────────────────────────────────────────────────────
+# `cttb` is a Tailscale subnet router on srv-vm advertising 10.11.0.0/16.
+# It requires a tailnet account; ask an existing admin. Once you are on the
+# tailnet, the 10.11.x.y entries above work remotely with no further change.
+# TODO.md notes ProxyJump over Tailscale has been intermittent.
+#
+# Host cttb
+#     HostName <tailnet-name-or-ip>
+#     User administrator
