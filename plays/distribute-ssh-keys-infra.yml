@@ -1,0 +1,31 @@
+# Distribute sysadmin SSH public keys to administrator@ on the infra hosts
+# that plays/distribute-ssh-keys.yml does not cover.
+#
+# The main play targets cttb_hosts, which is only the three school
+# workstation fleets (dvgs, dvbs, drbu). The core infrastructure — srv-*,
+# the lxc-* containers, and the other ungrouped inventory entries — is not
+# in any child of cttb_hosts, so a key enrolled via the main play never
+# reaches the servers. This play covers that complement until the
+# inventory grows a proper infra group (tracked in the issue backlog).
+#
+# Exclusions: pxe boots as root with no administrator account; floating is
+# a rebuild placeholder; substation and sw-* are network gear reached as
+# 'manager' with legacy key exchange — authorized_key does not apply.
+#
+# Same semantics as the main play: state is present, never exclusive; this
+# play adds keys and never removes one. Run from CTTB_TRUSTED_HOST with the
+# trusted key loaded in an agent.
+#
+# Usage (utils/pb adds --diff itself):
+#   utils/pb distribute-ssh-keys-infra --check   # preview
+#   utils/pb distribute-ssh-keys-infra           # distribute
+- name: Distribute sysadmin authorized_keys to administrator (infra complement)
+  hosts: all:!cttb_hosts:!pxe:!floating:!substation:!sw-*
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Install sysadmin authorized_keys for administrator
+      ansible.posix.authorized_key:
+        user: administrator
+        key: "{{ lookup('file', item) }}"
+      with_fileglob: "{{ playbook_dir }}/../roles/common/files/ssh_keys/*.pub"
