@@ -205,7 +205,12 @@ This is the part that trips people up, so it is worth stating plainly:
    cp ~/.ssh/id_ed25519.pub roles/common/files/ssh_keys/<your-name>.pub
    ```
 2. Open a pull request with just that file.
-3. An existing sysadmin reviews and merges it, then runs the `common` role. **Their** already-trusted key authorizes the SSH connection that installs **yours**.
+3. An existing sysadmin reviews and merges it, then — from **CTTB_TRUSTED_HOST** (the designated originator machine whose key is already trusted fleet-wide; currently `rui-desktop2`) — runs the distribution play:
+   ```bash
+   ansible-playbook plays/distribute-ssh-keys.yml --check --diff   # preview
+   ansible-playbook plays/distribute-ssh-keys.yml                  # distribute
+   ```
+   **Their** already-trusted key authorizes the SSH connection that installs **yours**; the play needs no become password because it edits `administrator`'s own `authorized_keys`. (A full `common`-role run distributes keys too — the play is the lightweight path that touches nothing else.)
 
 Every `*.pub` in `roles/common/files/ssh_keys/` is installed into `administrator`'s `authorized_keys` fleet-wide, so this is a one-file change with no task edits.
 
@@ -242,14 +247,15 @@ ssh -t srv-nas -- sudo lxc exec pxe --
 
 ## 9. Privilege escalation on managed hosts
 
-`administrator` (uid 999) is an **ordinary sudoer**, not a passwordless one. Any play that touches privileged state needs a become password:
+`administrator` (uid 999) is an **ordinary sudoer**, not a passwordless one. Any play that touches privileged state needs a become password — add `--ask-become-pass` to whatever play you have been asked to run:
 
 ```bash
-ansible-playbook plays/sudhanix26-rollout-stage2.yml --limit <host> \
-    --skip-tags zoom --diff --ask-become-pass
+ansible-playbook plays/<play>.yml --limit <host> --check --diff --ask-become-pass
 ```
 
-Members of the LDAP `cn=it` group get sudo through `/etc/sudoers.d/it-group` (`%it ALL=(ALL:ALL) ALL`), also password-required.
+(`--check --diff` previews without changing anything; drop it only when you mean to deploy. Nothing in this guide requires you to deploy anything — which play to run is a task question, not an onboarding one.)
+
+Members of the LDAP `cn=it` group get sudo directly (`/etc/sudoers.d/it-group`, `%it ALL=(ALL:ALL) ALL`), also password-required. If you need personal sudo (as your own LDAP user, rather than the shared `administrator` account), ask an existing sysadmin to add your LDAP account to `cn=it`.
 
 > **Handle `CTTB_VAULT_PASS` as a high-privilege credential.** Store it only in your platform credential store or the 0600 file, never in a shell history, a chat message, or a file in the repo. Ask an existing sysadmin before sharing it onward.
 

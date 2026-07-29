@@ -1,0 +1,38 @@
+# Distribute sysadmin SSH public keys to administrator@ fleet-wide.
+#
+# Installs every roles/common/files/ssh_keys/*.pub into administrator's
+# authorized_keys — the same task the common role runs, extracted so that
+# enrolling a new sysadmin's key (docs/sysadmin-onboarding.md §8) does not
+# require a full role deploy. The connection authenticates with an existing
+# sysadmin's already-trusted key; no become password is needed because the
+# play edits administrator's own authorized_keys.
+#
+# state is present, never exclusive: this play adds keys and never removes
+# one. Deleting a .pub from ssh_keys/ does NOT revoke it from any host —
+# revocation is a separate, deliberate operation.
+#
+# Hosts that are powered off or unreachable simply miss the run; re-run the
+# play (or wait for the next common-role deploy) to catch them up. Freshly
+# PXE-imaged hosts get their keys from the netinstall templates, which are
+# maintained separately — see the caveat in docs/sysadmin-onboarding.md §8.
+#
+# Run this from CTTB_TRUSTED_HOST — the designated originator machine whose
+# administrator key is already trusted fleet-wide (currently: rui-desktop2).
+# A newcomer cannot originate their own enrollment; an authorized sysadmin
+# runs this on their behalf after merging the key PR.
+#
+# Usage (from CTTB_TRUSTED_HOST):
+#   ansible-playbook plays/distribute-ssh-keys.yml --check --diff   # preview
+#   ansible-playbook plays/distribute-ssh-keys.yml                  # all of cttb_hosts
+#   ansible-playbook plays/distribute-ssh-keys.yml -l dvgs_cs_lab   # one group
+#
+- name: Distribute sysadmin authorized_keys to administrator
+  hosts: cttb_hosts
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Install sysadmin authorized_keys for administrator
+      ansible.posix.authorized_key:
+        user: administrator
+        key: "{{ lookup('file', item) }}"
+      with_fileglob: "{{ playbook_dir }}/../roles/common/files/ssh_keys/*.pub"
