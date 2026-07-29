@@ -101,8 +101,8 @@ ansible-galaxy collection list | grep -E 'ansible\.posix|community\.(general|mys
 ## 4. Clone the repo and set up the environment
 
 ```bash
-git clone <repo-url> ~/GitRepos/cttb-ansible
-cd ~/GitRepos/cttb-ansible
+git clone <repo-url> ~/cttb-ansible
+cd ~/cttb-ansible
 source utils/setup-env
 chmod +x .claude/sysadmin/vault-pass .claude/sysadmin/cttb-ct.sh
 ```
@@ -167,7 +167,7 @@ The `cttb-ct.sh` toolkit resolves host aliases (`srv-vm`, `srv-nas`, `wiki`, …
 Add this as the **first line** of `~/.ssh/config` — `Include` has to precede any `Host` block:
 
 ```
-Include ~/GitRepos/cttb-ansible/docs/ssh_config.example
+Include ~/docs/ssh_config.example
 ```
 
 Including by reference rather than copy-pasting means updates to the host table reach you with a `git pull`.
@@ -260,7 +260,7 @@ Members of the LDAP `cn=it` group get sudo through `/etc/sudoers.d/it-group` (`%
 Work down this list. Each step depends only on the ones above it, so the first failure tells you where to look.
 
 ```bash
-cd ~/GitRepos/cttb-ansible && source utils/setup-env
+cd ~/cttb-ansible && source utils/setup-env
 
 # 1. Ansible and collections
 ansible --version
