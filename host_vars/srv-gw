@@ -84,7 +84,7 @@ timed_internet:
       - 10.11.10.126-10.11.10.140
       - 10.11.10.143-10.11.10.150
       - 10.11.10.168-10.11.10.239
-	# From 240 to 255 (last octet) are reserved for devices in BS IP range for content filtering, but do not need the timed Internet access.
+      # From 240 to 255 (last octet) are reserved for devices in BS IP range for content filtering, but do not need the timed Internet access.
 
     periods:
       - days: "1-5"
