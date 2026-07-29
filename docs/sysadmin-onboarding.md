@@ -167,7 +167,7 @@ The `cttb-ct.sh` toolkit resolves host aliases (`srv-vm`, `srv-nas`, `wiki`, …
 Add this as the **first line** of `~/.ssh/config` — `Include` has to precede any `Host` block:
 
 ```
-Include ~/docs/ssh_config.example
+Include ~/ansible-cttb/docs/ssh_config.example
 ```
 
 Including by reference rather than copy-pasting means updates to the host table reach you with a `git pull`.
