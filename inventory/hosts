@@ -611,3 +611,11 @@ dvbs_cc
 dvbs_student_laptops
 # Others
 other_ldap_clients
+
+# Campus fleet umbrella — parity with cttb_hosts in sudhanix26_hosts.ini,
+# so plays targeting cttb_hosts (e.g. distribute-ssh-keys) resolve under
+# utils/pb, which pins -i to this file.
+[cttb_hosts:children]
+dvgs
+dvbs
+drbu

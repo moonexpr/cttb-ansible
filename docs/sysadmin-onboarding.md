@@ -207,8 +207,8 @@ This is the part that trips people up, so it is worth stating plainly:
 2. Open a pull request with just that file.
 3. An existing sysadmin reviews and merges it, then — from **CTTB_TRUSTED_HOST** (the designated originator machine whose key is already trusted fleet-wide; currently `rui-desktop2`) — runs the distribution play:
    ```bash
-   ansible-playbook plays/distribute-ssh-keys.yml --check --diff   # preview
-   ansible-playbook plays/distribute-ssh-keys.yml                  # distribute
+   utils/pb distribute-ssh-keys --check   # preview
+   utils/pb distribute-ssh-keys           # distribute
    ```
    **Their** already-trusted key authorizes the SSH connection that installs **yours**; the play needs no become password because it edits `administrator`'s own `authorized_keys`. (A full `common`-role run distributes keys too — the play is the lightweight path that touches nothing else.)
 
@@ -250,10 +250,10 @@ ssh -t srv-nas -- sudo lxc exec pxe --
 `administrator` (uid 999) is an **ordinary sudoer**, not a passwordless one. Any play that touches privileged state needs a become password — add `--ask-become-pass` to whatever play you have been asked to run:
 
 ```bash
-ansible-playbook plays/<play>.yml --limit <host> --check --diff --ask-become-pass
+utils/pb <play> --limit <host> --check --ask-become-pass
 ```
 
-(`--check --diff` previews without changing anything; drop it only when you mean to deploy. Nothing in this guide requires you to deploy anything — which play to run is a task question, not an onboarding one.)
+(`utils/pb` runs the named play from `plays/` with `--diff` always on; `--check` previews without changing anything — drop it only when you mean to deploy. Nothing in this guide requires you to deploy anything — which play to run is a task question, not an onboarding one.)
 
 Members of the LDAP `cn=it` group get sudo directly (`/etc/sudoers.d/it-group`, `%it ALL=(ALL:ALL) ALL`), also password-required. If you need personal sudo (as your own LDAP user, rather than the shared `administrator` account), ask an existing sysadmin to add your LDAP account to `cn=it`.
 

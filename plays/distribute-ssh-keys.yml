@@ -21,10 +21,10 @@
 # A newcomer cannot originate their own enrollment; an authorized sysadmin
 # runs this on their behalf after merging the key PR.
 #
-# Usage (from CTTB_TRUSTED_HOST):
-#   ansible-playbook plays/distribute-ssh-keys.yml --check --diff   # preview
-#   ansible-playbook plays/distribute-ssh-keys.yml                  # all of cttb_hosts
-#   ansible-playbook plays/distribute-ssh-keys.yml -l dvgs_cs_lab   # one group
+# Usage (from CTTB_TRUSTED_HOST; utils/pb adds --diff itself):
+#   utils/pb distribute-ssh-keys --check           # preview
+#   utils/pb distribute-ssh-keys                   # all of cttb_hosts
+#   utils/pb distribute-ssh-keys -l dvgs_cs_lab    # one group
 #
 - name: Distribute sysadmin authorized_keys to administrator
   hosts: cttb_hosts
