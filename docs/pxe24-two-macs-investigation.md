@@ -1,7 +1,8 @@
 # pxe24: "two MAC addresses on one ethernet adapter" — investigation
 
-**Date:** 2026-07-30 · **Status:** investigated, remediation deferred (tracked
-on GitHub) · **Host:** `pxe24` LXC on **srv-nas** (10.11.1.5)
+**Date:** 2026-07-30 · **Status:** RESOLVED — Option B applied same day (see
+"Resolution applied" below; gh-106) · **Host:** `pxe24` LXC on **srv-nas**
+(10.11.1.5)
 
 > The question arrived as "pxe24 on srv-nav". `srv-nav` does not exist —
 > not in inventory, DNS, or git history. The host is `srv-nas`.
@@ -54,25 +55,36 @@ kernel lease lifetime expires.
   quarantine address 10.11.13.27. Now `pxe24 → 10.11.1.23`; `pxe` marked
   stopped/legacy.
 
-## Remediation options (deferred — decide via the GitHub issue)
+## Resolution applied (2026-07-30, gh-106) — Option B + legacy retirement
 
-- **Option A — pin the reserved MAC (convention-restoring).**
-  `lxc config device override pxe24 eth0 hwaddr=00:16:3e:11:01:23` + restart,
-  and permanently retire (delete or at least rename) the stopped legacy
-  `pxe` container so it can never re-claim the MAC/IP. Restores
-  MAC-encodes-IP; matches the existing dnsmasq reservation and host_vars.
-  Costs one restart of the PXE service.
-- **Option B — re-register the real MAC (low-touch).** Update
-  `/etc/dnsmasq-hosts/servers` so 10.11.1.23 maps to `00:16:3e:8c:80:b6`.
-  No restart; permanently breaks the convention for this host.
+Operator direction: deprecate the old `pxe`, repin the PXE IP onto the new
+container's MAC. Applied same day:
 
-## Later verification / follow-ups
+1. **Legacy container retired.** On srv-nas: `lxc move pxe pxe-deprecated`
+   (stopped, no autostart, data kept for rollback). The reserved MAC
+   `00:16:3e:11:01:23` is retired with it.
+2. **Reservation repinned.** On lxc-dnsmasq,
+   `/etc/dnsmasq-hosts/servers` line 19 is now
+   `00:16:3e:8c:80:b6,10.11.1.23,lxc-pxe24` (backup:
+   `servers.bak-20260730` alongside). `dnsmasq --test` passed; dnsmasq
+   restarted; the restart also pruned the stale `00:16:3e:11:01:23` lease.
+   This is a **deliberate exception** to the MAC-encodes-IP convention.
+3. **Post-checks.** DNS resolving (wiki.cttb OK), PXE HTTP 200,
+   `ip neigh` for 10.11.1.23 answers from the registered MAC.
+4. **Repo aligned.** `host_vars/srv-nas` now declares `pxe24` with the
+   real hwaddr (legacy `pxe` entry removed so `roles/virt` can never
+   recreate it); `cttb-ct.sh` NAS_CTS updated.
+
+Rollback: restore `servers.bak-20260730` + restart dnsmasq;
+`lxc move pxe-deprecated pxe` if the old container is ever needed.
+
+## Remaining follow-ups
 
 - After 2026-08-01 21:48 UTC: `sudo lxc exec pxe24 -- ip -4 addr show eth0`
-  on srv-nas should show only 10.11.1.23. If 10.11.13.122 is still present,
-  something is renewing it — reopen.
-- Optional: `/root/.bash_history` (and administrator's) on srv-nas to
-  identify the Jul 30 test session.
-- Cleanup candidates: container OS hostname `pxetest` ≠ LXD name `pxe24`;
-  back-fill a `pxe24` entry into `host_vars/srv-nas` once the MAC decision
-  is made.
+  on srv-nas should show only 10.11.1.23 (the quarantine lease
+  10.11.13.122 self-expires). If still present, something is renewing it —
+  reopen gh-106.
+- Once confirmed stable: delete `pxe-deprecated` to reclaim disk.
+- Cleanup candidate: container OS hostname `pxetest` ≠ LXD name `pxe24`.
+- Optional forensics: `/root/.bash_history` on srv-nas for the Jul 30 test
+  session.

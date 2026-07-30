@@ -130,21 +130,19 @@ lxc_containers:
         type: nic
         nictype: bridged
         parent: lxdbr0
-  # DRIFT NOTE (2026-07-30): the `pxe` container below is the LEGACY 16.04-era
-  # entry — it still exists on srv-nas but has been STOPPED since the
-  # 2026-05-12 cutover to the pxe24 LXC (see docs/pxe24-two-macs-investigation.md
-  # and PROJECT.md "pxe.cttb"). The live container is `pxe24` (Ubuntu 24.04,
-  # created out-of-band, not declared here). pxe24 owns 10.11.1.23 but runs
-  # with an LXD-random hwaddr 00:16:3e:8c:80:b6 — it never inherited the
-  # reserved 00:16:3e:11:01:23 below, violating the MAC-encodes-IP convention.
-  # Remediation (pin the MAC vs re-register the real one) is tracked on GitHub;
-  # do not re-enable or redeploy `pxe` from this entry.
-  - name: pxe
-    image: cttb-latest
+  # pxe24 serves pxe.cttb (10.11.1.23) — Ubuntu 24.04, created out-of-band at
+  # the 2026-05-12 cutover (docs/pxe24-two-macs-investigation.md, gh-106).
+  # Its hwaddr is the LXD-assigned MAC, registered in dnsmasq-hosts/servers
+  # on lxc-dnsmasq (deliberate exception to the MAC-encodes-IP convention).
+  # The legacy 16.04-era `pxe` container was renamed `pxe-deprecated`
+  # (stopped, kept for rollback) on 2026-07-30; its reserved MAC
+  # 00:16:3e:11:01:23 is retired. `image` below is nominal — recreation from
+  # this entry is not supported; restore pxe-deprecated instead if needed.
+  - name: pxe24
+    image: ubuntu-24.04
     devices:
       eth0:
-        host_name: pxe_e0
-        hwaddr: '00:16:3e:11:01:23'
+        hwaddr: '00:16:3e:8c:80:b6'
         type: nic
         nictype: bridged
         parent: lxdbr0
