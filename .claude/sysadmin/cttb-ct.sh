@@ -62,8 +62,8 @@ NAS_CTS=(         # LXC containers on srv-nas (10.11.1.5)
     log:log:10.11.1.20
     git:git:10.11.1.21
     debmirror:debmirror:10.11.1.22
-    pxe:pxe:10.11.1.23
-    pxe24:pxe24:10.11.13.27
+    pxe:pxe:-              # legacy 16.04-era container — STOPPED since 2026-05-12 cutover
+    pxe24:pxe24:10.11.1.23 # live pxe.cttb (Ubuntu 24.04); re-IP'd from quarantine on cutover
     metrics:metrics:10.11.1.24
     koha:koha:10.11.1.27
 )
