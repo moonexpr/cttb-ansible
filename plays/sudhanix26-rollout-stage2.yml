@@ -12,6 +12,10 @@
 #   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l dvbs_cs_lab
 #   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l drbu_cs_lab
 #   ansible-playbook plays/sudhanix26-rollout-stage2.yml  # all labs
+#
+# No --ask-become-pass: the administrator become password is vaulted in
+# group_vars/cttb_hosts.yml and decrypts via ansible.cfg's vault_password_file.
+# Run from the repository root so that relative path resolves.
 
 - hosts: dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
   become: true

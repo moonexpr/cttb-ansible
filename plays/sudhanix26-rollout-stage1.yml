@@ -10,6 +10,10 @@
 #   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs-lab3.cttb
 #   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs_cs_lab
 #   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs_cs_lab --check  # dry run
+#
+# No --ask-become-pass: the administrator become password is vaulted in
+# group_vars/cttb_hosts.yml and decrypts via ansible.cfg's vault_password_file.
+# Run from the repository root so that relative path resolves.
 
 - hosts: all
   become: true

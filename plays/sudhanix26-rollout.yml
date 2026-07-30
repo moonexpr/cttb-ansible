@@ -16,11 +16,13 @@
 #   source utils/setup-env
 #   ansible-playbook -i inventory/sudhanix26_hosts.ini \
 #     plays/sudhanix26-rollout.yml -l dvgs-testmachine.cttb \
-#     --skip-tags zoom --diff \
-#     -e ansible_become_pass="$(.claude/sysadmin/vault-pass)"
+#     --skip-tags zoom --diff
 #
-#   (No --vault-password-file: ansible.cfg sets vault_password_file. Run from
-#   the repository root so that relative path resolves.)
+#   (No --vault-password-file: ansible.cfg sets vault_password_file. No
+#   --ask-become-pass / -e ansible_become_pass: the administrator become
+#   password is vaulted in group_vars/cttb_hosts.yml and decrypts
+#   automatically. Run from the repository root so those relative paths
+#   resolve.)
 #
 #   # dry-run the trigger only (no wipe — stage1 supports --check):
 #   ansible-playbook ... plays/sudhanix26-rollout.yml -l <host> --check
