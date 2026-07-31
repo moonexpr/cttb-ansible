@@ -4,9 +4,14 @@ context-mode.
 
 Vendored from ~/.claude/hooks/pre-tool-think-in-code.py for cttb-ansible so every
 sysadmin who clones the repo gets the same enforcement without a global install.
-Watches Bash. For Bash, examines the command and denies recursive/unbounded
-patterns that typically produce >2KB of output. Allows bounded variants
-(--count, -l, -c, piped through head/wc, etc.) through.
+Watches Bash and the context-mode sandbox tools (ctx_execute /
+ctx_execute_file / ctx_batch_execute). For Bash, examines the command and
+denies recursive/unbounded patterns that typically produce >2KB of output,
+allowing bounded variants (--count, -l, -c, piped through head/wc, etc.)
+through, and denies raw curl/wget against wiki.cttb (use the sysadmin `wiki`
+CLI). For the ctx tools, only the wiki-curl check applies — grep/find/cat are
+exactly what those tools are for, but a curl to the wiki API is a CLI bypass
+no matter which sandbox runs it.
 
 Escape hatches:
   - Per-command: prefix with `THINK_IN_CODE_DISABLE=1` (e.g.
@@ -114,6 +119,24 @@ def _check_cat(seg: str):
     return None
 
 
+def _check_wiki_curl(seg: str):
+    # Raw HTTP against the campus wiki bypasses the sysadmin `wiki` CLI
+    # (auth, drafts workflow, purge batching). Denied regardless of downstream
+    # sinks — piping the API response through head is still a raw API call.
+    # curl/wget must be the command word (optionally after env prefixes /
+    # sudo / time), not merely a word in an argument — otherwise a commit
+    # message or echo that *mentions* curling the wiki trips the gate.
+    invoked = re.match(
+        r'^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:sudo\s+|time\s+)*(?:curl|wget)\b',
+        seg.strip(),
+    )
+    if not invoked:
+        return None
+    if re.search(r'wiki\.cttb|10\.11\.1\.34', seg):
+        return 'raw curl/wget against wiki.cttb'
+    return None
+
+
 # The downstream-pipe exceptions: if a deny-worthy command is followed by
 # head/wc/tail/xargs in the *next* segment, allow the whole pipeline.
 PIPE_SINK_RE = re.compile(r'\b(?:head|wc|tail|xargs)\b')
@@ -134,6 +157,12 @@ def check_bash(command: str) -> tuple[bool, str]:
     if not segments:
         return False, ''
 
+    # Wiki-CLI bypass check first — no downstream-sink exemption applies.
+    for seg in segments:
+        name = _check_wiki_curl(seg)
+        if name:
+            return True, name
+
     matchers = (_check_grep, _check_rg, _check_find, _check_cat)
 
     for i, seg in enumerate(segments):
@@ -147,6 +176,25 @@ def check_bash(command: str) -> tuple[bool, str]:
                 continue
             return True, name
 
+    return False, ''
+
+
+def check_ctx(tool_input: dict) -> tuple[bool, str]:
+    """Wiki-CLI bypass check for context-mode sandbox tools. Only the wiki
+    matcher applies here — grep/find/cat are exactly what ctx tools are FOR."""
+    chunks: list[str] = []
+    if isinstance(tool_input.get('code'), str):
+        chunks.append(tool_input['code'])
+    for c in tool_input.get('commands', []) or []:
+        if isinstance(c, dict) and isinstance(c.get('command'), str):
+            chunks.append(c['command'])
+    for chunk in chunks:
+        if is_disabled(chunk):
+            continue
+        for seg in re.split(r'\|+|;|&&|\|\||\n', chunk):
+            name = _check_wiki_curl(seg)
+            if name:
+                return True, name
     return False, ''
 
 
@@ -173,6 +221,43 @@ See .claude/rules/think-in-code.md (project-vendored) for the full principle.
 """
 
 
+REDIRECT_MSG_WIKI = """Blocked by think-in-code gate ({pattern}).
+
+All wiki.cttb API access goes through the sysadmin CLI, which carries auth,
+the drafts workflow, and purge batching:
+
+  .claude/sysadmin/wiki probe|get|edit|purge|history|upload|delete|maint|audit-drafts
+
+Common equivalents:
+  page wikitext        wiki get --login "Title" -
+  revision history     wiki history "Title" -n 5 --login
+  cache purge          wiki purge "Title"          (API-based; add --force after Template edits)
+  existence check      wiki probe --login "Title"
+
+If the capability you need is missing, extend the CLI (.claude/sysadmin/wiki
++ wiki_lib.py) rather than inlining HTTP — see the script-persistence rule.
+
+Escape hatch (use sparingly, with a stated reason):
+  THINK_IN_CODE_DISABLE=1 <your command>
+"""
+
+
+def _deny(reason: str) -> None:
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }))
+    sys.exit(0)
+
+
+CTX_TOOL_RE = re.compile(
+    r'^mcp__.*context-mode__ctx_(?:execute|execute_file|batch_execute)$'
+)
+
+
 def main() -> None:
     try:
         payload = json.load(sys.stdin)
@@ -187,16 +272,15 @@ def main() -> None:
         deny, pattern = check_bash(cmd)
         debug_log(f'Bash check: deny={deny} pattern={pattern!r} cmd={cmd!r}')
         if deny and not deny_disabled():
-            output = {
-                "hookSpecificOutput": {
-                    "hookEventName": "PreToolUse",
-                    "permissionDecision": "deny",
-                    "permissionDecisionReason": REDIRECT_MSG_BASH.format(pattern=pattern),
-                }
-            }
-            print(json.dumps(output))
-            sys.exit(0)
+            msg = REDIRECT_MSG_WIKI if 'wiki.cttb' in pattern else REDIRECT_MSG_BASH
+            _deny(msg.format(pattern=pattern))
         # If deny_disabled, fall through — PostToolUse hook will warn instead.
+
+    elif CTX_TOOL_RE.match(tool_name):
+        deny, pattern = check_ctx(tool_input)
+        debug_log(f'ctx check: deny={deny} pattern={pattern!r} tool={tool_name}')
+        if deny and not deny_disabled():
+            _deny(REDIRECT_MSG_WIKI.format(pattern=pattern))
 
     sys.exit(0)
 

@@ -55,7 +55,14 @@ def cmd_purge(args):
     else:
         titles = args.title
     s = _session()
-    w.purge(s, titles, force=args.force)
+    w.purge(s, titles, force=args.force, via_ssh=args.via_ssh)
+
+
+def cmd_history(args):
+    s = _session(login=args.login)
+    for r in w.history(s, args.title, limit=args.limit):
+        comment = r.get("comment", "") or "(no summary)"
+        print(f"{r['timestamp']}  {r['user']:<20} {r.get('size', '?'):>7}b  {comment}")
 
 
 def cmd_delete(args):
@@ -138,10 +145,17 @@ def main():
     sp.add_argument("summary", nargs="?", default="Automated edit", metavar="SUMMARY")
     sp.set_defaults(func=cmd_edit)
 
-    sp = sub.add_parser("purge", help="purge parser cache (run after every edit)")
+    sp = sub.add_parser("purge", help="purge parser cache via the API (run after every edit)")
     sp.add_argument("--force", action="store_true", help="also forcelinkupdate (use after Template edits)")
+    sp.add_argument("--via-ssh", action="store_true", help="use the purgeList maintenance script over SSH instead of the API")
     sp.add_argument("title", nargs="+", metavar="TITLE", help="titles, or - to read from stdin")
     sp.set_defaults(func=cmd_purge)
+
+    sp = sub.add_parser("history", help="show a page's recent revisions (newest first)")
+    sp.add_argument("title", metavar="TITLE")
+    sp.add_argument("-n", "--limit", type=int, default=5, metavar="N", help="revisions to show (default 5)")
+    sp.add_argument("--login", action="store_true", help="authenticate (needed for protected pages)")
+    sp.set_defaults(func=cmd_history)
 
     sp = sub.add_parser("delete", help="delete a page (requires sysop)")
     sp.add_argument("title", metavar="TITLE")

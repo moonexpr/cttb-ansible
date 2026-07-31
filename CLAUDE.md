@@ -105,8 +105,9 @@ Unified Python CLI for `wiki.cttb` (MediaWiki 1.43.x). Auth is handled automatic
 .claude/sysadmin/wiki get "Page Title"                            # pull wikitext into .claude/wiki-pages/
 .claude/sysadmin/wiki get "Page Title" -                          # print to stdout
 .claude/sysadmin/wiki edit "Page Title" .claude/wiki-pages/Page_Title.txt "msg"
-.claude/sysadmin/wiki purge "Page Title" ["Other Title" ...]      # purge cache (run after every edit)
+.claude/sysadmin/wiki purge "Page Title" ["Other Title" ...]      # purge cache via the API (run after every edit)
 .claude/sysadmin/wiki purge --force "Template:Foo"                # + forcelinkupdate (after Template edits)
+.claude/sysadmin/wiki history "Page Title" -n 5 --login           # recent revisions (timestamp, user, summary)
 .claude/sysadmin/wiki delete "Page Title" "deletion reason"       # sysop right
 .claude/sysadmin/wiki audit-drafts                                # audit .claude/wiki-pages/ vs live wiki
 .claude/sysadmin/wiki upload .claude/wiki-pages/image.svg "description"
@@ -116,6 +117,7 @@ Unified Python CLI for `wiki.cttb` (MediaWiki 1.43.x). Auth is handled automatic
 ```
 
 - API: `http://wiki.cttb/w/api.php` (container wiki-2404 at 10.11.1.34)
+- **All wiki.cttb API access goes through this CLI — never hand-roll `curl`/`wget` against the API** (the think-in-code hook denies it, in Bash and in the `ctx_*` sandbox alike). A missing capability means extending the CLI (`wiki_lib.py`), not inlining HTTP.
 - Bot edits: `http://wiki.cttb/wiki/Special:Contributions/<redacted>` (the bot user named in `WIKI_CTTB_BOT_USER`)
 - Sitenotice dismiss: increment the key in `MediaWiki:Common.js` to re-show after dismiss
 - For deeper wiki authoring guidance use the `/wiki-author` skill.

@@ -231,11 +231,18 @@ their published `.png` exports in the same directory. Never write
 drafts to `/tmp/`; the wiki-pages directory is gitignored and
 persists across sessions.
 
-All wiki I/O goes through the unified `.claude/sysadmin/wiki` CLI.
-Auth is handled per-command — there is no separate login step. The
-standard cycle:
+All wiki I/O goes through the unified `.claude/sysadmin/wiki` CLI —
+**never hand-roll `curl`/`wget` against `wiki.cttb`**, in Bash or inside
+the `ctx_*` sandbox (the think-in-code hook denies both). If the CLI is
+missing a capability, extend it (`wiki_lib.py`) per the
+script-persistence rule; the next agent inherits the subcommand instead
+of re-improvising HTTP. Auth is handled per-command — there is no
+separate login step. The standard cycle:
 
 ```bash
+# 0. When revising an existing page, see who touched it last and why
+.claude/sysadmin/wiki history "Page Title" -n 5 --login
+
 # 1. Pull current wikitext into .claude/wiki-pages/ (creates it if missing)
 .claude/sysadmin/wiki get "Page Title"
 
@@ -243,7 +250,7 @@ standard cycle:
 # 3. Push back
 .claude/sysadmin/wiki edit "Page Title" .claude/wiki-pages/Page_Title.txt "edit summary"
 
-# 4. Purge the parser cache so the next viewer sees the new render
+# 4. Purge the parser cache so the next viewer sees the new render (API-based)
 .claude/sysadmin/wiki purge "Page Title"
 ```
 
@@ -334,7 +341,7 @@ deny pages).
 | Ansible role | `roles/mediawiki/` |
 | LocalSettings template | `roles/mediawiki/templates/LocalSettings.php.j2` |
 | Per-host vars (namespaces, lockdown rules) | `host_vars/wiki-2404/main.yml` |
-| Wiki tooling | `.claude/sysadmin/wiki` (unified CLI: `get`/`edit`/`purge`/`upload`/`sitenotice`/`delete`/`maint`) |
+| Wiki tooling | `.claude/sysadmin/wiki` (unified CLI: `probe`/`get`/`edit`/`purge`/`history`/`upload`/`sitenotice`/`delete`/`maint`/`audit-drafts`) |
 | Container shell / vault | units `/cttb-host`, `/cttb-vault` |
 | Local draft directory | `.claude/wiki-pages/` |
 | API endpoint | `http://wiki.cttb/w/api.php` (the `wiki` CLI handles auth per command) |

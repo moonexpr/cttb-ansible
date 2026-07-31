@@ -20,7 +20,7 @@ loads this project — no global install required.
 
 ## Forbidden patterns
 
-The gate watches for three failure modes:
+The gate watches for four failure modes:
 
 1. **Multi-Read for aggregation.** Reading 10+ files to count or summarize
    across them. Replacement: write a script that loops the files and prints
@@ -40,6 +40,15 @@ The gate watches for three failure modes:
    `mcp__plugin_context-mode_context-mode__ctx_execute(language: "shell",
    code: "...")` — only the printed summary enters context.
 
+4. **Raw curl/wget against `wiki.cttb`.** Hand-rolled HTTP to the wiki API
+   bypasses the sysadmin `wiki` CLI (auth, drafts workflow, purge batching)
+   and is denied everywhere — in Bash **and** inside the `ctx_*` sandbox
+   tools. Replacement: `.claude/sysadmin/wiki`
+   (`probe`/`get`/`edit`/`purge`/`history`/`upload`/`delete`/`maint`/
+   `audit-drafts`). If a capability is missing, extend the CLI
+   (`wiki_lib.py`) per `script-persistence.md` — the next agent inherits
+   the subcommand instead of re-improvising HTTP.
+
 ---
 
 ## Approved replacements
@@ -50,6 +59,7 @@ The gate watches for three failure modes:
 | Query an already-indexed corpus | `ctx_search` (FTS5, low-token result) |
 | Analyze a file's contents | `ctx_execute_file(path, language, code)` |
 | Multi-step shell pipeline | `ctx_batch_execute(commands)` |
+| Any wiki.cttb API operation | `.claude/sysadmin/wiki` CLI (extend it if a subcommand is missing) |
 | Reusable analysis primitive | a skill's `scripts/` folder (per `script-persistence.md`) |
 
 ---

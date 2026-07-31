@@ -164,13 +164,45 @@ def edit(session: WikiSession, title: str, text: str, summary: str = "Automated 
     return d.get("edit", {}).get("result", f"FAILED: {d}")
 
 
-def purge(session: WikiSession, titles: list[str], force: bool = False) -> None:
-    """Purge HTML cache via SSH maintenance script; --force also triggers API forcelinkupdate."""
-    cmd = "sudo -u www-data php /var/www/html/w/maintenance/run.php purgeList"
-    session.ctx.maint_ssh(cmd, stdin="\n".join(titles))
-    if force:
-        session.post(action="purge", forcelinkupdate="1", titles="|".join(titles))
-        print(":: forcelinkupdate done")
+def purge(session: WikiSession, titles: list[str], force: bool = False,
+          via_ssh: bool = False) -> None:
+    """Purge the parser cache via the HTTP API (default) — works whenever the
+    API works, with no dependency on the SSH chain. force adds
+    forcelinkupdate (use after Template edits). via_ssh runs the legacy
+    purgeList maintenance script instead, for the rare on-disk file-cache
+    case; it needs the wiki container's SSH route up."""
+    if via_ssh:
+        cmd = "sudo -u www-data php /var/www/html/w/maintenance/run.php purgeList"
+        session.ctx.maint_ssh(cmd, stdin="\n".join(titles))
+        if not force:
+            return
+    for i in range(0, len(titles), 50):  # API purge caps at 50 titles/request
+        batch = titles[i:i + 50]
+        params = {"action": "purge", "titles": "|".join(batch)}
+        if force:
+            params["forcelinkupdate"] = "1"
+        d = session.post(**params)
+        if "error" in d:
+            raise RuntimeError(f"purge failed: {d['error'].get('info', d['error'])}")
+        for entry in d.get("purge", []):
+            status = "purged" if "purged" in entry else entry.get("invalid", "FAILED")
+            print(f"{entry.get('title', '?')}: {status}"
+                  + (" +forcelinkupdate" if force else ""))
+
+
+def history(session: WikiSession, title: str, limit: int = 5) -> list[dict]:
+    """Return the page's most recent revisions (newest first):
+    [{timestamp, user, comment, size}, ...]."""
+    d = session.get(
+        action="query", prop="revisions", formatversion="2",
+        rvprop="timestamp|user|comment|size", rvlimit=str(limit), titles=title,
+    )
+    pages = d.get("query", {}).get("pages", [])
+    if not pages:
+        raise RuntimeError(f"{title}: no pages in response")
+    if pages[0].get("missing"):
+        raise RuntimeError(f"{title}: page does not exist")
+    return pages[0].get("revisions", [])
 
 
 def delete(session: WikiSession, title: str, reason: str) -> None:
