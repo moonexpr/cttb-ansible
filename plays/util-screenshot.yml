@@ -2,11 +2,18 @@
 # Remote screenshot utility
 # Takes a screenshot of the target machine's display using scrot and fetches it.
 #
-# Usage:
-#   utils/pb util-screenshot --limit <hostname>
-#   utils/pb util-screenshot --limit <hostname> -e output_dir=/tmp/screenshots
+# Works both at the lightdm greeter and inside a live user session: it runs
+# scrot as root using the auth file the running X server was started with
+# (parsed from the Xorg command line, falling back to lightdm's
+# /var/run/lightdm/root/:0). No per-user .Xauthority guessing, no hardcoded
+# uids, NFS homes irrelevant.
 #
-# Requires: scrot installed on target (included in desktop role packages)
+# Usage:
+#   utils/pb util-screenshot --limit <hostname> --ask-become-pass
+#   utils/pb util-screenshot --limit <hostname> --ask-become-pass -e output_dir=/tmp/screenshots
+#
+# Requires: scrot on the target (installed by the lubuntu desktop role) and
+# sudo rights for the SSH user. Fails loudly on non-desktop hosts.
 
 - hosts: all
   gather_facts: false
@@ -14,10 +21,34 @@
   vars:
     output_dir: "{{ playbook_dir }}/../logs/screenshots"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+    remote_png: /tmp/ansible-screenshot.png
 
   tasks:
-    - name: take screenshot on remote machine
-      shell: DISPLAY=:0 scrot /tmp/ansible-screenshot.png
+    - name: take screenshot on remote machine (as root, using the X server's own auth file)
+      become: true
+      shell: |
+        set -eu
+        command -v scrot >/dev/null 2>&1 \
+          || { echo "scrot not installed -- not a desktop host?" >&2; exit 3; }
+        xline=$(ps -eo args= | grep -E '^([^ ]*/)?(Xorg|X) ' | head -n1) || true
+        [ -n "${xline:-}" ] \
+          || { echo "no X server running on this host" >&2; exit 4; }
+        display=":0"
+        xauth=""
+        prev=""
+        for tok in $xline; do
+          [ "$prev" = "-auth" ] && xauth="$tok"
+          case "$tok" in :[0-9]|:[0-9][0-9]) display="$tok" ;; esac
+          prev="$tok"
+        done
+        # No -auth on the command line: fall back to the lightdm root cookie
+        # for whichever display we found. (Avoid apostrophes in this block --
+        # Ansible splits shell args on quotes and an unpaired one breaks parsing.)
+        [ -n "$xauth" ] || xauth="/var/run/lightdm/root/$display"
+        DISPLAY="$display" XAUTHORITY="$xauth" scrot -o "{{ remote_png }}"
+        chmod 644 "{{ remote_png }}"
+      args:
+        executable: /bin/sh
       changed_when: false
 
     - name: ensure local output directory exists
@@ -30,13 +61,14 @@
 
     - name: fetch screenshot
       fetch:
-        src: /tmp/ansible-screenshot.png
+        src: "{{ remote_png }}"
         dest: "{{ output_dir }}/{{ inventory_hostname }}-{{ timestamp }}.png"
         flat: true
 
     - name: clean up remote screenshot
+      become: true
       file:
-        path: /tmp/ansible-screenshot.png
+        path: "{{ remote_png }}"
         state: absent
       changed_when: false
 

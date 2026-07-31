@@ -24,6 +24,7 @@ group_vars/.*
 
 # Personal/runtime working state:
 .claude/wiki-pages/
+.claude/artifacts/
 .claude/baselines/
 .claude/worktrees/
 .claude/scheduled_tasks.lock

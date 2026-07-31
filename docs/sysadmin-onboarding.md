@@ -255,6 +255,8 @@ utils/pb <play> --limit <host> --check --ask-become-pass
 
 (`utils/pb` runs the named play from `plays/` with `--diff` always on; `--check` previews without changing anything — drop it only when you mean to deploy. Nothing in this guide requires you to deploy anything — which play to run is a task question, not an onboarding one.)
 
+Some read-only-*looking* utilities need it too. `util-screenshot` is the one that catches people out: capturing a display means reading the X server's auth cookie, which is root-owned, so the play fails without `--ask-become-pass` even though it changes nothing on the host.
+
 Members of the LDAP `cn=it` group get sudo directly (`/etc/sudoers.d/it-group`, `%it ALL=(ALL:ALL) ALL`), also password-required. If you need personal sudo (as your own LDAP user, rather than the shared `administrator` account), ask an existing sysadmin to add your LDAP account to `cn=it`.
 
 > **Handle `CTTB_VAULT_PASS` as a high-privilege credential.** Store it only in your platform credential store or the 0600 file, never in a shell history, a chat message, or a file in the repo. Ask an existing sysadmin before sharing it onward.
