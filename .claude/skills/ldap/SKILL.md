@@ -2,7 +2,7 @@
 name: ldap
 description: >
   Query and modify the CTTB OpenLDAP directory (ldap.cttb) using the
-  project-local helpers in `.claude/sysadmin/`. Triggers on any LDAP
+  project-local helpers in `utils/`. Triggers on any LDAP
   question — read (look up users, groups, posixAccount attributes;
   verify group membership for Lockdown / sudo / NFS-export decisions;
   audit the tree shape) or write (add/remove a memberUid, reset a
@@ -32,7 +32,7 @@ MediaWiki user-rights system, separate from LDAP — see `/wiki-author`).
 
 ## Tools
 
-All scripts live in `.claude/sysadmin/`. Read tools talk to the server
+All scripts live in `utils/`. Read tools talk to the server
 unconditionally; write tools default to **dry-run** and require the
 `--risks-confirmed` flag to commit.
 
@@ -96,26 +96,26 @@ need a different LDIF (see "Write recipes" below).
 
 ```bash
 # All members of one group
-.claude/sysadmin/ldap-group-members.sh it
+utils/ldap-group-members.sh it
 
 # Every posixGroup with members
-.claude/sysadmin/ldap-group-members.sh --all
+utils/ldap-group-members.sh --all
 
 # One user's full record
-.claude/sysadmin/ldap-query.sh -b ou=People,dc=cttb '(uid=<redacted>)'
+utils/ldap-query.sh -b ou=People,dc=cttb '(uid=<redacted>)'
 
 # Just specific attributes
-.claude/sysadmin/ldap-query.sh -b ou=People,dc=cttb '(uid=<redacted>)' cn mail uidNumber gidNumber
+utils/ldap-query.sh -b ou=People,dc=cttb '(uid=<redacted>)' cn mail uidNumber gidNumber
 
 # Group → gidNumber + memberUids
-.claude/sysadmin/ldap-query.sh -b ou=Groups,dc=cttb '(cn=it)' gidNumber memberUid
+utils/ldap-query.sh -b ou=Groups,dc=cttb '(cn=it)' gidNumber memberUid
 
 # Authenticated bind override (e.g. as admin)
-.claude/sysadmin/ldap-query.sh -D "cn=admin,dc=cttb" -w "$ADMIN_PW" \
+utils/ldap-query.sh -D "cn=admin,dc=cttb" -w "$ADMIN_PW" \
     -b ou=People,dc=cttb '(objectClass=posixAccount)' uid uidNumber
 
 # Sanity check: count active accounts
-.claude/sysadmin/ldap-query.sh -b ou=People,dc=cttb '(objectClass=posixAccount)' uid \
+utils/ldap-query.sh -b ou=People,dc=cttb '(objectClass=posixAccount)' uid \
     | grep -c '^uid:'
 ```
 
@@ -130,10 +130,10 @@ anything else, hand-author an LDIF and pipe it through `ldap-apply.sh`.
 
 ```bash
 # Dry run — shows the LDIF and validates server-side
-.claude/sysadmin/ldap-group-add.sh frank.liu drbu-staff
+utils/ldap-group-add.sh frank.liu drbu-staff
 
 # Commit
-.claude/sysadmin/ldap-group-add.sh frank.liu drbu-staff --risks-confirmed
+utils/ldap-group-add.sh frank.liu drbu-staff --risks-confirmed
 ```
 
 ### Remove a user from a group
@@ -141,7 +141,7 @@ anything else, hand-author an LDIF and pipe it through `ldap-apply.sh`.
 No dedicated wrapper; use `ldap-apply.sh`:
 
 ```bash
-cat <<'EOF' | .claude/sysadmin/ldap-apply.sh -
+cat <<'EOF' | utils/ldap-apply.sh -
 dn: cn=drbu-staff,ou=Groups,dc=cttb
 changetype: modify
 delete: memberUid
@@ -154,10 +154,10 @@ EOF
 
 ```bash
 # Interactive — prompts twice
-.claude/sysadmin/ldap-passwd.sh <redacted> --risks-confirmed
+utils/ldap-passwd.sh <redacted> --risks-confirmed
 
 # Scripted — read from stdin
-echo 'newpass' | .claude/sysadmin/ldap-passwd.sh <redacted> --risks-confirmed
+echo 'newpass' | utils/ldap-passwd.sh <redacted> --risks-confirmed
 ```
 
 The bind user must either be the target or hold a write ACL on the
@@ -167,14 +167,14 @@ according to its own pwdPolicy; do not pre-hash.
 ### Create a new user
 
 ```bash
-.claude/sysadmin/ldap-add-user.sh \
+utils/ldap-add-user.sh \
     --uid jdoe --cn "Jane Doe" --sn Doe --given-name Jane \
     --uid-number 2099 --gid-number 2099 \
     --mail jdoe@dharma.org \
     --risks-confirmed
 
 # Then set the password
-.claude/sysadmin/ldap-passwd.sh jdoe --risks-confirmed
+utils/ldap-passwd.sh jdoe --risks-confirmed
 ```
 
 `uidNumber` and `gidNumber` are caller-supplied. Pick the next free
@@ -184,7 +184,7 @@ without checking.
 ### Change a user's primary group
 
 ```bash
-cat <<'EOF' | .claude/sysadmin/ldap-apply.sh -
+cat <<'EOF' | utils/ldap-apply.sh -
 dn: uid=jdoe,ou=People,dc=cttb
 changetype: modify
 replace: gidNumber
@@ -195,7 +195,7 @@ EOF
 ### Add an SSH key
 
 ```bash
-cat <<EOF | .claude/sysadmin/ldap-apply.sh -
+cat <<EOF | utils/ldap-apply.sh -
 dn: uid=jdoe,ou=People,dc=cttb
 changetype: modify
 add: sshPublicKey
@@ -206,12 +206,12 @@ EOF
 ### Create a new posixGroup
 
 ```bash
-NEXT_GID=$(.claude/sysadmin/ldap-query.sh -b ou=Groups,dc=cttb \
+NEXT_GID=$(utils/ldap-query.sh -b ou=Groups,dc=cttb \
     '(objectClass=posixGroup)' gidNumber \
     | awk '/^gidNumber:/ {print $2}' | sort -n | tail -1)
 NEXT_GID=$((NEXT_GID + 1))
 
-cat <<EOF | .claude/sysadmin/ldap-apply.sh -
+cat <<EOF | utils/ldap-apply.sh -
 dn: cn=newgroup,ou=Groups,dc=cttb
 changetype: add
 objectClass: top
@@ -240,7 +240,7 @@ For anything generated externally (migration scripts, LDIF exported
 from a sister directory), pipe it straight through:
 
 ```bash
-.claude/sysadmin/ldap-apply.sh export.ldif --risks-confirmed
+utils/ldap-apply.sh export.ldif --risks-confirmed
 ```
 
 ---
@@ -338,7 +338,7 @@ Treat a clean dry run as a syntax check, not a permission check.
 
 | What | Where |
 |------|-------|
-| Helper scripts | `.claude/sysadmin/` (all `ldap-*.sh` files) |
+| Helper scripts | `utils/` (all `ldap-*.sh` files) |
 | Server config | container `lxc-ldap` (10.11.1.25), Ansible role `roles/openldap-server/` |
 | Live slapd ACL | `roles/openldap-server/templates/slapd.conf.j2` (search for `access to`) |
 | Client config | role `roles/ldap-client/` |

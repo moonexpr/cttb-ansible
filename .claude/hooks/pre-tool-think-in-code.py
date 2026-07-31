@@ -226,7 +226,7 @@ REDIRECT_MSG_WIKI = """Blocked by think-in-code gate ({pattern}).
 All wiki.cttb API access goes through the sysadmin CLI, which carries auth,
 the drafts workflow, and purge batching:
 
-  .claude/sysadmin/wiki probe|get|edit|purge|history|upload|delete|maint|audit-drafts
+  utils/wiki probe|get|edit|purge|history|upload|delete|maint|audit-drafts
 
 Common equivalents:
   page wikitext        wiki get --login "Title" -
@@ -234,7 +234,7 @@ Common equivalents:
   cache purge          wiki purge "Title"          (API-based; add --force after Template edits)
   existence check      wiki probe --login "Title"
 
-If the capability you need is missing, extend the CLI (.claude/sysadmin/wiki
+If the capability you need is missing, extend the CLI (utils/wiki
 + wiki_lib.py) rather than inlining HTTP — see the script-persistence rule.
 
 Escape hatch (use sparingly, with a stated reason):

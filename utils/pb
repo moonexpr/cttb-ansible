@@ -1,19 +1,62 @@
-#!/bin/bash
+#!/usr/bin/env python3
+"""pb — run a playbook from plays/ with this repository's Ansible environment.
 
-# ansible playbook
-# runs a playbook
-#TODO convert this to python for a lot more control
+  utils/pb util-wakeonlan -l drbu_cs_lab
+  ANSIBLE_INVENTORY=inventory/sudhanix26_hosts.ini utils/pb util-wakeonlan -l drbu_cs_lab
 
-USAGE="Usage: $0 playbook-name [ansible-playbook OPTIONS]"
+The inventory is passed through the environment, not as `-i`. A second `-i` is
+additive in ansible — it merges inventory sources rather than replacing them —
+so a wrapper that hardcoded `-i` made its choice impossible to override. Setting
+ANSIBLE_INVENTORY instead leaves `-i` free to mean what the caller expects.
+"""
+import argparse
+import difflib
+import subprocess
+import sys
+from pathlib import Path
 
-if [ "$#" == "0" ]; then
-  echo "$USAGE"
-  exit 1
-fi
+sys.path.insert(0, str(Path(__file__).resolve().parent / "sysadmintk"))
 
-source utils/setup-env
+import ansible_env as ae  # noqa: E402
 
-PLAY=$1
-shift
 
-ansible-playbook -i $ANSIBLE_HOSTS ${ANSIBLE_PLAYBOOKS}/${PLAY}.yml --diff $@
+def resolve_playbook(ctx: "ae.AnsibleContext", name: str) -> Path:
+    play = ctx.playbook(name)
+    if play.is_file():
+        return play
+    known = sorted(p.stem for p in ctx.playbooks.glob("*.yml"))
+    msg = f"no such playbook: {play}"
+    close = difflib.get_close_matches(name, known, n=3)
+    if close:
+        msg += f"\n       did you mean: {', '.join(close)}?"
+    msg += f"\n       {len(known)} playbooks in {ctx.playbooks}"
+    raise RuntimeError(msg)
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(
+        prog="pb",
+        description="Run plays/<playbook>.yml with the repo's Ansible environment.",
+        epilog="Anything after the playbook name is forwarded to ansible-playbook.",
+    )
+    p.add_argument("playbook", help="playbook name, without the .yml extension")
+    p.add_argument("options", nargs=argparse.REMAINDER,
+                   metavar="OPTIONS", help="forwarded to ansible-playbook")
+    args = p.parse_args()
+
+    ctx = ae.AnsibleContext.default()
+    ctx.ensure_dirs()
+    play = resolve_playbook(ctx, args.playbook)
+
+    cmd = ["ansible-playbook", str(play), "--diff", *args.options]
+    return subprocess.run(cmd, env=ctx.env()).returncode
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(1)
+    except KeyboardInterrupt:
+        raise SystemExit(130)

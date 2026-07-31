@@ -1,61 +1,7 @@
-#!/usr/bin/env python3
-"""
-Print the Ansible vault password for cttb-ansible.
-
-Wired into ansible.cfg as `vault_password_file`, so `ansible-vault` and
-`ansible-playbook` find it with no flags on the command line.
-
-The password comes from the platform credential store via cttb_api, the same
-layer the `wiki` and `ldap` CLIs use.  Store it with:
-
-  macOS    security add-generic-password -s CTTB_VAULT_PASS -a "$USER" -w
-  Windows  cmdkey /generic:CTTB/CTTB_VAULT_PASS /user:. /pass:<value>
-  Linux    secret-tool store --label=CTTB_VAULT_PASS service CTTB_VAULT_PASS
-
-  headless (any platform — no keyring, no login session):
-           mkdir -p ~/.config/cttb/secrets
-           printf '%s' '<value>' > ~/.config/cttb/secrets/CTTB_VAULT_PASS
-           chmod 600 ~/.config/cttb/secrets/CTTB_VAULT_PASS
-
-Fails closed: exits 2 with nothing on stdout when the credential is absent, so
-ansible-vault never receives an empty password (which surfaces as a misleading
-"decryption failed" rather than "your credential is missing").
-"""
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from cttb_api import credential  # noqa: E402
-
-SERVICE = "CTTB_VAULT_PASS"
-
-HINT = """
-Store it with one of:
-  macOS    security add-generic-password -s CTTB_VAULT_PASS -a "$USER" -w
-  Windows  cmdkey /generic:CTTB/CTTB_VAULT_PASS /user:. /pass:<value>
-  Linux    secret-tool store --label=CTTB_VAULT_PASS service CTTB_VAULT_PASS
-  headless printf '%s' '<value>' > ~/.config/cttb/secrets/CTTB_VAULT_PASS
-           chmod 600 ~/.config/cttb/secrets/CTTB_VAULT_PASS
-
-See docs/sysadmin-onboarding.md for the full setup.
-""".rstrip()
-
-
-def main() -> int:
-    try:
-        print(credential(SERVICE))
-    except LookupError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        print(HINT, file=sys.stderr)
-        return 2
-    except (PermissionError, RuntimeError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 2
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+#!/bin/sh
+# Compatibility forwarder. The sysadmin toolkit moved to utils/ so it is usable
+# without reference to Claude; canonical path is utils/vault-pass.
+#
+# exec preserves the fail-closed contract: exit 2 with nothing on stdout when
+# the credential is absent, so ansible-vault never sees an empty password.
+exec "$(dirname "$0")/../../utils/vault-pass" "$@"

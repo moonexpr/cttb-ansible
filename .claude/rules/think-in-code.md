@@ -43,7 +43,7 @@ The gate watches for four failure modes:
 4. **Raw curl/wget against `wiki.cttb`.** Hand-rolled HTTP to the wiki API
    bypasses the sysadmin `wiki` CLI (auth, drafts workflow, purge batching)
    and is denied everywhere — in Bash **and** inside the `ctx_*` sandbox
-   tools. Replacement: `.claude/sysadmin/wiki`
+   tools. Replacement: `utils/wiki`
    (`probe`/`get`/`edit`/`purge`/`history`/`upload`/`delete`/`maint`/
    `audit-drafts`). If a capability is missing, extend the CLI
    (`wiki_lib.py`) per `script-persistence.md` — the next agent inherits
@@ -59,7 +59,7 @@ The gate watches for four failure modes:
 | Query an already-indexed corpus | `ctx_search` (FTS5, low-token result) |
 | Analyze a file's contents | `ctx_execute_file(path, language, code)` |
 | Multi-step shell pipeline | `ctx_batch_execute(commands)` |
-| Any wiki.cttb API operation | `.claude/sysadmin/wiki` CLI (extend it if a subcommand is missing) |
+| Any wiki.cttb API operation | `utils/wiki` CLI (extend it if a subcommand is missing) |
 | Reusable analysis primitive | a skill's `scripts/` folder (per `script-persistence.md`) |
 
 ---

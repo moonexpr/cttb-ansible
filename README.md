@@ -260,7 +260,7 @@ Large files (ISOs, `.deb` packages, fonts) are hosted on the PXE web server at `
 
 ## Encrypted Secrets
 
-Sensitive values are encrypted with [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html). `ansible.cfg` sets `vault_password_file = .claude/sysadmin/vault-pass`, which reads the password from your platform credential store — so no `--vault-password-file` flag and no `--ask-vault-pass` prompt. Run from the repository root; the path is relative to `ansible.cfg`.
+Sensitive values are encrypted with [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html). `ansible.cfg` sets `vault_password_file = utils/vault-pass`, which reads the password from your platform credential store — so no `--vault-password-file` flag and no `--ask-vault-pass` prompt. Run from the repository root; the path is relative to `ansible.cfg`.
 
 ```bash
 # Edit a vault file — no password flag needed

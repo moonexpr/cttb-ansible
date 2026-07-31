@@ -7,7 +7,7 @@ description: >
   with Mbox/Ambox templates, when adding to MediaWiki: system messages,
   when wiring up Lockdown protection, or when following wiki edits up with
   cache purges. Drafts live in `.claude/wiki-pages/`; the API tooling
-  lives in `.claude/sysadmin/`. The skill also sets the authorial voice:
+  lives in `utils/`. The skill also sets the authorial voice:
   write like a professor drafting a textbook chapter — connected prose,
   figures with captions, footnoted references, and templates that scale
   across a category — rather than a punch-list of bullet points.
@@ -126,7 +126,7 @@ Generate figures alongside the prose, not after. The convention:
 - **Also produce a PNG fallback** at 2× the intended display width.
   Some skins and the printable view render PNGs more reliably than
   SVGs.
-- **Upload both.** `.claude/sysadmin/wiki upload /path/to/foo-architecture.svg "description"`
+- **Upload both.** `utils/wiki upload /path/to/foo-architecture.svg "description"`
   and the same for the `.png`.
 - **Embed with `[[File:Foo-architecture.svg|thumb|right|400px|<caption>]]`**
   so the image renders inside a thumbnail frame with a caption. Bare
@@ -231,7 +231,7 @@ their published `.png` exports in the same directory. Never write
 drafts to `/tmp/`; the wiki-pages directory is gitignored and
 persists across sessions.
 
-All wiki I/O goes through the unified `.claude/sysadmin/wiki` CLI —
+All wiki I/O goes through the unified `utils/wiki` CLI —
 **never hand-roll `curl`/`wget` against `wiki.cttb`**, in Bash or inside
 the `ctx_*` sandbox (the think-in-code hook denies both). If the CLI is
 missing a capability, extend it (`wiki_lib.py`) per the
@@ -241,28 +241,28 @@ separate login step. The standard cycle:
 
 ```bash
 # 0. When revising an existing page, see who touched it last and why
-.claude/sysadmin/wiki history "Page Title" -n 5 --login
+utils/wiki history "Page Title" -n 5 --login
 
 # 1. Pull current wikitext into .claude/wiki-pages/ (creates it if missing)
-.claude/sysadmin/wiki get "Page Title"
+utils/wiki get "Page Title"
 
 # 2. Edit the local draft with Edit/Write
 # 3. Push back
-.claude/sysadmin/wiki edit "Page Title" .claude/wiki-pages/Page_Title.txt "edit summary"
+utils/wiki edit "Page Title" .claude/wiki-pages/Page_Title.txt "edit summary"
 
 # 4. Purge the parser cache so the next viewer sees the new render (API-based)
-.claude/sysadmin/wiki purge "Page Title"
+utils/wiki purge "Page Title"
 ```
 
-- Files: `.claude/sysadmin/wiki upload .claude/wiki-pages/file.svg "description"`.
-- Sitenotice: `.claude/sysadmin/wiki sitenotice .claude/wiki-pages/wiki-sitenotice.txt`
+- Files: `utils/wiki upload .claude/wiki-pages/file.svg "description"`.
+- Sitenotice: `utils/wiki sitenotice .claude/wiki-pages/wiki-sitenotice.txt`
   (or `wiki push-notice` for sitenotice + Common.js together).
 - After a `Template:` edit, purge with `--force` to run forcelinkupdate:
-  `.claude/sysadmin/wiki purge --force "Template:Foo"`.
-- Deletion (sysop): `.claude/sysadmin/wiki delete "Page Title" "reason"`.
+  `utils/wiki purge --force "Template:Foo"`.
+- Deletion (sysop): `utils/wiki delete "Page Title" "reason"`.
 - Need a shell on the wiki container (maintenance scripts, DB checks)?
   That is **not** this skill's job — use `/cttb-host` (`cttb-ct.sh
-  shell wiki`) or `.claude/sysadmin/wiki maint <subcommand>` for
+  shell wiki`) or `utils/wiki maint <subcommand>` for
   `maintenance/run.php`. Do not hand-roll the `ssh … ProxyJump=srv-vm`
   chain here.
 
@@ -322,7 +322,7 @@ deny pages).
 
 1. Save the draft with the namespace prefix in the title:
    `IT:Foo Bar.txt` → wiki page `IT:Foo Bar` (NS_IT=3000).
-2. Push with `.claude/sysadmin/wiki edit "IT:Foo Bar" .claude/wiki-pages/IT_Foo_Bar.txt "summary"`.
+2. Push with `utils/wiki edit "IT:Foo Bar" .claude/wiki-pages/IT_Foo_Bar.txt "summary"`.
 3. The `HtmlPageLinkRendererBegin` hook will automatically prefix any
    link to this page with 🔒 for non-`it`-group viewers, and the body
    class hook will reveal the link normally for IT members.
@@ -341,7 +341,7 @@ deny pages).
 | Ansible role | `roles/mediawiki/` |
 | LocalSettings template | `roles/mediawiki/templates/LocalSettings.php.j2` |
 | Per-host vars (namespaces, lockdown rules) | `host_vars/wiki-2404/main.yml` |
-| Wiki tooling | `.claude/sysadmin/wiki` (unified CLI: `probe`/`get`/`edit`/`purge`/`history`/`upload`/`sitenotice`/`delete`/`maint`/`audit-drafts`) |
+| Wiki tooling | `utils/wiki` (unified CLI: `probe`/`get`/`edit`/`purge`/`history`/`upload`/`sitenotice`/`delete`/`maint`/`audit-drafts`) |
 | Container shell / vault | units `/cttb-host`, `/cttb-vault` |
 | Local draft directory | `.claude/wiki-pages/` |
 | API endpoint | `http://wiki.cttb/w/api.php` (the `wiki` CLI handles auth per command) |
@@ -352,7 +352,7 @@ deny pages).
 
 ## Pre-publish checklist
 
-Run through this before every `.claude/sysadmin/wiki edit` push. Most
+Run through this before every `utils/wiki edit` push. Most
 items come from WIKISTYLE; the CTTB-specific ones are added on top.
 
 - [ ] **Lead** — first sentence is a bolded title + one-clause
@@ -381,6 +381,6 @@ items come from WIKISTYLE; the CTTB-specific ones are added on top.
 - [ ] **Lockdown** — if the page belongs in a restricted namespace
   (`IT:`, `DRBU:`, `DVGS:`, `DVBS:`, `CTTB:`), is the title prefix
   correct so it lands in the right namespace?
-- [ ] **Purge** — after pushing, run `.claude/sysadmin/wiki purge
+- [ ] **Purge** — after pushing, run `utils/wiki purge
   "Page Title"` (add `--force` for `Template:` edits) so the next
   viewer sees the new render rather than the cached old one.

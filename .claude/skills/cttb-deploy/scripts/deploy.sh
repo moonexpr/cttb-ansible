@@ -18,7 +18,7 @@ case "$ALIAS" in
   all|"@*"|*,*) fail "fleet-wide deploys are not in scope for this skill ($ALIAS); use plays/sudhanix26-rollout.yml directly" ;;
 esac
 
-VAULT_HELPER=".claude/sysadmin/vault-pass"
+VAULT_HELPER="utils/vault-pass"
 [ -x "$VAULT_HELPER" ] || fail "$VAULT_HELPER not found or not executable"
 
 # No --vault-password-file here: ansible.cfg sets vault_password_file globally.

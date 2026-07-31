@@ -4,7 +4,7 @@ user-invocable: true
 argument-hint: "<edit|view|encrypt|decrypt|rekey> <vault file>"
 description: >
   Run any `ansible-vault` subcommand against CTTB vault files. `ansible.cfg`
-  sets `vault_password_file = .claude/sysadmin/vault-pass`, which reads the
+  sets `vault_password_file = utils/vault-pass`, which reads the
   password from the platform credential store, so there is never a password
   prompt, a `--vault-password-file` flag, or a plaintext password on disk.
   Triggers on "edit group_vars/all/vault.yml", "decrypt the vault file", "view
@@ -44,7 +44,7 @@ deploy needs at runtime (those resolve from the credential store at play time).
    `vault_password_file` path — `cd` to the repo root first.
 
    For the raw password (only when an external tool needs its own
-   `--vault-password-file` wiring) run `.claude/sysadmin/vault-pass`,
+   `--vault-password-file` wiring) run `utils/vault-pass`,
    which prints it and exits 2 if the credential is missing.
 
 3. **Read-only by default.** Prefer `view` over `decrypt` when you only
@@ -74,5 +74,5 @@ failure on that file as a credential problem on the operator's side.
 ## Resources
 
 Self-contained. Drives `ansible-vault` directly, with the password supplied by
-`.claude/sysadmin/vault-pass` via `ansible.cfg`. No wrapper script, no sibling
+`utils/vault-pass` via `ansible.cfg`. No wrapper script, no sibling
 files.

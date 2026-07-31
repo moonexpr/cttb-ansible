@@ -1,14 +1,26 @@
 #!/bin/bash
+#
+# setup-env — load this repository's Ansible environment into the current shell.
+#
+# MUST be sourced, not executed — a child process cannot export into its parent:
+#
+#   source utils/setup-env
+#
+# The resolution logic lives in utils/ansible-env (Python, on the shared
+# utils/sysadmintk layer); this file only evaluates its output. To point one
+# command at a different fleet, set the inventory before sourcing:
+#
+#   ANSIBLE_INVENTORY=inventory/sudhanix26_hosts.ini source utils/setup-env
+#
+# ANSIBLE_HOSTS is exported as an alias of ANSIBLE_INVENTORY because utils/ar,
+# utils/reboot, and utils/shutdown still pass it as `-i`.
 
-export ANSIBLE_BASE=`pwd`
-export ANSIBLE_HOSTS="${ANSIBLE_BASE}/inventory/hosts"
-export ANSIBLE_LIBRARY="/usr/share/ansible:${ANSIBLE_BASE}/library"
-#export ANSIBLE_LIBRARY="/usr/share/ansible"
-export ANSIBLE_ROLES="${ANSIBLE_BASE}/roles"
-export ANSIBLE_PLAYBOOKS="${ANSIBLE_BASE}/plays"
-export ANSIBLE_LOG_DIR="${ANSIBLE_BASE}/logs"
-export ANSIBLE_LOG="${ANSIBLE_LOG_DIR}/run-`date +"%y%m%d%H%M%S"`.log"
-export ANSIBLE_TMP="${ANSIBLE_BASE}/tmp"
+__setup_env_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
-mkdir -p $ANSIBLE_LOG_DIR
-mkdir -p $ANSIBLE_TMP
+if __setup_env_out="$("$__setup_env_dir/ansible-env" --export)"; then
+  eval "$__setup_env_out"
+else
+  echo "setup-env: utils/ansible-env failed; environment not loaded" >&2
+fi
+
+unset __setup_env_dir __setup_env_out

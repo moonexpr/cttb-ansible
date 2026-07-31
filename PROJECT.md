@@ -230,7 +230,7 @@ Deployed to `/etc/xdg/autostart/`:
 - **Deploy**: `source utils/setup-env && ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
 - **Verify**: `utils/pb util-screenshot --limit dvgs-lab3.cttb --ask-become-pass`
 - **Check mode**: `ansible-playbook plays/cs-lab-2404.yml --check --diff --limit dvgs-lab3.cttb`
-- **Vault password**: service `CTTB_VAULT_PASS` in the platform credential store — macOS Keychain, Windows Credential Manager, Linux Secret Service, or `~/.config/cttb/secrets/CTTB_VAULT_PASS` at mode 0600 for headless boxes. Value `<redacted>`, never committed. `ansible.cfg` wires it in via `vault_password_file = .claude/sysadmin/vault-pass`, so no password flag is ever passed. There is no env-var fallback for this credential. Setup: `docs/sysadmin-onboarding.md`.
+- **Vault password**: service `CTTB_VAULT_PASS` in the platform credential store — macOS Keychain, Windows Credential Manager, Linux Secret Service, or `~/.config/cttb/secrets/CTTB_VAULT_PASS` at mode 0600 for headless boxes. Value `<redacted>`, never committed. `ansible.cfg` wires it in via `vault_password_file = utils/vault-pass`, so no password flag is ever passed. There is no env-var fallback for this credential. Setup: `docs/sysadmin-onboarding.md`.
 
 ---
 

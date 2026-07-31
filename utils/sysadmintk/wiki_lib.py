@@ -24,13 +24,21 @@ from cttb_api import CttbContext
 
 # ── Context ───────────────────────────────────────────────────────────────────
 
+def _default_wiki_pages_dir() -> Path:
+    """Draft/export directory, anchored on the repo root rather than on this
+    module's neighbours, so relocating the toolkit does not move the drafts."""
+    override = os.environ.get("CTTB_WIKI_PAGES_DIR")
+    if override:
+        return Path(override).expanduser()
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    return repo_root / ".claude" / "wiki-pages"
+
+
 @dataclass
 class WikiContext(CttbContext):
     api_url: str = "http://wiki.cttb/w/api.php"
     ssh_host: str = "wiki"
-    wiki_pages_dir: Path = field(
-        default_factory=lambda: Path(__file__).parent.parent / "wiki-pages"
-    )
+    wiki_pages_dir: Path = field(default_factory=_default_wiki_pages_dir)
 
     @classmethod
     def default(cls) -> "WikiContext":

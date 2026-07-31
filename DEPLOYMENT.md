@@ -10,7 +10,7 @@ End-to-end procedure for upgrading a CTTB lab machine from any state to Ubuntu 2
 - PXE server deployed (UEFI GRUB + autoinstall profiles)
 - WhiteSur theme tarballs on asset server (`storehouse.cttb/ansible/`)
 - Ansible environment: `source utils/setup-env`
-- Vault password resolvable: `.claude/sysadmin/vault-pass` prints a value (see [docs/sysadmin-onboarding.md](docs/sysadmin-onboarding.md) for first-time setup)
+- Vault password resolvable: `utils/vault-pass` prints a value (see [docs/sysadmin-onboarding.md](docs/sysadmin-onboarding.md) for first-time setup)
 - All commands run from the repository root — `ansible.cfg` uses relative paths
 
 ---

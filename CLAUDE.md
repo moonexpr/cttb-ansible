@@ -20,7 +20,7 @@ Project rules for `cttb-ansible`.
 Before any file lookup, grep, or glob, navigate from the structured entry points rather than exploring blindly:
 
 - **For a sysadmin request** → invoke the matching skill in `.claude/skills/` (see **Sysadmin Skills** below). Read that skill's `SKILL.md` first.
-- **For host/container/IP lookup** → `.claude/sysadmin/cttb-ct.sh list`.
+- **For host/container/IP lookup** → `utils/cttb-ct.sh list`.
 - **For Ansible role/subsystem navigation** → `PROJECT.md` is the operator's infra reference (network architecture, role subsystems, deployment model). It ships with the repo; treat it as the deep-infra map.
 
 ---
@@ -32,7 +32,9 @@ Before any file lookup, grep, or glob, navigate from the structured entry points
 | `CLAUDE.md` | Project-specific rules (this file). | yes |
 | `PROJECT.md` | Infra reference: network architecture, role subsystems, deployment model. | yes (secrets redacted) |
 | `.claude/skills/` | The sysadmin skill catalog (`/sysadmin`, `/ldap`, `/wiki-author`, …). | yes |
-| `.claude/sysadmin/` | Sysadmin toolkit: `wiki`, `ldap`, `cttb-ct.sh`, `vault-pass`, and the Python libs (incl. the `idstore_*` credential backends). | yes |
+| `utils/` | Sysadmin toolkit CLIs: `wiki`, `ldap`, `cttb-ct.sh`, `vault-pass`, `load-cttb-key`, plus the Ansible wrappers (`pb`, `ar`, `reboot`, …). | yes |
+| `utils/sysadmintk/` | Shared Python libraries the CLIs import: `cttb_api.py`, `wiki_lib.py`, `ldap_lib.py`, `ansible_env.py`, and the `idstore_*` credential backends. | yes |
+| `.claude/sysadmin/` | Compatibility forwarders to `utils/` for the old tool paths. Do not add new tools here. | yes |
 | `.claude/settings.json` | Shared Claude Code settings: context-mode plugin + the think-in-code deny hook. | yes |
 | `.claude/hooks/`, `.claude/rules/` | Vendored enforcement hook + its rule doc. | yes |
 | `.claude/.env.example` | Credential env-var template (commit the template, not the values). | yes |
@@ -65,18 +67,38 @@ Invoke with `/<name>`. Each has a `SKILL.md` with the full workflow; the one-lin
 
 ---
 
-## Sysadmin Tools (`.claude/sysadmin/`)
+## Sysadmin Tools (`utils/`)
 
 The toolkit the skills above wrap. All credential-bearing tools resolve secrets through the platform credential store — Keychain, Windows Credential Manager, Linux Secret Service, or the 0600 file store (see **Credentials**); no secret is hardcoded.
+
+The CLIs live in `utils/`; the Python they share lives in `utils/sysadmintk/` and is imported by same-directory name (`from cttb_api import …`), so each entrypoint puts that one directory on `sys.path`. Old `.claude/sysadmin/<tool>` paths still work via forwarding shims, but `utils/<tool>` is canonical — the toolkit is not Claude-specific and should be reachable without knowing what Claude is.
+
+### Ansible environment (`setup-env`, `ansible-env`, `pb`)
+
+```bash
+source utils/setup-env                      # load ANSIBLE_* into the current shell
+utils/ansible-env                           # show what would be resolved, change nothing
+utils/pb <playbook> [ansible-playbook OPTS] # run plays/<playbook>.yml
+```
+
+`utils/ansible-env` resolves the repo root with `git rev-parse --show-toplevel` (falling back to the working directory) and derives every path from it. `setup-env` is a thin shim that `eval`s its `--export` output — it must be **sourced**, since a child process cannot export into its parent.
+
+**Inventory precedence**, highest first: `-i` on the command line → `$ANSIBLE_INVENTORY` → `inventory/hosts`. `pb` deliberately does *not* pass `-i`; it sets `ANSIBLE_INVENTORY` in the child environment, because a second `-i` is additive in Ansible (it merges sources rather than replacing them) and would make the wrapper's choice impossible to override. To target the flat upgrade-target list, which is the one carrying MAC addresses:
+
+```bash
+ANSIBLE_INVENTORY=inventory/sudhanix26_hosts.ini utils/pb util-wakeonlan -l drbu_cs_lab
+```
+
+`ANSIBLE_HOSTS` is exported as an alias of `ANSIBLE_INVENTORY` because `utils/ar`, `utils/reboot`, and `utils/shutdown` still pass it as `-i`.
 
 ### Hosts and containers (`cttb-ct.sh`)
 
 ```bash
-.claude/sysadmin/cttb-ct.sh list                       # registered host/container aliases
-.claude/sysadmin/cttb-ct.sh shell <alias>              # interactive shell (wiki, ldap, srv-vm, pxe, ...)
-.claude/sysadmin/cttb-ct.sh exec  <alias> <cmd...>     # one-shot command
-.claude/sysadmin/cttb-ct.sh push  <alias> <local> <remote>
-.claude/sysadmin/cttb-ct.sh pull  <alias> <remote> <local>
+utils/cttb-ct.sh list                       # registered host/container aliases
+utils/cttb-ct.sh shell <alias>              # interactive shell (wiki, ldap, srv-vm, pxe, ...)
+utils/cttb-ct.sh exec  <alias> <cmd...>     # one-shot command
+utils/cttb-ct.sh push  <alias> <local> <remote>
+utils/cttb-ct.sh pull  <alias> <remote> <local>
 ```
 
 Edit the `ssh_chain()` host tables at the top of the script to add hosts. SSH ProxyJump for `*.cttb` is configured in `~/.ssh/config`.
@@ -85,10 +107,10 @@ Edit the `ssh_chain()` host tables at the top of the script to add hosts. SSH Pr
 
 ```bash
 ansible-vault edit group_vars/all/vault.yml    # no password flag needed
-.claude/sysadmin/vault-pass                    # raw helper (prints the password)
+utils/vault-pass                               # raw helper (prints the password)
 ```
 
-`ansible.cfg` sets `vault_password_file = .claude/sysadmin/vault-pass`, so every `ansible-vault` and `ansible-playbook` invocation picks the password up automatically — `--vault-password-file` is never needed. The path is relative to `ansible.cfg`, so **run from the repository root**.
+`ansible.cfg` sets `vault_password_file = utils/vault-pass`, so every `ansible-vault` and `ansible-playbook` invocation picks the password up automatically — `--vault-password-file` is never needed. The path is relative to `ansible.cfg`, so **run from the repository root**.
 
 `vault-pass` resolves `CTTB_VAULT_PASS` through the shared Python credential layer (`cttb_api`), which auto-detects the platform: macOS Keychain, Windows Credential Manager, Linux Secret Service (`secret-tool`), and a `~/.config/cttb/secrets/<SERVICE>` file store at mode 0600 as the headless fallback. It fails closed — exit 2, nothing on stdout — rather than handing `ansible-vault` an empty password. There is no `$CTTB_VAULT_PASS` environment-variable path.
 
@@ -98,22 +120,22 @@ Known issue: `vars/jc_passwds.enc.yml` does not decrypt with the current passwor
 
 Unified Python CLI for `wiki.cttb` (MediaWiki 1.43.x). Auth is handled automatically per command — no separate login step.
 **Credentials** in the platform credential store (`WIKI_CTTB_BOT_USER`, `WIKI_CTTB_BOT_PASSWD`); env vars override.
-**Library**: `wiki_lib.py` (WikiContext → WikiSession → API functions). Shared base: `cttb_api.py`.
+**Library**: `utils/sysadmintk/wiki_lib.py` (WikiContext → WikiSession → API functions). Shared base: `utils/sysadmintk/cttb_api.py`.
 
 ```bash
-.claude/sysadmin/wiki probe "Title-A" "Title-B"                  # check existence (anon; --login for IT namespace)
-.claude/sysadmin/wiki get "Page Title"                            # pull wikitext into .claude/wiki-pages/
-.claude/sysadmin/wiki get "Page Title" -                          # print to stdout
-.claude/sysadmin/wiki edit "Page Title" .claude/wiki-pages/Page_Title.txt "msg"
-.claude/sysadmin/wiki purge "Page Title" ["Other Title" ...]      # purge cache via the API (run after every edit)
-.claude/sysadmin/wiki purge --force "Template:Foo"                # + forcelinkupdate (after Template edits)
-.claude/sysadmin/wiki history "Page Title" -n 5 --login           # recent revisions (timestamp, user, summary)
-.claude/sysadmin/wiki delete "Page Title" "deletion reason"       # sysop right
-.claude/sysadmin/wiki audit-drafts                                # audit .claude/wiki-pages/ vs live wiki
-.claude/sysadmin/wiki upload .claude/wiki-pages/image.svg "description"
-.claude/sysadmin/wiki sitenotice .claude/wiki-pages/wiki-sitenotice.txt
-.claude/sysadmin/wiki push-notice                                 # push wiki-sitenotice.txt + wiki-commonjs.txt
-.claude/sysadmin/wiki maint <subcommand> [args...]                # run MW maintenance/run.php on wiki via ssh
+utils/wiki probe "Title-A" "Title-B"                  # check existence (anon; --login for IT namespace)
+utils/wiki get "Page Title"                            # pull wikitext into .claude/wiki-pages/
+utils/wiki get "Page Title" -                          # print to stdout
+utils/wiki edit "Page Title" .claude/wiki-pages/Page_Title.txt "msg"
+utils/wiki purge "Page Title" ["Other Title" ...]      # purge cache via the API (run after every edit)
+utils/wiki purge --force "Template:Foo"                # + forcelinkupdate (after Template edits)
+utils/wiki history "Page Title" -n 5 --login           # recent revisions (timestamp, user, summary)
+utils/wiki delete "Page Title" "deletion reason"       # sysop right
+utils/wiki audit-drafts                                # audit .claude/wiki-pages/ vs live wiki
+utils/wiki upload .claude/wiki-pages/image.svg "description"
+utils/wiki sitenotice .claude/wiki-pages/wiki-sitenotice.txt
+utils/wiki push-notice                                 # push wiki-sitenotice.txt + wiki-commonjs.txt
+utils/wiki maint <subcommand> [args...]                # run MW maintenance/run.php on wiki via ssh
 ```
 
 - API: `http://wiki.cttb/w/api.php` (container wiki-2404 at 10.11.1.34)
@@ -126,20 +148,20 @@ Unified Python CLI for `wiki.cttb` (MediaWiki 1.43.x). Auth is handled automatic
 
 Unified Python CLI for the CTTB directory. Defaults: `ldap://ldap.cttb`, `dc=cttb`, authenticated simple bind, StartTLS (cert validation off). Run locally — no jump host needed.
 **Credentials** in the platform credential store (`CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`); env vars override. Username may be a bare uid or a full DN.
-**Library**: `ldap_lib.py` (LdapContext + API functions). Shared base: `cttb_api.py`.
+**Library**: `utils/sysadmintk/ldap_lib.py` (LdapContext + API functions). Shared base: `utils/sysadmintk/cttb_api.py`.
 **All writes are dry-run by default** — pass `--risks-confirmed` to mutate.
 
 ```bash
-.claude/sysadmin/ldap search '(uid=<redacted>)' cn mail          # raw LDIF to stdout
-.claude/sysadmin/ldap search -b ou=Groups,dc=cttb '(cn=it)' memberUid gidNumber
-.claude/sysadmin/ldap search --anon '(uid=<redacted>)' cn          # anonymous bind
-.claude/sysadmin/ldap group it                                    # one group's members (primary + secondary)
-.claude/sysadmin/ldap group --all                                 # every posixGroup
-.claude/sysadmin/ldap apply foo.ldif                              # dry-run LDIF (server validates, no writes)
-.claude/sysadmin/ldap apply foo.ldif --risks-confirmed            # apply
-.claude/sysadmin/ldap add-to-group <uid> <group> [--risks-confirmed]
-.claude/sysadmin/ldap passwd <uid> [--risks-confirmed]            # password reset (RFC 3062)
-.claude/sysadmin/ldap add-user --uid jdoe --cn "Jane Doe" --sn Doe \
+utils/ldap search '(uid=<redacted>)' cn mail          # raw LDIF to stdout
+utils/ldap search -b ou=Groups,dc=cttb '(cn=it)' memberUid gidNumber
+utils/ldap search --anon '(uid=<redacted>)' cn          # anonymous bind
+utils/ldap group it                                    # one group's members (primary + secondary)
+utils/ldap group --all                                 # every posixGroup
+utils/ldap apply foo.ldif                              # dry-run LDIF (server validates, no writes)
+utils/ldap apply foo.ldif --risks-confirmed            # apply
+utils/ldap add-to-group <uid> <group> [--risks-confirmed]
+utils/ldap passwd <uid> [--risks-confirmed]            # password reset (RFC 3062)
+utils/ldap add-user --uid jdoe --cn "Jane Doe" --sn Doe \
     --uid-number 2099 --gid-number 2099 [--risks-confirmed]
 ```
 
@@ -179,7 +201,7 @@ No secret is committed. The toolkit reads credentials from the platform credenti
 The file store is chained last on every platform, so headless servers, cron, and bare WSL shells (no D-Bus keyring) still resolve credentials.
 
 - **Template**: `.claude/.env.example` — env vars are an accepted fallback for the wiki/LDAP credentials only, and are read *before* the store by `credential_or_env()`.
-- **`CTTB_VAULT_PASS` has no env-var path.** It resolves only through the store (or the 0600 file), via `.claude/sysadmin/vault-pass`.
+- **`CTTB_VAULT_PASS` has no env-var path.** It resolves only through the store (or the 0600 file), via `utils/vault-pass`.
 - **Services**: `CTTB_VAULT_PASS`, `WIKI_CTTB_BOT_USER`, `WIKI_CTTB_BOT_PASSWD`, `CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`. (`VAJRA_SRC` is a path, not a secret — env only.)
 
 Rule: never hardcode a token, password, or personal account name in a committed file. Use the `<redacted>` placeholder in docs/examples and read live values from the store/env at runtime.
@@ -235,7 +257,7 @@ Skip the question for routine, locally-reversible actions (a file edit, a small 
 Do not write scripts, helpers, or one-off output artifacts to `/tmp` or the Desktop. `/tmp` is wiped on reboot — and reboot/PXE tests are common here. Persistence targets, in order:
 
 1. A **skill's helper** script → the skill's own folder (`<skill-dir>/scripts/`), listed in its `## Resources` section.
-2. A **project-scoped helper** → a durable repo location (`scripts/`, `tools/`, `.claude/sysadmin/`).
+2. A **project-scoped helper** → a durable repo location (`scripts/`, `tools/`, `utils/`).
 3. A **named deliverable** (scrape, report, transcript) → `.claude/artifacts/` (create the subdir if the parent `.claude/` exists), or a clearly-named path under `out/`/`research/`. Mention the location in your turn summary.
 
 A script's existence should outlive the turn that needed it. The next agent should find it, not regenerate it from scratch.

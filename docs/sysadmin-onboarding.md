@@ -104,10 +104,18 @@ ansible-galaxy collection list | grep -E 'ansible\.posix|community\.(general|mys
 git clone <repo-url> ~/cttb-ansible
 cd ~/cttb-ansible
 source utils/setup-env
-chmod +x .claude/sysadmin/vault-pass .claude/sysadmin/cttb-ct.sh
+chmod +x utils/vault-pass utils/cttb-ct.sh
 ```
 
-**`source utils/setup-env` is mandatory, not a convenience.** `ansible.cfg` interpolates `$ANSIBLE_ROLES`, `$ANSIBLE_HOSTS`, and `$ANSIBLE_TMP`; a fresh clone without those exported has broken role and inventory paths. It must be `source`d, not executed — running it in a subshell exports nothing. Add it to your shell profile, or use the `utils/pb`, `utils/ar`, `utils/rc` wrappers, which source it themselves.
+**`source utils/setup-env` sets up your shell's Ansible environment.** It exports `ANSIBLE_INVENTORY` (with `ANSIBLE_HOSTS` as a legacy alias), `ANSIBLE_ROLES`, `ANSIBLE_PLAYBOOKS`, `ANSIBLE_TMP`, and friends, and creates `logs/` and `tmp/`. It must be `source`d, not executed — running it in a subshell exports nothing. Add it to your shell profile, or use the `utils/pb`, `utils/ar`, `utils/rc` wrappers, which source it themselves.
+
+To see what it resolves without loading anything, run `utils/ansible-env`. To point one command at a different fleet, override the inventory:
+
+```bash
+ANSIBLE_INVENTORY=inventory/sudhanix26_hosts.ini utils/pb util-wakeonlan -l drbu_cs_lab
+```
+
+> Note: `ansible.cfg` does **not** interpolate these variables — `.cfg` files perform no environment expansion, so the `library = $ANSIBLE_LIBRARY` and `hostfile = $ANSIBLE_HOSTS` lines there are inert (`hostfile` is also the removed Ansible 1.x spelling of `inventory`). The variables matter because the `utils/` wrappers read them, not because Ansible does.
 
 **Always run Ansible commands from the repository root.** `ansible.cfg` uses relative paths, including the vault helper you are about to set up.
 
@@ -143,7 +151,7 @@ On a headless Debian box, use the file-store commands above instead.
 Check — this should print the password and exit 0:
 
 ```bash
-.claude/sysadmin/vault-pass
+utils/vault-pass
 ```
 
 If it exits 2, it tells you exactly which command to run. It deliberately never prints an empty string: handing `ansible-vault` a blank password produces a confusing "decryption failed" rather than "your credential is missing".
@@ -241,7 +249,7 @@ ssh -t srv-vm -- lxc exec ldap --
 ssh -t srv-nas -- sudo lxc exec pxe --
 ```
 
-**That asymmetry is real and is the single most confusing thing about this topology.** `srv-nas` needs `sudo` because the login user there cannot read `/etc/lxc`; `srv-vm` does not. `cttb-ct.sh` encodes it for you — prefer `.claude/sysadmin/cttb-ct.sh shell <alias>` over hand-typing either form.
+**That asymmetry is real and is the single most confusing thing about this topology.** `srv-nas` needs `sudo` because the login user there cannot read `/etc/lxc`; `srv-vm` does not. `cttb-ct.sh` encodes it for you — prefer `utils/cttb-ct.sh shell <alias>` over hand-typing either form.
 
 ---
 
@@ -275,7 +283,7 @@ ansible --version
 ansible-galaxy collection list | grep -E 'ansible\.posix|community\.(general|mysql)'
 
 # 2. Vault credential resolves
-.claude/sysadmin/vault-pass >/dev/null && echo "vault password OK"
+utils/vault-pass >/dev/null && echo "vault password OK"
 
 # 3. Ansible picks it up with no flags
 ansible-vault view host_vars/wiki-2404/wiki_vault.yml >/dev/null && echo "vault wiring OK"
@@ -290,7 +298,7 @@ ssh -G srv-vm | head -3
 ansible -i inventory/sudhanix26_hosts.ini <a-host>.cttb -m ping
 
 # 7. Container access through the jump chain
-.claude/sysadmin/cttb-ct.sh exec ldap hostname
+utils/cttb-ct.sh exec ldap hostname
 ```
 
 Step 6 succeeding is the real milestone: it proves install, collections, SSH config, and key enrollment all work together.

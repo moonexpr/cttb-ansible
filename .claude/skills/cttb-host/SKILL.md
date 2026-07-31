@@ -4,7 +4,7 @@ user-invocable: true
 argument-hint: "<host/container alias> [command...]"
 description: >
   Open a shell on, or run a one-shot command against, any registered
-  CTTB host or container via `.claude/sysadmin/cttb-ct.sh`. SSH chains
+  CTTB host or container via `utils/cttb-ct.sh`. SSH chains
   and ProxyJump are pre-wired (`~/.ssh/config`, the script's
   `ssh_chain()` case). Triggers on "get into wiki-2404", "shell into
   the LDAP container", "run X on srv-vm", "what's on pxe", `/cttb-host
@@ -29,24 +29,24 @@ already handles the remote leg.
    registered ones:
 
    ```bash
-   .claude/sysadmin/cttb-ct.sh list
+   utils/cttb-ct.sh list
    ```
 
    Common aliases: `wiki` (wiki-2404, 10.11.1.34), `ldap`, `srv-vm`,
    `pxe`. If the host isn't registered, add a case to `ssh_chain()` at
-   the top of `.claude/sysadmin/cttb-ct.sh` rather than hand-rolling an
+   the top of `utils/cttb-ct.sh` rather than hand-rolling an
    ssh+lxc chain (per the standing "use cttb-ct.sh" preference).
 
 2. **One-shot vs. interactive.** Pick the form that matches the need:
 
    - One command, output captured (the default for agent use):
      ```bash
-     .claude/sysadmin/cttb-ct.sh exec <alias> <cmd...>
+     utils/cttb-ct.sh exec <alias> <cmd...>
      ```
    - Interactive session (the default when the user types `/cttb-host
      <alias>` with no command):
      ```bash
-     .claude/sysadmin/cttb-ct.sh shell <alias>
+     utils/cttb-ct.sh shell <alias>
      ```
 
 3. **Run it.** Use `exec` for anything an agent needs to read back;
@@ -67,6 +67,6 @@ already handles the remote leg.
 ## Resources
 
 Self-contained. The skill drives one existing helper,
-`.claude/sysadmin/cttb-ct.sh` (host/container registry + SSH-chain
+`utils/cttb-ct.sh` (host/container registry + SSH-chain
 wrapper, credentials via `~/.ssh/config` and macOS Keychain). It writes
 no new scripts and loads no sibling files.

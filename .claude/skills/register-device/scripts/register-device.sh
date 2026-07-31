@@ -14,8 +14,8 @@ set -euo pipefail
 # --- config -----------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# .claude/skills/register-device/scripts/  →  .claude/sysadmin/cttb-ct.sh
-CTTB_CT="$(cd "$SCRIPT_DIR/../../../sysadmin" && pwd)/cttb-ct.sh"
+# .claude/skills/register-device/scripts/  →  utils/cttb-ct.sh
+CTTB_CT="$(cd "$SCRIPT_DIR/../../../../utils" && pwd)/cttb-ct.sh"
 DNSMASQ_CLONE="${DNSMASQ_CLONE:-$HOME/Garden/external/dnsmasq}"
 
 ALLOWED_CATEGORIES="adult visitors drbu servers switches voip waps restricted testlab temp"
