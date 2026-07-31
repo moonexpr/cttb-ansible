@@ -1,0 +1,88 @@
+---
+
+# roles/dnsmasq — DHCP + dhcp-boot/PXE + local-authority DNS for the
+# campus, on the 24.04 replacement for the EOL 16.04 lxc-dnsmasq box.
+#
+# Targets a modern container ONLY. The legacy 16.04 box runs Python 3.5
+# and cannot run these modules (see plays/deploy-netinstall-2404.yml) —
+# that incompatibility is *why* the answer is a fresh 24.04 rebuild, not
+# an in-place dist-upgrade. Cutover is the runbook's job, gated and
+# separate: docs/dnsmasq-24.04-migration.md.
+
+  - name: install dnsmasq
+    apt:
+      name: dnsmasq
+      state: present
+      update_cache: true
+
+  - name: ensure dhcp-hostsdir exists
+    file:
+      path: "{{ dnsmasq_hostsdir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: "0755"
+
+  # Content of the hosts DB is maintained out of band (the dnsmasq
+  # config git repo + Rui's register.py workflow). The role only
+  # guarantees the directory unless explicitly told to own the content.
+  # Reconciliation of git<->deployed drift is tracked in cttb-ansible#89.
+  - name: warn if hosts-content management is unset
+    debug:
+      msg: >-
+        dnsmasq_manage_hosts_content is false: {{ dnsmasq_hostsdir }}
+        content is NOT Ansible-owned. See roles/dnsmasq/TODO.md and #89.
+    when: not dnsmasq_manage_hosts_content
+
+  - name: deploy authoritative dnsmasq.conf
+    template:
+      src: dnsmasq.conf.j2
+      dest: /etc/dnsmasq.conf
+      owner: root
+      group: root
+      mode: "0644"
+      # Refuse to install a config dnsmasq itself rejects. Validates the
+      # full effective config including CONFIG_DIR=/etc/dnsmasq.d.
+      validate: "/usr/sbin/dnsmasq --test -C %s"
+      backup: true
+    notify: restart dnsmasq
+
+  - name: deploy Ansible-owned upstream resolver snippet (#89)
+    template:
+      src: upstream.conf.j2
+      dest: /etc/dnsmasq.d/upstream.conf
+      owner: root
+      group: root
+      mode: "0644"
+    notify: restart dnsmasq
+
+  - name: enable and start dnsmasq
+    systemd:
+      name: dnsmasq
+      enabled: true
+      state: started
+
+  # Functional gate: with ~1100 clients the lease file mtime advances
+  # constantly when DHCP is healthy. A frozen mtime is the DHCP-down
+  # signature this whole incident turned on. Non-fatal: report only.
+  - name: sanity-check resolution + DHCP after deploy
+    block:
+      - name: external name resolves through this box
+        command: dig +time=3 +tries=1 @127.0.0.1 google.com +short
+        register: _dq_ext
+        changed_when: false
+        failed_when: _dq_ext.stdout | trim | length == 0
+
+      - name: local authority resolves
+        command: dig +time=3 +tries=1 @127.0.0.1 wiki.{{ dnsmasq_domain }} +short
+        register: _dq_loc
+        changed_when: false
+        failed_when: _dq_loc.stdout | trim != dnsmasq_wiki_ip
+    rescue:
+      - name: surface post-deploy verification failure
+        fail:
+          msg: >-
+            dnsmasq is running but verification failed
+            (ext='{{ _dq_ext.stdout | default("") }}'
+            local='{{ _dq_loc.stdout | default("") }}').
+            Check /etc/dnsmasq.d/upstream.conf and the upstream {{ dnsmasq_upstream }}.

@@ -1,0 +1,14 @@
+{{ ansible_managed | comment }}
+# Upstream recursive resolver for dnsmasq on lxc-dnsmasq.
+#
+# The main dnsmasq.conf sets `no-resolv` and carries NO `server=` line.
+# Historically that was survivable only because clients get their
+# resolver via DHCP option 6 ({{ dnsmasq_client_dns }}) and never query
+# this box for recursion. Anything that DOES query .19 directly (e.g.
+# the Earth Store Hall AP / iMoonexpr / Cosmicbook) got a walled garden.
+#
+# This file closes that gap permanently and is Ansible-owned, so it
+# cannot be silently lost again (cttb-ansible#89). Read via
+# CONFIG_DIR=/etc/dnsmasq.d. Coordinate with #47 (Unbound<->dnsmasq
+# cttb. zone dedup) before changing the target.
+server={{ dnsmasq_upstream }}

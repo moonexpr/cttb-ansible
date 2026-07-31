@@ -1,0 +1,119 @@
+{{ ansible_managed | comment }}
+# Source of truth: roles/dnsmasq (cttb-ansible). Recovered 2026-05-19 from
+# the authoritative deployed /etc/dnsmasq.conf on lxc-dnsmasq (== the
+# /etc/dnsmasq.conf.pre-pxetest-20260512 known-good backup, 351 lines).
+# The PXE/TFTP server address is the one host-specific value and is
+# templated via {{ '{{ dnsmasq_pxe_server }}' }} (closes cttb-ansible#69).
+# Upstream resolver is NOT here (no-resolv below) — it lives in
+# /etc/dnsmasq.d/upstream.conf so the long-standing no-server= gap that
+# caused the Earth Store Hall walled garden cannot recur (cttb-ansible#89).
+#
+#INDEX
+#servers	   10.11.1.xxx
+#Asterisk IPPhones 10.11.6.xxx
+#restricted adult  10.11.8.xxx
+#girls             10.11.9.xxx
+#boys              10.11.10.xxx
+#switches	   10.11.12.xxx
+#unregistered	   10.11.13.xxx, 10.11.130.xxx
+#drbu		   10.11.16.xxx
+#printer           10.11.17.xxx
+#wireless AP  	   10.11.18.xxx
+#adult ranges      10.11.11/14/15/24/25/31/...xxx
+
+# Never forward plain names (without a dot or domain part)
+domain-needed
+# Never forward addresses in the non-routed address spaces.
+bogus-priv
+
+#####   RANGES
+# all static ranges will be assigned the same subnet, default gateway, etc.
+dhcp-range=set:block13,10.11.13.1,10.11.13.254,48h # default for unregistered computers (no "static" keyword)
+dhcp-range=set:block13,10.11.130.1,10.11.130.254,48h # randomize-MAC-address exhausted 10.11.13.x. Rui, 2021-09-14.
+dhcp-range=10.11.0.0,static,255.255.0.0,48h # entire range except the block13 subrange
+
+######   SUBNET MASK
+dhcp-option=option:netmask,255.255.0.0
+
+######   DEFAULT GATEWAYS (CONTENT FILTERS)
+dhcp-option=option:router,10.11.1.1
+
+#sip server
+dhcp-option=tag:asterisk6,option:sip-server,10.11.6.1
+
+#time server
+dhcp-option=option:ntp-server,10.11.1.1
+
+# PXE / network boot. TFTP server address follows a single variable (#69).
+#dhcp-boot=tag:tftp,lpxelinux.0,pxe,{{ dnsmasq_pxe_server }}
+# Architecture detection for UEFI vs BIOS PXE boot
+dhcp-match=set:efi-x86_64,option:client-arch,7
+dhcp-match=set:efi-x86_64,option:client-arch,9
+dhcp-match=set:bios,option:client-arch,0
+dhcp-boot=tag:efi-x86_64,grubx64.efi,,{{ dnsmasq_pxe_server }}
+dhcp-boot=tag:bios,pxelinux.0,,{{ dnsmasq_pxe_server }}
+
+#netboot tftp
+dhcp-option=tag:tftp,67,lpxelinux.0
+dhcp-option=tag:tftp,66,{{ dnsmasq_pxe_server }}
+
+#asterisk tftp
+dhcp-option=tag:asterisk6,150,10.11.6.1 #Etherboot GRUB configuration path name.
+dhcp-option=tag:asterisk6,66,10.11.6.1 # TFTP server name.
+
+dhcp-option=option:domain-name,"{{ dnsmasq_domain }}"
+dhcp-option=option:domain-search,"{{ dnsmasq_domain }}"
+
+######   DNS SERVERS (handed to clients via DHCP option 6)
+dhcp-option=tag:block13,6,10.11.13.13
+dhcp-option=tag:girl9,6,10.11.1.28
+dhcp-option=tag:boy10,6,10.11.1.28
+dhcp-option=tag:adultnm,6,10.11.1.28
+dhcp-option=tag:asterisk6,6,8.8.8.8
+dhcp-option=6,{{ dnsmasq_client_dns }}
+
+######   LOG SERVER
+dhcp-option=7,10.11.1.20
+
+# Disallow temp range (13.x) traffic to go out.
+dhcp-option=tag:block13,option:router,0.0.0.0
+
+# Samba/WINS-compatible defaults (kept from the historical config)
+dhcp-option=19,0           # option ip-forwarding off
+dhcp-option=44,0.0.0.0
+dhcp-option=45,0.0.0.0     # netbios datagram distribution server
+dhcp-option=46,8           # netbios node type
+dhcp-option=47             # empty netbios scope.
+
+# Set the limit on DHCP leases (default 150; campus has ~1100+ active).
+dhcp-lease-max={{ dnsmasq_lease_max }}
+
+# Authoritative: take over leases for any client broadcasting on the
+# network. Safe here because this IS the campus DHCP server.
+dhcp-authoritative
+
+# No upstream servers here on purpose: see no-resolv below and
+# /etc/dnsmasq.d/upstream.conf (Ansible-managed).
+no-resolv
+
+# Local-only domains: answered from DHCP / host-record only.
+local="/{{ dnsmasq_domain }}/cttb.us/"
+
+# Do not read /etc/hosts.
+no-hosts
+
+# Add the domain to simple names in host files.
+expand-hosts
+domain={{ dnsmasq_domain }}
+
+# DHCP host->IP/tag database (boys/girls/adult/devices/printers/... ).
+# Content maintained out of band (the dnsmasq config git repo); this
+# role guarantees the directory exists and is wired. See TODO.md / #89.
+dhcp-hostsdir={{ dnsmasq_hostsdir }}
+
+# Explicit local A records for the wiki.
+host-record=wiki.{{ dnsmasq_domain }},{{ dnsmasq_wiki_ip }}
+host-record=wiki,{{ dnsmasq_wiki_ip }}
+
+# Per-query logging. Heavy on a busy resolver — see TODO.md.
+{% if dnsmasq_log_queries %}log-queries{% else %}#log-queries{% endif %}
