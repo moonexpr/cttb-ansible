@@ -1,0 +1,28 @@
+---
+# Deploy the dnsmasq role to the 24.04 replacement container.
+#
+# This play does NOT perform the IP-takeover cutover. It configures a
+# dnsmasq host (a fresh 24.04 container, or a scratch test container)
+# to the authoritative campus config. The cutover — stopping the old
+# 16.04 box and re-IP'ing the new one onto 10.11.1.19 — is a gated,
+# manual runbook step: docs/dnsmasq-24.04-migration.md.
+#
+# Validate against a throwaway container first (cttb-ansible#89 ACs):
+#   ansible-playbook plays/deploy-dnsmasq.yml \
+#     -i inventory/sudhanix26_hosts.ini \
+#     -l dnsmasq-scratch --check --diff
+#
+# Real deploy to the staged 24.04 container (still pre-cutover, so it is
+# NOT yet on .19 and NOT yet authoritative for campus DHCP):
+#   ansible-playbook plays/deploy-dnsmasq.yml \
+#     -i inventory/sudhanix26_hosts.ini -l dnsmasq-2404
+#
+# Syntax / lint only:
+#   ansible-playbook plays/deploy-dnsmasq.yml --syntax-check
+
+- name: Configure dnsmasq (DHCP + dhcp-boot + local-authority DNS)
+  hosts: dnsmasq_target
+  become: true
+  gather_facts: true
+  roles:
+    - role: dnsmasq

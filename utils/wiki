@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""wiki — unified CLI for wiki.cttb. Auth is handled automatically per command."""
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent / "sysadmintk"))
+import wiki_lib as w
+
+
+def _session(login: bool = False) -> w.WikiSession:
+    s = w.WikiSession()
+    if login:
+        s.login()
+    return s
+
+
+# ── subcommand handlers ───────────────────────────────────────────────────────
+
+def cmd_probe(args):
+    titles = args.title or [l for l in sys.stdin.read().splitlines() if l]
+    s = _session(login=args.login)
+    for r in w.probe(s, titles):
+        if r.exists:
+            print(f"OK    {r.page_id}  {r.title}")
+        else:
+            print(f"MISS  {r.title}")
+
+
+def cmd_get(args):
+    s = _session(login=args.login)
+    content = w.download(s, args.title)
+    if args.dest == "-":
+        sys.stdout.write(content)
+    elif args.dest:
+        dest = Path(args.dest)
+        dest.write_text(content)
+        print(f"{args.title}: {len(content):>7} bytes → {dest}")
+    else:
+        dest = s.ctx.title_to_filename(args.title)
+        dest.write_text(content)
+        print(f"{args.title}: {len(content):>7} bytes → {dest}")
+
+
+def cmd_edit(args):
+    s = _session(login=True)
+    text = Path(args.file).read_text()
+    result = w.edit(s, args.title, text, args.summary)
+    print(f"{args.title}: {result}")
+
+
+def cmd_purge(args):
+    if args.title == ["-"]:
+        titles = [l for l in sys.stdin.read().splitlines() if l]
+    else:
+        titles = args.title
+    s = _session()
+    w.purge(s, titles, force=args.force, via_ssh=args.via_ssh)
+
+
+def cmd_history(args):
+    s = _session(login=args.login)
+    for r in w.history(s, args.title, limit=args.limit):
+        comment = r.get("comment", "") or "(no summary)"
+        print(f"{r['timestamp']}  {r['user']:<20} {r.get('size', '?'):>7}b  {comment}")
+
+
+def cmd_delete(args):
+    s = _session(login=True)
+    w.delete(s, args.title, args.reason)
+
+
+def cmd_upload(args):
+    s = _session(login=True)
+    result = w.upload(s, Path(args.file), args.comment)
+    print(f"{Path(args.file).name}: {result}")
+
+
+def cmd_sitenotice(args):
+    s = _session(login=True)
+    text = Path(args.file).read_text()
+    result = w.edit(s, "MediaWiki:Sitenotice", text, "Update sitenotice")
+    print(f"Sitenotice: {result}")
+
+
+def cmd_push_notice(args):
+    s = _session(login=True)
+    ctx = s.ctx
+    for path, title, summary in [
+        (ctx.wiki_pages_dir / "wiki-sitenotice.txt", "MediaWiki:Sitenotice", "Update sitenotice"),
+        (ctx.wiki_pages_dir / "wiki-commonjs.txt",   "MediaWiki:Common.js",  "Add dismissable sitenotice JS"),
+    ]:
+        result = w.edit(s, title, path.read_text(), summary)
+        print(f"{title}: {result}")
+
+
+def cmd_maint(args):
+    w.maint(w.WikiContext.default(), args.subcommand, *args.args)
+
+
+def cmd_audit(args):
+    s = _session(login=True)
+    entries = w.audit_drafts(s)
+    redirects  = [e for e in entries if e.status == "redirect"]
+    missing    = [e for e in entries if e.status == "missing"]
+    canonical  = [e for e in entries if e.status == "canonical"]
+    show_all   = not (args.redirects or args.missing)
+
+    if show_all or args.redirects:
+        print(f"=== REDIRECTS ({len(redirects)}) — local content is stale; remote is now a redirect ===")
+        for e in redirects:
+            print(f"  {e.filename:<55} {e.title:<45} ⇒  [[{e.target}]]")
+        print()
+    if show_all or args.missing:
+        print(f"=== MISSING ({len(missing)}) — file maps to no page on the wiki ===")
+        for e in missing:
+            print(f"  {e.filename:<55} {e.title}")
+        print()
+    if show_all:
+        print(f"=== CANONICAL ({len(canonical)}) — file maps to a real existing page ===")
+        for e in canonical:
+            print(f"  {e.filename:<55} {e.title:<45} (id {e.page_id}, {e.size}b)")
+
+
+# ── parser ────────────────────────────────────────────────────────────────────
+
+def main():
+    p = argparse.ArgumentParser(prog="wiki", description="wiki.cttb editing tool")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    sp = sub.add_parser("probe", help="check page existence")
+    sp.add_argument("title", nargs="*", metavar="TITLE")
+    sp.add_argument("--login", action="store_true", help="authenticate (needed for IT namespace)")
+    sp.set_defaults(func=cmd_probe)
+
+    sp = sub.add_parser("get", help="download page wikitext into wiki-pages/")
+    sp.add_argument("title", metavar="TITLE")
+    sp.add_argument("dest", nargs="?", default=None, metavar="DEST", help="path or - for stdout")
+    sp.add_argument("--login", action="store_true", help="authenticate (needed for protected pages)")
+    sp.set_defaults(func=cmd_get)
+
+    sp = sub.add_parser("edit", help="push file content as page text")
+    sp.add_argument("title", metavar="TITLE")
+    sp.add_argument("file", metavar="FILE")
+    sp.add_argument("summary", nargs="?", default="Automated edit", metavar="SUMMARY")
+    sp.set_defaults(func=cmd_edit)
+
+    sp = sub.add_parser("purge", help="purge parser cache via the API (run after every edit)")
+    sp.add_argument("--force", action="store_true", help="also forcelinkupdate (use after Template edits)")
+    sp.add_argument("--via-ssh", action="store_true", help="use the purgeList maintenance script over SSH instead of the API")
+    sp.add_argument("title", nargs="+", metavar="TITLE", help="titles, or - to read from stdin")
+    sp.set_defaults(func=cmd_purge)
+
+    sp = sub.add_parser("history", help="show a page's recent revisions (newest first)")
+    sp.add_argument("title", metavar="TITLE")
+    sp.add_argument("-n", "--limit", type=int, default=5, metavar="N", help="revisions to show (default 5)")
+    sp.add_argument("--login", action="store_true", help="authenticate (needed for protected pages)")
+    sp.set_defaults(func=cmd_history)
+
+    sp = sub.add_parser("delete", help="delete a page (requires sysop)")
+    sp.add_argument("title", metavar="TITLE")
+    sp.add_argument("reason", metavar="REASON")
+    sp.set_defaults(func=cmd_delete)
+
+    sp = sub.add_parser("upload", help="upload a file")
+    sp.add_argument("file", metavar="FILE")
+    sp.add_argument("comment", nargs="?", default="Uploaded via wiki tool", metavar="COMMENT")
+    sp.set_defaults(func=cmd_upload)
+
+    sp = sub.add_parser("sitenotice", help="update MediaWiki:Sitenotice from a file")
+    sp.add_argument("file", metavar="FILE")
+    sp.set_defaults(func=cmd_sitenotice)
+
+    sp = sub.add_parser("push-notice", help="push wiki-sitenotice.txt + wiki-commonjs.txt")
+    sp.set_defaults(func=cmd_push_notice)
+
+    sp = sub.add_parser("maint", help="run maintenance/run.php on wiki via ssh")
+    sp.add_argument("subcommand", metavar="SUBCOMMAND")
+    sp.add_argument("args", nargs=argparse.REMAINDER, metavar="ARGS")
+    sp.set_defaults(func=cmd_maint)
+
+    sp = sub.add_parser("audit-drafts", help="audit local wiki-pages/ drafts vs live wiki")
+    sp.add_argument("--redirects", action="store_true", help="show only redirect mappings")
+    sp.add_argument("--missing",   action="store_true", help="show only missing pages")
+    sp.set_defaults(func=cmd_audit)
+
+    args = p.parse_args()
+    try:
+        args.func(args)
+    except RuntimeError as e:
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(130)
+
+
+if __name__ == "__main__":
+    main()

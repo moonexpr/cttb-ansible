@@ -1,6 +1,6 @@
 # CTTB SSH client config — example
 #
-# The .claude/sysadmin/cttb-ct.sh toolkit resolves the aliases below out of
+# The utils/cttb-ct.sh toolkit resolves the aliases below out of
 # your ~/.ssh/config. Without them, every `cttb-ct.sh` command fails with
 # "Could not resolve hostname".
 #

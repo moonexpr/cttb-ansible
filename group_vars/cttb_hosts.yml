@@ -1,6 +1,6 @@
 # Campus fleet umbrella (dvgs/dvbs/drbu — both inventories).
 # Become password for the PXE-installed `administrator` identity, vault-encrypted.
-# Decrypts automatically via ansible.cfg vault_password_file (.claude/sysadmin/vault-pass),
+# Decrypts automatically via ansible.cfg vault_password_file (utils/vault-pass),
 # so no --ask-become-pass or -e ansible_become_pass flag is needed on any play.
 ansible_become_password: !vault |
           $ANSIBLE_VAULT;1.1;AES256

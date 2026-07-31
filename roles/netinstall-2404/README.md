@@ -31,7 +31,7 @@ network installations over PXE.
 ## Usage
 
 ```yaml
-- hosts: pxe-server
+- hosts: cttb_pxe
   roles:
     - netinstall-2404
 ```

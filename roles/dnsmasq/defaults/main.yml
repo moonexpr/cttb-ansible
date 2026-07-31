@@ -1,0 +1,35 @@
+---
+
+# roles/dnsmasq defaults — values recovered 2026-05-19 from the
+# authoritative deployed /etc/dnsmasq.conf on lxc-dnsmasq.
+
+# Upstream recursive resolver (ub-adult). Mirrors group_vars/all dns_srv.
+# Lives in /etc/dnsmasq.d/upstream.conf — the fix for cttb-ansible#89.
+dnsmasq_upstream: "{{ dns_srv | default('10.11.1.29') }}"
+
+# Resolver handed to DHCP clients via option 6. Same box as the upstream
+# by default, but kept separate: option 6 is what clients use, the
+# upstream is what THIS box uses for direct queries.
+dnsmasq_client_dns: "10.11.1.29"
+
+# The one host-specific value in dnsmasq.conf — the PXE/TFTP server
+# address in the dhcp-boot / option-66 lines. Single variable per
+# cttb-ansible#69. Currently the pxe24 LXC on srv-nas.
+dnsmasq_pxe_server: "10.11.1.23"
+
+dnsmasq_domain: "cttb"
+dnsmasq_wiki_ip: "10.11.1.34"
+dnsmasq_lease_max: 1999
+
+# DHCP host->IP/tag database directory (boys/girls/adult/devices/...).
+# The directory and wiring are role-managed; the file CONTENTS are
+# maintained out of band in the dnsmasq config git repo
+# (~/Garden/external/dnsmasq, /home/administrator/dnsmasq.git on-box).
+# See TODO.md and cttb-ansible#89 for the drift-reconciliation decision.
+dnsmasq_hostsdir: "/etc/dnsmasq-hosts"
+dnsmasq_manage_hosts_content: false
+
+# Per-query logging. The historical config has it on; it is heavy on a
+# resolver serving ~1100 clients. Default preserves historical behavior;
+# flip to false once a sampling/rate-limited alternative is chosen (TODO).
+dnsmasq_log_queries: true

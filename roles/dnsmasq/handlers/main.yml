@@ -1,0 +1,11 @@
+---
+
+  # The dnsmasq.service unit's ExecStartPre=/usr/sbin/dnsmasq --test
+  # already gates startup, and the config task uses validate: so a bad
+  # template never lands. restarted (not reloaded): SIGHUP does NOT
+  # re-read dhcp-range / server= / dhcp-boot — only /etc/hosts, addn-
+  # hosts and leases. A config change needs a real restart.
+  - name: restart dnsmasq
+    systemd:
+      name: dnsmasq
+      state: restarted

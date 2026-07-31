@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""
+load-cttb-key — load the CTTB automation key into a running ssh-agent,
+non-interactively, pulling its passphrase from the platform credential store.
+
+Replaces the old per-user `~/.ssh/load-cttb-key.txt` folklore note, whose key
+(cttb-os / ansible@cttb.us) had a passphrase that was lost — leaving fleet
+access alive only inside running agents (issue #104). The rotated replacement
+key (cttb-automation) stores its passphrase in the same credential layer the
+`wiki`, `ldap`, and `vault-pass` tools use (cttb_api), so any platform resolves
+it the same way:
+
+  macOS    security add-generic-password -s CTTB_AUTOMATION_KEY_PASS -a "$USER" -w
+  Windows  cmdkey /generic:CTTB/CTTB_AUTOMATION_KEY_PASS /user:. /pass:<value>
+  Linux    secret-tool store --label=CTTB_AUTOMATION_KEY_PASS service CTTB_AUTOMATION_KEY_PASS
+  headless printf '%s' '<value>' > ~/.config/cttb/secrets/CTTB_AUTOMATION_KEY_PASS
+           chmod 600 ~/.config/cttb/secrets/CTTB_AUTOMATION_KEY_PASS
+
+Usage:
+  eval "$(ssh-agent -s)"       # if no agent is running yet
+  utils/load-cttb-key          # loads ~/.ssh/cttb-automation into the agent
+
+Override the key path with CTTB_AUTOMATION_KEY. Fails closed (exit 2) when the
+credential is absent, rather than dropping to an interactive prompt.
+"""
+from __future__ import annotations
+
+import os
+import shlex
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "sysadmintk"))
+
+from cttb_api import credential  # noqa: E402
+
+SERVICE = "CTTB_AUTOMATION_KEY_PASS"
+DEFAULT_KEY = Path.home() / ".ssh" / "cttb-automation"
+
+HINT = f"""
+Store the passphrase with one of:
+  macOS    security add-generic-password -s {SERVICE} -a "$USER" -w
+  Windows  cmdkey /generic:CTTB/{SERVICE} /user:. /pass:<value>
+  Linux    secret-tool store --label={SERVICE} service {SERVICE}
+  headless printf '%s' '<value>' > ~/.config/cttb/secrets/{SERVICE}
+           chmod 600 ~/.config/cttb/secrets/{SERVICE}
+
+See docs/sysadmin-onboarding.md for the full setup.
+""".rstrip()
+
+
+def _write_askpass(passphrase: str) -> Path:
+    """Emit a throwaway askpass helper that prints the passphrase. ssh-add
+    invokes it when SSH_ASKPASS_REQUIRE=force and no controlling TTY is used
+    (OpenSSH >= 8.4), on every platform that ships ssh-add."""
+    if os.name == "nt":
+        fd, path = tempfile.mkstemp(suffix=".bat")
+        # @echo off + echo the value; batch has no safe quoting, but the file
+        # is mode-restricted and unlinked immediately after use.
+        os.write(fd, ("@echo off\r\necho " + passphrase + "\r\n").encode())
+        os.close(fd)
+    else:
+        fd, path = tempfile.mkstemp()
+        os.write(fd, ("#!/bin/sh\nprintf %s " + shlex.quote(passphrase) + "\n").encode())
+        os.close(fd)
+        os.chmod(path, 0o700)
+    return Path(path)
+
+
+def main() -> int:
+    if not os.environ.get("SSH_AUTH_SOCK") and os.name != "nt":
+        print("error: no ssh-agent running (SSH_AUTH_SOCK unset)", file=sys.stderr)
+        print('start one first:  eval "$(ssh-agent -s)"', file=sys.stderr)
+        return 2
+
+    key = Path(os.environ.get("CTTB_AUTOMATION_KEY", str(DEFAULT_KEY)))
+    if not key.exists():
+        print(f"error: key not found: {key} (set CTTB_AUTOMATION_KEY)", file=sys.stderr)
+        return 2
+
+    try:
+        passphrase = credential(SERVICE)
+    except LookupError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        print(HINT, file=sys.stderr)
+        return 2
+    except (PermissionError, RuntimeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    askpass = _write_askpass(passphrase)
+    try:
+        env = dict(os.environ)
+        env["SSH_ASKPASS"] = str(askpass)
+        env["SSH_ASKPASS_REQUIRE"] = "force"
+        env.setdefault("DISPLAY", ":0")  # some ssh-add builds still require it set
+        res = subprocess.run(
+            ["ssh-add", str(key)],
+            env=env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        try:
+            askpass.unlink()
+        except OSError:
+            pass
+
+    if res.returncode != 0:
+        sys.stderr.write(res.stderr)
+        return res.returncode
+
+    subprocess.run(["ssh-add", "-l"])
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

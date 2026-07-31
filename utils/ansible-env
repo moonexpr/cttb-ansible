@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""ansible-env — resolve this repository's Ansible environment.
+
+`utils/setup-env` evals `--export` output to load these into a shell. Run it
+bare to see which inventory and paths a command would actually use.
+"""
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "sysadmintk"))
+
+import ansible_env as ae  # noqa: E402
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(
+        prog="ansible-env",
+        description="Resolve this repository's Ansible environment.",
+        epilog="Override the inventory for one command with "
+               "ANSIBLE_INVENTORY=inventory/other.ini <command>",
+    )
+    p.add_argument("--export", action="store_true",
+                   help="print shell export statements, for eval by setup-env")
+    args = p.parse_args()
+
+    ctx = ae.AnsibleContext.default()
+    ctx.ensure_dirs()
+
+    if args.export:
+        print(ctx.export_lines())
+    else:
+        for key, value in ctx.overrides().items():
+            print(f"{key:<20} {value}")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(1)
+    except KeyboardInterrupt:
+        raise SystemExit(130)

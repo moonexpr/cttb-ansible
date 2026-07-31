@@ -103,7 +103,7 @@ the procedure is reproducible and not regenerated each run.
 ## Privacy
 
 This skill lives under `.claude/skills/` (gitignored). Do not paste its
-contents, the helper script body, or the `.claude/sysadmin/*` script
+contents, the helper script body, or the `utils/*` script
 paths into wiki pages, PRs, or any public artifact. Internal use only.
 
 ## Resources
@@ -116,7 +116,7 @@ External, referenced (not vendored by this skill):
 
 | External path | Role |
 |---|---|
-| `.claude/sysadmin/cttb-ct.sh exec dnsmasq …` | Container shell into lxc-dnsmasq; the only way the helper reaches the box. |
+| `utils/cttb-ct.sh exec dnsmasq …` | Container shell into lxc-dnsmasq; the only way the helper reaches the box. |
 | `/home/administrator/dnsmasq.git/next-ip.py` (on box) | Returns next free IP. `resident` → adult pool; `visitor` → 10.11.200.x. |
 | `/etc/dnsmasq-hosts/<category>` (on box) | The dhcp-hostsdir file appended to. |
 | `~/Garden/external/dnsmasq/dnsmasq-hosts/<category>` (local) | Mirror destination; the live config git repo. Override path via `DNSMASQ_CLONE` env var. |

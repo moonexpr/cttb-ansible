@@ -11,10 +11,11 @@ group_vars/.*
 
 
 # ── cttb-ansible sysadmin toolkit ───────────────────────────────────────────
-# The toolkit ships with the repo: .claude/skills/, .claude/sysadmin/,
-# .claude/hooks/, .claude/rules/, .claude/settings.json, .claude/.env.example,
-# plus CLAUDE.md and PROJECT.md (secrets redacted). Only personal/runtime state
-# under .claude/ stays out of git:
+# The toolkit ships with the repo: utils/ (the CLIs, with their shared Python
+# libraries in utils/sysadmintk/), .claude/skills/, .claude/hooks/,
+# .claude/rules/, .claude/settings.json, .claude/.env.example, plus CLAUDE.md
+# and PROJECT.md (secrets redacted). Only personal/runtime state under .claude/
+# stays out of git:
 
 # Real credential values (copy from .env.example — never commit):
 .claude/.env
