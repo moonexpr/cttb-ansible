@@ -27,9 +27,9 @@ Project conventions and architecture reference for cttb-ansible.
 ## Testing
 
 - **Philosophy**: Deploy to test machine, verify via SSH + remote screenshot
-- **Test machine**: `dvgs-testmachine.cttb` (10.11.30.60)
-- **Remote screenshot**: `utils/pb util-screenshot --limit dvgs-testmachine`
-- **Ansible check mode**: `ansible-playbook plays/desktop.yml --check --diff --limit dvgs-testmachine`
+- **Test machine**: `dvgs-lab3.cttb` (10.11.9.23) — the `dvgs-testmachine` slot was vacated 2026-05-20
+- **Remote screenshot**: `utils/pb util-screenshot --limit dvgs-lab3.cttb --ask-become-pass`
+- **Ansible check mode**: `ansible-playbook plays/desktop.yml --check --diff --limit dvgs-lab3.cttb`
 
 ### Incremental Testing
 
@@ -227,9 +227,9 @@ Deployed to `/etc/xdg/autostart/`:
 
 ## Evaluation
 
-- **Deploy**: `source utils/setup-env && ansible-playbook plays/cs-lab-2404.yml --limit dvgs-testmachine --diff`
-- **Verify**: `utils/pb util-screenshot --limit dvgs-testmachine`
-- **Check mode**: `ansible-playbook plays/cs-lab-2404.yml --check --diff --limit dvgs-testmachine`
+- **Deploy**: `source utils/setup-env && ansible-playbook plays/cs-lab-2404.yml --limit dvgs-lab3.cttb --diff`
+- **Verify**: `utils/pb util-screenshot --limit dvgs-lab3.cttb --ask-become-pass`
+- **Check mode**: `ansible-playbook plays/cs-lab-2404.yml --check --diff --limit dvgs-lab3.cttb`
 - **Vault password**: service `CTTB_VAULT_PASS` in the platform credential store — macOS Keychain, Windows Credential Manager, Linux Secret Service, or `~/.config/cttb/secrets/CTTB_VAULT_PASS` at mode 0600 for headless boxes. Value `<redacted>`, never committed. `ansible.cfg` wires it in via `vault_password_file = .claude/sysadmin/vault-pass`, so no password flag is ever passed. There is no env-var fallback for this credential. Setup: `docs/sysadmin-onboarding.md`.
 
 ---

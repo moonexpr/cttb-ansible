@@ -128,7 +128,7 @@ Sudhanix 26 lab machines are deployed by `sudhanix26-rollout`, one command that 
 | `util-wakeonlan`       | Send Wake-on-LAN packets to all hosts        |
 | `util-ssh-copy-id`     | Distribute SSH public keys                   |
 | `util-hardware-survey` | Collect hardware + OS info to CSV            |
-| `util-screenshot`      | Remote screenshot via scrot for debugging    |
+| `util-screenshot`      | Remote screenshot via scrot (needs `--ask-become-pass`) |
 
 ## Roles
 

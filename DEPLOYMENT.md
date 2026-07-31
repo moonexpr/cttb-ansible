@@ -231,16 +231,31 @@ ssh administrator@dvgs-lab3.cttb "echo PASSWORD | sudo -S sh -c 'echo \"administ
 
 ### Remote Screenshot (no VNC needed)
 
+Preferred method — the play resolves the X authority cookie itself and works at
+the greeter or inside a live session:
+
 ```bash
-# Screenshot the LightDM greeter (runs as root on :0)
+utils/pb util-screenshot --limit HOST --ask-become-pass
+# lands in logs/screenshots/HOST-<timestamp>.png
+```
+
+Fallback, when Ansible is not available. An X server only accepts clients that
+present its auth cookie, so both forms need `sudo` *and* an explicit
+`XAUTHORITY` — a bare `DISPLAY=:0` fails with "Authorization required":
+
+```bash
+# Screenshot the LightDM greeter (its X server runs with a root-owned cookie)
 ssh administrator@HOST 'sudo DISPLAY=:0 XAUTHORITY=/var/run/lightdm/root/:0 scrot /tmp/screenshot.png'
 scp administrator@HOST:/tmp/screenshot.png .
 
-# Screenshot a logged-in user session
-ssh administrator@HOST 'sudo DISPLAY=:0 XAUTHORITY=/home/USER/.Xauthority scrot /tmp/screenshot.png'
+# Screenshot a logged-in user session, using that user's own cookie.
+# LDAP users' homes are on NFS, so the path is /nfs/home/USER, not /home/USER;
+# only the local administrator account lives under /home.
+ssh administrator@HOST 'sudo DISPLAY=:0 XAUTHORITY=/nfs/home/USER/.Xauthority scrot /tmp/screenshot.png'
 ```
 
-Requires `scrot` (installed via lubuntu.yml). Works over SSH + ProxyJump.
+Requires `scrot` (installed via lubuntu.yml), so desktops only — servers,
+`pxe.cttb`, and the LXC containers never get it. Works over SSH + ProxyJump.
 
 ### Git Operations
 
