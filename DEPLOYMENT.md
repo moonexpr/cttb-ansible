@@ -9,7 +9,7 @@ End-to-end procedure for upgrading a CTTB lab machine from any state to Ubuntu 2
 - Machine connected via **wired ethernet** (PXE requires it; WiFi not available at boot)
 - PXE server deployed (UEFI GRUB + autoinstall profiles)
 - WhiteSur theme tarballs on asset server (`storehouse.cttb/ansible/`)
-- Ansible environment: `source utils/setup-env`
+- Ansible environment: `ansible.cfg` carries the config; `source utils/setup-env` is only needed for the `utils/` wrappers (`pb` and `ar` handle it themselves)
 - Vault password resolvable: `utils/vault-pass` prints a value (see [docs/sysadmin-onboarding.md](docs/sysadmin-onboarding.md) for first-time setup)
 - All commands run from the repository root — `ansible.cfg` uses relative paths
 
@@ -178,7 +178,8 @@ Stage 1 is per-machine, since it triggers a one-time PXE boot on each host, whet
 ### Ansible Operations
 
 ```bash
-# Source environment (required before all ansible commands)
+# Load ANSIBLE_* into the shell (needed for the utils/ wrappers; bare
+# ansible-playbook from the repo root works without it via ansible.cfg)
 source utils/setup-env
 
 # Ping a host

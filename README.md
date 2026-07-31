@@ -21,7 +21,7 @@ You also need SSH key-based access to target hosts as the `administrator` user, 
 **Always run commands from the repository root** — `ansible.cfg` uses relative paths, including the vault password helper.
 
 ```bash
-source utils/setup-env      # required: ansible.cfg reads $ANSIBLE_ROLES etc.
+source utils/setup-env      # loads ANSIBLE_* for the utils/ wrappers (pb and ar handle it themselves)
 ```
 
 ```bash
@@ -35,7 +35,7 @@ utils/ar drbu-sw-cslab desktop,cups-client,ldap-client,nfs-home
 ansible-playbook plays/dvgs-cs-lab.yml --diff
 ```
 
-The `utils/pb` wrapper sources the environment (`utils/setup-env`), sets up paths, and runs the playbook with `--diff` enabled by default. You can pass any additional `ansible-playbook` flags after the playbook name.
+The `utils/pb` wrapper resolves the repository environment itself (no prior `source` needed), validates the playbook name, and runs it with `--diff` enabled by default. Any additional `ansible-playbook` flags pass through after the playbook name. It defaults to `inventory/hosts`; point one run at a different inventory with `ANSIBLE_INVENTORY=inventory/sudhanix26_hosts.ini utils/pb <playbook> …`, and run `utils/ansible-env` to see what would be resolved without changing anything.
 
 ## Repository Structure
 
@@ -47,7 +47,8 @@ cttb-ansible/
 ├── group_vars/      Variables applied per host group
 ├── host_vars/       Variables for individual hosts
 ├── vars/            Shared variables and encrypted vault files
-├── utils/           Helper scripts (pb, ar, setup-env, etc.)
+├── utils/           Sysadmin CLIs (pb, ar, wiki, ldap, vault-pass, cttb-ct.sh, …)
+│   └── sysadmintk/  Shared Python libraries (cttb_api, wiki_lib, ldap_lib, ansible_env)
 ├── scripts/         Standalone shell scripts (ping sweeps, WoL, etc.)
 ├── library/         Custom Ansible modules (NTC plugins)
 ├── logs/            Playbook execution logs (not tracked in git)
@@ -60,11 +61,11 @@ The default inventory is set in `ansible.cfg` (`inventory/sudhanix26_hosts.ini`)
 
 | Group               | Description                        |
 |---------------------|------------------------------------|
-| `drbu_cslab`        | DRBU computer science lab          |
+| `drbu_cs_lab`       | DRBU computer science lab          |
 | `drbu_cdorm`        | DRBU girls' dormitory lab          |
-| `dvgs_cslab`        | DVGS computer science lab          |
+| `dvgs_cs_lab`       | DVGS computer science lab          |
 | `dvgs_dormitory`    | DVGS dormitory computers           |
-| `dvbs_cslab`        | DVBS computer science lab          |
+| `dvbs_cs_lab`       | DVBS computer science lab          |
 | `dvbs_community_center` | DVBS community center PCs      |
 | `dvbs_library`      | DVBS library                       |
 
@@ -243,7 +244,7 @@ Outputs `~/hardware_survey.csv` with CPU, RAM, storage, OS, motherboard, USB, an
 utils/pb apt-update-autoremove
 
 # Full dist-upgrade on a specific group
-utils/pb dist-upgrade --limit dvgs_cslab
+utils/pb dist-upgrade --limit dvgs_cs_lab
 ```
 
 ### PXE Network Installation (Ubuntu 24.04)

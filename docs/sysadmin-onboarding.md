@@ -107,13 +107,15 @@ source utils/setup-env
 chmod +x utils/vault-pass utils/cttb-ct.sh
 ```
 
-**`source utils/setup-env` sets up your shell's Ansible environment.** It exports `ANSIBLE_INVENTORY` (with `ANSIBLE_HOSTS` as a legacy alias), `ANSIBLE_ROLES`, `ANSIBLE_PLAYBOOKS`, `ANSIBLE_TMP`, and friends, and creates `logs/` and `tmp/`. It must be `source`d, not executed — running it in a subshell exports nothing. Add it to your shell profile, or use the `utils/pb`, `utils/ar`, `utils/rc` wrappers, which source it themselves.
+**`source utils/setup-env` sets up your shell's Ansible environment.** It exports `ANSIBLE_HOSTS`, `ANSIBLE_ROLES`, `ANSIBLE_PLAYBOOKS`, `ANSIBLE_TMP`, and friends, and creates `logs/` and `tmp/`. It must be `source`d, not executed — running it in a subshell exports nothing. Add it to your shell profile, or use the `utils/pb`, `utils/ar`, `utils/rc` wrappers, which handle the environment themselves.
 
-To see what it resolves without loading anything, run `utils/ansible-env`. To point one command at a different fleet, override the inventory:
+It deliberately does **not** export `ANSIBLE_INVENTORY` unless you set it first: a bare `ansible-playbook` after sourcing keeps following `ansible.cfg`'s `inventory =` line, which is what every documented invocation in this repo assumes. To see what would be resolved without loading anything, run `utils/ansible-env`. To point one command at a different fleet, set the inventory explicitly:
 
 ```bash
 ANSIBLE_INVENTORY=inventory/sudhanix26_hosts.ini utils/pb util-wakeonlan -l drbu_cs_lab
 ```
+
+(`utils/pb` itself defaults to `inventory/hosts`, the operational group inventory; the override above points one run at the flat upgrade-target list, which is the one carrying `mac_addr` for Wake-on-LAN.)
 
 > Note: `ansible.cfg` does **not** interpolate these variables — `.cfg` files perform no environment expansion, so the `library = $ANSIBLE_LIBRARY` and `hostfile = $ANSIBLE_HOSTS` lines there are inert (`hostfile` is also the removed Ansible 1.x spelling of `inventory`). The variables matter because the `utils/` wrappers read them, not because Ansible does.
 

@@ -42,21 +42,31 @@ def repo_root() -> Path:
 @dataclass(frozen=True)
 class AnsibleContext(CttbContext):
     """Resolved Ansible environment. Build with `.default()`; everything other
-    than `base` and `inventory` is derived, so the parts cannot disagree.
+    than `base`, `inventory`, and `inventory_overridden` is derived, so the
+    parts cannot disagree.
 
     `inventory` is a string rather than a Path because ANSIBLE_INVENTORY is a
     pathlist — a caller may legitimately pass a comma-separated set of sources.
+
+    `inventory_overridden` records whether the operator set ANSIBLE_INVENTORY
+    themselves. It decides whether `export_lines()` exports the variable: a
+    shell that sourced setup-env without an override must leave
+    ANSIBLE_INVENTORY unset so a bare `ansible-playbook` still follows
+    ansible.cfg's `inventory =` line — exporting the wrappers' default there
+    would silently flip the fleet for every documented no-`-i` invocation.
     """
 
     base: Path
     inventory: str
+    inventory_overridden: bool
 
     @classmethod
     def default(cls) -> "AnsibleContext":
         base = repo_root()
         override = os.environ.get("ANSIBLE_INVENTORY")
         inventory = override or str(base / "inventory" / "hosts")
-        return cls(base=base, inventory=inventory)
+        return cls(base=base, inventory=inventory,
+                   inventory_overridden=override is not None)
 
     # ── derived paths ─────────────────────────────────────────────────────────
 
@@ -92,14 +102,14 @@ class AnsibleContext(CttbContext):
     def overrides(self) -> dict[str, str]:
         """The ANSIBLE_* variables this repo's tooling defines.
 
-        ANSIBLE_INVENTORY and ANSIBLE_LIBRARY are read by ansible-core itself.
-        The rest are repo conventions consumed by the utils/ wrappers —
-        ANSIBLE_HOSTS is the legacy alias still passed as `-i` by ar, reboot,
-        and shutdown.
+        ANSIBLE_LIBRARY is read by ansible-core itself. The rest are repo
+        conventions consumed by the utils/ wrappers — ANSIBLE_HOSTS is the
+        legacy alias still passed as `-i` by ar, reboot, and shutdown.
+        ANSIBLE_INVENTORY is deliberately absent; see `export_lines()` and
+        `env()` for the two different treatments it gets.
         """
         return {
             "ANSIBLE_BASE": str(self.base),
-            "ANSIBLE_INVENTORY": self.inventory,
             "ANSIBLE_HOSTS": self.inventory,
             "ANSIBLE_LIBRARY": self.library,
             "ANSIBLE_ROLES": str(self.roles),
@@ -111,13 +121,26 @@ class AnsibleContext(CttbContext):
         }
 
     def env(self) -> dict[str, str]:
-        """Full environment for a child process."""
-        return {**os.environ, **self.overrides()}
+        """Full environment for a child process running a specific play.
+
+        Sets ANSIBLE_INVENTORY unconditionally: a wrapper like pb has already
+        resolved which inventory this run targets, and the child must see it.
+        """
+        return {**os.environ, **self.overrides(),
+                "ANSIBLE_INVENTORY": self.inventory}
 
     def export_lines(self) -> str:
-        """Shell `export` statements, for `eval` by utils/setup-env."""
+        """Shell `export` statements, for `eval` by utils/setup-env.
+
+        Exports ANSIBLE_INVENTORY only when the operator set it, so a plain
+        `source utils/setup-env` leaves bare ansible-playbook invocations on
+        ansible.cfg's inventory, exactly as before the Python port.
+        """
+        pairs = dict(self.overrides())
+        if self.inventory_overridden:
+            pairs["ANSIBLE_INVENTORY"] = self.inventory
         return "\n".join(
-            f"export {k}={shlex.quote(v)}" for k, v in self.overrides().items()
+            f"export {k}={shlex.quote(v)}" for k, v in pairs.items()
         )
 
     def ensure_dirs(self) -> None:
