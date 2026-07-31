@@ -53,6 +53,10 @@
           creates: /usr/share/themes/WhiteSur
           owner: root
           group: root
+        register: _whitesur_gtk
+        until: _whitesur_gtk is succeeded
+        retries: 3
+        delay: 5
         tags:
           - sudhanix-core
           - theme
@@ -104,6 +108,10 @@
           creates: /usr/share/fonts/truetype/inter-display
           owner: root
           group: root
+        register: _inter_font
+        until: _inter_font is succeeded
+        retries: 3
+        delay: 5
         notify: rebuild font cache
         tags:
           - sudhanix-core
@@ -128,6 +136,10 @@
           creates: /usr/share/fonts/opentype/serious-shanns/SeriousShannsNerdFontMono-Regular.otf
           owner: root
           group: root
+        register: _shanns_font
+        until: _shanns_font is succeeded
+        retries: 3
+        delay: 5
         notify: rebuild font cache
         tags:
           - sudhanix-core
@@ -166,6 +178,10 @@
           creates: /usr/share/icons/WhiteSur-dark
           owner: root
           group: root
+        register: _whitesur_icons
+        until: _whitesur_icons is succeeded
+        retries: 3
+        delay: 5
         tags:
           - sudhanix-core
           - theme
@@ -178,6 +194,10 @@
           creates: /usr/share/icons/WhiteSur-cursors
           owner: root
           group: root
+        register: _whitesur_cursors
+        until: _whitesur_cursors is succeeded
+        retries: 3
+        delay: 5
         tags:
           - sudhanix-core
           - theme

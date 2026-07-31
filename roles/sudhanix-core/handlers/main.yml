@@ -11,8 +11,11 @@
       name: lightdm
       state: restarted
 
+  # A failing handler fails the host for the rest of the play; a stale
+  # font cache is cosmetic and never worth that.
   - name: rebuild font cache
     command: fc-cache -f
+    ignore_errors: true
 
   # Plymouth assets and the default.plymouth alternatives link both bake
   # into the initramfs; a re-deploy that changes either without rebuilding

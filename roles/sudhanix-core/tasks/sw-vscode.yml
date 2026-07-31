@@ -18,6 +18,10 @@
             url: https://packages.microsoft.com/keys/microsoft.asc
             dest: /usr/share/keyrings/microsoft.asc
             mode: '0644'
+          register: _vscode_key
+          until: _vscode_key is succeeded
+          retries: 3
+          delay: 5
 
         - name: add VSCode repository
           apt_repository:
@@ -41,6 +45,17 @@
             name: code
             state: present
             update_cache: yes
+
+        # packages.microsoft.com is the only off-campus apt source in the
+        # role; an outage there must not abort the whole play.
+        rescue:
+        - name: surface VSCode install failure (VSCode skipped this run)
+          debug:
+            msg: >-
+              VSCode setup failed on {{ inventory_hostname }}
+              (task '{{ ansible_failed_task.name | default("unknown") }}':
+              {{ ansible_failed_result.msg | default("no message") }}).
+              VSCode was NOT installed; the play continues.
 
         when: vscode == true
         tags:

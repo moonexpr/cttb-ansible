@@ -256,61 +256,62 @@
     - grub_theme
 
 # Plymouth boot splash — gated by sudhanix_plymouth_theme_enabled.
-- name: install plymouth (Plymouth splash dependency)
-  apt:
-    name: plymouth-themes
-    state: present
+# Purely cosmetic: a failure here means the stock splash on the next boot,
+# which is never worth aborting the play over (common runs before every
+# other role, so a crash here kills the whole run for the host).
+- name: install Sudhanix Plymouth splash
   when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
   tags:
     - sudhanix_branding
     - plymouth
+  block:
+    - name: install plymouth (Plymouth splash dependency)
+      apt:
+        name: plymouth-themes
+        state: present
 
-- name: install Sudhanix Plymouth theme
-  unarchive:
-    remote_src: yes
-    src: "{{ sudhanix_plymouth_theme_url }}"
-    dest: /usr/share/plymouth/themes/
-    creates: /usr/share/plymouth/themes/sudhanix
-    owner: root
-    group: root
-  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
-  notify:
-    - update initramfs
-  tags:
-    - sudhanix_branding
-    - plymouth
+    - name: install Sudhanix Plymouth theme
+      unarchive:
+        remote_src: yes
+        src: "{{ sudhanix_plymouth_theme_url }}"
+        dest: /usr/share/plymouth/themes/
+        creates: /usr/share/plymouth/themes/sudhanix
+        owner: root
+        group: root
+      register: _plymouth_theme
+      until: _plymouth_theme is succeeded
+      retries: 3
+      delay: 5
+      notify:
+        - update initramfs
 
-# macOS-built tarballs may carry ._* AppleDouble forks; strip them post-extract.
-- name: clean macOS resource forks from Plymouth theme directory
-  shell: find /usr/share/plymouth/themes/sudhanix -name '._*' -delete
-  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
-  changed_when: false
-  notify:
-    - update initramfs
-  tags:
-    - sudhanix_branding
-    - plymouth
+    # macOS-built tarballs may carry ._* AppleDouble forks; strip them post-extract.
+    - name: clean macOS resource forks from Plymouth theme directory
+      shell: find /usr/share/plymouth/themes/sudhanix -name '._*' -delete
+      changed_when: false
+      notify:
+        - update initramfs
 
-- name: register Sudhanix Plymouth theme as alternative
-  command: >
-    update-alternatives --install
-    /usr/share/plymouth/themes/default.plymouth default.plymouth
-    /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth 100
-  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
-  changed_when: false
-  tags:
-    - sudhanix_branding
-    - plymouth
+    - name: register Sudhanix Plymouth theme as alternative
+      command: >
+        update-alternatives --install
+        /usr/share/plymouth/themes/default.plymouth default.plymouth
+        /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth 100
+      changed_when: false
 
-- name: select Sudhanix Plymouth theme via update-alternatives
-  command: update-alternatives --set default.plymouth /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth
-  when: sudhanix_plymouth_theme_enabled and ansible_virtualization_type != "lxc"
-  changed_when: false
-  notify:
-    - update initramfs
-  tags:
-    - sudhanix_branding
-    - plymouth
+    - name: select Sudhanix Plymouth theme via update-alternatives
+      command: update-alternatives --set default.plymouth /usr/share/plymouth/themes/sudhanix/sudhanix.plymouth
+      changed_when: false
+      notify:
+        - update initramfs
+  rescue:
+    - name: surface Plymouth splash failure (splash skipped this run)
+      debug:
+        msg: >-
+          Sudhanix Plymouth splash setup failed on {{ inventory_hostname }}
+          (task '{{ ansible_failed_task.name | default("unknown") }}':
+          {{ ansible_failed_result.msg | default("no message") }}).
+          The stock splash remains; the play continues.
 
 - name: fix /etc/hosts
   replace:

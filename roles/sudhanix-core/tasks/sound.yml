@@ -45,6 +45,10 @@
           creates: /usr/share/sounds/bigsur
           owner: root
           group: root
+        register: _bigsur_sounds
+        until: _bigsur_sounds is succeeded
+        retries: 3
+        delay: 5
         when: desktop_sound_theme == 'bigsur'
         tags:
           - sound

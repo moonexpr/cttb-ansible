@@ -79,47 +79,66 @@
         tags:
           - packages
 
-      # Seems no need to have snap store.
+      # Seems no need to have snap store. ignore_errors matches the other
+      # snap removals: on a fresh PXE image without snapd, the snap module
+      # fails outright instead of reporting "not installed".
       - name: remove snap-store
         snap:
           name: snap-store
           state: absent
+        ignore_errors: true
         tags:
           - packages
 
-      # Zoom releases monthly; pull directly from upstream rather than
-      # caching a (rapidly-staling) copy on storehouse. The lab proxy
-      # (e2guardian → squid on srv-gw, http_proxy is set in global_proxy)
-      # carries this through. Override zoom_deb_url to point at an
-      # internal mirror if WAN egress is unavailable.
-      - name: upgrade Zoom client
-        apt:
-          deb: "{{ zoom_deb_url | default('https://zoom.us/client/latest/zoom_amd64.deb') }}"
-          only_upgrade: true
-        register: zoom_upgraded
+      # zoom_deb_url is set in group_vars/all and points at the storehouse
+      # copy; the zoom.us default only fires if that override is removed.
+      # The storehouse .deb currently has a broken archive signature
+      # (deploys pass --skip-tags zoom) — the rescue makes a run that
+      # forgets the skip survivable instead of fatal.
+      - name: install Zoom client
+        block:
+          - name: upgrade Zoom client
+            apt:
+              deb: "{{ zoom_deb_url | default('https://zoom.us/client/latest/zoom_amd64.deb') }}"
+              only_upgrade: true
+            register: zoom_upgraded
+
+          - name: install Zoom client for the 1st time
+            apt:
+              deb: "{{ zoom_deb_url | default('https://zoom.us/client/latest/zoom_amd64.deb') }}"
+            when: zoom_upgraded is not changed
+        rescue:
+          - name: surface Zoom install failure (Zoom skipped this run)
+            debug:
+              msg: >-
+                Zoom setup failed on {{ inventory_hostname }}
+                (task '{{ ansible_failed_task.name | default("unknown") }}':
+                {{ ansible_failed_result.msg | default("no message") }}).
+                Zoom was NOT installed; the play continues.
         tags:
           - zoom
 
-      - name: install Zoom client for the 1st time
-        apt:
-          deb: "{{ zoom_deb_url | default('https://zoom.us/client/latest/zoom_amd64.deb') }}"
-        when: zoom_upgraded is not changed
-        tags:
-          - zoom
+      - name: install Skype client
+        block:
+          - name: upgrade Skype
+            apt:
+              deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
+              only_upgrade: true
+            register: skype_upgraded
 
-      - name: upgrade Skype
-        apt:
-          deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
-          only_upgrade: true
-        register: skype_upgraded
+          - name: install Skype for the 1st time
+            apt:
+              deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
+            when: skype_upgraded is not changed
+        rescue:
+          - name: surface Skype install failure (Skype skipped this run)
+            debug:
+              msg: >-
+                Skype setup failed on {{ inventory_hostname }}
+                (task '{{ ansible_failed_task.name | default("unknown") }}':
+                {{ ansible_failed_result.msg | default("no message") }}).
+                Skype was NOT installed; the play continues.
         when: skype == true
-        tags:
-          - skype
-
-      - name: install Skype for the 1st time
-        apt:
-          deb: "{{ansible_assets_url}}/skypeforlinux-64.deb"
-        when: (skype == true) and (skype_upgraded is not changed)
         tags:
           - skype
 

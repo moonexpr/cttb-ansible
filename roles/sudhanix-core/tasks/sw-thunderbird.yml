@@ -44,6 +44,10 @@
           creates: /opt/thunderbird/thunderbird
           owner: root
           group: root
+        register: _thunderbird_tarball
+        until: _thunderbird_tarball is succeeded
+        retries: 3
+        delay: 5
         tags:
           - thunderbird
 
@@ -76,12 +80,32 @@
         tags:
           - thunderbird
 
+    rescue:
+      # storehouse outage must not abort the play; the configure phase
+      # stat-gates the proxy pref so it no-ops when this fires.
+      - name: surface Thunderbird install failure (Thunderbird skipped this run)
+        debug:
+          msg: >-
+            Thunderbird setup failed on {{ inventory_hostname }}
+            (task '{{ ansible_failed_task.name | default("unknown") }}':
+            {{ ansible_failed_result.msg | default("no message") }}).
+            Thunderbird was NOT installed; the play continues.
+
   - name: sw-thunderbird — configure phase
     when: __sudhanix_phase | default("all") in ["config", "all"]
     tags:
       - config
       - thunderbird
     block:
+
+      # The install phase rescues a failed Thunderbird install; probe for
+      # the extracted tree so the pref write no-ops instead of failing.
+      - name: check whether Thunderbird is installed
+        stat:
+          path: /opt/thunderbird/thunderbird
+        register: _thunderbird_bin
+        tags:
+          - thunderbird
 
       - name: configure Thunderbird to use campus proxy
         copy:
@@ -100,6 +124,6 @@
           mode: '0644'
           owner: root
           group: root
-        when: global_proxy is defined
+        when: global_proxy is defined and _thunderbird_bin.stat.exists
         tags:
           - thunderbird

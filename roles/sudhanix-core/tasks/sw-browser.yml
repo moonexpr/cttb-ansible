@@ -23,6 +23,10 @@
               url: "{{ chrome_signing_key_url | default(apt_url + '/Google-linux_signing_key.pub') }}"
               dest: /usr/share/keyrings/google-chrome.asc
               mode: '0644'
+            register: _chrome_key
+            until: _chrome_key is succeeded
+            retries: 3
+            delay: 5
 
           - name: Add chrome mirror
             apt_repository:
@@ -41,6 +45,16 @@
               path: /etc/apt/sources.list.d/google-chrome.list
               state: absent
           when: ansible_architecture == "amd64" or ansible_architecture == "x86_64"
+        rescue:
+          # apt.cttb mirror hiccup must not abort the play; the configure
+          # phase stat-gates its Chrome tasks so they no-op when this fires.
+          - name: surface Chrome install failure (Chrome skipped this run)
+            debug:
+              msg: >-
+                Chrome setup failed on {{ inventory_hostname }}
+                (task '{{ ansible_failed_task.name | default("unknown") }}':
+                {{ ansible_failed_result.msg | default("no message") }}).
+                Chrome was NOT installed; the play continues.
         when: chrome == true
         tags:
           - browser
@@ -72,6 +86,10 @@
             creates: /opt/firefox/firefox
             owner: root
             group: root
+          register: _firefox_tarball
+          until: _firefox_tarball is succeeded
+          retries: 3
+          delay: 5
 
         - name: symlink firefox binary to PATH
           file:
@@ -97,6 +115,14 @@
             mode: '0644'
             owner: root
             group: root
+        rescue:
+          - name: surface Firefox install failure (Firefox skipped this run)
+            debug:
+              msg: >-
+                Firefox setup failed on {{ inventory_hostname }}
+                (task '{{ ansible_failed_task.name | default("unknown") }}':
+                {{ ansible_failed_result.msg | default("no message") }}).
+                Firefox was NOT installed; the play continues.
         when: firefox == true
         tags:
           - browser
@@ -147,18 +173,28 @@
       - browser
     block:
 
+      # The install phase rescues a failed Chrome install; probe for the
+      # package's .desktop so these no-op instead of hard-failing then.
+      - name: check whether Chrome is installed
+        stat:
+          path: /usr/share/applications/google-chrome.desktop
+        register: _chrome_desktop
+        when: chrome == true and (ansible_architecture == "amd64" or ansible_architecture == "x86_64")
+        tags:
+          - browser
+
       - name: force Chrome to use system window decorations (rounded corners)
         replace:
           path: /usr/share/applications/google-chrome.desktop
           regexp: '^(Exec=/usr/bin/google-chrome-stable)(?! --use-system-title-bar)'
           replace: '\1 --use-system-title-bar'
-        when: chrome == true and (ansible_architecture == "amd64" or ansible_architecture == "x86_64")
+        when: chrome == true and (ansible_architecture == "amd64" or ansible_architecture == "x86_64") and _chrome_desktop.stat.exists
         tags:
           - browser
 
       - name: set Google Chrome as the default web browser
         command: xdg-settings set default-web-browser google-chrome.desktop
         changed_when: false
-        when: chrome == true and (ansible_architecture == "amd64" or ansible_architecture == "x86_64")
+        when: chrome == true and (ansible_architecture == "amd64" or ansible_architecture == "x86_64") and _chrome_desktop.stat.exists
         tags:
           - browser

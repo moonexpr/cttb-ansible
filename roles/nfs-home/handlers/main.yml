@@ -1,6 +1,10 @@
 ---
 
+  # The notifying tasks carry ignore_errors for the fresh-install case
+  # where autofs isn't running yet, but that does not protect the handler
+  # itself — it needs its own guard or it fails the host at flush time.
   - name: restart autofs
     service:
       name: autofs
       state: restarted
+    ignore_errors: true

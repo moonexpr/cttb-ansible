@@ -31,6 +31,13 @@
           remote_src: yes
           extra_opts:
             - --strip-components=1
+          # sentinel member of the tarball — the dir itself is pre-created
+          # above, so it can't serve as the creates guard
+          creates: "{{ desktop_wallpaper_dir }}/Big-Sur-Day.jpg"
+        register: _wallpapers
+        until: _wallpapers is succeeded
+        retries: 3
+        delay: 5
         tags:
           - wallpaper
 
