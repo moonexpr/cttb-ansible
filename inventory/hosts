@@ -36,6 +36,9 @@ lxd-test
 rui-test1
 rui-test2
 
+pxe.cttb
+
+
 ## production containers
 lxc-asterisk
 storehouse
