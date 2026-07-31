@@ -38,3 +38,17 @@ additional_desktop_sw:
   - stellarium
   - musescore3
   - anki
+
+# Become password for the `administrator` identity on DRBU hosts.
+# DRBU uses its own superadmin password rather than the campus-wide one set in
+# group_vars/cttb_hosts.yml. This group is a child of cttb_hosts in both
+# inventories, so it overrides that value for DRBU hosts only; every non-DRBU
+# host keeps the cttb_hosts default. Decrypts automatically via ansible.cfg's
+# vault_password_file (utils/vault-pass), so no --ask-become-pass is needed.
+ansible_become_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          31333636393363393738336262376238313161656336376133313838633764356238616234333362
+          3833313863383336343664363161306666653138313962370a323165396239313130383032356462
+          38356137393232633631353330613937353561633933623838616237353562613333613638363138
+          6162313838373865350a656539373336663830313439626662346663353762383866313264363833
+          3134
