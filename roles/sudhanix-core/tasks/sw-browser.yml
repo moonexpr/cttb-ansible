@@ -125,6 +125,17 @@
           - name: grant Zen Browser write access to ~/Desktop and ~/Downloads
             command: flatpak override --system --filesystem=xdg-desktop --filesystem=xdg-download io.github.zen_browser.zen
             changed_when: false
+        rescue:
+          # Flathub's CDN intermittently serves an HTML error page instead of
+          # the .flatpakrepo keyfile, which must not abort the whole stage2
+          # play. Skip Zen Browser this run; the next rollout retries.
+          - name: surface flatpak/flathub failure (Zen Browser skipped this run)
+            debug:
+              msg: >-
+                Flatpak setup failed on {{ inventory_hostname }}
+                (task '{{ ansible_failed_task.name | default("unknown") }}':
+                {{ ansible_failed_result.msg | default("no message") }}).
+                Zen Browser was NOT installed; remaining stage2 roles continue.
         when: zen_browser | default(false)
         tags:
           - browser
