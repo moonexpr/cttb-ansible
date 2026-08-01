@@ -45,9 +45,22 @@
   tags:
     - apt
 
+# Sudhanix branding rewrites VERSION_CODENAME (26 -> "storehouse"), so on a
+# rerun apt_repository would derive a PPA suite Launchpad has never heard of.
+# Resolve the underlying Ubuntu codename and pin the module to it.
+- name: resolve the underlying Ubuntu codename
+  command: sh -c '. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}"'
+  register: _ubuntu_codename
+  changed_when: false
+  when: additional_apt_repo is defined
+  tags:
+    - apt
+    - additional_apt_repo
+
 - name: add additional apt repo
   apt_repository:
     repo: "{{ item }}"
+    codename: "{{ _ubuntu_codename.stdout | trim }}"
     state: present
   loop: "{{ additional_apt_repo }}"
   when: additional_apt_repo is defined

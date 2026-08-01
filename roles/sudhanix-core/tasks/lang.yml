@@ -94,7 +94,10 @@
           name:
             - fcitx-m17n
             - fonts-deva
-            - firefox-locale-hi
+            # firefox-locale-hi deliberately absent: it hard-depends on the
+            # noble `firefox` snap-transition stub that cttb-no-snap.pref pins
+            # to -1, and the tarball-sourced Firefox takes .xpi langpacks, not
+            # deb locales. With it in the list the whole apt transaction fails.
             - hunspell-hi
             - hyphen-hi
             - libreoffice-l10n-hi

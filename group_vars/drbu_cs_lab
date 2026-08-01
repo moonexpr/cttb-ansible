@@ -3,3 +3,18 @@
 # printing settings
 cups_default_queue: GuestHouse_CSLab
 
+# Reimaged sudhanix26 hosts carry the campus-standard `administrator`
+# credentials from the autoinstall, not the DRBU legacy superadmin password
+# that group_vars/drbu sets — this child group overrides it back.
+# ansible_password is set too because the autoinstall image only authorizes
+# the cttb-automation and legacy jc keys; runners without those fall back to
+# password SSH (allow-pw is on). Same vaulted value as group_vars/cttb_hosts.yml.
+ansible_password: &sudhanix_admin_pw !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          39663639396437356263313034663932333731613962666161316266323338343431623030343965
+          6532613864376335666164636531313633353134396231390a383165303432396662303336613865
+          64383062626165343461633734323237316333656261303735666566383637356532303039323532
+          3662623733653039370a346539373339356437343664376665383735623531326532383635336563
+          3666
+ansible_become_password: *sudhanix_admin_pw
+
