@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+"""Enroll a roster of people from a CSV into the CTTB LDAP directory.
+
+Reads a roster CSV (first name / last name / username / password), allocates
+uidNumbers, creates posixAccount + inetOrgPerson entries under ou=People, and
+sets each account's initial password.
+
+Dry-run by default: prints the allocation plan and the exact LDIF, contacts the
+server only in ldapmodify -n validation mode, and never sends a password.
+Pass --risks-confirmed to actually write.
+
+Idempotent: a uid that already exists in the directory is reported and skipped,
+so a partially-completed run can simply be re-run.
+
+Passwords are never printed, only their length. Keep the source CSV out of the
+repo.
+
+Examples
+--------
+    # Plan only (safe)
+    utils/ldap-enroll-csv ~/Downloads/roster.csv
+
+    # Show the alternate name rendering
+    utils/ldap-enroll-csv ~/Downloads/roster.csv --name-mode preferred
+
+    # Commit
+    utils/ldap-enroll-csv ~/Downloads/roster.csv --risks-confirmed
+
+    # Confirm the result afterwards
+    utils/ldap-enroll-csv ~/Downloads/roster.csv --verify-only
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import csv
+import os
+import re
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "sysadmintk"))
+
+import ldap_lib as l  # noqa: E402
+from cttb_api import credential_or_env  # noqa: E402
+
+
+def use_admin_bind() -> str:
+    """Bind as the directory rootdn instead of the calling sysadmin.
+
+    Creating entries under ou=People is admin-only; a personal account in the
+    `it` group gets LDAP result 50. The rootdn DN and password are read from
+    the platform credential store (macOS Keychain / Secret Service / the 0600
+    file store) under CTTB_LDAP_ADMIN_USERNAME and CTTB_LDAP_ADMIN_PASSWD, so
+    the secret is never typed on a command line or left in shell history.
+
+    LdapContext.default() resolves CTTB_LDAP_USERNAME / CTTB_LDAP_PASSWD with
+    the environment taking precedence over the store, so exporting the admin
+    values here redirects the bind for this process only.
+    """
+    try:
+        dn = credential_or_env("CTTB_LDAP_ADMIN_USERNAME")
+        pw = credential_or_env("CTTB_LDAP_ADMIN_PASSWD")
+    except Exception as exc:  # noqa: BLE001
+        raise SystemExit(f"error: could not read admin credentials from the store: {exc}")
+    if not dn or not pw:
+        raise SystemExit(
+            "error: --admin needs CTTB_LDAP_ADMIN_USERNAME and CTTB_LDAP_ADMIN_PASSWD "
+            "in the credential store. On macOS:\n"
+            "  security add-generic-password -s CTTB_LDAP_ADMIN_USERNAME -a \"$USER\" -w 'cn=admin,dc=cttb'\n"
+            "  security add-generic-password -s CTTB_LDAP_ADMIN_PASSWD  -a \"$USER\" -w"
+        )
+    os.environ["CTTB_LDAP_USERNAME"] = dn
+    os.environ["CTTB_LDAP_PASSWD"] = pw
+    return dn
+
+
+# ── CSV parsing ──────────────────────────────────────────────────────────────
+
+# Header aliases, matched after lowercasing and stripping non-alphanumerics.
+FIELD_ALIASES = {
+    "given": ("firstname", "first", "givenname", "given"),
+    "sur": ("lastname", "last", "surname", "sn", "familyname"),
+    "uid": ("cslabusername", "username", "uid", "login", "account"),
+    "password": ("cslabpassword", "password", "passwd", "pw", "initialpassword"),
+}
+
+PAREN = re.compile(r"\([^)]*\)")
+
+
+def _norm_header(h: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (h or "").lower())
+
+
+def resolve_columns(fieldnames: list[str]) -> dict[str, str]:
+    """Map our logical fields onto the CSV's actual header names."""
+    normalized = {_norm_header(h): h for h in fieldnames}
+    resolved = {}
+    for field, aliases in FIELD_ALIASES.items():
+        for alias in aliases:
+            if alias in normalized:
+                resolved[field] = normalized[alias]
+                break
+    missing = [f for f in ("given", "sur", "uid") if f not in resolved]
+    if missing:
+        raise SystemExit(
+            f"error: CSV is missing required column(s) {missing}; headers seen: {fieldnames}"
+        )
+    return resolved
+
+
+def name_from_uid(uid: str) -> tuple[str, str]:
+    """Derive (givenName, sn) from a dotted login name.
+
+    "feyfey.chen"     -> ("Feyfey", "Chen")
+    "yuen-lin.tan"    -> ("Yuen-Lin", "Tan")
+    "mary.anne.olsen" -> ("Mary Anne", "Olsen")
+
+    The last dotted segment is the surname; everything before it is the given
+    name. Each word is capitalized, including across hyphens.
+    """
+    def cap(word: str) -> str:
+        return "-".join(p[:1].upper() + p[1:] for p in word.split("-"))
+
+    parts = [p for p in uid.split(".") if p]
+    if not parts:
+        return "", ""
+    if len(parts) == 1:
+        return "", cap(parts[0])
+    return " ".join(cap(p) for p in parts[:-1]), cap(parts[-1])
+
+
+def split_name(raw: str, mode: str) -> str:
+    """Render a name column under the chosen convention.
+
+    'legal'     — drop parenthetical nicknames:  "Jingya (Feyfey)" -> "Jingya"
+    'preferred' — use the parenthetical instead: "Jingya (Feyfey)" -> "Feyfey"
+
+    In 'preferred' mode a parenthetical containing non-Latin script or an
+    honorific is not a usable given name, so the legal rendering is kept.
+    """
+    raw = (raw or "").strip()
+    outside = re.sub(r"\s+", " ", PAREN.sub(" ", raw)).strip()
+    if mode == "legal":
+        return outside or raw
+    inside = PAREN.search(raw)
+    if not inside:
+        return outside or raw
+    nick = inside.group(0)[1:-1].strip()
+    # Keep only a plain Latin nickname; skip CJK / honorifics like "Ven".
+    latin = " ".join(w for w in nick.split() if re.fullmatch(r"[A-Za-zÀ-ÿ'’.-]+", w))
+    latin = re.sub(r"^(Ven|Rev|Bhikkhuni|Bhikkhu|Dr|Mr|Ms|Mrs)\.?\s+", "", latin).strip()
+    return latin or outside or raw
+
+
+def read_roster(path: str, mode: str) -> list[dict]:
+    with open(path, newline="", encoding="utf-8-sig") as fh:
+        reader = csv.DictReader(fh)
+        cols = resolve_columns(reader.fieldnames or [])
+        roster = []
+        for lineno, row in enumerate(reader, start=2):
+            uid = (row.get(cols["uid"]) or "").strip()
+            if not uid:
+                continue
+            if mode == "username":
+                given, sur = name_from_uid(uid)
+            else:
+                given = split_name(row.get(cols["given"], ""), mode)
+                sur = split_name(row.get(cols["sur"], ""), "legal")
+            password = (row.get(cols.get("password", "")) or "").strip() if "password" in cols else ""
+            roster.append({
+                "lineno": lineno,
+                "uid": uid,
+                "given": given,
+                "sur": sur,
+                "cn": f"{given} {sur}".strip(),
+                "password": password,
+            })
+    return roster
+
+
+def validate(roster: list[dict]) -> None:
+    problems = []
+    seen = {}
+    for r in roster:
+        if not re.fullmatch(r"[a-z0-9._-]+", r["uid"]):
+            problems.append(f"line {r['lineno']}: uid {r['uid']!r} is not a safe POSIX login name")
+        if r["uid"] in seen:
+            problems.append(f"line {r['lineno']}: uid {r['uid']!r} duplicates line {seen[r['uid']]}")
+        seen[r["uid"]] = r["lineno"]
+        if not r["sur"]:
+            problems.append(f"line {r['lineno']}: {r['uid']} has an empty surname (sn is mandatory)")
+    if problems:
+        raise SystemExit("error: roster failed validation:\n  " + "\n  ".join(problems))
+
+
+# ── LDIF ─────────────────────────────────────────────────────────────────────
+
+def ldif_line(attr: str, value: str) -> str:
+    """One LDIF attribute line, base64-encoding whenever RFC 2849 requires it.
+
+    A SAFE-STRING is ASCII only and may not lead with space, ':' or '<', nor
+    trail with a space. Anything else -- accents, CJK -- must be base64.
+    """
+    unsafe = (
+        any(ord(c) > 127 or ord(c) in (0, 10, 13) for c in value)
+        or value.startswith((" ", ":", "<"))
+        or value.endswith(" ")
+    )
+    if unsafe:
+        return f"{attr}:: {base64.b64encode(value.encode('utf-8')).decode('ascii')}"
+    return f"{attr}: {value}"
+
+
+def build_ldif(rec: dict, people_ou: str) -> str:
+    lines = [
+        ldif_line("dn", f"uid={rec['uid']},{people_ou}"),
+        "changetype: add",
+        "objectClass: top",
+        "objectClass: person",
+        "objectClass: organizationalPerson",
+        "objectClass: inetOrgPerson",
+        "objectClass: posixAccount",
+        ldif_line("uid", rec["uid"]),
+        ldif_line("cn", rec["cn"]),
+        ldif_line("sn", rec["sur"]),
+        f"uidNumber: {rec['uidNumber']}",
+        f"gidNumber: {rec['gidNumber']}",
+        ldif_line("homeDirectory", rec["home"]),
+        f"loginShell: {rec['shell']}",
+    ]
+    if rec["given"]:
+        lines.append(ldif_line("givenName", rec["given"]))
+    return "\n".join(lines) + "\n"
+
+
+# ── Directory state ──────────────────────────────────────────────────────────
+
+# LDAP result codes worth naming; anything else is reported by number.
+RESULT_CODES = {
+    50: "insufficient access — the bind user may not create entries here "
+        "(entry creation under ou=People is admin-only; bind as cn=admin,dc=cttb)",
+    68: "already exists",
+    65: "object class violation — the entry is missing a mandatory attribute",
+    64: "naming violation — bad DN",
+    19: "constraint violation — a value was rejected by the server's policy",
+    32: "no such object — the parent OU does not exist",
+    49: "invalid credentials",
+}
+
+
+def explain(exc: Exception) -> str:
+    """Render a subprocess failure WITHOUT echoing argv.
+
+    CalledProcessError stringifies the whole command line, and ldap_lib passes
+    the bind password as '-w <secret>'. Printing the exception directly would
+    write that secret to the terminal and to any redirected log.
+    """
+    if isinstance(exc, subprocess.CalledProcessError):
+        code = exc.returncode
+        return f"ldap result {code}: {RESULT_CODES.get(code, 'see ldapmodify/ldappasswd output above')}"
+    return f"{type(exc).__name__}: {exc}"
+
+
+def directory_state(ctx) -> tuple[set[str], set[int]]:
+    entries = l.search(ctx, "(objectClass=posixAccount)", ["uid", "uidNumber"], base=ctx.people_ou)
+    uids, numbers = set(), set()
+    for e in entries:
+        for u in e.get("uid", []):
+            uids.add(u.strip())
+        for n in e.get("uidnumber", []):
+            if n.strip().isdigit():
+                numbers.add(int(n.strip()))
+    return uids, numbers
+
+
+def allocate(roster: list[dict], used_numbers: set[int], start: int, ceiling: int) -> None:
+    nxt = start
+    taken = set(used_numbers)
+    for rec in roster:
+        while nxt in taken:
+            nxt += 1
+        if nxt > ceiling:
+            raise SystemExit(
+                f"error: ran past the uidNumber ceiling {ceiling} while allocating {rec['uid']}; "
+                "raise --ceiling or pick a different --start"
+            )
+        rec["uidNumber"] = nxt
+        taken.add(nxt)
+        nxt += 1
+
+
+# ── Main ─────────────────────────────────────────────────────────────────────
+
+def main() -> int:
+    p = argparse.ArgumentParser(
+        description="Enroll a CSV roster into the CTTB LDAP directory (dry-run by default).",
+    )
+    p.add_argument("csv", help="roster CSV path")
+    p.add_argument("--gid-number", type=int, default=2002,
+                   help="primary gidNumber (default 2002 = drbu-students)")
+    p.add_argument("--start", type=int,
+                   help="first uidNumber to try (default: one past the highest in the gid's band)")
+    p.add_argument("--ceiling", type=int, default=9999,
+                   help="highest permissible uidNumber (default 9999)")
+    p.add_argument("--home-base", default="/nfs/home",
+                   help="homeDirectory prefix (default /nfs/home)")
+    p.add_argument("--shell", default="/bin/bash")
+    p.add_argument("--name-mode", choices=("username", "legal", "preferred"), default="username",
+                   help="username: capitalize the dotted login name, e.g. feyfey.chen -> "
+                        "'Feyfey Chen' (default); legal: use the CSV name columns, dropping any "
+                        "'(nickname)'; preferred: use the CSV nickname as the given name")
+    p.add_argument("--no-password", action="store_true",
+                   help="create accounts but do not set passwords")
+    p.add_argument("--verify-only", action="store_true",
+                   help="do not write; just report which roster uids exist in the directory")
+    p.add_argument("--admin", action="store_true",
+                   help="bind as the rootdn from the credential store; required to create "
+                        "entries under ou=People")
+    p.add_argument("--risks-confirmed", action="store_true",
+                   help="actually write to the directory")
+    args = p.parse_args()
+
+    if args.admin:
+        print(f"binding as {use_admin_bind()} (credentials from the platform store)")
+
+    roster = read_roster(args.csv, args.name_mode)
+    validate(roster)
+    if not roster:
+        print("roster is empty; nothing to do")
+        return 0
+
+    ctx = l.LdapContext.default()
+    existing_uids, used_numbers = directory_state(ctx)
+
+    if args.verify_only:
+        present = [r for r in roster if r["uid"] in existing_uids]
+        absent = [r for r in roster if r["uid"] not in existing_uids]
+        print(f"roster: {len(roster)}   present in directory: {len(present)}   absent: {len(absent)}")
+        for r in absent:
+            print(f"  ABSENT  {r['uid']}")
+        return 0 if not absent else 1
+
+    already = [r for r in roster if r["uid"] in existing_uids]
+    todo = [r for r in roster if r["uid"] not in existing_uids]
+    for r in already:
+        print(f"skip (already exists): {r['uid']}")
+    if not todo:
+        print("every roster entry already exists; nothing to do")
+        return 0
+
+    band = [n for n in used_numbers
+            if (args.gid_number - 2000) * 1000 <= n < (args.gid_number - 2000 + 1) * 1000] \
+        if args.gid_number != 2002 else [n for n in used_numbers if 2000 <= n < 3000]
+    start = args.start or (max(band) + 1 if band else 2001)
+    allocate(todo, used_numbers, start, args.ceiling)
+
+    for r in todo:
+        r["gidNumber"] = args.gid_number
+        r["home"] = f"{args.home_base}/{r['uid']}"
+        r["shell"] = args.shell
+
+    print()
+    print(f"{'uidNumber':>9}  {'uid':22}  {'cn':34}  {'sn':18}  pw")
+    print(f"{'-'*9}  {'-'*22}  {'-'*34}  {'-'*18}  --")
+    for r in todo:
+        pw = f"{len(r['password'])}ch" if r["password"] else "none"
+        print(f"{r['uidNumber']:>9}  {r['uid']:22}  {r['cn']:34}  {r['sur']:18}  {pw}")
+    print()
+    print(f"gidNumber {args.gid_number} · home {args.home_base}/<uid> · shell {args.shell} "
+          f"· names: {args.name_mode}")
+    print(f"creating {len(todo)} account(s); {len(already)} already present")
+    print()
+
+    dry = not args.risks_confirmed
+    created, failed = [], []
+    for r in todo:
+        ldif = build_ldif(r, ctx.people_ou)
+        try:
+            l.apply_ldif(ctx, ldif, dry_run=dry)
+        except Exception as exc:  # noqa: BLE001 - report and continue to the next person
+            failed.append((r["uid"], f"entry: {explain(exc)}"))
+            continue
+        created.append(r)
+
+    if not args.no_password:
+        for r in created:
+            if not r["password"]:
+                print(f"no password in CSV for {r['uid']}; account left unset")
+                continue
+            try:
+                l.reset_password(ctx, r["uid"], r["password"], dry_run=dry)
+            except Exception as exc:  # noqa: BLE001
+                failed.append((r["uid"], f"password: {explain(exc)}"))
+
+    print()
+    if dry:
+        print(f"DRY RUN — nothing was written. {len(created)} entry/entries validated.")
+        print("Re-run with --risks-confirmed to apply.")
+    else:
+        print(f"created {len(created)} account(s)")
+    if failed:
+        print(f"{len(failed)} failure(s):")
+        for uid, why in failed:
+            print(f"  {uid}: {why}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""nfs-homes-provision — create home dirs + quotas for an LDAP cohort on the fileserver.
+
+This is the durable replacement for the annual batch procedure's step 5
+(``./add-folders.sh``), which lived only on the fileserver and is now lost. It
+selects accounts from the directory by gid + uidNumber band, then creates
+``/nethomes/<uid>`` (mode 0700, owner ``<uidNumber>:<gid>``) and copies a
+prototype user's quota onto each, running as root on the fileserver over
+SSH+sudo.
+
+The cohort is selected from LDAP so the directory is the source of truth for
+uid -> uidNumber -- pass the gid and the new uidNumber band (e.g. gid 2002,
+min 2202) rather than re-listing the roster.
+
+Dry-run by default: prints the cohort and the exact remote script it would
+run, and contacts nothing. Pass ``--risks-confirmed`` to apply. Idempotent: a
+home that already exists is skipped untouched, so the command is safe to re-run.
+
+The fileserver sudo password is read from the platform credential store under
+``CTTB_FS_ADMIN_PASSWD`` (env override honored), never from argv. Populate once:
+
+    # macOS Keychain
+    security add-generic-password -s CTTB_FS_ADMIN_PASSWD -a "$USER" -w
+    # Linux Secret Service
+    secret-tool store --label=CTTB_FS_ADMIN_PASSWD service CTTB_FS_ADMIN_PASSWD
+
+Examples
+--------
+    # Plan only (safe, no SSH)
+    utils/nfs-homes-provision --gid-number 2002 --uid-number-min 2202
+
+    # Apply
+    utils/nfs-homes-provision --gid-number 2002 --uid-number-min 2202 --risks-confirmed
+
+    # Read-only check of existing homes + quotas
+    utils/nfs-homes-provision --gid-number 2002 --uid-number-min 2202 --verify-only
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent / "sysadmintk"))
+
+import nfs_homes as h  # noqa: E402
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(
+        description="Provision NFS home dirs + quotas for an LDAP cohort on the fileserver (dry-run by default).",
+    )
+    p.add_argument("--gid-number", type=int, default=2002,
+                    help="cohort gidNumber (default 2002 = drbu-students); used for chown group")
+    p.add_argument("--uid-number-min", type=int, required=True,
+                    help="lowest uidNumber to provision (selects the cohort band from the directory)")
+    p.add_argument("--uid-number-max", type=int, default=None,
+                    help="highest uidNumber to provision (default: no upper bound)")
+    p.add_argument("--proto", default="claire.robb",
+                    help="quota prototype user, passed to setquota -p (default claire.robb = 5GB)")
+    p.add_argument("--fs", default="/nethomes",
+                    help="home filesystem on the fileserver (default /nethomes)")
+    p.add_argument("--host", default="fileserver", help="fileserver SSH host (default fileserver)")
+    p.add_argument("--user", default="administrator", help="fileserver SSH user (default administrator)")
+    p.add_argument("--verify-only", action="store_true",
+                    help="read-only: report existing homes + quotas, create/quote nothing")
+    p.add_argument("--risks-confirmed", action="store_true",
+                    help="actually run on the fileserver (default: dry-run, prints the plan)")
+    args = p.parse_args()
+
+    accounts = h.select_cohort(args.gid_number, args.uid_number_min, args.uid_number_max)
+    if not accounts:
+        print("no accounts match the selected band; nothing to do")
+        return 0
+
+    print(f"cohort: {len(accounts)} account(s)  gid {args.gid_number}  "
+          f"uidNumber {accounts[0].uid_number}..{accounts[-1].uid_number}")
+    for a in accounts:
+        print(f"  {a.uid_number:>6}  {a.uid}")
+    print()
+
+    if args.verify_only:
+        if args.risks_confirmed:
+            print("note: --verify-only is read-only; ignoring --risks-confirmed")
+        script = h.build_verify_script(accounts, args.fs)
+        rc, out = h.run_remote(args.host, args.user, script, dry_run=False)
+        sys.stdout.write(out)
+        return rc
+
+    script = h.build_provision_script(accounts, args.proto, args.fs, args.gid_number)
+    if not args.risks_confirmed:
+        print(f"DRY RUN — remote script that would run on {args.host} as root:")
+        print("-" * 72)
+        print(script, end="")
+        print("-" * 72)
+        print("Re-run with --risks-confirmed to apply.")
+        return 0
+
+    print(f"applying on {args.host} as root ...")
+    rc, out = h.run_remote(args.host, args.user, script, dry_run=False)
+    sys.stdout.write(out)
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main())
