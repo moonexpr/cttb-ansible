@@ -242,6 +242,21 @@ state — the host is wiped and re-imaged via the PXE autoinstaller, then the
 `install-sudhanix-cslabs.yml` play runs against the fresh OS. There is no
 "upgrade a running host" path for the fleet.
 
+**Legacy-BIOS hosts (HP 8200 Elite era) take a different stage-1 trigger.**
+UEFI hosts get a one-shot `efibootmgr -n` NextBoot; BIOS firmware has no
+equivalent, so the rollout (a) stamps a per-MAC `pxelinux.cfg/01-<mac>` on
+pxe.cttb via `plays/sudhanix26-rollout-stage0-bios.yml` — the shared menu
+deliberately times out into BootLocal, so the reimage is opt-in per MAC —
+and (b) zeroes the target's whole MBR sector (boot code *and* the 0x55AA
+signature; leaving the signature makes the BIOS hang in zeroed boot code
+instead of falling through the boot order to the NIC). These machines also
+RAM-load the install ISO (`casper url=` boot), which OOMs at 3 GB on that
+hardware — they boot a stripped ~1.5 GB ISO built by
+`roles/netinstall-2404/files/build-slim-iso.sh` on pxe.cttb (casper layers +
+apt metadata, minus HWE/restricted/firmware payloads). Remove the per-MAC
+files after the reinstall (`-e bios_rollout_state=absent`): while present,
+any PXE boot of that MAC reimages the machine.
+
 **Consequence — the forward-only Recommends caveat does not apply to the
 fleet.** Because every fleet host is a fresh image at deploy time, it always
 receives the full Recommends closure (path A in the gh-16 plan *is* the

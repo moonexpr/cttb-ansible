@@ -1,0 +1,93 @@
+---
+# sudhanix26-rollout stage 0 (BIOS hosts) — stamp per-MAC pxelinux configs.
+#
+# Legacy-BIOS machines (e.g. the HP 8200 Elite cslab fleet) cannot take
+# stage 1's efibootmgr NextBoot trick, and the shared pxelinux menu
+# deliberately times out into BootLocal so a stray PXE boot never wipes a
+# machine. This play makes the wipe opt-in per machine: for each named host
+# it writes pxelinux.cfg/01-<mac> on the PXE server, so that MAC alone times
+# out into the autoinstall entry.
+#
+# ORDER IS LOAD-BEARING: run this BEFORE stage 1 on a BIOS host. Stage 1
+# zeroes the host's MBR boot code; if the machine then PXE-boots without its
+# per-MAC file, the menu falls back to BootLocal and the machine hangs on a
+# disk that no longer boots.
+#
+# CLEAN UP AFTER: while the 01-<mac> file exists, any PXE boot of that MAC
+# reimages the machine. Remove with -e bios_rollout_state=absent once the
+# reinstall is confirmed.
+#
+# Usage (targets must be named explicitly — there is no default):
+#   utils/pb sudhanix26-rollout-stage0-bios -e bios_rollout_hosts=drbu-sw-cslab-m-pc1.cttb
+#   utils/pb sudhanix26-rollout-stage0-bios -e bios_rollout_group=drbu_cs_lab
+#   utils/pb sudhanix26-rollout-stage0-bios -e bios_rollout_group=drbu_cs_lab -e bios_rollout_state=absent
+#
+# The pxe inventory entry pins ansible_user=root, whose key is not held on
+# operator workstations; administrator + passwordless sudo is.
+
+- hosts: pxe
+  become: true
+  gather_facts: false
+
+  vars:
+    ansible_user: administrator
+    ansible_become: true  # inventory pins ansible_become=false for root@pxe; override for administrator
+    pxe_tftp_root: /srv/netinstall
+    bios_rollout_state: present
+    # Standalone boot stanza — deliberately NOT an INCLUDE of the shared menu:
+    # menu.c32 adds a failure surface (syslinux version skew bricked it once),
+    # and the shared entries RAM-load the full 3 GB ISO, which OOMs the 8200
+    # Elite fleet. casper's url= fetches the whole ISO into RAM, so BIOS hosts
+    # get the stripped ISO (casper squashfs layers only, no pool/, no HWE).
+    bios_pxe_kernel: http://pxe.cttb/netinstall/ubuntu/live-server-noble-amd64/casper/vmlinuz
+    bios_pxe_initrd: http://pxe.cttb/netinstall/ubuntu/live-server-noble-amd64/casper/initrd
+    bios_pxe_iso: http://pxe.cttb/netinstall/ubuntu-live-server-noble-amd64-slim.iso
+    bios_pxe_seed: http://pxe.cttb/netinstall/autoinstall/ubuntu/desktop-minimal/
+
+  tasks:
+    - name: resolve target hosts
+      set_fact:
+        bios_targets: >-
+          {{ bios_rollout_hosts.split(',')
+             if bios_rollout_hosts is defined
+             else groups[bios_rollout_group] | default([]) }}
+
+    - name: refuse to run without explicit targets
+      fail:
+        msg: >-
+          Name the machines to stamp: -e bios_rollout_hosts=<host,...>
+          or -e bios_rollout_group=<inventory group>.
+      when: bios_targets | length == 0
+
+    - name: refuse targets that carry no mac_addr
+      fail:
+        msg: "{{ item }} has no mac_addr in the inventory; cannot build its pxelinux.cfg filename."
+      when: hostvars[item].mac_addr is not defined
+      loop: "{{ bios_targets }}"
+
+    - name: stamp per-MAC one-shot autoinstall config
+      copy:
+        dest: "{{ pxe_tftp_root }}/pxelinux.cfg/01-{{ hostvars[item].mac_addr | lower | replace(':', '-') }}"
+        content: |
+          # {{ item }} — one-shot BIOS PXE autoinstall (sudhanix26 rollout).
+          # Stamped by plays/sudhanix26-rollout-stage0-bios.yml. REMOVE after the
+          # reinstall is confirmed: while present, any PXE boot of this MAC
+          # reimages the machine.
+          DEFAULT autoinstall
+          PROMPT 0
+          LABEL autoinstall
+              KERNEL {{ bios_pxe_kernel }}
+              INITRD {{ bios_pxe_initrd }}
+              APPEND noprompt ip=dhcp ipv6.disable=1 url={{ bios_pxe_iso }} autoinstall ds=nocloud-net;s={{ bios_pxe_seed }} ---
+        owner: root
+        group: root
+        mode: "0644"
+      loop: "{{ bios_targets }}"
+      when: bios_rollout_state == 'present'
+
+    - name: remove per-MAC config after confirmed reinstall
+      file:
+        path: "{{ pxe_tftp_root }}/pxelinux.cfg/01-{{ hostvars[item].mac_addr | lower | replace(':', '-') }}"
+        state: absent
+      loop: "{{ bios_targets }}"
+      when: bios_rollout_state == 'absent'

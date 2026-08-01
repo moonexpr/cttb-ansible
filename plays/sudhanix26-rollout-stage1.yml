@@ -1,38 +1,67 @@
 ---
 # sudhanix26-rollout stage 1 — trigger a one-time PXE network boot + reboot.
 #
-# Uses efibootmgr to set the UEFI "next boot" to the onboard NIC,
-# then reboots. The boot order reverts automatically after one boot.
+# UEFI hosts: efibootmgr sets the "next boot" to the onboard NIC; the boot
+# order reverts automatically after one boot.
+#
+# Legacy-BIOS hosts (no /sys/firmware/efi — e.g. the HP 8200 Elite cslab
+# fleet): there is no NextBoot equivalent, so the play zeroes the entire MBR
+# sector — boot code AND the 0x55AA signature; leaving the signature makes
+# the BIOS hang in zeroed boot code instead of falling through — and relies
+# on the BIOS falling through the boot order to the NIC. PREREQUISITE: run
+# plays/sudhanix26-rollout-stage0-bios.yml first to stamp the host's per-MAC
+# pxelinux config — without it the PXE menu times out into BootLocal and the
+# machine hangs on a disk that no longer boots. If the NIC is not in the
+# BIOS boot order at all, the machine needs a console visit (F12 → network).
+#
 # Stage 1 of plays/sudhanix26-rollout.yml; runnable standalone to just
 # re-image a host without the follow-on config.
 #
 # Usage:
 #   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs-lab3.cttb
 #   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs_cs_lab
-#   ansible-playbook plays/sudhanix26-rollout-stage1.yml -l dvgs_cs_lab --check  # dry run
 #
 # No --ask-become-pass: the administrator become password is vaulted in
 # group_vars/cttb_hosts.yml and decrypts via ansible.cfg's vault_password_file.
 # Run from the repository root so that relative path resolves.
+#
+# All target tasks use raw: the hosts this play targets run the OS being
+# replaced, whose Python is too old for ansible-core (2.21 needs >= 3.9),
+# so no module may touch the target interpreter. (raw is also why --check
+# is not offered here any more: raw tasks skip in check mode.)
 
 - hosts: all
   become: true
   gather_facts: false
 
   tasks:
+    - name: detect firmware boot mode
+      raw: test -d /sys/firmware/efi && echo UEFI || echo BIOS
+      register: boot_mode
+      changed_when: false
+
+    - name: classify host
+      set_fact:
+        is_uefi: "{{ 'UEFI' in boot_mode.stdout }}"
+
+    # ── UEFI branch: one-time NextBoot via efibootmgr ─────────────────────
+
     - name: ensure efibootmgr is installed
-      apt:
-        name: efibootmgr
-        state: present
+      raw: command -v efibootmgr >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get -y install efibootmgr
+      register: efibootmgr_install
+      changed_when: "'Setting up efibootmgr' in efibootmgr_install.stdout"
+      when: is_uefi
 
     - name: get EFI boot entries
-      command: efibootmgr
+      raw: efibootmgr
       register: efi_entries
       changed_when: false
+      when: is_uefi
 
     - name: find NIC IPV4 boot entry
       set_fact:
         nic_boot_num: "{{ efi_entries.stdout | regex_search('Boot([0-9A-Fa-f]{4})\\* .*NIC.*IPV4', '\\1') | first }}"
+      when: is_uefi
 
     - name: fail if NIC boot entry not found
       fail:
@@ -40,24 +69,51 @@
           No 'Onboard NIC(IPV4)' entry found in efibootmgr output.
           This machine may not support UEFI PXE boot or the entry name differs.
           Output was: {{ efi_entries.stdout_lines }}
-      when: nic_boot_num is not defined or nic_boot_num == ''
+      when: is_uefi and (nic_boot_num is not defined or nic_boot_num == '')
 
     - name: set next boot to NIC (one-time)
-      command: "efibootmgr -n {{ nic_boot_num }}"
-
-    - name: confirm next boot is set
-      command: efibootmgr
-      register: efi_verify
-      changed_when: false
+      raw: "efibootmgr -n {{ nic_boot_num }}"
+      when: is_uefi
 
     - name: show next boot entry
       debug:
         msg: "Next boot set to {{ nic_boot_num }} (NIC IPV4). Rebooting into PXE."
+      when: is_uefi
+
+    # ── BIOS branch: break the disk boot chain, fall through to the NIC ──
+
+    - name: "BIOS: identify the disk behind /"
+      raw: lsblk -ndo pkname "$(findmnt -n -o SOURCE /)"
+      register: bios_boot_disk
+      changed_when: false
+      when: not is_uefi
+
+    - name: "BIOS: resolve boot disk device"
+      set_fact:
+        bios_disk: "{{ bios_boot_disk.stdout_lines | map('trim') | reject('equalto', '') | list | last }}"
+      when: not is_uefi
+
+    - name: "BIOS: zero the whole MBR sector, incl. the 0x55AA boot signature"
+      # bs=440 is NOT enough: with the signature intact the BIOS "boots" the
+      # zeroed code and hangs instead of falling through to the NIC (observed
+      # on the HP 8200 cslab fleet). The partition table goes too — irrelevant,
+      # the autoinstall repartitions the disk anyway.
+      raw: "dd if=/dev/zero of=/dev/{{ bios_disk }} bs=512 count=1"
+      when: not is_uefi
+
+    - name: show BIOS PXE plan
+      debug:
+        msg: >-
+          Zeroed the MBR sector on /dev/{{ bios_disk }}. Rebooting; the BIOS
+          should fall through to the NIC and PXE-boot into this host's
+          per-MAC autoinstall config (stage 0).
+      when: not is_uefi
+
+    # ── shared: reboot into the reinstall ─────────────────────────────────
 
     - name: reboot into PXE
-      reboot:
-        msg: "PXE reboot triggered by Ansible pxe-reboot playbook"
-        pre_reboot_delay: 5
-        post_reboot_delay: 0
-        reboot_timeout: 0  # don't wait for machine to come back — it's reinstalling
-      ignore_errors: true  # machine won't come back on same OS
+      # Detach so the ssh session returns before the shutdown kills it —
+      # holding the connection open reports the host UNREACHABLE instead of ok.
+      raw: nohup sh -c 'sleep 5; /sbin/shutdown -r now "PXE reboot triggered by sudhanix26-rollout-stage1"' >/dev/null 2>&1 &
+      ignore_errors: true       # machine won't come back on same OS — don't wait for it
+      ignore_unreachable: true  # a racing connection drop is still success here
