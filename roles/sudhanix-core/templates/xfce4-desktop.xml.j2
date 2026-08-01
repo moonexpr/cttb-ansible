@@ -22,7 +22,14 @@
 <channel name="xfce4-desktop" version="1.0">
   <property name="backdrop" type="empty">
     <property name="screen0" type="empty">
-      <property name="monitorHDMI-1" type="empty">
+{# Seed every connector name the fleet plausibly uses — xfdesktop only reads
+   the entry matching the real monitor and ignores the rest, but a MISSING
+   entry makes it invent stock defaults (folder /usr/share/backgrounds/xfce).
+   The HP 8200 cslab machines are DP/VGA, not HDMI. The session-start
+   randomizer additionally creates entries for whatever xrandr reports, so
+   this list is first-paint insurance, not the source of truth. #}
+{% for monitor in desktop_wallpaper_seed_monitors | default(['HDMI-1', 'DP-1', 'DP-2', 'DP-3', 'VGA-1', 'DVI-I-1', 'DVI-D-1', 'eDP-1']) %}
+      <property name="monitor{{ monitor }}" type="empty">
         <property name="workspace0" type="empty">
           <property name="color-style" type="int" value="0"/>
           <property name="image-style" type="int" value="5"/>
@@ -33,6 +40,7 @@
           <property name="backdrop-cycle-timer" type="uint" value="{{ desktop_wallpaper_interval_minutes }}"/>
         </property>
       </property>
+{% endfor %}
     </property>
   </property>
   <property name="desktop-icons" type="empty">
