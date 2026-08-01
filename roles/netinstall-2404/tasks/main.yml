@@ -48,7 +48,14 @@
     tags:
       - ni_h5ai
 
-  - include_tasks: autoinstall.yml
+  # `apply` is required: tags on a dynamic include cover the include statement
+  # only, so without it `--tags ni_autoinstall` runs the include and filters out
+  # every task inside it, silently deploying nothing.
+  - include_tasks:
+      file: autoinstall.yml
+      apply:
+        tags:
+          - ni_autoinstall
     tags:
       - ni_autoinstall
 

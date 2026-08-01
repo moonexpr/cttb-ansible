@@ -9,7 +9,7 @@
 # on the command line.
 #
 # Re-IP discipline: after any future re-IP of this container, re-apply this
-# play against pxe-server so the `etc-default-tftpd-hpa.j2` template picks
+# play against cttb_pxe so the `etc-default-tftpd-hpa.j2` template picks
 # up the new `ansible_default_ipv4.address`. The dnsmasq `dhcp-boot=` lines
 # on dnsmasq.cttb are NOT templated by this play (see gh-60 follow-up) —
 # update them in /etc/dnsmasq.conf by hand at cutover time until they are.
@@ -25,7 +25,7 @@
 # follow up with `plays/deploy-netinstall-2404.yml` (which renders templates
 # locally and rsyncs them up).
 
-- hosts: pxe-server
+- hosts: cttb_pxe
   become: true
   vars:
     ni_webserver: nginx
