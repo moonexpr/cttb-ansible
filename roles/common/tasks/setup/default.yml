@@ -45,11 +45,13 @@
   tags:
     - apt
 
-# Sudhanix branding rewrites VERSION_CODENAME (26 -> "storehouse"), so on a
+# Sudhanix branding (applied by vajra) rewrites /etc/os-release — VERSION_CODENAME
+# and, in current builds, UBUNTU_CODENAME too (26 -> "storehouse") — so on a
 # rerun apt_repository would derive a PPA suite Launchpad has never heard of.
-# Resolve the underlying Ubuntu codename and pin the module to it.
+# The vendor file /usr/lib/os-release is left pristine (vajra replaces the
+# /etc symlink with a regular file); resolve the codename from it.
 - name: resolve the underlying Ubuntu codename
-  command: sh -c '. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}"'
+  command: sh -c '{ . /usr/lib/os-release 2>/dev/null || . /etc/os-release; } && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}"'
   register: _ubuntu_codename
   changed_when: false
   when: additional_apt_repo is defined
