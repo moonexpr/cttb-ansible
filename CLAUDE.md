@@ -83,10 +83,10 @@ utils/pb <playbook> [ansible-playbook OPTS] # run plays/<playbook>.yml
 
 `utils/ansible-env` resolves the repo root with `git rev-parse --show-toplevel` (falling back to the working directory) and derives every path from it. `setup-env` is a thin shim that `eval`s its `--export` output — it must be **sourced**, since a child process cannot export into its parent.
 
-**Inventory precedence**, highest first: `-i` on the command line → `$ANSIBLE_INVENTORY` → `inventory/hosts`. `pb` deliberately does *not* pass `-i`; it sets `ANSIBLE_INVENTORY` in the child environment, because a second `-i` is additive in Ansible (it merges sources rather than replacing them) and would make the wrapper's choice impossible to override. To target the flat upgrade-target list, which is the one carrying MAC addresses:
+**Inventory precedence**, highest first: `-i` on the command line → `$ANSIBLE_INVENTORY` → `ansible.cfg`'s `inventory =` line (currently `inventory/sudhanix26_hosts.ini`, the flat upgrade-target list carrying MAC addresses) → `inventory/hosts`. `pb` deliberately does *not* pass `-i`; it sets `ANSIBLE_INVENTORY` in the child environment, because a second `-i` is additive in Ansible (it merges sources rather than replacing them) and would make the wrapper's choice impossible to override. To target a different inventory for one run:
 
 ```bash
-ANSIBLE_INVENTORY=inventory/sudhanix26_hosts.ini utils/pb util-wakeonlan -l drbu_cs_lab
+ANSIBLE_INVENTORY=inventory/hosts utils/pb site
 ```
 
 `ANSIBLE_HOSTS` is exported as an alias of `ANSIBLE_INVENTORY` because `utils/ar`, `utils/reboot`, and `utils/shutdown` still pass it as `-i`.

@@ -12,10 +12,12 @@ Precedence, highest first:
 
   1. `-i` on the ansible command line   (ansible's own handling)
   2. $ANSIBLE_INVENTORY                 (honoured here)
-  3. <repo>/inventory/hosts             (this repo's default)
+  3. ansible.cfg's `inventory =` line   (the repo's declared default)
+  4. <repo>/inventory/hosts             (fallback when ansible.cfg is silent)
 """
 from __future__ import annotations
 
+import configparser
 import os
 import shlex
 import subprocess
@@ -37,6 +39,23 @@ def repo_root() -> Path:
     except (OSError, subprocess.CalledProcessError):
         return Path.cwd()
     return Path(out) if out else Path.cwd()
+
+
+def cfg_inventory(base: Path) -> str | None:
+    """The `inventory =` value from <repo>/ansible.cfg, resolved against the
+    repo root, or None when the file or the line is absent. A pathlist value
+    (comma-separated sources) is passed through untouched."""
+    parser = configparser.ConfigParser(interpolation=None, strict=False)
+    try:
+        parser.read(base / "ansible.cfg")
+        value = parser.get("defaults", "inventory").strip()
+    except (configparser.Error, OSError):
+        return None
+    if not value:
+        return None
+    if "," in value:
+        return value
+    return str(base / value)
 
 
 @dataclass(frozen=True)
@@ -64,7 +83,9 @@ class AnsibleContext(CttbContext):
     def default(cls) -> "AnsibleContext":
         base = repo_root()
         override = os.environ.get("ANSIBLE_INVENTORY")
-        inventory = override or str(base / "inventory" / "hosts")
+        inventory = (override
+                     or cfg_inventory(base)
+                     or str(base / "inventory" / "hosts"))
         return cls(base=base, inventory=inventory,
                    inventory_overridden=override is not None)
 

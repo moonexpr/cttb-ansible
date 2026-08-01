@@ -2,7 +2,7 @@
 """pb — run a playbook from plays/ with this repository's Ansible environment.
 
   utils/pb util-wakeonlan -l drbu_cs_lab
-  ANSIBLE_INVENTORY=inventory/sudhanix26_hosts.ini utils/pb util-wakeonlan -l drbu_cs_lab
+  ANSIBLE_INVENTORY=inventory/hosts utils/pb site   # override ansible.cfg's default
 
 The inventory is passed through the environment, not as `-i`. A second `-i` is
 additive in ansible — it merges inventory sources rather than replacing them —
