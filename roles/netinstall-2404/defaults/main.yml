@@ -43,6 +43,11 @@ ni_2404_images:
       - name: server
         description: "Ubuntu 24.04 Server"
 
+# Stage-1 console banner text. Mirrors sudhanix_description in
+# roles/common/defaults/main.yml; duplicated because this role targets the PXE
+# server, where common's vars are not in scope.
+ni_stage1_description: "Sudhanix 26"
+
 # Default administrator user for autoinstall
 ni_admin_user: administrator
 ni_admin_fullname: Administrator

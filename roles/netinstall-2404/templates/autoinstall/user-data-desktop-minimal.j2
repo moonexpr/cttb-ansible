@@ -55,7 +55,31 @@ autoinstall:
   packages:
     - openssh-server
     - python3
-  # No late-commands: identity creates {{ni_admin_user}} via cloud-init on first
-  # boot (default UID 1000), and ssh.authorized-keys above propagates keys via
-  # cloud-init. usermod/authorized_keys writes in late-commands fail with exit 6
-  # ("user doesn't exist") because cloud-init hasn't created the user yet.
+  # late-commands here must touch /etc only. identity creates {{ni_admin_user}} via
+  # cloud-init on first boot (default UID 1000), and ssh.authorized-keys above
+  # propagates keys via cloud-init. usermod/authorized_keys writes in late-commands
+  # fail with exit 6 ("user doesn't exist") because cloud-init hasn't created the
+  # user yet.
+  late-commands:
+    # Stage-1 console banner, replaced by roles/common in stage 2. agetty hardcodes
+    # the word "login:" and prints the hostname before it, so LOGIN_PLAIN_PROMPT
+    # below drops the hostname and the issue file ends with "technician" and no
+    # trailing newline, yielding "technician login:". The hostname would read
+    # "computer" here anyway -- identity sets it, common renames in stage 2 -- so
+    # the banner shows the DHCP address instead.
+    # Escapes: \S = os-release PRETTY_NAME, \4 = first configured IPv4, \l = tty.
+    # The quoted heredoc delimiter keeps those backslashes intact for agetty. The
+    # printf appends without the newline a heredoc would add, and its trailing space
+    # is load-bearing: agetty writes the separator space only when it prints a
+    # hostname, so without it the console reads "technicianlogin:".
+    - |
+      cat <<'ISSUEEOF' > /target/etc/issue
+      {{ni_stage1_description}} running on \S in teletype mode.
+      This computer is ready for the Stage 2 installation.
+      IP: \4  (\l)
+
+      ISSUEEOF
+      printf '%s' 'technician ' >> /target/etc/issue
+    # login.defs is last-line-wins (util-linux lib/logindefs.c: store() prepends,
+    # search() takes the head), so appending beats any stock value without a strip.
+    - echo 'LOGIN_PLAIN_PROMPT yes' >> /target/etc/login.defs

@@ -178,6 +178,14 @@
   tags:
     - sudhanix_branding
 
+- name: restore hostname in TTY login prompt (undo stage-1 banner suppression)
+  lineinfile:
+    path: /etc/login.defs
+    regexp: '^LOGIN_PLAIN_PROMPT'
+    state: absent
+  tags:
+    - sudhanix_branding
+
 - name: brand /etc/issue.net (network/SSH login banner)
   template:
     src: issue.net.j2
