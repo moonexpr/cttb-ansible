@@ -20,7 +20,10 @@ ldap_groups:
   - drbu-staff
 ldap_guest_string: "(drbu-guests) "
 ldap_group_acl_string1: "{% for item in ldap_groups %}({{item}}) {% endfor %}"
-ldap_group_acl_string: "{{ldap_group_acl_string1}}{% if inventory_hostname in groups['drbu_cs_lab_guest'] %}{{ldap_guest_string}}{%endif%}"
+# groups.get: drbu_cs_lab_guest only exists in inventory/hosts (and holds the
+# pre-sw-cslab machine names); under sudhanix26_hosts.ini it is absent and a
+# bare groups[...] lookup fails the whole ldap-client role.
+ldap_group_acl_string: "{{ldap_group_acl_string1}}{% if inventory_hostname in groups.get('drbu_cs_lab_guest', []) %}{{ldap_guest_string}}{%endif%}"
 
 # printing settings
 cups_srv: cups-cttb

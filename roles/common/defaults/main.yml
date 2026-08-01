@@ -12,6 +12,11 @@ sudhanix_name: "Sudhanix"
 sudhanix_release: "26"
 sudhanix_codename: storehouse
 sudhanix_description: "Sudhanix 26"
+# The Ubuntu base this Sudhanix release is built on. os-release.j2 must NOT
+# derive this from ansible_distribution_release: on a rebrand rerun that fact
+# is read back from the already-branded /etc/os-release, and "storehouse"
+# feeds back into UBUNTU_CODENAME (gh-109).
+sudhanix_ubuntu_codename: noble
 
 # Optional brand assets. Enable once the asset is uploaded to storehouse.
 sudhanix_grub_theme_enabled: false
