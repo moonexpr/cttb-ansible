@@ -38,7 +38,7 @@ DIRECT_SSH=(
 )
 
 VM_CTS=(          # LXC containers on srv-vm (10.11.1.3)
-    wiki:wiki-2404:10.11.1.31
+    wiki:wiki-2404:10.11.1.34
     dnsmasq:dnsmasq:10.11.1.19
     ub-adult:ub-adult:10.11.1.29
     ub-igdvs:ub-igdvs:10.11.1.28
