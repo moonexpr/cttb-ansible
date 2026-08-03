@@ -63,7 +63,7 @@
 
     - name: render pxe install menu
       template:
-        src: "roles/netinstall-2404/templates/pxe/pxe-install-menu-2404.j2"
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/pxe/pxe-install-menu-2404.j2"
         dest: "{{ ni_staging_dir }}/menu/ubuntu-live-server-amd64-noble.menu"
         mode: "0644"
       vars:
@@ -72,7 +72,7 @@
 
     - name: render pxelinux default config
       template:
-        src: "roles/netinstall-2404/templates/pxe/pxelinux-cfg-default-2404.j2"
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/templates/pxe/pxelinux-cfg-default-2404.j2"
         dest: "{{ ni_staging_dir }}/pxelinux.cfg/default"
         mode: "0644"
       tags: ni_pxe_menu
@@ -94,10 +94,17 @@
       tags: ni_autoinstall
 
 - name: Deploy netinstall-2404 to PXE server
-  hosts: pxe-server
+  # hosts: pxe-server stopped matching anything when f091914e renamed the
+  # group to cttb_pxe (same silent no-op 32935e87 fixed in netinstall-2404.yml).
+  hosts: cttb_pxe
   gather_facts: false
   become: true
   vars:
+    # Inventory pins ansible_user=root (key not held on operator
+    # workstations); administrator + passwordless sudo is. Mirrors
+    # sudhanix26-rollout-stage0-bios.yml.
+    ansible_user: administrator
+    ansible_become: true
     ni_staging_dir: "{{ lookup('env', 'TMPDIR') | default('/tmp') }}/netinstall-2404-stage"
     ni_root_dir: /srv/netinstall
     ni_www_path: /var/www/html/netinstall
@@ -106,7 +113,7 @@
   tasks:
     # --- Package installation ---
     - name: install required packages
-      raw: apt-get install -y tftpd-hpa apache2 p7zip-full pxelinux
+      raw: apt-get install -y tftpd-hpa apache2 p7zip-full pxelinux xorriso
       tags: ni_packages
 
     # --- Sync files via rsync (no Python needed) ---
@@ -115,8 +122,6 @@
         src: "{{ ni_staging_dir }}/autoinstall/"
         dest: "{{ ni_root_dir }}/autoinstall/"
         delete: false
-        rsync_opts:
-          - "--chmod=D755,F644"
       tags: ni_autoinstall
 
     - name: sync PXE menu to server
@@ -124,8 +129,6 @@
         src: "{{ ni_staging_dir }}/menu/"
         dest: "{{ ni_root_dir }}/menu/"
         delete: false
-        rsync_opts:
-          - "--chmod=D755,F644"
       tags: ni_pxe_menu
 
     - name: sync pxelinux config to server
@@ -134,7 +137,6 @@
         dest: "{{ ni_root_dir }}/pxelinux.cfg/"
         delete: false
         rsync_opts:
-          - "--chmod=D755,F644"
           - "--backup"
           - "--suffix=.bak"
       tags: ni_pxe_menu
@@ -145,7 +147,6 @@
         dest: "{{ ni_root_dir }}/grub/"
         delete: false
         rsync_opts:
-          - "--chmod=D755,F644"
           - "--backup"
           - "--suffix=.bak"
       tags:
@@ -189,6 +190,30 @@
         ln -sf {{ ni_root_dir }}/ubuntu-live-server-noble-amd64.iso
         {{ ni_root_dir }}/ubuntu/live-server-noble-amd64.iso
       tags: ni_isos
+
+    # --- Slim ISO (default install source; see roles/netinstall-2404/files/build-slim-iso.sh) ---
+    - name: copy slim ISO build script
+      copy:
+        src: "{{ playbook_dir }}/../roles/netinstall-2404/files/build-slim-iso.sh"
+        dest: /usr/local/sbin/build-slim-iso.sh
+        mode: "0755"
+      tags: [ni_isos, ni_slim_iso]
+
+    - name: build slim ISO (skipped while up to date with the stock ISO)
+      raw: |
+        stock={{ ni_root_dir }}/ubuntu-live-server-noble-amd64.iso
+        slim={{ ni_root_dir }}/ubuntu-live-server-noble-amd64-slim.iso
+        if [ -e "$slim" ] && [ ! "$stock" -nt "$slim" ]; then echo SLIM-UP-TO-DATE; exit 0; fi
+        bash /usr/local/sbin/build-slim-iso.sh "$stock" "$slim"
+      register: slim_build
+      changed_when: "'SLIM-UP-TO-DATE' not in slim_build.stdout"
+      tags: [ni_isos, ni_slim_iso]
+
+    - name: symlink slim ISO for HTTP serving (pxelinux url= path form)
+      raw: >
+        ln -sf {{ ni_root_dir }}/ubuntu-live-server-noble-amd64-slim.iso
+        {{ ni_root_dir }}/ubuntu/live-server-noble-amd64-slim.iso
+      tags: [ni_isos, ni_slim_iso]
 
     - name: ensure www symlink exists
       raw: |

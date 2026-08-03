@@ -25,6 +25,15 @@ ni_h5ai_version: "0.33.0"
 # PHP-FPM version. Ubuntu 22.04 ships 8.1; Debian 13 ships 8.2.
 ni_php_version: "8.1"
 
+# Serve the slim ISO (files/build-slim-iso.sh output) from every shared PXE
+# menu entry instead of the stock 3.0 GB live-server ISO. casper's url= boot
+# downloads the ENTIRE ISO into RAM before mounting it, so the stock ISO OOMs
+# machines with ~4 GB RAM (HP 8200 Elite cslab fleet, cdorm PCs). The slim
+# build (~1.5 GB) keeps the casper squashfs + cdrom apt payload an online
+# autoinstall needs. Kernel/initrd still come from the extracted stock tree —
+# the slim ISO carries the identical non-HWE pair.
+ni_serve_slim_iso: true
+
 # Ubuntu 24.04.2 LTS (Noble Numbat) live server ISO
 # The live server ISO is used for headless autoinstall deployments.
 # No mini.iso exists for 24.04; autoinstall replaces preseed.

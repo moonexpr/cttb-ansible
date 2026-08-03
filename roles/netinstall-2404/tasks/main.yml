@@ -37,6 +37,7 @@
       - "{{ ni_webserver }}"
       - p7zip-full
       - pxelinux
+      - xorriso  # build-slim-iso.sh repacks the stripped ISO tree
 
   - include_tasks: webserver-nginx.yml
     when: ni_webserver == 'nginx'

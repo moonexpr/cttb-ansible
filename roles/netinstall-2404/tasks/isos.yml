@@ -45,3 +45,39 @@
       state: link
     with_items:
       - "{{ni_2404_images}}"
+
+  - name: deploy slim ISO build script
+    copy:
+      src: build-slim-iso.sh
+      dest: /usr/local/sbin/build-slim-iso.sh
+      owner: root
+      group: root
+      mode: 0755
+    when: ni_serve_slim_iso | bool
+    tags:
+      - ni_slim_iso
+
+  - name: build slim ISO for low-RAM PXE clients (rebuilds when the stock ISO is newer)
+    shell: |
+      stock={{ni_isos_cache_dir}}/{{item.os}}-{{item.type}}-{{item.name}}-{{item.arch}}.iso
+      slim={{ni_isos_cache_dir}}/{{item.os}}-{{item.type}}-{{item.name}}-{{item.arch}}-slim.iso
+      if [ -e "$slim" ] && [ ! "$stock" -nt "$slim" ]; then echo SLIM-UP-TO-DATE; exit 0; fi
+      bash /usr/local/sbin/build-slim-iso.sh "$stock" "$slim"
+    register: ni_slim_build
+    changed_when: "'SLIM-UP-TO-DATE' not in ni_slim_build.stdout"
+    with_items:
+      - "{{ni_2404_images}}"
+    when: ni_serve_slim_iso | bool
+    tags:
+      - ni_slim_iso
+
+  - name: symlink slim ISO for HTTP serving (pxelinux url= uses the per-OS path form)
+    file:
+      src: "{{ni_isos_cache_dir}}/{{item.os}}-{{item.type}}-{{item.name}}-{{item.arch}}-slim.iso"
+      dest: "{{ni_root_dir}}/{{item.os}}/{{item.type}}-{{item.name}}-{{item.arch}}-slim.iso"
+      state: link
+    with_items:
+      - "{{ni_2404_images}}"
+    when: ni_serve_slim_iso | bool
+    tags:
+      - ni_slim_iso

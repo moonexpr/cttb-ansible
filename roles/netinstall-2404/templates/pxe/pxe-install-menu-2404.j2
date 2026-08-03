@@ -1,10 +1,11 @@
+{% set slim = '-slim' if ni_serve_slim_iso | default(false) else '' %}
 {% set path = item.os + "/" + item.type + "-" + item.name + "-" + item.arch %}
 {% for m in item.autoinstall %}
 LABEL {{loop.index}}
     MENU LABEL {{m.description}}
     KERNEL {{ni_www}}/{{path}}/{{item.kernel_path}}
     INITRD {{ni_www}}/{{path}}/{{item.initrd_path}}
-    APPEND noprompt ip=dhcp ipv6.disable=1 url={{ni_www}}/{{path}}.iso autoinstall ds=nocloud-net;s={{ni_www}}/autoinstall/{{item.os}}/{{m.name}}/ ---
+    APPEND noprompt ip=dhcp ipv6.disable=1 url={{ni_www}}/{{path}}{{slim}}.iso autoinstall ds=nocloud-net;s={{ni_www}}/autoinstall/{{item.os}}/{{m.name}}/ ---
     TEXT HELP
     {{m.description}} via autoinstall (Ubuntu 24.04 LTS)
     ENDTEXT
