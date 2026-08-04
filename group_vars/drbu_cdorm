@@ -3,3 +3,17 @@
 # printing settings
 cups_default_queue: DRBU_Cdorm
 
+# Become password for the PXE-installed `administrator` identity.
+# Overrides the stale value in group_vars/drbu — that 10-char password predates
+# the Sudhanix 26 reinstall and wins the group-precedence tiebreak against
+# cttb_hosts.yml, so freshly PXE'd cdorm hosts failed become with "Incorrect
+# sudo password". Same vault blob as group_vars/cttb_hosts.yml; mirrors the
+# drbu_cs_lab override pattern.
+ansible_become_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          39663639396437356263313034663932333731613962666161316266323338343431623030343965
+          6532613864376335666164636531313633353134396231390a383165303432396662303336613865
+          64383062626165343461633734323237316333656261303735666566383637356532303039323532
+          3662623733653039370a346539373339356437343664376665383735623531326532383635336563
+          3666
+
