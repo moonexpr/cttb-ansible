@@ -20,6 +20,20 @@ menuentry "{{ ai.description }}" {
 {% endfor %}
 {% endfor %}
 
+{% if ni_serve_slim_iso | default(false) %}
+{# Full-ISO fallbacks — the stock 3.0 GB image; needs ~6 GB+ RAM for casper's
+   url= RAM-load, but carries pool/restricted (NVIDIA) and linux-firmware. #}
+{% for m in ni_2404_images %}
+{% set path = m.os + "/" + m.type + "-" + m.name + "-" + m.arch %}
+{% for ai in m.autoinstall %}
+menuentry "{{ ai.description }} (full ISO)" {
+    linux {{ path }}/{{ m.kernel_path }} noprompt ip=dhcp ipv6.disable=1 url={{ ni_www }}/{{ m.os }}-{{ m.type }}-{{ m.name }}-{{ m.arch }}.iso autoinstall ds="nocloud-net;s={{ ni_www }}/autoinstall/{{ m.os }}/{{ ai.name }}/" cloud-config-url={{ ni_www }}/autoinstall/{{ m.os }}/{{ ai.name }}/user-data
+    initrd {{ path }}/{{ m.initrd_path }}
+}
+
+{% endfor %}
+{% endfor %}
+{% endif %}
 menuentry "Boot from local disk" {
     exit
 }

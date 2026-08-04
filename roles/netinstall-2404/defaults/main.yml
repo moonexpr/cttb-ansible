@@ -85,8 +85,11 @@ ni_wifi_password: ""
 
 # PXE menu behavior
 # Set ni_pxe_default to a LABEL name to auto-select on timeout.
-# Use "BootLocal" for normal operation, "Autoinstall-noble-desktop" for upgrade rollouts.
-ni_pxe_default: "BootLocal"
+# Use "BootLocal" for normal operation; during upgrade rollouts the slim
+# desktop autoinstall is the timeout default — any machine that PXE-boots
+# and sits through the timeout gets reimaged. Restore with:
+#   utils/pb deploy-netinstall-2404 -e ni_pxe_default=BootLocal -t ni_pxe_menu
+ni_pxe_default: "Autoinstall-noble-desktop-minimal"
 ni_pxe_timeout: 100
 
 # GRUB EFI PXE timeout in seconds (GRUB uses seconds, unlike pxelinux's 1/10s units)

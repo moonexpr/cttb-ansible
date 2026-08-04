@@ -29,6 +29,21 @@ LABEL Autoinstall-{{m.name}}-{{ai.name}}
     ENDTEXT
 {% endfor %}
 {% endfor %}
+{% if ni_serve_slim_iso | default(false) %}
+{% for m in ni_2404_images %}
+{% set path = m.os + "/" + m.type + "-" + m.name + "-" + m.arch %}
+{% for ai in m.autoinstall %}
+LABEL Autoinstall-{{m.name}}-{{ai.name}}-full
+    MENU LABEL {{ai.description}} (full ISO)
+    KERNEL {{ni_www}}/{{path}}/{{m.kernel_path}}
+    INITRD {{ni_www}}/{{path}}/{{m.initrd_path}}
+    APPEND noprompt ip=dhcp ipv6.disable=1 url={{ni_www}}/{{path}}.iso autoinstall ds=nocloud-net;s={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/ ---
+    TEXT HELP
+    {{ai.description}} via autoinstall, stock 3.0 GB ISO (needs ~6 GB+ RAM)
+    ENDTEXT
+{% endfor %}
+{% endfor %}
+{% endif %}
 MENU SEPARATOR
 {% for m in ni_images|default([]) %}
 MENU BEGIN {{m.os}} {{m.type}} ({{m.arch}}) [legacy]
