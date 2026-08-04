@@ -21,9 +21,9 @@ LABEL BootLocal
 {% for ai in m.autoinstall %}
 LABEL Autoinstall-{{m.name}}-{{ai.name}}
     MENU LABEL {{ai.description}}
-    KERNEL {{ni_www}}/{{path}}/{{m.kernel_path}}
-    INITRD {{ni_www}}/{{path}}/{{m.initrd_path}}
-    APPEND noprompt ip=dhcp ipv6.disable=1 url={{ni_www}}/{{path}}{{slim}}.iso autoinstall ds=nocloud-net;s={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/ ---
+    KERNEL {{ni_boot_www|default(ni_www)}}/{{path}}/{{m.kernel_path}}
+    INITRD {{ni_boot_www|default(ni_www)}}/{{path}}/{{m.initrd_path}}
+    APPEND noprompt ip=dhcp ipv6.disable=1 url={{ni_boot_www|default(ni_www)}}/{{path}}{{slim}}.iso autoinstall ds=nocloud-net;s={{ni_boot_www|default(ni_www)}}/autoinstall/{{m.os}}/{{ai.name}}/ cloud-config-url={{ni_boot_www|default(ni_www)}}/autoinstall/{{m.os}}/{{ai.name}}/user-data ---
     TEXT HELP
     {{ai.description}} via autoinstall (Ubuntu 24.04 LTS)
     ENDTEXT
@@ -35,9 +35,9 @@ LABEL Autoinstall-{{m.name}}-{{ai.name}}
 {% for ai in m.autoinstall %}
 LABEL Autoinstall-{{m.name}}-{{ai.name}}-full
     MENU LABEL {{ai.description}} (full ISO)
-    KERNEL {{ni_www}}/{{path}}/{{m.kernel_path}}
-    INITRD {{ni_www}}/{{path}}/{{m.initrd_path}}
-    APPEND noprompt ip=dhcp ipv6.disable=1 url={{ni_www}}/{{path}}.iso autoinstall ds=nocloud-net;s={{ni_www}}/autoinstall/{{m.os}}/{{ai.name}}/ ---
+    KERNEL {{ni_boot_www|default(ni_www)}}/{{path}}/{{m.kernel_path}}
+    INITRD {{ni_boot_www|default(ni_www)}}/{{path}}/{{m.initrd_path}}
+    APPEND noprompt ip=dhcp ipv6.disable=1 url={{ni_boot_www|default(ni_www)}}/{{path}}.iso autoinstall ds=nocloud-net;s={{ni_boot_www|default(ni_www)}}/autoinstall/{{m.os}}/{{ai.name}}/ cloud-config-url={{ni_boot_www|default(ni_www)}}/autoinstall/{{m.os}}/{{ai.name}}/user-data ---
     TEXT HELP
     {{ai.description}} via autoinstall, stock 3.0 GB ISO (needs ~6 GB+ RAM)
     ENDTEXT
@@ -60,8 +60,8 @@ MENU END
 {% endfor %}
 LABEL Memtest
     MENU LABEL Memtest
-    KERNEL {{ni_www}}/memdisk
-    INITRD {{ni_www}}/memtest.iso
+    KERNEL {{ni_boot_www|default(ni_www)}}/memdisk
+    INITRD {{ni_boot_www|default(ni_www)}}/memtest.iso
     APPEND iso raw
     TEXT HELP
     Test your memory with memtest

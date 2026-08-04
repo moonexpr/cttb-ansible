@@ -19,6 +19,14 @@ ni_server: "http://pxe.{{dns_domain}}"
 ni_www: "{{ni_server}}/netinstall"
 ni_preseed: "{{ni_server}}/netinstall/preseed"
 
+# Boot-critical URL base for the PXE menu kernel arguments (casper ISO url=,
+# autoinstall seed ds=…s=, cloud-config-url). IP literal, NOT pxe.cttb: the
+# live system's early-boot cloud-init can race DNS readiness, and a failed
+# seed fetch silently drops the installer to the interactive Welcome screen
+# (drbu-cdorm pc1/pc4, 2026-08-03). GRUB fetches kernel/initrd itself before
+# this, so only these cmdline URLs need the literal.
+ni_boot_www: "http://10.11.1.23/netinstall"
+
 # various assets like isos, fonts, odd packages, etc, basically anything too
 # big to fit in a repository
 ansible_assets_url: "http://storehouse.{{dns_domain}}/ansible"

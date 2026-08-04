@@ -13,7 +13,7 @@ set timeout={{ ni_grub_timeout | default(10) }}
 {% set path = m.os + "/" + m.type + "-" + m.name + "-" + m.arch %}
 {% for ai in m.autoinstall %}
 menuentry "{{ ai.description }}" {
-    linux {{ path }}/{{ m.kernel_path }} noprompt ip=dhcp ipv6.disable=1 url={{ ni_www }}/{{ m.os }}-{{ m.type }}-{{ m.name }}-{{ m.arch }}{{ slim }}.iso autoinstall ds="nocloud-net;s={{ ni_www }}/autoinstall/{{ m.os }}/{{ ai.name }}/" cloud-config-url={{ ni_www }}/autoinstall/{{ m.os }}/{{ ai.name }}/user-data
+    linux {{ path }}/{{ m.kernel_path }} noprompt ip=dhcp ipv6.disable=1 url={{ ni_boot_www | default(ni_www) }}/{{ m.os }}-{{ m.type }}-{{ m.name }}-{{ m.arch }}{{ slim }}.iso autoinstall ds="nocloud-net;s={{ ni_boot_www | default(ni_www) }}/autoinstall/{{ m.os }}/{{ ai.name }}/" cloud-config-url={{ ni_boot_www | default(ni_www) }}/autoinstall/{{ m.os }}/{{ ai.name }}/user-data
     initrd {{ path }}/{{ m.initrd_path }}
 }
 
