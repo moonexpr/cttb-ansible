@@ -9,20 +9,21 @@ sys.path.insert(0, str(Path(__file__).parent / "sysadmintk"))
 import ldap_lib as l
 
 
-def _ctx(anon: bool = False) -> l.LdapContext:
-    return l.LdapContext.default(anon=anon)
+def _ctx(args=None, *, anon: bool = False) -> l.LdapContext:
+    """Build a context, honouring --admin when the subcommand offers it."""
+    return l.LdapContext.default(anon=anon, admin=getattr(args, "admin", False))
 
 
 # ── subcommand handlers ───────────────────────────────────────────────────────
 
 def cmd_search(args):
-    ctx = _ctx(anon=args.anon)
+    ctx = _ctx(args, anon=args.anon)
     raw = l.search_raw(ctx, args.filter, args.attrs or [], base=args.base)
     print(raw, end="")
 
 
 def cmd_group(args):
-    ctx = _ctx()
+    ctx = _ctx(args)
     if args.group_cn == "--all" or args.all:
         for g in l.all_groups(ctx):
             g.display()
@@ -31,7 +32,7 @@ def cmd_group(args):
 
 
 def cmd_apply(args):
-    ctx = _ctx()
+    ctx = _ctx(args)
     if args.file == "-":
         ldif = sys.stdin.read()
     else:
@@ -40,12 +41,12 @@ def cmd_apply(args):
 
 
 def cmd_add_to_group(args):
-    ctx = _ctx()
+    ctx = _ctx(args)
     l.add_to_group(ctx, args.uid, args.group, dry_run=not args.risks_confirmed)
 
 
 def cmd_passwd(args):
-    ctx = _ctx()
+    ctx = _ctx(args)
     if sys.stdin.isatty():
         pw1 = getpass.getpass(f"new password for {args.uid}: ")
         pw2 = getpass.getpass("confirm: ")
@@ -62,7 +63,7 @@ def cmd_passwd(args):
 
 
 def cmd_add_user(args):
-    ctx = _ctx()
+    ctx = _ctx(args)
     l.add_user(
         ctx,
         uid=args.uid,
@@ -90,12 +91,16 @@ def main():
     sp.add_argument("--anon", action="store_true", help="anonymous bind")
     sp.add_argument("filter", metavar="FILTER")
     sp.add_argument("attrs", nargs="*", metavar="ATTR")
+    sp.add_argument("--admin", action="store_true",
+                    help="bind as the directory rootdn (CTTB_LDAP_ADMIN_USERNAME/_PASSWD)")
     sp.set_defaults(func=cmd_search)
 
     # group
     sp = sub.add_parser("group", help="list posixGroup members (primary + secondary)")
     sp.add_argument("group_cn", metavar="GROUP-CN", help="group cn, or --all")
     sp.add_argument("--all", action="store_true", help="list every group")
+    sp.add_argument("--admin", action="store_true",
+                    help="bind as the directory rootdn (CTTB_LDAP_ADMIN_USERNAME/_PASSWD)")
     sp.set_defaults(func=cmd_group)
 
     # apply
@@ -103,6 +108,8 @@ def main():
     sp.add_argument("file", metavar="FILE", help="LDIF file path or - for stdin")
     sp.add_argument("--risks-confirmed", action="store_true",
                     help="actually apply (default is dry-run)")
+    sp.add_argument("--admin", action="store_true",
+                    help="bind as the directory rootdn (CTTB_LDAP_ADMIN_USERNAME/_PASSWD)")
     sp.set_defaults(func=cmd_apply)
 
     # add-to-group
@@ -110,6 +117,8 @@ def main():
     sp.add_argument("uid", metavar="UID")
     sp.add_argument("group", metavar="GROUP-CN")
     sp.add_argument("--risks-confirmed", action="store_true")
+    sp.add_argument("--admin", action="store_true",
+                    help="bind as the directory rootdn (CTTB_LDAP_ADMIN_USERNAME/_PASSWD)")
     sp.set_defaults(func=cmd_add_to_group)
 
     # passwd
@@ -117,6 +126,8 @@ def main():
     sp.add_argument("uid", metavar="UID")
     sp.add_argument("--risks-confirmed", action="store_true",
                     help="actually change (default shows what would happen)")
+    sp.add_argument("--admin", action="store_true",
+                    help="bind as the directory rootdn (CTTB_LDAP_ADMIN_USERNAME/_PASSWD)")
     sp.set_defaults(func=cmd_passwd)
 
     # add-user
@@ -131,6 +142,8 @@ def main():
     sp.add_argument("--home")
     sp.add_argument("--shell", default="/bin/bash")
     sp.add_argument("--risks-confirmed", action="store_true")
+    sp.add_argument("--admin", action="store_true",
+                    help="bind as the directory rootdn (CTTB_LDAP_ADMIN_USERNAME/_PASSWD)")
     sp.set_defaults(func=cmd_add_user)
 
     args = p.parse_args()

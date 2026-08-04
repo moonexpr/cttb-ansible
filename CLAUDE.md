@@ -148,6 +148,7 @@ utils/wiki maint <subcommand> [args...]                # run MW maintenance/run.
 
 Unified Python CLI for the CTTB directory. Defaults: `ldap://ldap.cttb`, `dc=cttb`, authenticated simple bind, StartTLS (cert validation off). Run locally — no jump host needed.
 **Credentials** in the platform credential store (`CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`); env vars override. Username may be a bare uid or a full DN.
+**`--admin`** binds as the directory rootdn (`CTTB_LDAP_ADMIN_USERNAME`, `CTTB_LDAP_ADMIN_PASSWD`) instead of your own account. Entry creation under `ou=People`, and modifies the personal bind answers with LDAP result 50 (insufficient access), need it.
 **Library**: `utils/sysadmintk/ldap_lib.py` (LdapContext + API functions). Shared base: `utils/sysadmintk/cttb_api.py`.
 **All writes are dry-run by default** — pass `--risks-confirmed` to mutate.
 
@@ -202,7 +203,7 @@ The file store is chained last on every platform, so headless servers, cron, and
 
 - **Template**: `.claude/.env.example` — env vars are an accepted fallback for the wiki/LDAP credentials only, and are read *before* the store by `credential_or_env()`.
 - **`CTTB_VAULT_PASS` has no env-var path.** It resolves only through the store (or the 0600 file), via `utils/vault-pass`.
-- **Services**: `CTTB_VAULT_PASS`, `WIKI_CTTB_BOT_USER`, `WIKI_CTTB_BOT_PASSWD`, `CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`. (`VAJRA_SRC` is a path, not a secret — env only.)
+- **Services**: `CTTB_VAULT_PASS`, `WIKI_CTTB_BOT_USER`, `WIKI_CTTB_BOT_PASSWD`, `CTTB_LDAP_USERNAME`, `CTTB_LDAP_PASSWD`, `CTTB_LDAP_ADMIN_USERNAME`, `CTTB_LDAP_ADMIN_PASSWD`. (`VAJRA_SRC` is a path, not a secret — env only.)
 
 Rule: never hardcode a token, password, or personal account name in a committed file. Use the `<redacted>` placeholder in docs/examples and read live values from the store/env at runtime.
 

@@ -2,6 +2,8 @@
 CTTB LDAP API — wraps ldapsearch / ldapmodify / ldappasswd.
 
   LdapContext   config + credentials; extends CttbContext
+                .default()  binds as the calling sysadmin
+                .admin()    binds as the directory rootdn
   search()      ldapsearch wrapper → list of entry dicts
   group_members() resolve posixGroup members (primary + secondary)
   apply_ldif()  ldapmodify wrapper (dry-run by default)
@@ -20,6 +22,25 @@ from typing import Optional
 from cttb_api import CttbContext, credential_or_env
 
 
+# ── Credential services ───────────────────────────────────────────────────────
+
+# The calling sysadmin's own account — enough for reads and for the writes the
+# slapd ACL grants to `it` members.
+USER_SERVICES = ("CTTB_LDAP_USERNAME", "CTTB_LDAP_PASSWD")
+
+# The directory rootdn.  Needed for entry creation under ou=People and for any
+# modify the personal bind answers with LDAP result 50 (insufficient access).
+ADMIN_SERVICES = ("CTTB_LDAP_ADMIN_USERNAME", "CTTB_LDAP_ADMIN_PASSWD")
+
+_STORE_HINT = (
+    "Add them to the platform credential store. On macOS:\n"
+    "  security add-generic-password -s {user_svc} -a \"$USER\" -w 'cn=admin,dc=cttb'\n"
+    "  security add-generic-password -s {pw_svc} -a \"$USER\" -w\n"
+    "On Linux/WSL:  secret-tool store --label={user_svc} service {user_svc}\n"
+    "Headless:      printf '%s' '<value>' > ~/.config/cttb/secrets/{user_svc}"
+)
+
+
 # ── Context ───────────────────────────────────────────────────────────────────
 
 @dataclass
@@ -33,17 +54,37 @@ class LdapContext(CttbContext):
     anon: bool = False
 
     @classmethod
-    def default(cls, anon: bool = False) -> "LdapContext":
+    def default(cls, anon: bool = False, admin: bool = False) -> "LdapContext":
+        """Resolve a bind identity from the credential store.
+
+        admin=True binds as the directory rootdn (ADMIN_SERVICES) instead of
+        the calling sysadmin (USER_SERVICES).  Either pair may be overridden
+        by an environment variable of the same name; credential_or_env()
+        checks the environment before the store.
+        """
         if anon:
             return cls(anon=True)
-        user = credential_or_env("CTTB_LDAP_USERNAME")
-        pw   = credential_or_env("CTTB_LDAP_PASSWD")
+        user_svc, pw_svc = ADMIN_SERVICES if admin else USER_SERVICES
+        user = credential_or_env(user_svc)
+        pw   = credential_or_env(pw_svc)
         if not user or not pw:
             raise RuntimeError(
-                "CTTB_LDAP_USERNAME / CTTB_LDAP_PASSWD not in env or Keychain"
+                f"{user_svc} / {pw_svc} not in env or the credential store.\n"
+                + _STORE_HINT.format(user_svc=user_svc, pw_svc=pw_svc)
             )
         dn = user if "=" in user else f"uid={user},{cls.people_ou}"
         return cls(bind_dn=dn, bind_pw=pw)
+
+    @classmethod
+    def admin(cls) -> "LdapContext":
+        """Bind as the directory rootdn.
+
+        Creating entries under ou=People is admin-only, and some modifies the
+        personal bind is refused (LDAP result 50) succeed here.  The DN and
+        password come from the credential store, so the secret is never typed
+        on a command line or left in shell history.
+        """
+        return cls.default(admin=True)
 
     def bind_args(self) -> list[str]:
         if self.anon:

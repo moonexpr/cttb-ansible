@@ -43,37 +43,21 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "sysadmintk"))
 
 import ldap_lib as l  # noqa: E402
-from cttb_api import credential_or_env  # noqa: E402
 
 
-def use_admin_bind() -> str:
-    """Bind as the directory rootdn instead of the calling sysadmin.
+def build_context(admin: bool) -> "l.LdapContext":
+    """Resolve the bind identity, as the rootdn when admin is set.
 
     Creating entries under ou=People is admin-only; a personal account in the
-    `it` group gets LDAP result 50. The rootdn DN and password are read from
-    the platform credential store (macOS Keychain / Secret Service / the 0600
-    file store) under CTTB_LDAP_ADMIN_USERNAME and CTTB_LDAP_ADMIN_PASSWD, so
-    the secret is never typed on a command line or left in shell history.
-
-    LdapContext.default() resolves CTTB_LDAP_USERNAME / CTTB_LDAP_PASSWD with
-    the environment taking precedence over the store, so exporting the admin
-    values here redirects the bind for this process only.
+    `it` group gets LDAP result 50.  Both identities come from the platform
+    credential store via ldap_lib (CTTB_LDAP_ADMIN_USERNAME /
+    CTTB_LDAP_ADMIN_PASSWD for the rootdn), so the secret is never typed on a
+    command line or left in shell history.
     """
     try:
-        dn = credential_or_env("CTTB_LDAP_ADMIN_USERNAME")
-        pw = credential_or_env("CTTB_LDAP_ADMIN_PASSWD")
-    except Exception as exc:  # noqa: BLE001
-        raise SystemExit(f"error: could not read admin credentials from the store: {exc}")
-    if not dn or not pw:
-        raise SystemExit(
-            "error: --admin needs CTTB_LDAP_ADMIN_USERNAME and CTTB_LDAP_ADMIN_PASSWD "
-            "in the credential store. On macOS:\n"
-            "  security add-generic-password -s CTTB_LDAP_ADMIN_USERNAME -a \"$USER\" -w 'cn=admin,dc=cttb'\n"
-            "  security add-generic-password -s CTTB_LDAP_ADMIN_PASSWD  -a \"$USER\" -w"
-        )
-    os.environ["CTTB_LDAP_USERNAME"] = dn
-    os.environ["CTTB_LDAP_PASSWD"] = pw
-    return dn
+        return l.LdapContext.default(admin=admin)
+    except RuntimeError as exc:
+        raise SystemExit(f"error: {exc}")
 
 
 # ── CSV parsing ──────────────────────────────────────────────────────────────
@@ -322,8 +306,9 @@ def main() -> int:
                    help="actually write to the directory")
     args = p.parse_args()
 
+    ctx = build_context(args.admin)
     if args.admin:
-        print(f"binding as {use_admin_bind()} (credentials from the platform store)")
+        print(f"binding as {ctx.bind_dn} (credentials from the platform store)")
 
     roster = read_roster(args.csv, args.name_mode)
     validate(roster)
@@ -331,7 +316,6 @@ def main() -> int:
         print("roster is empty; nothing to do")
         return 0
 
-    ctx = l.LdapContext.default()
     existing_uids, used_numbers = directory_state(ctx)
 
     if args.verify_only:
