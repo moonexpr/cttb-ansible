@@ -11,13 +11,18 @@
 #   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l dvgs_cs_lab
 #   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l dvbs_cs_lab
 #   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l drbu_cs_lab
-#   ansible-playbook plays/sudhanix26-rollout-stage2.yml  # all labs
+#   ansible-playbook plays/sudhanix26-rollout-stage2.yml -l drbu_cdorm
+#
+# The play targets `all`, so -l is what scopes a run — any host or group in the
+# inventory is reachable without editing this file. There is no safe bare
+# invocation: with no -l this targets every host in
+# inventory/sudhanix26_hosts.ini, servers and the pxe entry included.
 #
 # No --ask-become-pass: the administrator become password is vaulted in
 # group_vars/cttb_hosts.yml and decrypts via ansible.cfg's vault_password_file.
 # Run from the repository root so that relative path resolves.
 
-- hosts: dvgs_cs_lab:dvbs_cs_lab:drbu_cs_lab
+- hosts: all
   become: true
   environment:
     DEBIAN_FRONTEND: noninteractive
