@@ -289,6 +289,34 @@
       - lookandfeel
     block:
 
+      # Plank system dconf default must land in the configure block (after the
+      # theme files are installed) so a config-only refresh sets the default
+      # theme to the freshly-deployed mcOS-BS-iMacM1-Black dock theme.
+      - name: ensure dconf site db directory exists
+        file:
+          path: /etc/dconf/db/site.d
+          state: directory
+          mode: '0755'
+          owner: root
+          group: root
+        tags:
+          - sudhanix-core
+          - config
+          - dconf
+
+      - name: deploy plank dock1 system dconf default
+        copy:
+          src: dconf-db/00-plank-dock1
+          dest: /etc/dconf/db/site.d/00-plank-dock1
+          mode: '0644'
+          owner: root
+          group: root
+        register: plank_dconf
+        tags:
+          - sudhanix-core
+          - config
+          - dconf
+
       - name: setup default account files
         copy:
           src: config/etc-skel/

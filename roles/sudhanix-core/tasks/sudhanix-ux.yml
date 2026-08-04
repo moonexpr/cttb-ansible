@@ -2,7 +2,8 @@
 # Sudhanix UX — settings glue for the XFCE session.
 #
 # Keyboard shortcuts, window tiling, Thunar defaults, devilspie2 rules,
-# system dconf defaults (Plank dock layout, light-locker, GNOME interface),
+# system dconf defaults (light-locker, GNOME interface; Plank dock default
+# now lives in lookandfeel.yml),
 # xfconf templates (appfinder, notifyd, power-manager, session),
 # session-watchdog + chrome-locks autostart, GRUB cmdline tweaks.
 #
@@ -35,19 +36,6 @@
         loop:
           - /etc/dconf/db/site.d
           - /etc/dconf/profile
-        tags:
-          - sudhanix-core
-          - sudhanix-ux
-          - dconf
-
-      - name: deploy plank dock1 system dconf default
-        copy:
-          src: dconf-db/00-plank-dock1
-          dest: /etc/dconf/db/site.d/00-plank-dock1
-          mode: '0644'
-          owner: root
-          group: root
-        register: plank_dconf
         tags:
           - sudhanix-core
           - sudhanix-ux
