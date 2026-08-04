@@ -48,6 +48,10 @@ def main() -> int:
     ctx.ensure_dirs()
     play = resolve_playbook(ctx, args.playbook)
 
+    warning = ae.ssh_agent_warning()
+    if warning:
+        print(warning, file=sys.stderr)
+
     cmd = ["ansible-playbook", str(play), "--diff", *args.options]
     return subprocess.run(cmd, env=ctx.env()).returncode
 

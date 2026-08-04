@@ -58,6 +58,40 @@ def cfg_inventory(base: Path) -> str | None:
     return str(base / value)
 
 
+_AGENT_HINT = """warning: {reason}.
+         Fleet plays authenticate as `administrator` over the cttb-automation
+         key, and ansible.cfg leaves private_key_file unset — the key is only
+         ever offered from an agent. Without one, ansible does not fail early:
+         it reaches Gathering Facts and marks every host UNREACHABLE with
+         "Permission denied (publickey,password)", which reads like the hosts
+         are broken rather than like a missing credential.
+         Load the key first:
+           eval "$(ssh-agent -s)"        # fish: eval (ssh-agent -c)
+           utils/load-cttb-key"""
+
+
+def ssh_agent_warning() -> str | None:
+    """A warning to print before a play runs, or None when the agent is ready.
+
+    Silent on the normal path — an agent holding at least one identity returns
+    None. It warns rather than refuses because not every play reaches the
+    fleet: localhost plays, the `pxe` host (root, its own key), and operators
+    who set private_key_file themselves are all legitimately agentless.
+    """
+    if not os.environ.get("SSH_AUTH_SOCK"):
+        return _AGENT_HINT.format(
+            reason="no ssh-agent is running (SSH_AUTH_SOCK is unset)")
+    try:
+        probe = subprocess.run(["ssh-add", "-l"], capture_output=True, text=True)
+    except OSError:
+        return None  # no ssh-add to ask; stay quiet rather than cry wolf
+    if probe.returncode == 0:
+        return None
+    return _AGENT_HINT.format(
+        reason="the ssh-agent holds no identities" if probe.returncode == 1
+        else "the ssh-agent named by SSH_AUTH_SOCK is unreachable")
+
+
 @dataclass(frozen=True)
 class AnsibleContext(CttbContext):
     """Resolved Ansible environment. Build with `.default()`; everything other
