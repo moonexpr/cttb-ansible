@@ -46,12 +46,30 @@ dhcp-option=option:ntp-server,10.11.1.1
 
 # PXE / network boot. TFTP server address follows a single variable (#69).
 #dhcp-boot=tag:tftp,lpxelinux.0,pxe,{{ dnsmasq_pxe_server }}
-# Architecture detection for UEFI vs BIOS PXE boot
+# Architecture detection for UEFI vs BIOS PXE boot (DHCP option 93).
+#   0     = legacy BIOS      -> pxelinux.0 (identical file to lpxelinux.0 on
+#                               the server, so HTTP KERNEL/INITRD urls work)
+#   7 / 9 = EFI x86-64
+# (arch 6, EFI IA32, is not served — no 32-bit EFI loader is staged.)
+#
+# UEFI clients are sent shimx64.efi, NOT grubx64.efi directly. grubx64.efi is
+# the Canonical-signed netboot GRUB; firmware with Secure Boot enabled refuses
+# to launch it on its own and it must be chainloaded by the Microsoft-signed
+# shim. shim then loads grubx64.efi from the same TFTP directory, which reads
+# its config from the GRUB prefix /grub -> /srv/netinstall/grub/grub.cfg.
+# Pointing straight at grubx64.efi only works while Secure Boot is off.
+# Roll back by restoring: dhcp-boot=tag:efi-x86_64,grubx64.efi,,<pxe-server>
 dhcp-match=set:efi-x86_64,option:client-arch,7
 dhcp-match=set:efi-x86_64,option:client-arch,9
 dhcp-match=set:bios,option:client-arch,0
-dhcp-boot=tag:efi-x86_64,grubx64.efi,,{{ dnsmasq_pxe_server }}
+#
+# Untagged default FIRST, tagged overrides after — this is the ordering in
+# Ubuntu's own netboot documentation. It also means firmware that reports an
+# arch we do not tag, or omits option 93 entirely, still gets a bootfile
+# instead of nothing at all.
+dhcp-boot=pxelinux.0,,{{ dnsmasq_pxe_server }}
 dhcp-boot=tag:bios,pxelinux.0,,{{ dnsmasq_pxe_server }}
+dhcp-boot=tag:efi-x86_64,shimx64.efi,,{{ dnsmasq_pxe_server }}
 
 #netboot tftp
 dhcp-option=tag:tftp,67,lpxelinux.0
