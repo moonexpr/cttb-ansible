@@ -16,6 +16,23 @@
       group: root
       mode: 0644
 
+  # UEFI network boot chain: firmware -> shimx64.efi -> grubx64.efi -> grub/grub.cfg.
+  # Both are the Canonical-signed binaries (shim-signed, grub-efi-amd64-signed);
+  # grubx64.efi is grubnetx64.efi.signed, the netboot build with efinet/tftp, NOT
+  # the disk-boot grubx64.efi.signed from the same package. Its GRUB prefix is
+  # /grub. These were hand-placed on pxe.cttb for months and survived only by
+  # luck — a container rebuild would have taken UEFI booting with it.
+  - name: copy EFI bootloaders for UEFI pxebooting
+    copy:
+      src: "efiboot/"
+      dest: "{{ni_tftp_dir}}/"
+      owner: root
+      group: root
+      mode: 0644
+    tags:
+      - ni_pxe
+      - ni_efi
+
   - name: create pxe menu dir
     file:
       path: "{{ni_pxe_menu_dir}}"
@@ -45,9 +62,12 @@
     tags:
       - ni_pxe_menu
 
-  - name: create grub/boot dir for UEFI PXE
+  # grubx64.efi on pxe.cttb carries GRUB prefix /grub, so it reads
+  # {{ni_tftp_dir}}/grub/grub.cfg. Writing boot/grub/grub.cfg is a silent
+  # no-op — see e7bbe3a0. deploy-netinstall-2404.yml uses this same path.
+  - name: create grub dir for UEFI PXE
     file:
-      path: "{{ni_tftp_dir}}/boot/grub"
+      path: "{{ni_tftp_dir}}/grub"
       state: directory
       owner: root
       group: root
@@ -59,10 +79,18 @@
   - name: deploy grub.cfg for UEFI EFI PXE boot
     template:
       src: pxe/grub-cfg-2404.j2
-      dest: "{{ni_tftp_dir}}/boot/grub/grub.cfg"
+      dest: "{{ni_tftp_dir}}/grub/grub.cfg"
       owner: root
       group: root
       mode: 0644
+    tags:
+      - ni_pxe_menu
+      - ni_grub
+
+  - name: remove the dead boot/grub/grub.cfg that shadows nothing
+    file:
+      path: "{{ni_tftp_dir}}/boot/grub/grub.cfg"
+      state: absent
     tags:
       - ni_pxe_menu
       - ni_grub
