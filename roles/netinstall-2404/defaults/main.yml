@@ -85,11 +85,17 @@ ni_wifi_password: ""
 
 # PXE menu behavior
 # Set ni_pxe_default to a LABEL name to auto-select on timeout.
-# Use "BootLocal" for normal operation; during upgrade rollouts the slim
-# desktop autoinstall is the timeout default — any machine that PXE-boots
-# and sits through the timeout gets reimaged. Restore with:
-#   utils/pb deploy-netinstall-2404 -e ni_pxe_default=BootLocal -t ni_pxe_menu
-ni_pxe_default: "Autoinstall-noble-desktop-minimal"
+#
+# This MUST stay "BootLocal". Any other value means a machine that PXE-boots
+# and sits through ni_pxe_timeout gets silently reimaged — including one an
+# operator is only using to test network boot. Reimaging is opt-in per MAC via
+# plays/sudhanix26-rollout-stage0-bios.yml, which stamps a pxelinux.cfg/01-<mac>
+# one-shot; it is never armed fleet-wide through the shared menu.
+#
+# Arm the shared menu for a rollout only deliberately, and disarm the same day:
+#   utils/pb deploy-netinstall-2404 -e ni_pxe_default=Autoinstall-noble-desktop-minimal -t ni_pxe_menu
+#   utils/pb deploy-netinstall-2404 -t ni_pxe_menu     # back to BootLocal
+ni_pxe_default: "BootLocal"
 ni_pxe_timeout: 100
 
 # GRUB EFI PXE timeout in seconds (GRUB uses seconds, unlike pxelinux's 1/10s units)
