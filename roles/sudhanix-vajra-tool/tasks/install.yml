@@ -43,6 +43,7 @@
     content: |
       deb [arch=amd64 signed-by=/usr/share/keyrings/cttb-repo.asc] http://apt.{{ dns_domain }}/cttb-repos/apt/ubuntu noble main
   register: cttb_extras_source
+  when: not vajra_install_from_local_deb | default(false)
   tags:
     - vajra
     - vajra-install
@@ -80,10 +81,35 @@
     state: latest
     update_cache: yes
     cache_valid_time: 3600
+  when: not vajra_install_from_local_deb | default(false)
   tags:
     - vajra
     - vajra-install
     - install
+
+# Off-campus hosts cannot reach apt.cttb, but the .deb is vendored in this
+# role's files/, so vajra does not have to be skipped entirely. Campus hosts
+# leave vajra_install_from_local_deb unset and take the apt path above
+# unchanged; only group_vars/offsite turns this on.
+- name: install vajra from the vendored .deb (no apt.cttb)
+  when: vajra_install_from_local_deb | default(false)
+  tags:
+    - vajra
+    - vajra-install
+    - install
+  block:
+    - name: stage the vendored vajra .deb
+      copy:
+        src: vajra_1.0.0-1_amd64.deb
+        dest: /tmp/vajra_1.0.0-1_amd64.deb
+        owner: root
+        group: root
+        mode: '0644'
+      register: vajra_local_deb
+
+    - name: install vajra from the staged .deb
+      apt:
+        deb: "{{ vajra_local_deb.dest }}"
 
 - name: remove legacy zipapp install (pre-deb layout)
   file:

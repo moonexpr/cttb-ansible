@@ -1,0 +1,100 @@
+---
+# Off-campus ("offsite") Sudhanix 26 hosts: no DNS for *.cttb, no route to
+# 10.11.0.0/16, public internet only.
+#
+# group_vars/all assumes campus infrastructure in every URL it defines. This
+# file rebinds those, and deliberately leaves campus-only service variables
+# UNDEFINED so the roles that gate on `is defined` skip themselves cleanly.
+# Group membership is the entire switch -- nothing here is host-specific.
+#
+# Consumed by plays/sudhanix26-rollout-stage2-offsite.yml against
+# inventory/offsite.ini.
+
+# ── apt ──────────────────────────────────────────────────────────────────────
+# roles/common/templates/ubuntu.sources.j2 renders:
+#   URIs: {{deb_mirror}}/ubuntu/
+#   Suites: {{apt_codename}} -updates -backports -security   (apt_codename=noble)
+#   Components: main restricted universe multiverse
+# archive.ubuntu.com carries all four suites with all four components, so one
+# variable is the whole rebind -- no separate security URI and no template
+# change. Matches what stage 0 already seeded (create-sudhanix-s0-installer.py).
+#
+# Without this, roles/common rewrites /etc/apt/sources.list.d/ubuntu.sources to
+# http://apt.cttb/mirrors/ubuntu/ and every later apt: task fails. It is the
+# first thing that would break an offsite run.
+deb_mirror: "http://archive.ubuntu.com"
+
+# apt_url / apt_host / cttb_repo stay campus-facing ON PURPOSE. Nothing in this
+# play's role set reaches them once the seams below are bound, so leaving them
+# pointed at apt.cttb makes any future task that starts using them fail loudly
+# instead of quietly half-working.
+
+# ── Google Chrome ────────────────────────────────────────────────────────────
+# roles/sudhanix-core/tasks/sw-browser.yml defaults both of these to apt.cttb.
+chrome_signing_key_url: "https://dl.google.com/linux/linux_signing_key.pub"
+chrome_repo: "https://dl.google.com/linux/chrome/deb/"
+
+# ── desktop assets ───────────────────────────────────────────────────────────
+# Base URL for every tarball group_vars/all points at storehouse.cttb. Empty
+# here on purpose: the play asserts it is set, so a forgotten relay fails in the
+# first second rather than ten minutes later inside lookandfeel.yml. Set per run:
+#   utils/offsite-relay run <host>
+#
+# Forward-compatible with bundling assets into the stage-0 ISO: unarchive
+# (remote_src) and apt (deb=) both accept a plain on-target path, so that change
+# is `offsite_asset_relay: /opt/sudhanix-assets` here and nothing else.
+offsite_asset_relay: ""
+ansible_assets_url: "{{ offsite_asset_relay }}"
+
+# ── vajra ────────────────────────────────────────────────────────────────────
+# roles/sudhanix-vajra-tool normally adds an apt.cttb/cttb-repos source and
+# installs `vajra` from it. Offsite it installs the .deb vendored in the role's
+# files/ instead. See that role's install.yml.
+vajra_install_from_local_deb: true
+
+# The vajra config JSON is written locally (no network at deploy time), but its
+# defaults advertise campus services. Point them at nothing rather than at hosts
+# this machine cannot reach.
+vajra_ldap_uri: ""
+
+# ── time ─────────────────────────────────────────────────────────────────────
+# group_vars/all sets ntp_servers: [ntp.cttb], which roles/time-server templates
+# into /etc/systemd/timesyncd.conf -- a dead server offsite.
+ntp_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+system_timezone: America/Los_Angeles
+
+# ── campus services deliberately left UNDEFINED ──────────────────────────────
+# Do NOT set these for an offsite host. Each role gates on `is defined` and
+# skips itself, which is exactly what we want:
+#   cups_srv                       roles/cups-client        (entire body)
+#   nfs_homes_host/_export         roles/nfs-home           (autofs block)
+#   global_proxy                   roles/common setup/default.yml (/etc/environment)
+#                                  roles/sudhanix-core sw-thunderbird.yml (proxy prefs)
+#   additional_apt_repo            roles/common setup/default.yml (PPA loop)
+# ldap-client is excluded from the play entirely -- it asserts on group
+# membership with no seam, and enabling LDAP nsswitch against an unreachable
+# directory would hang getent and login.
+
+# ── credentials ──────────────────────────────────────────────────────────────
+# Offsite hosts are installed by utils/create-sudhanix-s0-installer.py with
+# roles/netinstall-2404/defaults/main.yml's ni_admin_password_crypted -- the
+# same crypted hash as the campus `administrator` identity -- so the campus
+# become password is correct here.
+#
+# The ciphertext is copied verbatim from group_vars/cttb_hosts.yml rather than
+# referenced, because YAML anchors are file-local. It is NOT inherited by making
+# offsite a child of cttb_hosts: that group is the campus umbrella, and any
+# campus variable added there later would leak silently onto every offsite host.
+#
+# Decrypts via ansible.cfg's vault_password_file (utils/vault-pass); no
+# --ask-become-pass needed.
+ansible_become_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          39663639396437356263313034663932333731613962666161316266323338343431623030343965
+          6532613864376335666164636531313633353134396231390a383165303432396662303336613865
+          64383062626165343461633734323237316333656261303735666566383637356532303039323532
+          3662623733653039370a346539373339356437343664376665383735623531326532383635336563
+          3666

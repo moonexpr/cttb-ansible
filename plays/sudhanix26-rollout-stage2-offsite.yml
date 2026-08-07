@@ -1,0 +1,94 @@
+---
+# sudhanix26-rollout stage 2 — off-campus variant.
+#
+# Same role set as plays/sudhanix26-rollout-stage2.yml MINUS ldap-client, run
+# against hosts that cannot reach apt.cttb, storehouse.cttb, ldap-srv.cttb,
+# cups-cttb, or fileserver. group_vars/offsite does the URL rebinding; this file
+# does the role selection and the guardrails.
+#
+# Usage (the wrapper fetches assets, opens the relay, and tears it down):
+#
+#   utils/offsite-relay run sc-cslab-pc-right
+#
+# Manual equivalent:
+#
+#   ANSIBLE_INVENTORY=inventory/offsite.ini utils/pb \
+#     sudhanix26-rollout-stage2-offsite -l sc-cslab-pc-right \
+#     --skip-tags zoom -e offsite_asset_relay=http://127.0.0.1:8000
+#
+# `hosts: offsite` rather than `hosts: all`: run against the campus inventory by
+# mistake and this is a safe "no hosts matched" no-op.
+#
+# ldap-client is EXCLUDED, not tag-skipped. roles/ldap-client/tasks/main.yml
+# asserts "'ldap_clients' in group_names" with no override seam, and
+# templates/access.conf.j2 needs ldap_group_acl_string, which has no default.
+# Enabling LDAP nsswitch against a directory this host cannot reach would also
+# hang getent and login.
+#
+# --skip-tags zoom is the repo-wide standard and keeps a 294 MB .deb out of the
+# asset relay. vajra is NOT skipped: roles/sudhanix-vajra-tool installs from its
+# vendored .deb when vajra_install_from_local_deb is true (set in
+# group_vars/offsite), so the machine gets a working vajra without apt.cttb.
+
+- hosts: offsite
+  become: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+    NEEDRESTART_MODE: a
+
+  pre_tasks:
+    # Fail in the first second rather than ten minutes in. With an empty
+    # ansible_assets_url the first unarchive in sudhanix-core's lookandfeel.yml
+    # aborts the play, after the apt phase has already rewritten system state.
+    - name: assert an asset relay is bound
+      ansible.builtin.assert:
+        that:
+          - offsite_asset_relay is defined
+          - offsite_asset_relay | length > 0
+        fail_msg: >-
+          offsite_asset_relay is empty, so ansible_assets_url is empty and the
+          campus desktop tarballs cannot be fetched. Start the relay with:
+          utils/offsite-relay run {{ inventory_hostname }}
+      tags: always
+
+    # Proves group_vars/offsite actually loaded. If it did not, roles/common is
+    # about to point this host's apt at a mirror it has no route to.
+    - name: assert the apt mirror is not campus-internal
+      ansible.builtin.assert:
+        that:
+          - "'.cttb' not in deb_mirror"
+        fail_msg: >-
+          deb_mirror is still {{ deb_mirror }}. This host is not in the offsite
+          group, or group_vars/offsite is not being loaded. Check that you passed
+          ANSIBLE_INVENTORY=inventory/offsite.ini.
+      tags: always
+
+  roles:
+    - sudhanix-core     # meta deps: common, sudhanix-vajra-tool
+    - time-server       # also include_role'd by common; idempotent, runs twice
+    - cups-client       # no-ops: cups_srv undefined for offsite
+    - cttb-ca-client    # also include_role'd by common; idempotent, runs twice
+    - nfs-home          # autofs block no-ops: nfs_homes_host undefined
+
+  post_tasks:
+    # sudhanix-core hands network management to NetworkManager by dropping a
+    # netplan renderer config, and nothing ever runs `netplan apply` -- only
+    # `netplan generate`. The change therefore lands at the NEXT REBOOT. On an
+    # off-site machine with no console, a NIC that does not come back is a truck
+    # roll, so surface the state in the run output while someone is watching.
+    - name: collect post-run network state
+      ansible.builtin.shell: |
+        echo "--- /etc/netplan ---"; ls -1 /etc/netplan/
+        echo "--- nmcli device status ---"; nmcli device status 2>&1 || true
+      register: offsite_net_state
+      changed_when: false
+      tags: always
+
+    - name: report network state before anyone reboots
+      ansible.builtin.debug:
+        msg: >-
+          {{ offsite_net_state.stdout_lines }}
+          ---
+          VERIFY the NIC shows as connected under NetworkManager BEFORE
+          rebooting this host. The renderer swap takes effect at next boot.
+      tags: always
