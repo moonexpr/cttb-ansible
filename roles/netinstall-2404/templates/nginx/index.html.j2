@@ -6,6 +6,19 @@
 <title>{{ ni_server_name }} — CTTB PXE / Network Install</title>
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="citylights.min.css">
+<style>
+.chain-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 .8em;
+}
+@media (max-width: 800px) {
+  .chain-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.chain-grid fieldset { margin: 0 0 1em; }
+</style>
 </head>
 <body>
 
@@ -46,6 +59,22 @@
     GRUB EFI / PXELINUX over TFTP). Browse the served tree under
     <a href="/netinstall/">/netinstall/</a>.
   </p>
+  <p>
+    <strong>Boot options</strong> — default <strong>{{ ni_pxe_default }}</strong> after
+    {{ (ni_pxe_timeout / 10) | int }} s (BIOS) / {{ ni_grub_timeout }} s (UEFI):
+    an unattended PXE boot falls through to the local disk. Reimaging is opt-in
+    per MAC, or armed deliberately with
+    <code>-e ni_pxe_default=&lt;LABEL&gt; -t ni_pxe_menu</code>.
+  </p>
+  <div class="quick-ref">
+{% for img in ni_2404_images %}
+{% for ai in img.autoinstall %}
+    <p><code>Autoinstall-{{ img.name }}-{{ ai.name }}</code> — {{ ai.description }} ({{ img.os }} {{ img.type }} {{ img.arch }})</p>
+{% endfor %}
+{% endfor %}
+    <p><code>BootLocal</code> — boot the local disk (default) · <code>Memtest</code> — memory test (BIOS menu only)</p>
+    <p>Menu fragments live in <code>{{ ni_pxe_menu_dir }}/</code> (<a href="/netinstall/menu/">browse</a>); rendered by the <code>netinstall-2404</code> role (<code>-t ni_pxe_menu</code>)</p>
+  </div>
 </fieldset>
 
 <fieldset class="file-group">
@@ -63,6 +92,8 @@
     <a href="/netinstall/pxelinux.cfg/" class="icon-tile"><span class="icon">🧭</span><span class="name">pxelinux.cfg</span></a>
   </div>
 </fieldset>
+
+<div class="chain-grid">
 
 <fieldset class="file-group">
   <legend>BIOS Boot Chain <a href="/netinstall/pxelinux.cfg/">[pxelinux.cfg]</a></legend>
@@ -93,25 +124,7 @@
   </div>
 </fieldset>
 
-<fieldset class="file-group">
-  <legend>Boot Options <a href="/netinstall/menu/">[menu]</a></legend>
-  <p>
-    Default entry is <strong>{{ ni_pxe_default }}</strong> after
-    {{ (ni_pxe_timeout / 10) | int }} s (BIOS) / {{ ni_grub_timeout }} s (UEFI):
-    an unattended PXE boot falls through to the local disk. Reimaging is opt-in
-    per MAC, or armed deliberately with
-    <code>-e ni_pxe_default=&lt;LABEL&gt; -t ni_pxe_menu</code>.
-  </p>
-  <div class="quick-ref">
-{% for img in ni_2404_images %}
-{% for ai in img.autoinstall %}
-    <p><code>Autoinstall-{{ img.name }}-{{ ai.name }}</code> — {{ ai.description }} ({{ img.os }} {{ img.type }} {{ img.arch }})</p>
-{% endfor %}
-{% endfor %}
-    <p><code>BootLocal</code> — boot the local disk (default) · <code>Memtest</code> — memory test (BIOS menu only)</p>
-    <p>Menu fragments live in <code>{{ ni_pxe_menu_dir }}/</code> (<a href="/netinstall/menu/">browse</a>); rendered by the <code>netinstall-2404</code> role (<code>-t ni_pxe_menu</code>)</p>
-  </div>
-</fieldset>
+</div><!-- /chain-grid -->
 
 <fieldset class="file-group">
   <legend>Endpoints</legend>
