@@ -1,0 +1,18 @@
+# Arm every Ethernet NIC for magic-packet wake.
+#
+# The NetworkManager conf.d default (ethernet-wake-on-lan.conf) was deployed
+# and correct — ethernet.wake-on-lan = 64, the profile carried no override —
+# and still left the interface at `Wake-on: d` across a reboot. See
+# cttb-ansible#118.
+#
+# This is applied by systemd-udevd at device setup rather than by whichever
+# network manager owns the connection, so it does not depend on NM, netplan,
+# or systemd-networkd winning the argument over who manages the link.
+#
+# Verify with: ethtool <iface> | grep Wake-on   ->   should read `g`, not `d`.
+
+[Match]
+Type=ether
+
+[Link]
+WakeOnLan=magic

@@ -1,0 +1,25 @@
+# Arm Ethernet NICs for magic-packet wake, at the netplan layer.
+#
+# This is the setting that actually takes effect on NetworkManager-managed
+# desktops. netplan writes the property explicitly into the generated keyfile
+# (/run/NetworkManager/system-connections/netplan-id0.nmconnection), and
+# without this drop-in it writes:
+#
+#     [ethernet]
+#     wake-on-lan=0        <- NM_SETTING_WIRED_WAKE_ON_LAN_NONE
+#
+# An explicit connection-level value overrides the global default in
+# /etc/NetworkManager/conf.d/ethernet-wake-on-lan.conf, which is why that file
+# had no effect despite being correct, and why NM reset the flag to `d` after
+# udev had armed it. See cttb-ansible#118.
+#
+# `id0` is the ethernet identifier cloud-init defines in 50-cloud-init.yaml
+# (match: name "en*"); netplan deep-merges this drop-in into that definition.
+#
+# Verify: ethtool <iface> | grep Wake-on   ->   `g`, not `d`.
+
+network:
+  version: 2
+  ethernets:
+    id0:
+      wakeonlan: true

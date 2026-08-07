@@ -389,6 +389,42 @@
   tags:
     - wake_on_lan
 
+# The NetworkManager conf.d default above never takes effect on the lab
+# desktops: netplan writes an explicit `wake-on-lan=0` into the generated
+# keyfile, and an explicit connection value beats a global default. The two
+# tasks below fix that at the layers that actually own the link, so a cleanly
+# shut-down host can be woken again (cttb-ansible#118).
+
+# Covers hosts where udev/systemd-networkd owns the link (servers, containers).
+- name: arm Ethernet NICs for magic-packet wake at the udev layer
+  copy:
+    src: conf/10-wake-on-lan.link
+    dest: /etc/systemd/network/10-wake-on-lan.link
+    mode: 0644
+    owner: root
+    group: root
+  tags:
+    - wake_on_lan
+
+# Covers NetworkManager-managed desktops, where NM would otherwise re-apply
+# wake-on-lan=0 at activation and undo the .link above.
+- name: arm Ethernet NICs for magic-packet wake at the netplan layer
+  copy:
+    src: conf/99-wake-on-lan.yaml
+    dest: /etc/netplan/99-wake-on-lan.yaml
+    mode: 0600
+    owner: root
+    group: root
+  register: wol_netplan
+  tags:
+    - wake_on_lan
+
+- name: regenerate netplan backend config so the new wake-on-lan value lands
+  command: netplan generate
+  when: wol_netplan is changed
+  tags:
+    - wake_on_lan
+
 - name: upgrade ansible to latest
   apt:
     name: ansible
