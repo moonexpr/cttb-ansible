@@ -623,11 +623,15 @@
         tags:
           - network
 
+      # 0600, not 0644: netplan warns "Permissions for <file> are too open.
+      # Netplan configuration should NOT be accessible by others." on every
+      # `netplan generate`/`apply`. cloud-init's 50-cloud-init.yaml and the
+      # wake-on-lan drop-in both ship 0600; this file was the odd one out.
       - name: use NetworkManager instead of netplan to manage networks
         copy:
           src: config/01-network-manager-all.yaml
           dest: /etc/netplan/
-          mode: 0644
+          mode: '0600'
           owner: root
           group: root
         tags:

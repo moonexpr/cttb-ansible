@@ -22,9 +22,21 @@
   hosts: localhost
   connection: local
   gather_facts: false
-  roles:
-    - role: netinstall-2404
-      delegate_to: skip
+  # This play needs the role's VARIABLES (ni_admin_user, ni_timezone, the ssh
+  # pubkeys, ...) to render the autoinstall templates locally. It must not run
+  # the role's TASKS, which build the PXE server's /srv tree as root.
+  #
+  # `roles: [{role: netinstall-2404, delegate_to: skip}]` did not achieve that:
+  # delegation does not skip anything, and under `connection: local` the role's
+  # tasks executed on the workstation. It went unnoticed because the documented
+  # invocations use -t ni_pxe_menu, which matches no task inside the role, so
+  # the role silently contributed nothing. `-t ni_autoinstall` DOES match, and
+  # the run died on `create autoinstall root directory` trying to mkdir /srv
+  # (and then to chown it to root) on the operator's machine.
+  #
+  # vars_files loads exactly the defaults, and no tasks.
+  vars_files:
+    - ../roles/netinstall-2404/defaults/main.yml
   vars:
     ni_staging_dir: "{{ lookup('env', 'TMPDIR') | default('/tmp') }}/netinstall-2404-stage"
   tasks:
