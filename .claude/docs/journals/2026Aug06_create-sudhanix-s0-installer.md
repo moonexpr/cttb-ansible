@@ -179,6 +179,107 @@ all. Worth remembering as the general recovery path for a crashed unattended ins
 Install then proceeded to `sdb`: `sdb1` 1 GB vfat → `/target/boot/efi`, `sdb2` 237.4 GB
 ext4 → `/target`. `sda` left untouched.
 
+### Offsite stage 2 (19:30–22:20)
+
+Stage 2 could not run against `sc-cslab-pc-right` as written. Verified from the
+host: `apt.cttb`, `storehouse.cttb`, `wiki.cttb`, `ldap.cttb` all fail to resolve
+and `10.11.1.1` is unreachable, while the public internet works. `roles/common`
+would have rewritten the box's apt config to `http://apt.cttb/mirrors/ubuntu/`
+and every later `apt:` task would have failed.
+
+**The coupling turned out to be variable-driven, not hardcoded** — which is what
+made this tractable. `deb_mirror`, `ansible_assets_url`, `chrome_repo`,
+`ntp_servers` are all Jinja-derived from `group_vars/all`, and `cups_srv`,
+`nfs_homes_host`, `global_proxy` are already guarded by `is defined`. So the fix
+rebinds variables (`group_vars/offsite`) rather than forking the role tree. The
+entire apt fix is **one variable**: `deb_mirror: http://archive.ubuntu.com`, since
+`ubuntu.sources.j2` renders `{{deb_mirror}}/ubuntu/` and archive.ubuntu.com
+carries all four noble suites with all four components.
+
+Two roles could not be rebound and were handled structurally:
+
+- **`ldap-client` excluded from the play**, not tag-skipped: it asserts
+  `'ldap_clients' in group_names` with no seam, `access.conf.j2` needs an
+  `ldap_group_acl_string` that has no default, and enabling LDAP nsswitch against
+  an unreachable directory would hang `getent` and login.
+- **`sudhanix-vajra-tool` gained a seam.** It installs vajra from apt.cttb with no
+  override — but the `.deb` is already vendored in the role's `files/`. Added
+  `vajra_install_from_local_deb` (default false, campus byte-identical) so offsite
+  installs the committed .deb instead. vajra didn't have to be sacrificed.
+
+**Assets.** `sudhanix-core` fetches ~420 MB of themes, fonts, wallpapers and
+browser tarballs from storehouse.cttb, and most of those `unarchive` tasks have
+**no rescue** — a miss aborts the play mid-run. This Mac reaches storehouse over
+Tailscale; the target does not. `utils/offsite-relay` mirrors them locally and
+serves them to the target. **Default transport is an SSH reverse tunnel**, because
+the two machines are on different routed subnets (192.168.40.19/23 vs
+192.168.1.244/24) and inbound would depend on the gateway plus the macOS
+firewall; the tunnel rides the SSH connection we already have. `check` proved it
+works before committing to a 20-minute run.
+
+### Judgment calls this phase
+
+- **Separate `inventory/offsite.ini`, not a group in the campus inventory.**
+  `sudhanix26-rollout-stage2.yml` is `hosts: all`, so one forgotten `-l` would
+  point a campus lab PC at a mirror it cannot reach. Separate files make that
+  class of error unrepresentable rather than merely discouraged.
+- **Vaulted become password copied verbatim, not inherited.** Making `offsite` a
+  child of `cttb_hosts` would be DRY-er, but that group is the campus umbrella —
+  any campus var added there later would leak silently onto every offsite host.
+- **Ran from a clean worktree at HEAD.** Uncommitted wake-on-lan work by another
+  session sat in `roles/common/tasks/setup/default.yml`, which this play executes.
+  Mid-edit netplan code going to a machine with no console is a truck roll, so the
+  run used committed code only and left the working tree untouched.
+
+### `--check` is not a rehearsal for this play
+
+The dry run failed at `cttb-ca-client : create cttb-cacert.pem symlink` —
+`/etc/ssl/certs/CTTB-Root-CA.pem` does not exist. **Not a defect.** `shell:` tasks
+are skipped under `--check`, so `update-ca-certificates -f` never runs and never
+generates the .pem, but `file: state=link` *does* execute and validates its source.
+The campus play fails identically under `--check`. Worth knowing before someone
+reads that failure as an offsite-specific bug.
+
+### Offsite stage-2 result — clean
+
+`ok=292 changed=194 unreachable=0 failed=0 skipped=186 rescued=0`. A zero
+`rescued` count matters here: it means no asset fetch fell into a rescue block, so
+nothing degraded silently.
+
+Verified on the target afterwards:
+
+| Check | Result |
+|---|---|
+| apt config references `.cttb` | none; `URIs: http://archive.ubuntu.com/ubuntu/` |
+| WhiteSur GTK + icon themes, cursors | present |
+| Inter Display font | `/usr/share/fonts/truetype/inter-display`, 18 `fc-list` matches |
+| bigsur sound theme, CTTB wallpapers | present |
+| Firefox / Thunderbird | `/opt/firefox`, `/opt/thunderbird` |
+| vajra | `vajra 1.0.0 (stable)` — **from the vendored .deb, no apt.cttb** |
+| LDAP client packages | 0 installed, as intended |
+| NTP | `0/1/2.pool.ntp.org` |
+
+**The netplan handover was verified rather than assumed.** `nmcli` reports `eno1`
+as `unmanaged`, which looks alarming but is correct — networkd still owns the link
+until reboot. The decisive artifact is the keyfile `netplan generate` produces:
+
+```ini
+[match] interface-name=en*;
+[ipv4] method=auto
+[ethernet] wake-on-lan=1
+```
+
+NetworkManager will claim `en*` with DHCP at next boot, so the machine comes back.
+Wake-on-LAN is armed as a side effect of the committed `99-wake-on-lan.yaml`
+drop-in deep-merging into cloud-init's `id0` stanza — the exact case that
+drop-in's comment says it requires.
+
+**Minor defect found, not fixed (fleet-wide, out of scope):**
+`/etc/netplan/01-network-manager-all.yaml` lands mode `0644` while the other
+netplan files are `0600`, and `netplan generate` warns "Permissions ... are too
+open". The `copy` task in `roles/sudhanix-core/tasks/lookandfeel.yml` sets no
+`mode`. Affects every Sudhanix host, not just offsite.
+
 ## Close
 - **Summary:** Built `utils/create-sudhanix-s0-installer.py` (plus acceptance checks
   in `utils/tests/`) and used it to write a verified stage-0 autoinstall USB on disk8
@@ -190,11 +291,20 @@ ext4 → `/target`. `sda` left untouched.
   Escalated the `.local` hostname question rather than silently stripping it — that
   surfaced the avahi gap and drove the `--package` flag.
 - **Open threads:**
-  - `build/autoinstall-usb/build-usb.sh` is now superseded and carries a dead ISO URL
-    plus the hardcoded ESP offsets. Deliberately left alone as out of scope; worth a
-    GitHub issue to retire or redirect it before someone reaches for it.
-  - The stick is unproven on real hardware — everything verified here is image-level.
-    First boot on the target is the remaining validator.
-  - Secure Boot must be off on the target, per the DVGS shim caveat in memory.
-  - `.claude/docs/` and `.claude/plans/` are untracked and were deliberately not
-    committed, per the no-Claude-artifacts-in-git rule.
+  - **`deploy-netinstall-2404` is owed.** All three campus seeds on pxe.cttb still
+    serve `timezone: US/Pacific` and will crash subiquity exactly as this host did.
+    The role default is fixed in git but not deployed. Highest-priority follow-up.
+  - **Bundle the assets into the stage-0 ISO** (operator's stated direction).
+    `create-sudhanix-s0-installer.py`'s `remaster()` already injects a directory
+    tree; a `--with-assets` flag plus `offsite_asset_relay: /opt/sudhanix-assets`
+    would make offsite installs self-contained and retire `utils/offsite-relay`.
+    ~400 MB on a 3.4 GB stick.
+  - `roles/sudhanix-core` writes `01-network-manager-all.yaml` mode 0644; should be
+    0600. Fleet-wide, one line.
+  - `build/autoinstall-usb/build-usb.sh` is superseded — dead ISO URL and hardcoded
+    ESP offsets. Worth retiring before someone reaches for it.
+  - The offsite host has **not been rebooted**. The NM handover is verified by the
+    generated keyfile, but first boot under NetworkManager is the remaining proof.
+  - Secure Boot must be off on any target, per the DVGS shim caveat in memory.
+  - The no-Claude-artifacts-in-git rule was **retired** mid-session; journals and
+    plans now ship with the repo. Note the repo is PUBLIC — no credentials in these.
