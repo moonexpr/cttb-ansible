@@ -45,3 +45,10 @@ GEMINI.md
 WIKI_UPDATE.toon
 UPDATE_JOURNAL.md
 CLAUDE.local.md
+# Session journals ship (see the toolkit block above) so the next sysadmin
+# inherits the reasoning behind a change. The issue/comment drafts staged
+# beside them do NOT: they are scratch for `gh issue create`, and they have
+# carried credential-store key names, MAC addresses, and write-ups of
+# not-yet-fixed vulnerabilities. This repo is PUBLIC.
+.claude/docs/*
+!.claude/docs/journals/

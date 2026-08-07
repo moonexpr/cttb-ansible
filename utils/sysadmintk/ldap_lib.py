@@ -99,6 +99,44 @@ class LdapContext(CttbContext):
         return env
 
 
+# ── running the ldap* tools without leaking the bind password ────────────────
+
+class LdapCommandError(RuntimeError):
+    """An ldap* tool exited non-zero.
+
+    Carries the tool name, return code and stderr — deliberately NOT the argv.
+    subprocess.CalledProcessError renders the whole command line in its
+    __str__, and bind_args() puts the bind password there as `-w <password>`
+    (reset_password adds the new password as `-s <password>`). Letting that
+    exception escape put both secrets into every traceback, log line and error
+    report a caller might print.
+
+    The ldap tools write their diagnostics to stderr without the secret, so
+    stderr is safe to surface and is what a caller actually needs.
+    """
+
+    def __init__(self, tool: str, returncode: int, stderr: str | None):
+        self.tool = tool
+        self.returncode = returncode
+        self.stderr = (stderr or "").strip()
+        detail = f": {self.stderr}" if self.stderr else ""
+        super().__init__(f"{tool} failed (exit {returncode}){detail}")
+
+
+def _run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
+    """Run an ldap* tool, raising LdapCommandError rather than CalledProcessError.
+
+    Never pass check=True to subprocess here: that is precisely what leaks the
+    argv. The return code is inspected explicitly instead.
+    """
+    kwargs.setdefault("capture_output", True)
+    kwargs.setdefault("text", True)
+    result = subprocess.run(cmd, **kwargs)
+    if result.returncode != 0:
+        raise LdapCommandError(cmd[0], result.returncode, result.stderr)
+    return result
+
+
 # ── LDIF parser ───────────────────────────────────────────────────────────────
 
 def _parse_ldif(text: str) -> list[dict[str, list[str]]]:
@@ -145,7 +183,7 @@ def search(
         filter_str,
         *(attrs or []),
     ]
-    r = subprocess.run(cmd, env=ctx._ldap_env(), capture_output=True, text=True, check=True)
+    r = _run(cmd, env=ctx._ldap_env())
     return _parse_ldif(r.stdout)
 
 
@@ -164,7 +202,7 @@ def search_raw(
         filter_str,
         *(attrs or []),
     ]
-    r = subprocess.run(cmd, env=ctx._ldap_env(), capture_output=True, text=True, check=True)
+    r = _run(cmd, env=ctx._ldap_env())
     return r.stdout
 
 
@@ -234,10 +272,9 @@ def apply_ldif(ctx: LdapContext, ldif_content: str, *, dry_run: bool = True) -> 
     if dry_run:
         print("       re-run with risks_confirmed=True to apply")
     print()
-    subprocess.run(
-        cmd, env=ctx._ldap_env(),
-        input=ldif_content, text=True, check=True,
-    )
+    r = _run(cmd, env=ctx._ldap_env(), input=ldif_content)
+    if r.stdout:
+        print(r.stdout, end="")
 
 
 def add_to_group(ctx: LdapContext, uid: str, group_cn: str, *, dry_run: bool = True) -> None:
@@ -322,9 +359,11 @@ def reset_password(
     if dry_run:
         print("         re-run with risks_confirmed=True to apply")
         return
-    subprocess.run(
+    r = _run(
         ["ldappasswd", "-x", "-ZZ", "-H", ctx.host,
          *ctx.bind_args(), "-s", new_password, target_dn],
-        env=ctx._ldap_env(), check=True,
+        env=ctx._ldap_env(),
     )
+    if r.stdout:
+        print(r.stdout, end="")
     print(f"ok: password changed for {target_uid}")
