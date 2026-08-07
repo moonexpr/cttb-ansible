@@ -396,6 +396,18 @@
 # shut-down host can be woken again (cttb-ansible#118).
 
 # Covers hosts where udev/systemd-networkd owns the link (servers, containers).
+# The directory is absent on desktops that never used systemd-networkd, so it
+# has to be created rather than assumed.
+- name: ensure the systemd network directory exists
+  file:
+    path: /etc/systemd/network
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  tags:
+    - wake_on_lan
+
 - name: arm Ethernet NICs for magic-packet wake at the udev layer
   copy:
     src: conf/10-wake-on-lan.link
@@ -406,8 +418,26 @@
   tags:
     - wake_on_lan
 
-# Covers NetworkManager-managed desktops, where NM would otherwise re-apply
-# wake-on-lan=0 at activation and undo the .link above.
+# Only hosts whose networking is *defined* in netplan are broken: netplan
+# writes an explicit wake-on-lan=0 into the keyfile it generates. Hosts with no
+# netplan ethernet stanza (NetworkManager makes its own auto-connection) never
+# get that explicit 0, so the conf.d default above already arms them — verified
+# on dvgs-lab2 and dvgs-lab8, both `Wake-on: g` untouched, against dvgs-lab3
+# which has a cloud-init `id0` and sits at `d`.
+#
+# The drop-in below merges `wakeonlan: true` into that existing `id0` stanza.
+# It must NOT be written to a host that has no such stanza: netplan would then
+# read it as a standalone ethernet with no dhcp4, and the interface could come
+# up unaddressed on next boot.
+- name: look for a netplan-defined ethernet to merge the wake-on-lan flag into
+  command: grep -qsE '^\s+id0:' /etc/netplan/50-cloud-init.yaml
+  register: wol_netplan_id0
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags:
+    - wake_on_lan
+
 - name: arm Ethernet NICs for magic-packet wake at the netplan layer
   copy:
     src: conf/99-wake-on-lan.yaml
@@ -415,6 +445,7 @@
     mode: 0600
     owner: root
     group: root
+  when: wol_netplan_id0.rc == 0
   register: wol_netplan
   tags:
     - wake_on_lan

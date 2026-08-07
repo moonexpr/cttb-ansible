@@ -1,5 +1,25 @@
 ---
+# Apply the `common` role — baseline packages, SSH keys, logging, wake-on-LAN.
+#
+# This play targets `all`, so -l is what scopes a run. It used to be pinned to
+# `hosts: drbu-cs-lab-pc1`, which meant --limit could only ever narrow that one
+# host: the role could not be applied to anything else through a play at all,
+# and every other use had to be an ad-hoc `ansible -m copy` reproducing the
+# tasks by hand (cttb-ansible#120).
+#
+# There is no safe bare invocation: with no -l this targets every host in
+# inventory/sudhanix26_hosts.ini, servers and the pxe entry included. Same
+# convention as plays/sudhanix26-rollout-stage2.yml.
+#
+# Usage:
+#   utils/pb base -l drbu_cs_lab
+#   utils/pb base -l drbu-sw-cslab-w-pc2.cttb --tags wake_on_lan --diff
+#
+# No --ask-become-pass: the administrator become password is vaulted in
+# group_vars/cttb_hosts.yml and decrypts via ansible.cfg's vault_password_file.
+# Run from the repository root so that relative path resolves.
 
-- hosts: drbu-cs-lab-pc1
+- hosts: all
+  become: true
   roles:
     - common
