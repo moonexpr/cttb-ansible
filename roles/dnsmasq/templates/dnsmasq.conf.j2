@@ -52,13 +52,26 @@ dhcp-option=option:ntp-server,10.11.1.1
 #   7 / 9 = EFI x86-64
 # (arch 6, EFI IA32, is not served — no 32-bit EFI loader is staged.)
 #
-# UEFI clients are sent shimx64.efi, NOT grubx64.efi directly. grubx64.efi is
-# the Canonical-signed netboot GRUB; firmware with Secure Boot enabled refuses
-# to launch it on its own and it must be chainloaded by the Microsoft-signed
-# shim. shim then loads grubx64.efi from the same TFTP directory, which reads
-# its config from the GRUB prefix /grub -> /srv/netinstall/grub/grub.cfg.
-# Pointing straight at grubx64.efi only works while Secure Boot is off.
-# Roll back by restoring: dhcp-boot=tag:efi-x86_64,grubx64.efi,,<pxe-server>
+# UEFI clients go STRAIGHT to grubx64.efi. Do not reintroduce a shim hop here.
+#
+# Chaining firmware -> shimx64.efi -> grubx64.efi is the textbook arrangement
+# and it does not work on this fleet. shim 15.8 mis-derives its second-stage
+# path over netboot on the Girls' School Dell Inspiron 24 5000 machines: it
+# first fetches a revocations.efi we do not carry, then fetches a path with the
+# firmware's own boot-option label spliced into it, and dies on the resulting
+# TFTP error. Observed 2026-08-05 on dvgs-lab*, and it matches rhboot/shim#696
+# character for character.
+#
+#   Fetching Netboot Image revocations.efi
+#   Unable to fetch TFTP image: TFTP Error
+#   Fetching Netboot Image <?>Onboard
+#   start_image() returned TFTP Error
+#
+# grubx64.efi reads its config from the GRUB prefix /grub, I.e.
+# /srv/netinstall/grub/grub.cfg. Launching it directly means Secure Boot must
+# be OFF on the client, since it carries Canonical's signature rather than
+# Microsoft's. That is the trade we are making knowingly: Secure Boot off on
+# the lab machines buys a UEFI netboot that actually completes.
 dhcp-match=set:efi-x86_64,option:client-arch,7
 dhcp-match=set:efi-x86_64,option:client-arch,9
 dhcp-match=set:bios,option:client-arch,0
@@ -69,7 +82,7 @@ dhcp-match=set:bios,option:client-arch,0
 # instead of nothing at all.
 dhcp-boot=pxelinux.0,,{{ dnsmasq_pxe_server }}
 dhcp-boot=tag:bios,pxelinux.0,,{{ dnsmasq_pxe_server }}
-dhcp-boot=tag:efi-x86_64,shimx64.efi,,{{ dnsmasq_pxe_server }}
+dhcp-boot=tag:efi-x86_64,grubx64.efi,,{{ dnsmasq_pxe_server }}
 
 #netboot tftp
 dhcp-option=tag:tftp,67,lpxelinux.0
