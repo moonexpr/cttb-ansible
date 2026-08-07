@@ -1,15 +1,68 @@
 ---
+# Wake hosts by Wake-on-LAN.
+#
+# IMPORTANT: this play only works against hosts whose NIC is actually armed
+# for magic-packet wake. The lab desktops currently ship with `Wake-on: d`
+# (disabled) and no persistence, so a host shut down cleanly from Linux
+# cannot be woken at all — see cttb-ansible#118. Fixing the delivery path
+# below is necessary but not sufficient.
+#
+# Delivery path (cttb-ansible#116):
+#
+# The magic packet is an L2 broadcast. It does not route, and it does not
+# traverse the Tailscale tunnel that an off-campus controller uses to reach
+# 10.11.0.0/16. Sending it from the controller (the old
+# `delegate_to: localhost`) put the packet on the operator's own LAN while
+# the play still reported "changed" — a silent no-op. Verified with tcpdump:
+# 0 packets reached campus from a laptop; the same play delegated to srv-vm
+# was captured on the lab segment.
+#
+# Why `raw` and not community.general.wakeonlan: srv-vm (and most of the
+# campus core) is Ubuntu 16.04 with Python 3.5, which cannot run modern
+# Ansible modules — the module wrapper uses f-strings and dies with a
+# SyntaxError. `raw` needs no Python module layer, and the inline snippet
+# below deliberately avoids f-strings and byte escapes so it runs on
+# Python 2.7 through 3.x alike.
+#
+# Usage:
+#   utils/pb util-wakeonlan --limit drbu-sw-cslab-w-pc3.cttb
+#   utils/pb util-wakeonlan -l drbu_cs_lab
+#   utils/pb util-wakeonlan -l drbu_cs_lab -e wol_sender_address=10.11.16.14
+
 - name: Wake hosts
   hosts: all
   gather_facts: false
 
+  vars:
+    # srv-vm: always on, sits on lxdbr0 at 10.11.1.3/16. Verified 2026-08-06
+    # that its broadcasts are seen on the 10.11.16.x lab segment.
+    wol_sender: cttb-wol-sender
+    wol_sender_address: 10.11.1.3
+    wol_sender_user: administrator
+
   tasks:
-    - name: Send WoL packet 1
-      community.general.wakeonlan:
-        mac: "{{ mac_addr }}"
-      delegate_to: localhost
-    - name: Send WoL packet 2
-      community.general.wakeonlan:
-        mac: "{{ mac_addr }}"
-        port: 9
-      delegate_to: localhost
+    - name: register the on-campus WoL sender
+      add_host:
+        name: "{{ wol_sender }}"
+        ansible_host: "{{ wol_sender_address }}"
+        ansible_user: "{{ wol_sender_user }}"
+      run_once: true
+      changed_when: false
+
+    # Both broadcast forms and both ports: NICs differ in which they honour,
+    # and the packets are 102 bytes apiece.
+    - name: send magic packets from the campus segment
+      raw: |
+        python3 -c "
+        import socket
+        mac = '{{ mac_addr | regex_replace('[^0-9A-Fa-f]', '') | lower }}'
+        pkt = bytes(bytearray([255] * 6 + list(bytearray.fromhex(mac)) * 16))
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        for dest in ('255.255.255.255', '10.11.255.255'):
+            for port in (7, 9):
+                s.sendto(pkt, (dest, port))
+        print('sent 4 magic packets for ' + mac)
+        "
+      delegate_to: "{{ wol_sender }}"
+      changed_when: true

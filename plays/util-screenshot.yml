@@ -20,10 +20,18 @@
 
   vars:
     output_dir: "{{ playbook_dir }}/../logs/screenshots"
-    timestamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
     remote_png: /tmp/ansible-screenshot.png
 
   tasks:
+    # A play var holding lookup('pipe', 'date ...') is a template, not a
+    # constant: it re-runs date at every reference, so the fetch dest and the
+    # reported path can name different files (cttb-ansible#115). set_fact
+    # evaluates once and caches.
+    - name: freeze the run timestamp
+      set_fact:
+        timestamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+      run_once: true
+
     - name: take screenshot on remote machine (as root, using the X server's own auth file)
       become: true
       shell: |
