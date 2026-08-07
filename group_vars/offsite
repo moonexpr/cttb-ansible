@@ -40,9 +40,26 @@ chrome_repo: "https://dl.google.com/linux/chrome/deb/"
 # first second rather than ten minutes later inside lookandfeel.yml. Set per run:
 #   utils/offsite-relay run <host>
 #
-# Forward-compatible with bundling assets into the stage-0 ISO: unarchive
-# (remote_src) and apt (deb=) both accept a plain on-target path, so that change
-# is `offsite_asset_relay: /opt/sudhanix-assets` here and nothing else.
+# TWO SUPPORTED SOURCES, and which one applies depends on how the host's stick
+# was built:
+#
+#   1. Relay (default, and what sc-cslab-pc-right was installed with). The stick
+#      carries no assets; utils/offsite-relay serves them from a workstation that
+#      can still reach storehouse.cttb, and passes -e offsite_asset_relay=<url>.
+#
+#   2. Bundled on the install media. Build the stick with
+#      `create-sudhanix-s0-installer.py --with-assets`; its late-commands drop the
+#      payload at /opt/sudhanix-assets. Then set, per host or here:
+#
+#          offsite_asset_relay: /opt/sudhanix-assets
+#
+#      No relay, no workstation, no campus reachability at any point. Every
+#      consuming unarchive in sudhanix-core sets remote_src: yes, so a plain
+#      on-target path needs no role change.
+#
+# The default stays empty (relay-supplied) rather than /opt/sudhanix-assets
+# because flipping it would break a re-run against any host already installed
+# from a stick built without --with-assets.
 offsite_asset_relay: ""
 ansible_assets_url: "{{ offsite_asset_relay }}"
 

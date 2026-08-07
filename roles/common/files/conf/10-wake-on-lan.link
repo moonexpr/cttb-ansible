@@ -10,9 +10,28 @@
 # or systemd-networkd winning the argument over who manages the link.
 #
 # Verify with: ethtool <iface> | grep Wake-on   ->   should read `g`, not `d`.
+#
+# NamePolicy is REQUIRED here, and is not boilerplate. systemd applies exactly
+# one .link per device — the first match in lexical order — and this file at
+# 10- outranks the stock /usr/lib/systemd/network/99-default.link. A matching
+# .link that sets no NamePolicy leaves the device on its KERNEL name, so
+# predictable naming silently switches off: observed on sc-cslab-pc-right,
+# which came back from a reboot as `eth0` instead of `eno1`
+# (udevadm: ID_NET_LINK_FILE=10-wake-on-lan.link, ID_NET_NAME=eth0,
+# ID_NET_NAME_ONBOARD=eno1).
+#
+# That is not cosmetic. netplan generates its NetworkManager profile with
+# [match] interface-name=en*, which a renamed eth0 no longer satisfies, so the
+# generated profile goes inactive. On a DHCP host NM's fallback wired profile
+# papers over it; a host with static or interface-keyed netplan config would
+# come up misconfigured.
+#
+# The value below is copied from 99-default.link so naming is unchanged.
 
 [Match]
 Type=ether
 
 [Link]
+NamePolicy=keep kernel database onboard slot path
+AlternativeNamesPolicy=database onboard slot path
 WakeOnLan=magic
