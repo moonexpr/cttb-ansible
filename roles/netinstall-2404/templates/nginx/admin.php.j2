@@ -121,14 +121,37 @@ $msg = (string)($_GET['msg'] ?? '');
 <link rel="stylesheet" href="/fonts.css">
 <link rel="stylesheet" href="/citylights.min.css">
 <style>
-.panel { border: 1px solid #41505e; border-radius: 6px; padding: 1em; margin: 1em 0; }
+/* Compact one-screen layout: overrides the citylights block-level form styling. */
+.site-header { padding: .4em 0 .2em; margin-bottom: .2em; }
+.site-header h1 { font-size: 1.4em; margin: 0; }
+.site-header .subtitle { margin: 0; font-size: .85em; }
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 .8em;
+}
+@media (max-width: 700px) {
+  .panel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.panel { border: 1px solid #41505e; border-radius: 6px; padding: .6em .9em; margin: .5em 0; }
+.panel h2 { font-size: 1.05em; margin: .1em 0 .4em; }
+.panel p { margin: .3em 0 .5em; }
 .state-on  { color: #d95468; font-weight: bold; }
 .state-off { color: #8bd49c; font-weight: bold; }
-.warn { background: #2d2b23; border: 1px solid #d98e48; padding: .6em 1em; border-radius: 6px; }
-.logbox { max-height: 32em; overflow: auto; background: #1d252c; padding: .8em; font-size: .85em; }
+.warn, .notice { background: #2d2b23; border: 1px solid #d98e48; padding: .35em .8em; margin: .4em 0; border-radius: 6px; font-size: .85em; }
+.logform { display: flex; flex-wrap: wrap; gap: .6em; align-items: center; }
+.logform label { display: inline-flex; align-items: center; gap: .35em; margin: 0; white-space: nowrap; }
+.logform select, .logform input[type=number], .logform input[type=text] { display: inline-block; width: auto; margin: 0; padding: .25em .4em; }
+.logform input[type=number] { width: 5.5em; }
+.logform input[type=text] { width: 18em; }
+.linecount { margin: .2em 0; font-size: .85em; }
+.logbox { max-height: 38vh; overflow: auto; background: #1d252c; padding: .6em; margin: .3em 0 0; font-size: .85em; }
 form.inline { display: inline; }
-button { padding: .4em 1.2em; cursor: pointer; }
-input[type=text], input[type=number] { background: #1d252c; color: inherit; border: 1px solid #41505e; padding: .3em; }
+button { padding: .3em .9em; cursor: pointer; }
+input[type=text], input[type=number], select { background: #1d252c; color: inherit; border: 1px solid #41505e; }
+footer p { font-size: .75em; margin: .5em 0; }
 </style>
 </head>
 <body>
@@ -147,14 +170,15 @@ input[type=text], input[type=number] { background: #1d252c; color: inherit; bord
 <?php endif; ?>
 
 <p class="warn">
-  Ansible owns the boot menus: any <code>-t ni_pxe_menu</code> redeploy re-renders
-  them from <code>ni_pxe_default</code> and <strong>re-disarms autoinstall</strong>;
-  a full role run also restarts tftpd. Panel changes are operational overrides,
-  not configuration.
+  Ansible owns the boot menus &mdash; any <code>ni_pxe_menu</code> redeploy
+  <strong>re-disarms autoinstall</strong>; a full role run restarts tftpd.
+  Panel changes are operational overrides, not configuration.
 </p>
 
+<div class="panel-grid">
+
 <div class="panel">
-  <h2>Autoinstall (reimage on boot-menu timeout)</h2>
+  <h2>&#x2699; Autoinstall (reimage on boot-menu timeout)</h2>
   <p>
     State: <span class="<?= $armed ? 'state-on' : 'state-off' ?>">
       <?= $armed ? 'ARMED' : 'disarmed' ?></span>
@@ -169,17 +193,17 @@ input[type=text], input[type=number] { background: #1d252c; color: inherit; bord
   <form class="inline" method="post">
     <input type="hidden" name="tok" value="<?= h($tok) ?>">
     <input type="hidden" name="action" value="arm">
-    <button <?= ($armed && !$mismatch) ? 'disabled' : '' ?>>Arm (autoinstall on timeout)</button>
+    <button <?= ($armed && !$mismatch) ? 'disabled' : '' ?> title="autoinstall on timeout">&#x26A1; Arm</button>
   </form>
   <form class="inline" method="post">
     <input type="hidden" name="tok" value="<?= h($tok) ?>">
     <input type="hidden" name="action" value="disarm">
-    <button <?= (!$armed && !$mismatch) ? 'disabled' : '' ?>>Disarm (boot local disk)</button>
+    <button <?= (!$armed && !$mismatch) ? 'disabled' : '' ?> title="boot local disk on timeout">&#x1F6E1; Disarm</button>
   </form>
 </div>
 
 <div class="panel">
-  <h2>TFTP service (netboot hard block)</h2>
+  <h2>&#x1F4E1; TFTP service (netboot hard block)</h2>
   <p>
     tftpd-hpa: <span class="<?= $tftpOn ? 'state-off' : 'state-on' ?>"><?= h($tftpd) ?></span>
     <?= $tftpOn ? '&mdash; clients can netboot' : '&mdash; netboot is blocked (no boot files served)' ?>
@@ -187,18 +211,20 @@ input[type=text], input[type=number] { background: #1d252c; color: inherit; bord
   <form class="inline" method="post">
     <input type="hidden" name="tok" value="<?= h($tok) ?>">
     <input type="hidden" name="action" value="tftp-on">
-    <button <?= $tftpOn ? 'disabled' : '' ?>>Start tftpd</button>
+    <button <?= $tftpOn ? 'disabled' : '' ?>>&#x25B6; Start tftpd</button>
   </form>
   <form class="inline" method="post">
     <input type="hidden" name="tok" value="<?= h($tok) ?>">
     <input type="hidden" name="action" value="tftp-off">
-    <button <?= $tftpOn ? '' : 'disabled' ?>>Stop tftpd</button>
+    <button <?= $tftpOn ? '' : 'disabled' ?>>&#x25A0; Stop tftpd</button>
   </form>
 </div>
 
+</div><!-- /panel-grid -->
+
 <div class="panel">
-  <h2>Logs</h2>
-  <form method="get">
+  <h2>&#x1F4DC; Logs</h2>
+  <form method="get" class="logform">
     <label>Source:
       <select name="src">
         <option value="tftp" <?= $src === 'tftp' ? 'selected' : '' ?>>TFTP (journal)</option>
@@ -208,12 +234,12 @@ input[type=text], input[type=number] { background: #1d252c; color: inherit; bord
     <label>Lines: <input type="number" name="n" value="<?= h($n) ?>" min="10" max="2000" size="6"></label>
     <label>Filter: <input type="text" name="q" value="<?= h($q) ?>" size="30" placeholder="substring or regex"></label>
     <label><input type="checkbox" name="re" value="1" <?= $useRegex ? 'checked' : '' ?>> regex</label>
-    <button>Show</button>
+    <button>&#x1F50D; Show</button>
   </form>
 <?php if ($logErr !== ''): ?>
   <p class="warn"><?= h($logErr) ?></p>
 <?php else: ?>
-  <p><?= count($logLines) ?> line(s)</p>
+  <p class="linecount"><?= count($logLines) ?> line(s)</p>
   <pre class="logbox"><?php foreach ($logLines as $l) { echo h($l), "\n"; } ?></pre>
 <?php endif; ?>
 </div>
