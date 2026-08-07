@@ -16,8 +16,11 @@
       group: root
       mode: 0644
 
-  # UEFI network boot chain: firmware -> shimx64.efi -> grubx64.efi -> grub/grub.cfg.
-  # Both are the Canonical-signed binaries (shim-signed, grub-efi-amd64-signed);
+  # UEFI network boot: firmware -> grubx64.efi -> grub/grub.cfg. Direct, no shim
+  # hop — shim 15.8 mis-derives its netboot second stage on the DVGS Dells
+  # (rhboot/shim#696), so dnsmasq points UEFI clients straight at GRUB and
+  # Secure Boot is toggled off on clients for the install. shimx64.efi ships
+  # anyway, staged for the day a fixed signed shim exists.
   # grubx64.efi is grubnetx64.efi.signed, the netboot build with efinet/tftp, NOT
   # the disk-boot grubx64.efi.signed from the same package. Its GRUB prefix is
   # /grub. These were hand-placed on pxe.cttb for months and survived only by

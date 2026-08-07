@@ -56,7 +56,17 @@ option 93 in `roles/dnsmasq`:
 | Client reports          | Gets           | Then reads                        |
 |-------------------------|----------------|-----------------------------------|
 | arch 0 (legacy BIOS)    | `pxelinux.0`   | `pxelinux.cfg/default`            |
-| arch 7 / 9 (EFI x86-64) | `shimx64.efi`  | -> `grubx64.efi` -> `grub/grub.cfg` |
+| arch 7 / 9 (EFI x86-64) | `grubx64.efi`  | `grub/grub.cfg`                   |
+
+**UEFI clients go straight to GRUB — there is deliberately no shim hop.** shim
+15.8 (the only version in any Ubuntu archive as of 2026-08) mis-derives its
+second-stage path over netboot on the DVGS Dell Inspiron fleet, splicing the
+firmware's boot-option label into the TFTP filename and dying on the fetch
+(rhboot/shim#696). The consequence: **Secure Boot must be off on a client for
+the netboot/install itself.** The bug is netboot-only — the installed system
+boots through its on-disk shim normally, so Secure Boot goes back on after the
+install. `shimx64.efi` stays staged in `files/efiboot/` for the day a fixed
+signed shim ships; do not point dnsmasq back at it before verifying on a Dell.
 
 **The GRUB prefix is load-bearing.** `grubx64.efi` is built with prefix `/grub`,
 so it reads `{{ni_tftp_dir}}/grub/grub.cfg` — **not** `boot/grub/grub.cfg`. Writing
@@ -70,6 +80,7 @@ or swap in a different signed build, verify the prefix still matches this path.
 from the same `grub-efi-amd64-signed` package. Both binaries ship in
 `files/efiboot/`; check with `grep -a -c efinet <file>` (netboot build is non-zero).
 
-UEFI clients are pointed at **shim**, not GRUB directly: the Canonical-signed GRUB
-will not launch under Secure Boot unless chainloaded by the Microsoft-signed shim.
-Pointing straight at `grubx64.efi` only works while Secure Boot is disabled.
+Why the direct-to-GRUB path costs Secure Boot: `grubx64.efi` carries Canonical's
+signature, not Microsoft's, and firmware only trusts Microsoft's out of the box.
+The shim chain is the textbook fix for that, and it is exactly the part that is
+broken on this fleet — hence the trade documented above.

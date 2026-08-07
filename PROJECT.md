@@ -257,6 +257,18 @@ apt metadata, minus HWE/restricted/firmware payloads). Remove the per-MAC
 files after the reinstall (`-e bios_rollout_state=absent`): while present,
 any PXE boot of that MAC reimages the machine.
 
+**UEFI hosts (DVGS Dell Inspiron 24 5000 fleet) need Secure Boot toggled off
+for the netboot itself.** dnsmasq sends UEFI clients straight to
+`grubx64.efi` — deliberately no shim hop, because shim 15.8 (the only version
+in any Ubuntu archive) mis-derives its netboot second stage on this Dell
+firmware and dies on a garbage TFTP fetch (rhboot/shim#696; symptom is
+`Fetching Netboot Image <?>Onboard` … `start_image() returned TFTP Error`).
+Canonical-signed GRUB won't launch directly under Secure Boot, so the
+per-machine procedure is: Secure Boot **off** → PXE install → Secure Boot
+**back on**. The bug is netboot-only; the installed system boots through its
+on-disk shim normally, so nothing is permanently weakened. Do not point
+dnsmasq back at `shimx64.efi` before verifying a fixed shim on a real Dell.
+
 **Consequence — the forward-only Recommends caveat does not apply to the
 fleet.** Because every fleet host is a fresh image at deploy time, it always
 receives the full Recommends closure (path A in the gh-16 plan *is* the
