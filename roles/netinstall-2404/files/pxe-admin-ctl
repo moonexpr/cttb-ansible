@@ -1,0 +1,46 @@
+#!/bin/bash
+# pxe-admin-ctl — closed-verb control surface for the PXE admin panel.
+# Managed by Ansible (role: netinstall-2404). Invoked as root via sudo by
+# www-data (/etc/sudoers.d/pxe-admin-panel); every verb is fixed, the only
+# variable input is the logs-tftp line count, validated below.
+#
+# The menu files are Ansible-rendered: any `-t ni_pxe_menu` deploy rewrites
+# them from ni_pxe_default (BootLocal) — i.e. Ansible re-disarms. That is the
+# intended safety default, not a bug.
+set -euo pipefail
+
+PXECFG=/srv/netinstall/pxelinux.cfg/default
+GRUBCFG=/srv/netinstall/grub/grub.cfg
+ARM_LABEL="Autoinstall-noble-desktop-minimal"
+
+case "${1:-}" in
+  status)
+    printf 'pxelinux_ontimeout=%s\n' "$(awk '/^ONTIMEOUT/{print $2}' "$PXECFG")"
+    printf 'grub_default=%s\n' "$(sed -n 's/^set default=//p' "$GRUBCFG")"
+    printf 'tftpd=%s\n' "$(systemctl is-active tftpd-hpa || true)"
+    ;;
+  arm)
+    sed -i "s/^ONTIMEOUT .*/ONTIMEOUT ${ARM_LABEL}/" "$PXECFG"
+    sed -i 's/^set default=.*/set default=0/' "$GRUBCFG"
+    ;;
+  disarm)
+    sed -i 's/^ONTIMEOUT .*/ONTIMEOUT BootLocal/' "$PXECFG"
+    sed -i 's/^set default=.*/set default="Boot from local disk"/' "$GRUBCFG"
+    ;;
+  tftp-on)
+    systemctl start tftpd-hpa
+    ;;
+  tftp-off)
+    systemctl stop tftpd-hpa
+    ;;
+  logs-tftp)
+    n="${2:-100}"
+    [[ "$n" =~ ^[0-9]+$ ]] || { echo "bad count" >&2; exit 2; }
+    (( n > 2000 )) && n=2000
+    journalctl -u tftpd-hpa -n "$n" --no-pager
+    ;;
+  *)
+    echo "usage: $0 {status|arm|disarm|tftp-on|tftp-off|logs-tftp N}" >&2
+    exit 2
+    ;;
+esac

@@ -60,6 +60,23 @@ server {
     }
 {% endif %}
 
+{% if ni_admin_panel_enabled | bool %}
+    # PXE admin panel — Basic auth at the nginx layer (storehouse coredumps
+    # precedent). `^~` outranks the h5ai `location ~ \.php$` regex above, so
+    # /admin/*.php can never be served by the unauthenticated PHP block.
+    location ^~ /admin/ {
+        auth_basic "PXE admin";
+        auth_basic_user_file {{ ni_admin_htpasswd_path }};
+        index admin.php;
+
+        location ~ \.php$ {
+            include fastcgi_params;
+            fastcgi_pass unix:/run/php/php{{ ni_php_version }}-fpm.sock;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        }
+    }
+{% endif %}
+
     location / {
         try_files $uri $uri/ =404;
     }

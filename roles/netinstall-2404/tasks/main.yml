@@ -50,10 +50,25 @@
     tags:
       - ni_webserver
 
-  - include_tasks: h5ai.yml
+  # `apply` for the same reason as ni_autoinstall below.
+  - include_tasks:
+      file: h5ai.yml
+      apply:
+        tags:
+          - ni_h5ai
     when: ni_webserver == 'nginx' and ni_h5ai_enabled | bool
     tags:
       - ni_h5ai
+
+  # `apply` for the same reason as ni_autoinstall below.
+  - include_tasks:
+      file: admin.yml
+      apply:
+        tags:
+          - ni_admin
+    when: ni_webserver == 'nginx' and ni_admin_panel_enabled | bool
+    tags:
+      - ni_admin
 
   # `apply` is required: tags on a dynamic include cover the include statement
   # only, so without it `--tags ni_autoinstall` runs the include and filters out

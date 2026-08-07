@@ -1,0 +1,229 @@
+<?php
+// PXE admin panel — CGI-style single page. Managed by Ansible
+// (role: netinstall-2404, template nginx/admin.php.j2).
+//
+// Auth happens at nginx (auth_basic); this page trusts REMOTE_USER.
+// Mutations go through the closed-verb sudo wrapper pxe-admin-ctl only —
+// no user-supplied string ever reaches a shell: actions are whitelisted
+// literals, the log line count is (int)-cast + clamped, and the log filter
+// is applied here in PHP.
+
+$SERVER_NAME = '{{ ni_server_name }}';
+$SERVER_IP   = '{{ ansible_default_ipv4.address | default("") }}';
+$CTL         = '/usr/local/sbin/pxe-admin-ctl';
+$ACCESS_LOG  = '/var/log/nginx/access.log';
+
+session_start();
+if (empty($_SESSION['tok'])) {
+    $_SESSION['tok'] = bin2hex(random_bytes(16));
+}
+$tok = $_SESSION['tok'];
+
+function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES); }
+
+function ctl(...$args) {
+    global $CTL;
+    $cmd = 'sudo -n ' . $CTL;
+    foreach ($args as $a) { $cmd .= ' ' . escapeshellarg($a); }
+    return (string)shell_exec($cmd . ' 2>&1');
+}
+
+// Bounded tail: read at most the last 1 MiB, return at most $max lines.
+function tail_lines($path, $max) {
+    if (!is_readable($path)) { return []; }
+    $size  = filesize($path);
+    if ($size === 0) { return []; }
+    $chunk = min($size, 1048576);
+    $fh = fopen($path, 'rb');
+    fseek($fh, $size - $chunk);
+    $data = fread($fh, $chunk);
+    fclose($fh);
+    $lines = explode("\n", $data);
+    if ($chunk < $size) { array_shift($lines); } // first line may be partial
+    while ($lines && end($lines) === '') { array_pop($lines); }
+    return array_slice($lines, -$max);
+}
+
+$allowedHosts = array_values(array_filter([$SERVER_NAME, $SERVER_IP, 'pxe']));
+$reqHost = preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST'] ?? '');
+$hostOk  = in_array($reqHost, $allowedHosts, true);
+
+// ── Mutations: POST only, token + host/origin checked, whitelisted verbs ──
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    $originOk = true;
+    if (!empty($_SERVER['HTTP_ORIGIN'])) {
+        $originHost = parse_url($_SERVER['HTTP_ORIGIN'], PHP_URL_HOST);
+        $originOk = in_array($originHost, $allowedHosts, true);
+    }
+    if (!$hostOk || !$originOk) { http_response_code(403); exit('bad origin'); }
+    if (!hash_equals($tok, (string)($_POST['tok'] ?? ''))) { http_response_code(403); exit('bad token'); }
+    $action = (string)($_POST['action'] ?? '');
+    if (!in_array($action, ['arm', 'disarm', 'tftp-on', 'tftp-off'], true)) {
+        http_response_code(400); exit('bad action');
+    }
+    ctl($action);
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?msg=' . urlencode($action . ' done'));
+    exit;
+}
+
+// ── State ──
+$state = [];
+foreach (explode("\n", ctl('status')) as $line) {
+    if (strpos($line, '=') !== false) {
+        [$k, $v] = explode('=', $line, 2);
+        $state[trim($k)] = trim($v);
+    }
+}
+$ontimeout = $state['pxelinux_ontimeout'] ?? '?';
+$grubdef   = $state['grub_default'] ?? '?';
+$tftpd     = $state['tftpd'] ?? '?';
+$biosArmed = ($ontimeout !== 'BootLocal' && $ontimeout !== '?');
+$efiArmed  = ($grubdef === '0');
+$armed     = $biosArmed || $efiArmed;
+$mismatch  = ($biosArmed !== $efiArmed);
+$tftpOn    = ($tftpd === 'active');
+
+// ── Logs ──
+$src = (($_GET['src'] ?? 'tftp') === 'http') ? 'http' : 'tftp';
+$n   = max(10, min(2000, (int)($_GET['n'] ?? 100)));
+$q   = (string)($_GET['q'] ?? '');
+$useRegex = !empty($_GET['re']);
+$logErr = '';
+
+if ($src === 'http') {
+    $logLines = tail_lines($ACCESS_LOG, 20000);
+    $logLines = array_values(array_filter($logLines,
+        fn($l) => strpos($l, '/netinstall/') !== false));
+    $logLines = array_slice($logLines, -$n);
+} else {
+    $logLines = explode("\n", rtrim(ctl('logs-tftp', (string)$n), "\n"));
+}
+if ($q !== '' && $logErr === '') {
+    if ($useRegex) {
+        $pat = '/' . str_replace('/', '\/', $q) . '/i';
+        if (@preg_match($pat, '') === false) {
+            $logErr = 'Invalid regular expression.';
+        } else {
+            $logLines = array_values(array_filter($logLines, fn($l) => preg_match($pat, $l)));
+        }
+    } else {
+        $logLines = array_values(array_filter($logLines, fn($l) => stripos($l, $q) !== false));
+    }
+}
+$msg = (string)($_GET['msg'] ?? '');
+?>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><?= h($SERVER_NAME) ?> — PXE Admin</title>
+<link rel="stylesheet" href="/fonts.css">
+<link rel="stylesheet" href="/citylights.min.css">
+<style>
+.panel { border: 1px solid #41505e; border-radius: 6px; padding: 1em; margin: 1em 0; }
+.state-on  { color: #d95468; font-weight: bold; }
+.state-off { color: #8bd49c; font-weight: bold; }
+.warn { background: #2d2b23; border: 1px solid #d98e48; padding: .6em 1em; border-radius: 6px; }
+.logbox { max-height: 32em; overflow: auto; background: #1d252c; padding: .8em; font-size: .85em; }
+form.inline { display: inline; }
+button { padding: .4em 1.2em; cursor: pointer; }
+input[type=text], input[type=number] { background: #1d252c; color: inherit; border: 1px solid #41505e; padding: .3em; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">
+    <h1><span><?= h(preg_replace('/\.cttb$/', '', $SERVER_NAME)) ?></span>.cttb — PXE Admin</h1>
+    <p class="subtitle">Network install control — City of Ten Thousand Buddhas</p>
+  </div>
+</header>
+
+<main>
+
+<?php if ($msg !== ''): ?>
+<p class="notice"><?= h($msg) ?></p>
+<?php endif; ?>
+
+<p class="warn">
+  Ansible owns the boot menus: any <code>-t ni_pxe_menu</code> redeploy re-renders
+  them from <code>ni_pxe_default</code> and <strong>re-disarms autoinstall</strong>;
+  a full role run also restarts tftpd. Panel changes are operational overrides,
+  not configuration.
+</p>
+
+<div class="panel">
+  <h2>Autoinstall (reimage on boot-menu timeout)</h2>
+  <p>
+    State: <span class="<?= $armed ? 'state-on' : 'state-off' ?>">
+      <?= $armed ? 'ARMED' : 'disarmed' ?></span>
+    &mdash; BIOS default <code><?= h($ontimeout) ?></code>,
+    UEFI default <code><?= h($grubdef) ?></code>
+  </p>
+<?php if ($mismatch): ?>
+  <p class="warn">BIOS and UEFI menus disagree — one firmware class would
+  reimage on timeout while the other boots local. Use a button below to make
+  them consistent.</p>
+<?php endif; ?>
+  <form class="inline" method="post">
+    <input type="hidden" name="tok" value="<?= h($tok) ?>">
+    <input type="hidden" name="action" value="arm">
+    <button <?= ($armed && !$mismatch) ? 'disabled' : '' ?>>Arm (autoinstall on timeout)</button>
+  </form>
+  <form class="inline" method="post">
+    <input type="hidden" name="tok" value="<?= h($tok) ?>">
+    <input type="hidden" name="action" value="disarm">
+    <button <?= (!$armed && !$mismatch) ? 'disabled' : '' ?>>Disarm (boot local disk)</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>TFTP service (netboot hard block)</h2>
+  <p>
+    tftpd-hpa: <span class="<?= $tftpOn ? 'state-off' : 'state-on' ?>"><?= h($tftpd) ?></span>
+    <?= $tftpOn ? '&mdash; clients can netboot' : '&mdash; netboot is blocked (no boot files served)' ?>
+  </p>
+  <form class="inline" method="post">
+    <input type="hidden" name="tok" value="<?= h($tok) ?>">
+    <input type="hidden" name="action" value="tftp-on">
+    <button <?= $tftpOn ? 'disabled' : '' ?>>Start tftpd</button>
+  </form>
+  <form class="inline" method="post">
+    <input type="hidden" name="tok" value="<?= h($tok) ?>">
+    <input type="hidden" name="action" value="tftp-off">
+    <button <?= $tftpOn ? '' : 'disabled' ?>>Stop tftpd</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Logs</h2>
+  <form method="get">
+    <label>Source:
+      <select name="src">
+        <option value="tftp" <?= $src === 'tftp' ? 'selected' : '' ?>>TFTP (journal)</option>
+        <option value="http" <?= $src === 'http' ? 'selected' : '' ?>>Install HTTP (/netinstall/)</option>
+      </select>
+    </label>
+    <label>Lines: <input type="number" name="n" value="<?= h($n) ?>" min="10" max="2000" size="6"></label>
+    <label>Filter: <input type="text" name="q" value="<?= h($q) ?>" size="30" placeholder="substring or regex"></label>
+    <label><input type="checkbox" name="re" value="1" <?= $useRegex ? 'checked' : '' ?>> regex</label>
+    <button>Show</button>
+  </form>
+<?php if ($logErr !== ''): ?>
+  <p class="warn"><?= h($logErr) ?></p>
+<?php else: ?>
+  <p><?= count($logLines) ?> line(s)</p>
+  <pre class="logbox"><?php foreach ($logLines as $l) { echo h($l), "\n"; } ?></pre>
+<?php endif; ?>
+</div>
+
+</main>
+
+<footer>
+  <p>CTTB IT &mdash; authenticated as <code><?= h($_SERVER['REMOTE_USER'] ?? '?') ?></code>
+     &mdash; managed via Ansible (<code>netinstall-2404</code>, tag <code>ni_admin</code>)</p>
+</footer>
+
+</body>
+</html>

@@ -29,8 +29,12 @@
   become: true
   vars:
     ni_webserver: nginx
-    ni_h5ai_enabled: true
-    ni_php_version: "8.1"
+    # h5ai is not yet installed on pxe24 (its include had the tag no-op bug, so
+    # the tasks never ran). With this true, the vhost routes /netinstall to a
+    # PHP backend that 503s. Re-enable once the h5ai tasks are brought up on
+    # noble (php 8.3).
+    ni_h5ai_enabled: false
+    ni_php_version: "8.3"  # noble; the 8.1 role default targets 22.04
     ni_server_name: "pxe.cttb"
     ansible_assets_url: "http://storehouse.cttb/ansible"
   roles:

@@ -1,0 +1,87 @@
+---
+# PXE admin panel (/admin/): Basic-auth PHP page with autoinstall arm/disarm,
+# tftpd on/off, and TFTP/HTTP log views. See templates/nginx/admin.php.j2 and
+# files/pxe-admin-ctl for the privilege model (closed-verb sudo wrapper; no
+# user string reaches a shell).
+
+- name: install php-fpm and htpasswd dependencies
+  apt:
+    name:
+      - "php{{ ni_php_version }}-fpm"
+      - python3-passlib
+      - python3-bcrypt  # passlib's bcrypt backend on noble
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: ensure php-fpm is enabled and started
+  service:
+    name: "php{{ ni_php_version }}-fpm"
+    enabled: yes
+    state: started
+
+# Single source of the campus admin password: the storehouse role defaults
+# (storehouse_coredumps_password). Loaded namespaced so nothing else from that
+# defaults file leaks into this role's scope. If the var ever moves, this task
+# fails loudly rather than deploying a panel with a wrong/empty password.
+- name: resolve the campus admin password from storehouse defaults
+  include_vars:
+    file: ../../storehouse/defaults/main.yml
+    name: _storehouse_defaults
+  no_log: true
+
+- name: deploy admin panel htpasswd (Basic auth)
+  community.general.htpasswd:
+    path: "{{ ni_admin_htpasswd_path }}"
+    name: "{{ ni_admin_panel_user }}"
+    password: "{{ ni_admin_panel_password | default(_storehouse_defaults.storehouse_coredumps_password) }}"
+    crypt_scheme: bcrypt
+    owner: root
+    group: www-data
+    mode: "0640"
+  no_log: true
+
+- name: install pxe-admin-ctl wrapper
+  copy:
+    src: pxe-admin-ctl
+    dest: /usr/local/sbin/pxe-admin-ctl
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: grant www-data the wrapper (and only the wrapper) via sudoers
+  copy:
+    dest: /etc/sudoers.d/pxe-admin-panel
+    content: |
+      www-data ALL=(root) NOPASSWD: /usr/local/sbin/pxe-admin-ctl
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: create admin panel directory
+  file:
+    path: /var/www/html/admin
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: deploy admin.php
+  template:
+    src: nginx/admin.php.j2
+    dest: /var/www/html/admin/admin.php
+    owner: root
+    group: root
+    mode: "0644"
+
+# Re-render the vhost here too so `-t ni_admin` is self-contained (the same
+# template webserver-nginx.yml deploys; idempotent when both tags run).
+- name: deploy nginx default site (admin location included)
+  template:
+    src: nginx/netinstall-default.conf.j2
+    dest: /etc/nginx/sites-available/default
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx

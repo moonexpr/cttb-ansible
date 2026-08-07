@@ -22,8 +22,19 @@ ni_server_name: "pxe.cttb"
 ni_h5ai_enabled: true
 ni_h5ai_version: "0.33.0"
 
-# PHP-FPM version. Ubuntu 22.04 ships 8.1; Debian 13 ships 8.2.
+# PHP-FPM version. Ubuntu 22.04 ships 8.1; Debian 13 ships 8.2; Ubuntu 24.04
+# (pxe24) ships 8.3 — plays/netinstall-2404.yml overrides accordingly.
 ni_php_version: "8.1"
+
+# PXE admin panel (/admin/): Basic-auth PHP page with arm/disarm + tftpd
+# toggles and TFTP/HTTP log views. Auth follows the storehouse coredumps
+# precedent (nginx auth_basic + htpasswd). The password variable
+# ni_admin_panel_password has NO default — tasks/admin.yml resolves it from
+# the storehouse role defaults (single source of the campus admin password)
+# and the deploy fails closed if that resolution ever breaks.
+ni_admin_panel_enabled: true
+ni_admin_panel_user: administrator
+ni_admin_htpasswd_path: /etc/nginx/.htpasswd-pxe-admin
 
 # Serve the slim ISO (files/build-slim-iso.sh output) from every shared PXE
 # menu entry instead of the stock 3.0 GB live-server ISO. casper's url= boot
