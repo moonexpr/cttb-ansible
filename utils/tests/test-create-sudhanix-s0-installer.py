@@ -39,7 +39,7 @@ def fake_config(**over):
         username=d["ni_admin_user"], fullname=d["ni_admin_fullname"],
         password_hash=d["ni_admin_password_crypted"],
         authorized_keys=(d["ni_ansible_ssh_pubkey"], d["ni_jc_ssh_pubkey"]),
-        packages=s0.BASE_PACKAGES,
+        packages=s0.BASE_PACKAGES, assets_dir=None,
         locale=d["ni_locale"], keyboard=d["ni_keyboard_layout"],
         timezone=d["ni_timezone"], banner=d["ni_stage1_description"],
         apt_mirror=s0.DEFAULT_APT_MIRROR, apt_security=s0.DEFAULT_APT_SECURITY,
@@ -165,6 +165,43 @@ def test_timezone():
           tz == s0.canonical_timezone(tz), f"ni_timezone={tz!r}")
 
 
+def test_assets():
+    print("V8 — --with-assets bundling")
+    plain = fake_config()
+    seed = yaml.safe_load(s0.render_seed(plain))["autoinstall"]
+    check("no asset copy when --with-assets is absent",
+          not any("sudhanix-assets" in str(c)
+                  for c in seed.get("late-commands", [])))
+
+    with_assets = fake_config(assets_dir=Path("/tmp/fake-assets"))
+    ai = yaml.safe_load(s0.render_seed(with_assets))["autoinstall"]
+    cmds = [str(c) for c in ai.get("late-commands", [])]
+    check("asset copy emitted as a late-command",
+          any("/cdrom/sudhanix-assets" in c and "/target/opt/sudhanix-assets" in c
+              for c in cmds), str(cmds))
+    check("banner survives alongside the asset copy",
+          any("LOGIN_PLAIN_PROMPT" in c for c in cmds))
+
+    # Assets with --no-banner must still produce a valid late-commands block,
+    # not an orphaned key: that combination had no coverage before.
+    solo = fake_config(assets_dir=Path("/tmp/fake-assets"), banner="")
+    ai = yaml.safe_load(s0.render_seed(solo))["autoinstall"]
+    check("assets alone still yield a well-formed late-commands list",
+          isinstance(ai.get("late-commands"), list)
+          and len(ai["late-commands"]) == 1)
+
+    check("a missing asset dir is refused at build time",
+          _refuses(lambda: s0.resolve_assets("/nonexistent/assets")))
+
+
+def _refuses(fn):
+    try:
+        fn()
+        return False
+    except SystemExit:
+        return True
+
+
 def test_dd_portability():
     print("V6 — dd argument portability")
     src = TOOL.read_text()
@@ -188,6 +225,7 @@ def main():
     test_gpt(Path(args.iso))
     test_grub(tmp)
     test_timezone()
+    test_assets()
     test_dd_portability()
 
     for f in tmp.iterdir():

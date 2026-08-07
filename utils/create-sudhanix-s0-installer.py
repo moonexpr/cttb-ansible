@@ -34,6 +34,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ROLE_DEFAULTS = REPO_ROOT / "roles" / "netinstall-2404" / "defaults" / "main.yml"
 BUILD_DIR = REPO_ROOT / "build" / "autoinstall-usb"
+DEFAULT_ASSETS_DIR = REPO_ROOT / "build" / "offsite-assets"
 
 DEFAULT_ISO_URL = (
     "https://releases.ubuntu.com/24.04/ubuntu-24.04.4-live-server-amd64.iso"
@@ -92,6 +93,7 @@ class Config:
     password_hash: str
     authorized_keys: tuple
     packages: tuple
+    assets_dir: object          # Path, or None when the stick carries no assets
     locale: str
     keyboard: str
     timezone: str
@@ -112,6 +114,28 @@ class Config:
     def raw_disk(self) -> str:
         """macOS raw device — an order of magnitude faster to dd than the buffered node."""
         return self.disk.replace("/dev/disk", "/dev/rdisk")
+
+
+def resolve_assets(raw):
+    """Validate the Sudhanix asset payload to bake onto the stick.
+
+    Bundling these makes an off-campus stage-2 self-contained: roles/sudhanix-core
+    fetches its theme/font/wallpaper/browser tarballs from storehouse.cttb, which
+    an off-network host cannot reach. With them at /opt/sudhanix-assets, the whole
+    relay in utils/offsite-relay becomes unnecessary -- set
+    `offsite_asset_relay: /opt/sudhanix-assets` in group_vars/offsite. Every
+    consuming unarchive already sets remote_src, so a plain on-target path works.
+    """
+    if raw is None:
+        return None
+    path = Path(raw).expanduser().resolve() if raw else DEFAULT_ASSETS_DIR
+    if not path.is_dir():
+        die(f"asset directory {path} does not exist. Populate it with "
+            f"`utils/offsite-relay fetch`.")
+    payload = [p for p in path.iterdir() if p.is_file() and p.name != ".gitignore"]
+    if not payload:
+        die(f"asset directory {path} is empty. Run `utils/offsite-relay fetch`.")
+    return path
 
 
 def canonical_timezone(tz: str) -> str:
@@ -182,6 +206,7 @@ def build_config(args) -> Config:
         password_hash=password_hash,
         authorized_keys=keys,
         packages=tuple(dict.fromkeys(BASE_PACKAGES + tuple(args.package or ()))),
+        assets_dir=resolve_assets(args.with_assets),
         locale=args.locale or d.get("ni_locale", "en_US.UTF-8"),
         keyboard=args.keyboard or d.get("ni_keyboard_layout", "us"),
         timezone=canonical_timezone(
@@ -369,11 +394,21 @@ autoinstall:
   packages:
 {pkgs}
 """
+    # late-commands write to /target (the installed system) and may touch /etc
+    # only: cloud-init creates the user on first boot, so usermod and
+    # authorized_keys writes here fail with exit 6.
+    late = []
+
+    if cfg.assets_dir:
+        late.append("""    # Sudhanix desktop assets ride on this stick, so an off-campus stage-2 run
+    # needs no network path back to storehouse.cttb. /cdrom is the install media
+    # during late-commands. Point group_vars/offsite at the result:
+    #   offsite_asset_relay: /opt/sudhanix-assets
+    - cp -a /cdrom/sudhanix-assets /target/opt/sudhanix-assets
+""")
+
     if cfg.banner:
-        # late-commands may touch /etc only: cloud-init creates the user on first
-        # boot, so usermod/authorized_keys writes here fail with exit 6.
-        seed += f"""  late-commands:
-    # Stage-1 console banner, replaced by roles/common in stage 2. agetty prints
+        late.append(f"""    # Stage-1 console banner, replaced by roles/common in stage 2. agetty prints
     # the hostname before the hardcoded word "login:", so LOGIN_PLAIN_PROMPT drops
     # it and the issue file ends with "technician " and no newline, yielding
     # "technician login:". The trailing space is load-bearing.
@@ -388,7 +423,10 @@ autoinstall:
       printf '%s' 'technician ' >> /target/etc/issue
     # login.defs is last-line-wins, so appending beats any stock value.
     - echo 'LOGIN_PLAIN_PROMPT yes' >> /target/etc/login.defs
-"""
+""")
+
+    if late:
+        seed += "  late-commands:\n" + "".join(late)
     return seed
 
 
@@ -462,6 +500,17 @@ def remaster(cfg: Config, seed: str) -> None:
     (work / "nocloud" / "user-data").write_text(seed)
     (work / "nocloud" / "meta-data").write_text("")
     shutil.copytree(work / "nocloud", iso_tree / "nocloud")
+
+    if cfg.assets_dir:
+        payload = [p for p in cfg.assets_dir.iterdir()
+                   if p.is_file() and p.name != ".gitignore"]
+        size = sum(p.stat().st_size for p in payload)
+        print(f"Bundling {len(payload)} asset(s), {size / 1e6:.0f} MB, "
+              f"from {cfg.assets_dir}")
+        dest = iso_tree / "sudhanix-assets"
+        dest.mkdir()
+        for p in payload:
+            shutil.copy2(p, dest / p.name)
     # Keep an auditable copy of exactly what shipped, next to the output ISO.
     (cfg.output_iso.with_suffix(".user-data")).write_text(seed)
 
@@ -570,6 +619,14 @@ def print_plan(cfg: Config) -> None:
     for k in cfg.authorized_keys:
         print(f"                  {k.split()[-1]}")
     print(f"  packages      : {', '.join(cfg.packages)}")
+    if cfg.assets_dir:
+        payload = [p for p in cfg.assets_dir.iterdir()
+                   if p.is_file() and p.name != ".gitignore"]
+        size = sum(p.stat().st_size for p in payload)
+        print(f"  assets        : {len(payload)} file(s), {size / 1e6:.0f} MB "
+              f"-> /opt/sudhanix-assets")
+    else:
+        print("  assets        : none (stage 2 needs utils/offsite-relay)")
     print(f"  apt primary   : {cfg.apt_mirror}")
     print(f"  apt security  : {cfg.apt_security}")
     print(f"  locale/tz     : {cfg.locale} / {cfg.timezone}")
@@ -628,6 +685,10 @@ def main() -> None:
     seed.add_argument("--timezone")
     seed.add_argument("--no-banner", action="store_true",
                       help="omit the stage-1 /etc/issue console banner")
+    seed.add_argument("--with-assets", nargs="?", const="", metavar="DIR",
+                      help="bake the Sudhanix desktop assets onto the stick and "
+                           "install them to /opt/sudhanix-assets, so an off-campus "
+                           f"stage 2 needs no relay (default {DEFAULT_ASSETS_DIR})")
 
     out = p.add_argument_group("output")
     out.add_argument("--output-iso", metavar="PATH")
