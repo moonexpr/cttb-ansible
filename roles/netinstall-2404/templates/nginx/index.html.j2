@@ -65,6 +65,55 @@
 </fieldset>
 
 <fieldset class="file-group">
+  <legend>BIOS Boot Chain <a href="/netinstall/pxelinux.cfg/">[pxelinux.cfg]</a></legend>
+  <p>
+    Legacy-firmware clients chain: DHCP → <code>pxelinux.0</code> over TFTP →
+    <code>menu.c32</code> → the shared menu in <code>pxelinux.cfg/default</code>.
+    Per-machine one-shot overrides go in <code>pxelinux.cfg/01-&lt;mac&gt;</code>.
+  </p>
+  <div class="quick-ref">
+    <p><code>{{ ni_tftp_dir }}/pxelinux.0</code> — BIOS boot loader (<code>tftp://{{ ni_server_name }}/pxelinux.0</code>)</p>
+    <p><code>{{ ni_tftp_dir }}/pxelinux.cfg/default</code> — BIOS menu config (<a href="/netinstall/pxelinux.cfg/default">view</a>)</p>
+    <p><code>{{ ni_tftp_dir }}/ldlinux.c32</code>, <code>menu.c32</code>, <code>libcom32.c32</code> — syslinux modules beside the loader</p>
+  </div>
+</fieldset>
+
+<fieldset class="file-group">
+  <legend>UEFI Boot Chain <a href="/netinstall/grub/">[grub]</a></legend>
+  <p>
+    UEFI clients chain: DHCP → <code>grubx64.efi</code> over TFTP →
+    <code>grub/grub.cfg</code>. There is no shim hop — shim 15.8 mis-derives its
+    netboot second stage (rhboot/shim#696), so dnsmasq points firmware straight
+    at GRUB and Secure Boot stays off on clients for the install.
+    <code>shimx64.efi</code> is staged for the day a fixed signed shim exists.
+  </p>
+  <div class="quick-ref">
+    <p><code>{{ ni_tftp_dir }}/grubx64.efi</code> — signed GRUB netboot build, prefix <code>/grub</code> (<code>tftp://{{ ni_server_name }}/grubx64.efi</code>)</p>
+    <p><code>{{ ni_tftp_dir }}/grub/grub.cfg</code> — UEFI menu config (<a href="/netinstall/grub/grub.cfg">view</a>)</p>
+  </div>
+</fieldset>
+
+<fieldset class="file-group">
+  <legend>Boot Options <a href="/netinstall/menu/">[menu]</a></legend>
+  <p>
+    Default entry is <strong>{{ ni_pxe_default }}</strong> after
+    {{ (ni_pxe_timeout / 10) | int }} s (BIOS) / {{ ni_grub_timeout }} s (UEFI):
+    an unattended PXE boot falls through to the local disk. Reimaging is opt-in
+    per MAC, or armed deliberately with
+    <code>-e ni_pxe_default=&lt;LABEL&gt; -t ni_pxe_menu</code>.
+  </p>
+  <div class="quick-ref">
+{% for img in ni_2404_images %}
+{% for ai in img.autoinstall %}
+    <p><code>Autoinstall-{{ img.name }}-{{ ai.name }}</code> — {{ ai.description }} ({{ img.os }} {{ img.type }} {{ img.arch }})</p>
+{% endfor %}
+{% endfor %}
+    <p><code>BootLocal</code> — boot the local disk (default) · <code>Memtest</code> — memory test (BIOS menu only)</p>
+    <p>Menu fragments live in <code>{{ ni_pxe_menu_dir }}/</code> (<a href="/netinstall/menu/">browse</a>); rendered by the <code>netinstall-2404</code> role (<code>-t ni_pxe_menu</code>)</p>
+  </div>
+</fieldset>
+
+<fieldset class="file-group">
   <legend>Endpoints</legend>
   <p>Quick references for cutover scripts and clients:</p>
   <div class="quick-ref">

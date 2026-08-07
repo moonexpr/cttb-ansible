@@ -39,7 +39,13 @@
       - pxelinux
       - xorriso  # build-slim-iso.sh repacks the stripped ISO tree
 
-  - include_tasks: webserver-nginx.yml
+  # `apply` for the same reason as ni_autoinstall below: without it,
+  # `--tags ni_webserver` runs the include and filters out every task inside.
+  - include_tasks:
+      file: webserver-nginx.yml
+      apply:
+        tags:
+          - ni_webserver
     when: ni_webserver == 'nginx'
     tags:
       - ni_webserver
