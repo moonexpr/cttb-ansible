@@ -39,6 +39,7 @@ def fake_config(**over):
         username=d["ni_admin_user"], fullname=d["ni_admin_fullname"],
         password_hash=d["ni_admin_password_crypted"],
         authorized_keys=(d["ni_ansible_ssh_pubkey"], d["ni_jc_ssh_pubkey"]),
+        packages=s0.BASE_PACKAGES,
         locale=d["ni_locale"], keyboard=d["ni_keyboard_layout"],
         timezone=d["ni_timezone"], banner=d["ni_stage1_description"],
         apt_mirror=s0.DEFAULT_APT_MIRROR, apt_security=s0.DEFAULT_APT_SECURITY,
@@ -65,6 +66,11 @@ def test_seed():
     check("both SSH keys authorized", len(ai["ssh"]["authorized-keys"]) == 2)
     check("openssh-server and python3 requested",
           set(ai["packages"]) == {"openssh-server", "python3"})
+
+    extra = fake_config(packages=s0.BASE_PACKAGES + ("avahi-daemon",))
+    check("--package appends without dropping the base set",
+          yaml.safe_load(s0.render_seed(extra))["autoinstall"]["packages"]
+          == ["openssh-server", "python3", "avahi-daemon"])
 
     uris = [e["uri"] for g in ai["apt"]["mirror-selection"].values() for e in g]
     check("apt points at the public archive",
@@ -137,6 +143,16 @@ menuentry "Ubuntu Server with the HWE kernel" {
           s0.patch_grub(p, fake_config()) == 0)
 
 
+def test_dd_portability():
+    print("V6 — dd argument portability")
+    src = TOOL.read_text()
+    # GNU coreutils dd (Homebrew gnubin) shadows BSD dd on this workstation and
+    # rejects "bs=4m" outright. Byte counts work under both.
+    suffixed = re.findall(r"bs=\d+[a-zA-Z]", src)
+    check("no lowercase-suffix bs= anywhere in the tool",
+          not suffixed, f"found {suffixed}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--iso", default=str(
@@ -149,6 +165,7 @@ def main():
     test_seed()
     test_gpt(Path(args.iso))
     test_grub(tmp)
+    test_dd_portability()
 
     for f in tmp.iterdir():
         f.unlink()
