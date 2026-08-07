@@ -61,6 +61,32 @@
   tags:
     - ni_h5ai
 
+# Make the PXE tree's text files previewable in the browser instead of
+# downloading: preview-txt is enabled in options.json, but types.json only
+# maps *.txt/*.text (plain) and *.conf/*.sh/… (highlighted). Add the netinstall
+# vocabulary: grub.cfg + pxelinux *.cfg get highlighting; the pxelinux
+# `default` file, *.menu fragments, and autoinstall user-data/meta-data render
+# plain.
+- name: map netinstall text files to h5ai plain preview
+  lineinfile:
+    path: /var/www/html/private/conf/types.json
+    regexp: '^\s*"txt":'
+    line: '    "txt":              { "glob": ["*.text", "*.txt", "*.menu", "default", "user-data", "meta-data"] },'
+    owner: www-data
+    group: www-data
+  tags:
+    - ni_h5ai
+
+- name: map cfg files to h5ai highlighted preview
+  lineinfile:
+    path: /var/www/html/private/conf/types.json
+    regexp: '^\s*"txt-script":'
+    line: '    "txt-script":       { "glob": ["*.cfg", "*.conf", "*.bsh", "*.csh", "*.ini", "*.ksh", "*.sh", "*.shar", "*.tcl", "*.zsh"] },'
+    owner: www-data
+    group: www-data
+  tags:
+    - ni_h5ai
+
 - name: configure h5ai hidden patterns (skip _h5ai itself in listing)
   lineinfile:
     path: /var/www/html/private/conf/options.json

@@ -60,6 +60,16 @@ server {
     }
 {% endif %}
 
+    # Boot menus and autoinstall seeds are plain text with no (or an unmapped)
+    # extension, so the default octet-stream type makes browsers download them.
+    # Serve them as text/plain instead, which is what the homepage's "view"
+    # links expect. h5ai's in-browser preview uses its own types.json mapping
+    # and works either way.
+    location ~ ^/netinstall/.*(\.cfg|\.menu|/default|/user-data|/meta-data)$ {
+        default_type text/plain;
+        charset utf-8;
+    }
+
 {% if ni_admin_panel_enabled | bool %}
     # PXE admin panel — Basic auth at the nginx layer (storehouse coredumps
     # precedent). `^~` outranks the h5ai `location ~ \.php$` regex above, so
