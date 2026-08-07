@@ -132,6 +132,53 @@ Note: only the primary menu entry is patched. The HWE entry is left stock, so
 manually selecting it boots a live session rather than autoinstalling. With
 `timeout=5` and the autoinstall entry first, the unattended path is the default.
 
+### Incident — subiquity crash on first boot (18:33–19:15)
+
+The stick booted and the grub patch worked exactly as built: `/proc/cmdline` on the
+target read `BOOT_IMAGE=/casper/vmlinuz autoinstall ds=nocloud;s=/cdrom/nocloud/`.
+The installer then crashed. Apport report in `/var/crash/`:
+
+```
+ValueError: Unrecognized time zone request "US/Pacific"
+  subiquity/server/controllers/timezone.py:109
+```
+
+**Root cause.** `generate_possible_tzs()` builds the accepted set as
+`["", "geoip"] + timedatectl list-timezones`, which lists canonical zones only.
+`US/Pacific` is a tzdata *backward-compat alias*: absent from that list, and
+`/usr/share/zoneinfo/US/Pacific` is not even shipped in the installer image.
+Verified on the box: `America/Los_Angeles` → 1 match, `US/Pacific` → 0.
+
+The value came from `ni_timezone` in `roles/netinstall-2404/defaults/main.yml`, which
+also feeds all three campus autoinstall templates — so this was never specific to the
+off-campus build. **The deployed seeds on pxe.cttb still serve `timezone: US/Pacific`
+for desktop-minimal, desktop, and server.** The default is fixed in git; a
+`deploy-netinstall-2404` run is still owed to push it.
+
+**Recovery, without rewriting the USB.** The request was to scp the rebuilt ISO to the
+target and `dd` it onto the stick from there. That would have bricked the machine:
+`/dev/sdc1` is mounted at `/cdrom`, and `/cdrom/casper/*.squashfs` are the lowerdirs of
+the `/cow` overlay that *is* `/`. Overwriting the stick while booted from it pulls the
+running rootfs out mid-write — a half-written stick and a dead machine, with no way to
+retry remotely. Since `/autoinstall.yaml` lives on the writable overlay, patching it and
+restarting `snap.subiquity.subiquity-server.service` fixed the run with no USB write at
+all. Worth remembering as the general recovery path for a crashed unattended install.
+
+**Two more things the box taught us, both caught before damage:**
+
+1. `storage.layout` defaults to `match = {"size": "largest"}`. This machine has a 931 GB
+   HDD and a 238 GB SSD, *both* holding BitLocker-encrypted Windows volumes. Left alone,
+   the installer would have wiped the **HDD**, not the SSD the operator wanted. Disk
+   choice was escalated and pinned explicitly.
+2. The first pin used the serial from `lsblk` (`S3U0NE0K770518`) and failed with
+   `Failed to find matching device`. Subiquity matches `ID_SERIAL` via `fnmatch`, not
+   `ID_SERIAL_SHORT` — the correct string was
+   `SAMSUNG_SSD_PM871b_M.2_2280_256GB_S3U0NE0K770518`. It failed safely, before touching
+   any disk.
+
+Install then proceeded to `sdb`: `sdb1` 1 GB vfat → `/target/boot/efi`, `sdb2` 237.4 GB
+ext4 → `/target`. `sda` left untouched.
+
 ## Close
 - **Summary:** Built `utils/create-sudhanix-s0-installer.py` (plus acceptance checks
   in `utils/tests/`) and used it to write a verified stage-0 autoinstall USB on disk8
