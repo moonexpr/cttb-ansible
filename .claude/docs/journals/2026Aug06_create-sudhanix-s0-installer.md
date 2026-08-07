@@ -280,6 +280,51 @@ netplan files are `0600`, and `netplan generate` warns "Permissions ... are too
 open". The `copy` task in `roles/sudhanix-core/tasks/lookandfeel.yml` sets no
 `mode`. Affects every Sudhanix host, not just offsite.
 
+### The reboot earned its keep (2026-08-07, 02:19)
+
+Rebooting `sc-cslab-pc-right` was optional — the generated keyfile already showed
+`[ipv4] method=auto`, so the handover was "verified". Doing it anyway surfaced two
+things the static check could not.
+
+**The host came back at a different address.** `.244` went silent; the machine was
+alive at **`.252`**. NetworkManager sends a different DHCP client identifier than
+networkd, so the reboot produced a new lease. mDNS found it immediately —
+`avahi-daemon`, added to the stage-0 seed precisely because an off-campus box has
+no DNS we control, is the only reason the machine was not simply "lost".
+`inventory/offsite.ini` now addresses it by `sc-cslab-pc-right.local` instead of a
+pinned IP, which is strictly more durable.
+
+**A fleet-wide defect in the wake-on-LAN work.** The NIC came back as `eth0`, not
+`eno1`. udev attributes it exactly:
+
+```
+ID_NET_LINK_FILE=/etc/systemd/network/10-wake-on-lan.link
+ID_NET_NAME=eth0
+ID_NET_NAME_ONBOARD=eno1
+```
+
+`roles/common`'s `10-wake-on-lan.link` matches `Type=ether` and sets **no
+`NamePolicy=`**. systemd applies exactly one `.link` per device — first match in
+lexical order — so a file at `10-` outranks the stock `99-default.link`, and with
+no NamePolicy the device keeps its *kernel* name. Predictable interface naming was
+silently switched off on every host that received the file.
+
+Not cosmetic: netplan writes its NM profile with `[match] interface-name=en*`,
+which a renamed `eth0` no longer satisfies, so `netplan-id0` went **inactive** and
+NM's fallback wired profile took the link. This host is on DHCP, so it recovered
+invisibly. A host with static or interface-keyed netplan config would have come up
+misconfigured — and on campus that is a walk down the hall, but the same code path
+ships everywhere.
+
+Fixed by copying `NamePolicy`/`AlternativeNamesPolicy` verbatim from
+`99-default.link`, so naming is stock and `WakeOnLan=magic` still applies.
+Wake-on-LAN itself was never broken — `ethtool` reports `Wake-on: g`. **Hosts that
+already have the old file keep renaming until they receive the corrected one**, so
+it wants deploying before the next round of reboots.
+
+The general lesson: a config check that reads the *intended* state cannot see a
+device that has been renamed out from under the match clause. Only the reboot could.
+
 ## Close
 - **Summary:** Built `utils/create-sudhanix-s0-installer.py` (plus acceptance checks
   in `utils/tests/`) and used it to write a verified stage-0 autoinstall USB on disk8
@@ -290,21 +335,24 @@ open". The `copy` task in `roles/sudhanix-core/tasks/lookandfeel.yml` sets no
   broken UEFI boot on 24.04.4); preserved the source volume ID; wrote via `/dev/rdisk8`.
   Escalated the `.local` hostname question rather than silently stripping it — that
   surfaced the avahi gap and drove the `--package` flag.
+- **Closed during the session:** pxe.cttb seeds deployed (`desktop-minimal` and
+  `server` now serve `America/Los_Angeles`; the live grub.cfg offers only those
+  two, so every bootable path is fixed); netplan perms tightened to 0600;
+  `--with-assets` built and covered by V8; the offsite host rebooted and verified.
 - **Open threads:**
-  - **`deploy-netinstall-2404` is owed.** All three campus seeds on pxe.cttb still
-    serve `timezone: US/Pacific` and will crash subiquity exactly as this host did.
-    The role default is fixed in git but not deployed. Highest-priority follow-up.
-  - **Bundle the assets into the stage-0 ISO** (operator's stated direction).
-    `create-sudhanix-s0-installer.py`'s `remaster()` already injects a directory
-    tree; a `--with-assets` flag plus `offsite_asset_relay: /opt/sudhanix-assets`
-    would make offsite installs self-contained and retire `utils/offsite-relay`.
-    ~400 MB on a 3.4 GB stick.
-  - `roles/sudhanix-core` writes `01-network-manager-all.yaml` mode 0644; should be
-    0600. Fleet-wide, one line.
+  - **Deploy the `10-wake-on-lan.link` NamePolicy fix.** Any host still carrying
+    the old file renames its NIC at next reboot. Benign on DHCP hosts, not
+    necessarily on others. Highest-priority follow-up.
+  - The stale `autoinstall/ubuntu/desktop/user-data` on pxe.cttb still reads
+    `US/Pacific`. No menu references it and the play's loop does not render it, so
+    it is inert — but it is a live trap if anyone wires up that profile.
+  - `deploy-netinstall-2404` left one task failing: `fix postinst script
+    permissions` timed out waiting for a sudo prompt on pxe. The seed sync itself
+    completed; that task was never reached in anger.
   - `build/autoinstall-usb/build-usb.sh` is superseded — dead ISO URL and hardcoded
     ESP offsets. Worth retiring before someone reaches for it.
-  - The offsite host has **not been rebooted**. The NM handover is verified by the
-    generated keyfile, but first boot under NetworkManager is the remaining proof.
+  - The next offsite stick should be built `--with-assets`, after which
+    `offsite_asset_relay: /opt/sudhanix-assets` retires the relay for that host.
   - Secure Boot must be off on any target, per the DVGS shim caveat in memory.
   - The no-Claude-artifacts-in-git rule was **retired** mid-session; journals and
     plans now ship with the repo. Note the repo is PUBLIC — no credentials in these.
