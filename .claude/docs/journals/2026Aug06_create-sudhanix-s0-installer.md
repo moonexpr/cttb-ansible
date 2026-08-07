@@ -325,6 +325,89 @@ it wants deploying before the next round of reboots.
 The general lesson: a config check that reads the *intended* state cannot see a
 device that has been renamed out from under the match clause. Only the reboot could.
 
+### Pre-push scan found a live credential leak (2026-08-07)
+
+Checking what a `git push` would publish — this repo is **public** — surfaced
+something unrelated to the session's goal and more serious than anything in it.
+
+`utils/sysadmintk/ldap_lib.py` built its bind arguments as
+`["-x", "-D", bind_dn, "-w", bind_pw]` and ran every command with
+`subprocess.run(..., check=True)`. A non-zero exit therefore raised
+`CalledProcessError`, whose `__str__` renders the **entire argv**. One failed
+LDAP call printed the bind password into any traceback, log line or error report
+that carried the exception; `reset_password` additionally carried the user's new
+password as `-s <password>`.
+
+Worse, `.claude/docs/ldap-lib-credential-leak-issue.md` — a precise, working
+description of how to trigger it — had **already been pushed to the public
+remote** (in `8da7a667`, a batch that committed 28 issue/comment drafts at once).
+So the exploit description and the unfixed code were public simultaneously. Every
+acceptance box in that document was still unchecked.
+
+**Fixed.** `subprocess.run` is now confined to a single `_run()` helper that
+checks the return code itself and raises `LdapCommandError` carrying the tool
+name, return code and stderr — never the argv. The ldap tools print their
+diagnostics to stderr without the secret, so nothing diagnostic was lost:
+
+```
+before: CalledProcessError: Command '['ldapsearch', ..., '-w', '<pw>', ...]'
+after:  ldapsearch failed (exit 249): ldap_search_ext: Bad search filter (-7)
+```
+
+Verified against the live directory: `utils/ldap group it` still resolves
+members, and a deliberately malformed filter produces the clean message above.
+`utils/tests/test-ldap-lib-redaction.py` asserts the bind password, new password
+and bind DN are absent from the exception, that stderr and returncode survive,
+and — via AST, so a docstring naming the hazard cannot satisfy it — that no call
+site reintroduces `check=True`.
+
+The `idstore_*` modules keep `check=True` deliberately: their argv carries only a
+service name, with the secret returned on stdout.
+
+**The drafts are untracked now, but that is not containment.** They were already
+pushed; they remain in history and in any clone or fork. `.claude/docs/*` is
+gitignored with `!.claude/docs/journals/`, so journals still ship and the drafts
+cannot be swept in again. Whether to rotate the LDAP bind credential is the
+operator's call and is not resolved here.
+
+**The broader lesson.** Retiring the no-Claude-artifacts rule was right for
+journals, which are written to be read. `.claude/docs/` also held issue drafts
+staged for `gh issue create` — scratch, not documentation — and a blanket
+`git add .claude/docs/` could not tell the difference. The gitignore now draws
+that line explicitly rather than relying on whoever runs the next `git add`.
+
+### Wake-on-LAN .link fix deployed — partial by necessity
+
+`utils/pb sudhanix26-rollout-stage2 -l cttb_hosts -t wake_on_lan`, 39 hosts
+attempted:
+
+| Outcome | Count | Detail |
+|---|---|---|
+| Fixed | 3 | `dvgs-lab2`, `dvgs-lab3`, `dvgs-lab8` |
+| Unreachable | 32 | lab PCs powered off — expected at this hour |
+| Failed | 4 | `dvbs-lab12/13`, `dvbs-lib1/2` |
+
+The four failures are **pre-existing and unrelated**: they run Ubuntu 20.04 with
+Python 3.8.10, and this workstation's ansible-core requires ≥3.9 on the target, so
+they die at Gathering Facts before any task. (`plays/util-upgrade-to-py3.9.yml`
+sits untracked in the tree, so this is already known work.)
+
+**The fix arrived in time for all three reachable hosts.** Each now carries the
+`NamePolicy` lines, and each still has a predictable interface name — `enp2s0`,
+`eno1`, `enp2s0` — not `eth0`. They had not rebooted since receiving the bad
+`.link`, so they will never rename.
+
+Verifying also confirmed the drop-in gate is correct. `dvgs-lab2`/`lab8` have no
+`50-cloud-init.yaml`, so no netplan ethernet stanza; the drop-in is correctly
+withheld and they are armed via the udev path (`Wake-on: g`). `dvgs-lab3` has the
+cloud-init stanza, received the drop-in, and its NM keyfile reads
+`wake-on-lan=1`; `ethtool` still reports `d` only because a keyfile change applies
+on connection reactivation, so it arms at next boot.
+
+**Residual risk:** the 32 powered-off hosts may still hold the old `.link` and
+will rename at their next boot unless they receive stage 2 first. Re-run the same
+tag-scoped command when the labs are up.
+
 ## Close
 - **Summary:** Built `utils/create-sudhanix-s0-installer.py` (plus acceptance checks
   in `utils/tests/`) and used it to write a verified stage-0 autoinstall USB on disk8
