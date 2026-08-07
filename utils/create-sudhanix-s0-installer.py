@@ -50,6 +50,24 @@ LABEL_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", re.I)
 # Minimum for an Ansible stage-2 run to reach the host and do anything.
 BASE_PACKAGES = ("openssh-server", "python3")
 
+# subiquity validates `timezone` against `timedatectl list-timezones`, which lists
+# canonical zones only. tzdata's backward-compat aliases (US/Pacific and friends)
+# are NOT in it and are not even shipped in the installer image, so passing one
+# crashes the installer with ValueError several minutes into an unattended run.
+CANONICAL_TZ_AREAS = frozenset({
+    "Africa", "America", "Antarctica", "Arctic", "Asia", "Atlantic",
+    "Australia", "Etc", "Europe", "Indian", "Pacific",
+})
+LEGACY_TZ_ALIASES = {
+    "US/Pacific": "America/Los_Angeles",
+    "US/Mountain": "America/Denver",
+    "US/Central": "America/Chicago",
+    "US/Eastern": "America/New_York",
+    "US/Alaska": "America/Anchorage",
+    "US/Hawaii": "Pacific/Honolulu",
+    "US/Arizona": "America/Phoenix",
+}
+
 
 def die(msg: str) -> None:
     print(f"ERROR: {msg}", file=sys.stderr)
@@ -94,6 +112,28 @@ class Config:
     def raw_disk(self) -> str:
         """macOS raw device — an order of magnitude faster to dd than the buffered node."""
         return self.disk.replace("/dev/disk", "/dev/rdisk")
+
+
+def canonical_timezone(tz: str) -> str:
+    """Reject or rewrite a timezone subiquity would refuse, at build time.
+
+    Catching this here turns a crash four minutes into an unattended install on
+    a machine you may not be standing next to into an error before the ISO is
+    even downloaded.
+    """
+    if tz in ("", "geoip", "UTC"):
+        return tz
+    if tz in LEGACY_TZ_ALIASES:
+        canon = LEGACY_TZ_ALIASES[tz]
+        print(f"NOTE: {tz!r} is a tzdata backward-compat alias and is not in "
+              f"`timedatectl list-timezones`; subiquity rejects it. Using {canon!r}.")
+        return canon
+    area, _, rest = tz.partition("/")
+    if not rest or area not in sorted(CANONICAL_TZ_AREAS):
+        die(f"{tz!r} is not a canonical IANA timezone. subiquity validates against "
+            f"`timedatectl list-timezones` and will crash on anything else. "
+            f"Use an Area/Location name such as America/Los_Angeles.")
+    return tz
 
 
 def role_defaults() -> dict:
@@ -144,7 +184,8 @@ def build_config(args) -> Config:
         packages=tuple(dict.fromkeys(BASE_PACKAGES + tuple(args.package or ()))),
         locale=args.locale or d.get("ni_locale", "en_US.UTF-8"),
         keyboard=args.keyboard or d.get("ni_keyboard_layout", "us"),
-        timezone=args.timezone or d.get("ni_timezone", "US/Pacific"),
+        timezone=canonical_timezone(
+            args.timezone or d.get("ni_timezone") or "America/Los_Angeles"),
         banner="" if args.no_banner else d.get("ni_stage1_description", "Sudhanix 26"),
         apt_mirror=args.apt_mirror or DEFAULT_APT_MIRROR,
         apt_security=args.apt_security or DEFAULT_APT_SECURITY,

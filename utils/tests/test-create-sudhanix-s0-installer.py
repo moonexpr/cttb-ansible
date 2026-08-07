@@ -143,6 +143,28 @@ menuentry "Ubuntu Server with the HWE kernel" {
           s0.patch_grub(p, fake_config()) == 0)
 
 
+def test_timezone():
+    print("V7 — timezone canonicalisation (crashed subiquity 2026-08-06)")
+    check("legacy US/Pacific rewrites to the canonical zone",
+          s0.canonical_timezone("US/Pacific") == "America/Los_Angeles")
+    check("canonical zone passes through untouched",
+          s0.canonical_timezone("America/Los_Angeles") == "America/Los_Angeles")
+    check("geoip and empty are still allowed",
+          s0.canonical_timezone("geoip") == "geoip"
+          and s0.canonical_timezone("") == "")
+    for bad in ("Mars/Olympus", "Pacific", "Canada/Eastern"):
+        try:
+            s0.canonical_timezone(bad)
+            check(f"rejects {bad!r}", False, "it was accepted")
+        except SystemExit:
+            check(f"rejects {bad!r}", True)
+
+    # The role default feeds the campus PXE templates too; it must be canonical.
+    tz = s0.role_defaults().get("ni_timezone")
+    check("role default ni_timezone is canonical",
+          tz == s0.canonical_timezone(tz), f"ni_timezone={tz!r}")
+
+
 def test_dd_portability():
     print("V6 — dd argument portability")
     src = TOOL.read_text()
@@ -165,6 +187,7 @@ def main():
     test_seed()
     test_gpt(Path(args.iso))
     test_grub(tmp)
+    test_timezone()
     test_dd_portability()
 
     for f in tmp.iterdir():
