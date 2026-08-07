@@ -14,8 +14,11 @@ group_vars/.*
 # The toolkit ships with the repo: utils/ (the CLIs, with their shared Python
 # libraries in utils/sysadmintk/), .claude/skills/, .claude/hooks/,
 # .claude/rules/, .claude/settings.json, .claude/.env.example, plus CLAUDE.md
-# and PROJECT.md (secrets redacted). Only personal/runtime state under .claude/
-# stays out of git:
+# and PROJECT.md (secrets redacted). Session journals (.claude/docs/journals/)
+# and plans (.claude/plans/) ship too, so the next sysadmin can read why a
+# change was made and not just what changed. Keep secrets out of them: this
+# repo is PUBLIC on GitHub. Only personal/runtime state under .claude/ stays
+# out of git:
 
 # Real credential values (copy from .env.example — never commit):
 .claude/.env
